@@ -10,7 +10,7 @@ SelectionManager is a single autoload. The earlier manager called a missing set_
 
 Validation: terrain_test.gd checks all terrain categories, placement release rules, coordinate mapping, HQ footprint and land spawns, diagonal-safe paths and a unit following waypoints. scene_setup_test.gd checks native visuals exist before ready, default batch counts, model-slot replacement, a single-mesh terrain prop replacement, and saving/reloading the terrain rebuild. It renders the world with all gameplay/tool scripts removed as a static visibility check; this is not a screenshot of the desktop editor UI. Tests do not certify animation, imported rig compatibility, performance at large army sizes or undo/redo for editor tool operations. Terrain rebuild writes its generated scene; old generated batches have no dedicated undo stack.
 
-build_initial_scenes.gd is a one-time bootstrap source, not a normal editor workflow; rerunning it recreates default scenes. Normal changes should use the scenes and Inspector slots described in README.md. No GitHub or OneDrive updates.
+build_initial_scenes.gd is a one-time bootstrap source, not a normal editor workflow; rerunning it recreates default scenes. Normal changes should use the scenes and Inspector slots described in README.md. GitHub is the authoritative version-controlled source. Develop in cloud clones on feature branches and submit pull requests for review. Keep the local Windows checkout for visual and gameplay testing; do not update historical OneDrive archives. Never force-push main or merge unverified gameplay changes.
 
 Camera behavior lives on the CameraRig root, with YawPivot/PitchPivot/Camera children. Inspector settings, flat-ground targeting, input actions and validation are described in CAMERA_RIG.md.
 
