@@ -1,0 +1,161 @@
+[gd_scene format=3]
+
+
+[sub_resource type="StandardMaterial3D" id="r1"]
+albedo_color = Color(0.06,0.075,0.09,1)
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="r2"]
+albedo_color = Color(0.3,0.38,0.4,1)
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="r3"]
+albedo_color = Color(0.85,0.12,0.12,1)
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="r4"]
+albedo_color = Color(1,0.1,0.04,1)
+roughness = 0.85
+shading_mode = 0
+
+[sub_resource type="BoxMesh" id="r5"]
+size = Vector3(0.42,0.56,0.75)
+material = SubResource("r1")
+
+[sub_resource type="BoxMesh" id="r6"]
+size = Vector3(0.42,0.56,0.75)
+material = SubResource("r1")
+
+[sub_resource type="CylinderMesh" id="r7"]
+top_radius = 0.48
+bottom_radius = 0.78
+height = 1.25
+radial_segments = 6
+material = SubResource("r1")
+
+[sub_resource type="BoxMesh" id="r8"]
+size = Vector3(1.05,0.65,0.65)
+material = SubResource("r1")
+
+[sub_resource type="BoxMesh" id="r9"]
+size = Vector3(0.85,0.18,0.08)
+material = SubResource("r3")
+
+[sub_resource type="BoxMesh" id="r10"]
+size = Vector3(0.62,0.55,0.57)
+material = SubResource("r2")
+
+[sub_resource type="BoxMesh" id="r11"]
+size = Vector3(0.9,0.22,0.76)
+material = SubResource("r1")
+
+[sub_resource type="BoxMesh" id="r12"]
+size = Vector3(0.18,0.12,0.06)
+material = SubResource("r4")
+
+[sub_resource type="BoxMesh" id="r13"]
+size = Vector3(0.32,0.4,0.9)
+material = SubResource("r2")
+
+[sub_resource type="BoxMesh" id="r14"]
+size = Vector3(0.24,0.22,0.75)
+material = SubResource("r1")
+
+[sub_resource type="BoxMesh" id="r15"]
+size = Vector3(0.32,0.6,0.4)
+material = SubResource("r2")
+
+[sub_resource type="BoxMesh" id="r16"]
+size = Vector3(0.21,0.37,1.1)
+material = SubResource("r2")
+
+[sub_resource type="BoxMesh" id="r17"]
+size = Vector3(0.26,0.14,0.1)
+material = SubResource("r4")
+
+[sub_resource type="BoxMesh" id="r18"]
+size = Vector3(0.26,0.14,0.1)
+material = SubResource("r4")
+
+[sub_resource type="BoxMesh" id="r19"]
+size = Vector3(0.26,0.14,0.1)
+material = SubResource("r4")
+
+[sub_resource type="BoxMesh" id="r20"]
+size = Vector3(0.26,0.14,0.1)
+material = SubResource("r4")
+
+[sub_resource type="BoxMesh" id="r21"]
+size = Vector3(0.26,0.14,0.1)
+material = SubResource("r4")
+
+[node name="PrototypeInfantry" type="Node3D"]
+editor_description = "Cyborg infantry silhouette: coat, helmet, gun and chainsaw. Replace through the actor Visuals slot."
+
+[node name="BootLeft" type="MeshInstance3D" parent="."]
+position = Vector3(-0.34,0.28,0.05)
+mesh = SubResource("r5")
+
+[node name="BootRight" type="MeshInstance3D" parent="."]
+position = Vector3(0.34,0.28,0.05)
+mesh = SubResource("r6")
+
+[node name="Coat" type="MeshInstance3D" parent="."]
+position = Vector3(0,1.12,0)
+mesh = SubResource("r7")
+
+[node name="Chest" type="MeshInstance3D" parent="."]
+position = Vector3(0,1.75,0)
+mesh = SubResource("r8")
+
+[node name="TeamBand" type="MeshInstance3D" parent="."]
+position = Vector3(0,1.75,-0.35)
+mesh = SubResource("r9")
+
+[node name="Head" type="MeshInstance3D" parent="."]
+position = Vector3(0,2.33,-0.03)
+mesh = SubResource("r10")
+
+[node name="Helmet" type="MeshInstance3D" parent="."]
+position = Vector3(0,2.64,0)
+mesh = SubResource("r11")
+
+[node name="Optic" type="MeshInstance3D" parent="."]
+position = Vector3(-0.16,2.4,-0.33)
+mesh = SubResource("r12")
+
+[node name="GunArm" type="MeshInstance3D" parent="."]
+position = Vector3(0.7,1.73,-0.25)
+mesh = SubResource("r13")
+
+[node name="Gun" type="MeshInstance3D" parent="."]
+position = Vector3(0.7,1.84,-0.85)
+mesh = SubResource("r14")
+
+[node name="ChainsawArm" type="MeshInstance3D" parent="."]
+position = Vector3(-0.7,1.55,0)
+mesh = SubResource("r15")
+
+[node name="Chainsaw" type="MeshInstance3D" parent="."]
+position = Vector3(-0.7,1.25,-0.4)
+mesh = SubResource("r16")
+
+[node name="Tooth0" type="MeshInstance3D" parent="."]
+position = Vector3(-0.7,1.05,-0.9)
+mesh = SubResource("r17")
+
+[node name="Tooth1" type="MeshInstance3D" parent="."]
+position = Vector3(-0.7,1.05,-0.7)
+mesh = SubResource("r18")
+
+[node name="Tooth2" type="MeshInstance3D" parent="."]
+position = Vector3(-0.7,1.05,-0.5)
+mesh = SubResource("r19")
+
+[node name="Tooth3" type="MeshInstance3D" parent="."]
+position = Vector3(-0.7,1.05,-0.29999999999999993)
+mesh = SubResource("r20")
+
+[node name="Tooth4" type="MeshInstance3D" parent="."]
+position = Vector3(-0.7,1.05,-0.09999999999999998)
+mesh = SubResource("r21")

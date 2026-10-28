@@ -1,0 +1,17 @@
+[gd_scene format=3]
+[ext_resource type="PackedScene" path="res://scenes/maps/resource_skirmish.tscn" id="base"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/depot.tscn" id="depot"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/cargo_vehicle.tscn" id="cargo"]
+[node name="SupplyRoutes" instance=ExtResource("base")]
+starting_ore = 200
+[node name="Outpost" parent="Entities/Buildings" index="1" instance=ExtResource("depot")]
+position = Vector3(205,0,160)
+initial_energy = 0
+initial_iron = 0
+[node name="NeutralDepot" parent="Entities/Buildings" index="2" instance=ExtResource("depot")]
+position = Vector3(205,0,190)
+team = "neutral"
+initial_energy = 50
+initial_iron = 30
+[node name="CargoVehicle" parent="Entities/Units" index="2" instance=ExtResource("cargo")]
+position = Vector3(176,0,160)

@@ -1,0 +1,22 @@
+[gd_scene format=3]
+[ext_resource type="PackedScene" path="res://scenes/maps/rail_exercise.tscn" id="base"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/cargo_vehicle.tscn" id="cargo"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/infantry.tscn" id="infantry"]
+[node name="MobileSupplyExercise" instance=ExtResource("base")]
+message = "Deploy MineSupply, then choose it in Infantry Build to pay for a mine. ForestSupply is beside forest at the north-east map edge."
+[node name="CameraRig" parent="." index="5"]
+position = Vector3(150,0,156)
+default_zoom = 55.0
+preview_zoom = 55.0
+[node name="Infantry" parent="Entities/Units" index="0"]
+position = Vector3(154.5,0,159.5)
+[node name="MineSupply" parent="Entities/Units" instance=ExtResource("cargo")]
+position = Vector3(145.5,0,157.5)
+initial_energy = 75
+initial_iron = 25
+[node name="ForestSupply" parent="Entities/Units" instance=ExtResource("cargo")]
+position = Vector3(98.5,0,28.5)
+[node name="ForestInfantry" parent="Entities/Units" instance=ExtResource("infantry")]
+position = Vector3(98.5,0,25.5)
+[node name="Hostile" parent="Entities/Units" index="1"]
+process_mode = 4

@@ -1,0 +1,10 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/rails/rail_network.gd" id="script"]
+[ext_resource type="Resource" path="res://assets/economy/rail_rules.tres" id="rules"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/rail_segment.tscn" id="rail"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/train.tscn" id="train"]
+[node name="RailNetwork" type="Node"]
+script = ExtResource("script")
+rules = ExtResource("rules")
+segment_scene = ExtResource("rail")
+train_scene = ExtResource("train")

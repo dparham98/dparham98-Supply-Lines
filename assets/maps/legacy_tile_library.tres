@@ -1,0 +1,33 @@
+[gd_resource type="MeshLibrary" load_steps=7 format=3 uid="uid://cj1yr8f4rwrsx"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_q0cv5"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_n5hcl"]
+material = SubResource("StandardMaterial3D_q0cv5")
+size = Vector2(1, 1)
+
+[sub_resource type="Gradient" id="Gradient_d5l0t"]
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_mrk8r"]
+gradient = SubResource("Gradient_d5l0t")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1y10q"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_78oxg"]
+material = SubResource("StandardMaterial3D_1y10q")
+size = Vector2(1, 1)
+
+[resource]
+item/0/name = "Grass"
+item/0/mesh = SubResource("PlaneMesh_n5hcl")
+item/0/mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+item/0/shapes = []
+item/0/navigation_mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+item/0/navigation_layers = 1
+item/0/preview = SubResource("GradientTexture2D_mrk8r")
+item/1/name = "1"
+item/1/mesh = SubResource("PlaneMesh_78oxg")
+item/1/mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+item/1/shapes = []
+item/1/navigation_mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+item/1/navigation_layers = 1

@@ -1,0 +1,16 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_j2uuh"]
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(0, 0, 1, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_05mag"]
+material = SubResource("StandardMaterial3D_j2uuh")
+size = Vector3(10, 5, 10)
+
+[node name="PlaceholderModel" type="Node3D" unique_id=1238966400]
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=1979134152]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+mesh = SubResource("BoxMesh_05mag")

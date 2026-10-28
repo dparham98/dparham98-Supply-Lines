@@ -1,0 +1,14 @@
+[gd_resource type="CylinderMesh" format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ppney"]
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.05448028, 0.14702725, 0.03560131, 1)
+roughness = 0.94
+
+[resource]
+material = SubResource("StandardMaterial3D_ppney")
+top_radius = 0.0
+bottom_radius = 0.95
+height = 2.2
+radial_segments = 6
+rings = 1

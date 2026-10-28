@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_a03lb"]
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.18447499, 0.20155624, 0.17788841, 1)
+roughness = 0.94
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_u08rc"]
+material = SubResource("StandardMaterial3D_a03lb")
+top_radius = 0.15
+bottom_radius = 2.7
+height = 5.0
+radial_segments = 6
+rings = 1
+
+[node name="Mountain" type="Node3D" unique_id=217908302]
+
+[node name="Rock" type="MeshInstance3D" parent="." unique_id=91306436]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+mesh = SubResource("CylinderMesh_u08rc")

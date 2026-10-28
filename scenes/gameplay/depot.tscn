@@ -1,0 +1,43 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/depot.gd" id="depot"]
+[ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
+[ext_resource type="PackedScene" path="res://scenes/models/depot_prototype.tscn" id="model"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/infantry.tscn" id="infantry"]
+
+[ext_resource type="Resource" path="res://assets/economy/depot_rules.tres" id="rules"]
+[sub_resource type="StandardMaterial3D" id="territory_mat"]
+shading_mode = 0
+albedo_color = Color(0.2,0.8,1,0.6)
+transparency = 1
+[sub_resource type="TorusMesh" id="territory_mesh"]
+inner_radius = 0.992
+outer_radius = 1.0
+rings = 96
+ring_segments = 4
+material = SubResource("territory_mat")
+[node name="Depot" type="Node3D"]
+script = ExtResource("depot")
+rules = ExtResource("rules")
+infantry_scene = ExtResource("infantry")
+
+[node name="Territory" type="MeshInstance3D" parent="."]
+visible = false
+position = Vector3(0,0.15,0)
+mesh = SubResource("territory_mesh")
+
+[node name="Visuals" type="Node3D" parent="."]
+script = ExtResource("slot")
+model_scene = ExtResource("model")
+
+[node name="Model" parent="Visuals" instance=ExtResource("model")]
+
+[node name="Progress" type="Label3D" parent="."]
+position = Vector3(0,6.5,0)
+billboard = 1
+no_depth_test = true
+font_size = 40
+pixel_size = 0.04
+outline_size = 6
+modulate = Color(0.5,0.9,1,1)
+text = "DEPOT · 3D printer"

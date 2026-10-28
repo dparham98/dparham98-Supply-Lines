@@ -1,0 +1,18 @@
+[gd_scene format=3]
+[ext_resource type="PackedScene" path="res://scenes/maps/resource_skirmish.tscn" id="base"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/depot.tscn" id="depot"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/infantry.tscn" id="infantry"]
+[node name="HarvestingExercise" instance=ExtResource("base")]
+message = "Harvest forest tiles with Infantry. Use Build / Iron Mine on a 2x2 iron patch near the starting Depot."
+[node name="CameraRig" parent="." index="5"]
+position = Vector3(100,0,28)
+startup_focus = 0
+default_zoom = 42.0
+preview_zoom = 42.0
+[node name="ForestDepot" parent="Entities/Buildings" instance=ExtResource("depot")]
+position = Vector3(105,0,28)
+initial_energy = 100
+[node name="ForestInfantry" parent="Entities/Units" instance=ExtResource("infantry")]
+position = Vector3(98.5,0,25.5)
+[node name="Hostile" parent="Entities/Units" index="1"]
+process_mode = 4

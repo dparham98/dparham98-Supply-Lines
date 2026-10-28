@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/units/unit_stats.gd" id="stats"]
+
+[resource]
+script = ExtResource("stats")
+unit_id = &"ubermech"
+display_name = "Ubermech"
+energy_cost = 250
+iron_cost = 60
+max_health = 120
+movement_speed = 2.0
+attack_range = 6.0
+vision = 8.0
+combat_notation = "12/5"
+damage = 12
+attack_interval = 5.0
+abilities = Array[StringName]([])

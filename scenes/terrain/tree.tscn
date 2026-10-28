@@ -1,0 +1,54 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gksf5"]
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.13013647, 0.082282715, 0.045186203, 1)
+roughness = 0.94
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_poiok"]
+material = SubResource("StandardMaterial3D_gksf5")
+top_radius = 0.14
+bottom_radius = 0.16
+height = 1.4
+radial_segments = 6
+rings = 1
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ppney"]
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.05448028, 0.14702725, 0.03560131, 1)
+roughness = 0.94
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_8ok8n"]
+material = SubResource("StandardMaterial3D_ppney")
+top_radius = 0.0
+bottom_radius = 0.95
+height = 2.2
+radial_segments = 6
+rings = 1
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_311en"]
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.1070231, 0.21586053, 0.051269453, 1)
+roughness = 0.94
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_5ps34"]
+material = SubResource("StandardMaterial3D_311en")
+top_radius = 0.0
+bottom_radius = 0.67
+height = 1.65
+radial_segments = 6
+rings = 1
+
+[node name="Tree" type="Node3D" unique_id=1707955187]
+
+[node name="Trunk" type="MeshInstance3D" parent="." unique_id=1533083005]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+mesh = SubResource("CylinderMesh_poiok")
+
+[node name="LowerCanopy" type="MeshInstance3D" parent="." unique_id=717112563]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0)
+mesh = SubResource("CylinderMesh_8ok8n")
+
+[node name="Crown" type="MeshInstance3D" parent="." unique_id=598281047]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.65, 0)
+mesh = SubResource("CylinderMesh_5ps34")

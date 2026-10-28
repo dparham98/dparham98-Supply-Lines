@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ProductionBuildingStats" format=3]
+[ext_resource type="Script" path="res://scripts/production/production_building_stats.gd" id="stats"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/tank.tscn" id="tank"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/motorcycle.tscn" id="motorcycle"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/drone.tscn" id="drone"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/ubermech.tscn" id="ubermech"]
+[resource]
+script = ExtResource("stats")
+building_id = &"tank_factory"
+display_name = "Tank Factory"
+energy_cost = 200
+iron_cost = 65
+footprint = Vector2i(8,8)
+unit_scenes = Array[PackedScene]([ExtResource("tank"),ExtResource("motorcycle"),ExtResource("drone"),ExtResource("ubermech")])

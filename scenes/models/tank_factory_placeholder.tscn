@@ -1,0 +1,16 @@
+[gd_scene format=3]
+[sub_resource type="StandardMaterial3D" id="mat"]
+albedo_color = Color(0.65,0.4,0.2,1)
+[sub_resource type="BoxMesh" id="body"]
+size = Vector3(7,2,7)
+material = SubResource("mat")
+[sub_resource type="BoxMesh" id="head"]
+size = Vector3(6,1,5)
+material = SubResource("mat")
+[node name="TankFactoryPlaceholder" type="Node3D"]
+[node name="Body" type="MeshInstance3D" parent="."]
+position = Vector3(0,0.8,0)
+mesh = SubResource("body")
+[node name="Top" type="MeshInstance3D" parent="."]
+position = Vector3(0,1.7,-0.15)
+mesh = SubResource("head")

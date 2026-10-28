@@ -1,0 +1,17 @@
+> Current combat update: user confirmed damage / seconds between attacks. Supplied attacks are now resolved; see COMBAT_BATCH.md. Historical unresolved/fallback descriptions below record the original implementation. Drone remains unresolved.
+
+# Unit stats milestone
+
+Open assets/units/*.tres in Godot's FileSystem dock to edit UnitStats in Inspector. The seven files contain the supplied costs, HP, speed, vision and known range. Assign a resource to the Unit Stats slot on scenes/gameplay/infantry.tscn (or another scene using scripts/gameplay/unit_agent.gd). Starting, Depot-printed and Barracks-printed infantry use infantry.tres. Barracks/Factory production now uses the remaining six resources through separate prototype scenes; their unresolved attacks are disabled until the combat batch. See PRODUCTION_BATCH.md. Existing hostile and legacy review-world units retain their prototype settings.
+
+Damage and Attack Interval use -1 for unresolved data; Drone range is also -1. Combat Notation preserves the original 8/1, 8/2, 20/3, 12/1, 16/2 and 12/5 text. No interpretation as damage-per-shot/seconds or DPS has been confirmed. Set damage and a positive interval together only after confirming the meaning. Unknown is different from a confirmed zero-damage attack.
+
+Use Prototype Combat For Unresolved Stats defaults on to preserve the existing playable prototype's damage/interval (player 16 every 0.7 seconds). Known range still comes from the resource. Disable this explicit compatibility option for units with unconfirmed attacks, particularly Drone: they can move but cannot fire. This is a temporary fallback, not historical unit balance. Updated HP/speed/range intentionally change balance and scenario duration.
+
+Abilities is an extensible Array[StringName]; leave empty until identifiers are agreed. has_ability queries identifiers only. Existing Infantry gathering remains working behavior independent of these unconfirmed identifiers. Vision remains data only (no fog of war). Milestone 2 production now spends the assigned UnitStats energy/iron costs from its local Depot; the old temporary Ore charge is replaced. See MILESTONE_2.md.
+
+Resources are read at spawn, before health initialization. Stop/restart the scene to apply edits to current units; shared resources never hold runtime health/cooldowns. For a unit-specific variation, duplicate its .tres and assign the duplicate. Do not rerun the historical scene bootstrap to edit stats.
+
+Validation: run Godot headless with --path C:/Dev/Supply-Lines --script res://tests/unit_stats_test.gd; also run tests/skirmish_test.gd, tests/terrain_test.gd, tests/camera_test.gd and tests/edge_pan_test.gd. In the editor play the main scene, select and move infantry around blocked terrain, gather/deliver Ore, print infantry, and attack a hostile. Check Q/E release, mouse edges and wheel zoom. Headless checks do not certify live mouse feel.
+
+Changed files: scripts/units/unit_stats.gd (new Resource), assets/units/{infantry,scout,grenadier,tank,motorcycle,drone,ubermech}.tres (new), scripts/gameplay/unit_agent.gd (Resource reader and unresolved-attack policy), scenes/gameplay/infantry.tscn (resource assignment), tests/unit_stats_test.gd and docs/UNIT_STATS.md (new). Godot also generates import/class UID metadata. Camera, navigation methods, terrain, legacy actors and source assets were not edited. Before-change controller and infantry scene are backed up in the Supply Lines chat workspace under unit_stats_work/*.before.*.

@@ -1,0 +1,35 @@
+[gd_scene format=3 uid="uid://gydxyx21l2sv"]
+
+[ext_resource type="PackedScene" path="res://scenes/maps/terrain.tscn" id="1_q0aro"]
+[ext_resource type="PackedScene" path="res://scenes/maps/lighting.tscn" id="2_h21yb"]
+[ext_resource type="PackedScene" path="res://scenes/camera/rts_camera.tscn" id="3_kwki8"]
+[ext_resource type="PackedScene" path="res://scenes/buildings/headquarters.tscn" id="4_xkne6"]
+[ext_resource type="PackedScene" path="res://scenes/units/infantry.tscn" id="5_76p6v"]
+[ext_resource type="PackedScene" path="res://scenes/units/enemy.tscn" id="6_2kr4x"]
+[ext_resource type="PackedScene" path="res://scenes/ui/terrain_hud.tscn" id="7_38i2f"]
+
+[node name="SupplyLinesWorld" type="Node3D" unique_id=2030431318]
+editor_description = "Main map. Open Terrain, Lighting, CameraRig or actor scenes to edit their reusable components."
+
+[node name="Terrain" parent="." unique_id=2091800637 instance=ExtResource("1_q0aro")]
+
+[node name="Lighting" parent="." unique_id=1838254414 instance=ExtResource("2_h21yb")]
+
+[node name="CameraRig" parent="." unique_id=1602357723 instance=ExtResource("3_kwki8")]
+
+[node name="Entities" type="Node3D" parent="." unique_id=612400643]
+
+[node name="Buildings" type="Node3D" parent="Entities" unique_id=2130734551]
+
+[node name="Headquarters" parent="Entities/Buildings" unique_id=1841515064 instance=ExtResource("4_xkne6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -197, 0, -227)
+
+[node name="Units" type="Node3D" parent="Entities" unique_id=528989099]
+
+[node name="Infantry" parent="Entities/Units" unique_id=1114915707 instance=ExtResource("5_76p6v")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -201.5, 0, -221.5)
+
+[node name="Enemy" parent="Entities/Units" unique_id=737708198 instance=ExtResource("6_2kr4x")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -201.5, 0, -220.5)
+
+[node name="Interface" parent="." unique_id=1752370462 instance=ExtResource("7_38i2f")]

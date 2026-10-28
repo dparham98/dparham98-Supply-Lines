@@ -1,0 +1,20 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/economy/iron_mine.gd" id="script"]
+[ext_resource type="Resource" path="res://assets/economy/engineering_rules.tres" id="rules"]
+[ext_resource type="PackedScene" path="res://scenes/models/mine_placeholder.tscn" id="model"]
+[ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
+[node name="IronMine" type="Node3D"]
+script = ExtResource("script")
+rules = ExtResource("rules")
+[node name="Visuals" type="Node3D" parent="."]
+scale = Vector3(0.5,0.5,0.5)
+script = ExtResource("slot")
+model_scene = ExtResource("model")
+[node name="Model" parent="Visuals" instance=ExtResource("model")]
+[node name="Label" type="Label3D" parent="."]
+position = Vector3(0,4.5,0)
+billboard = 1
+no_depth_test = true
+font_size = 30
+pixel_size = 0.035
+text = "NEUTRAL IRON MINE"

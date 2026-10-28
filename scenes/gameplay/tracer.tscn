@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/tracer.gd" id="tracer"]
+
+[sub_resource type="BoxMesh" id="r1"]
+size = Vector3(0.08,0.08,1)
+
+[node name="Shot" type="MeshInstance3D"]
+script = ExtResource("tracer")
+mesh = SubResource("r1")

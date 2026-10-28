@@ -1,0 +1,48 @@
+# Mobile supplies and recoverable materials
+
+Implemented economy stage 3. User-confirmed rules: both Cargo Trucks and trains use half the Depot ranges, deployment/packing take two seconds, and movement packs automatically. Physical Infantry material piles are shared, do not decay, and must be collected before spending. The implementation preserves separate inventories, existing storage capacities and fuel reserves.
+
+## Deployment and delivery
+
+- Cargo Trucks and trains have Deploy supplies / Pack up in their delivery HUD. Supply radius is 17.5 and Infantry drop-off radius is 3.5, half the current Depot's 35 / 7. Both mobile types use the same ranges. Depot Trucks remain expansion vehicles, with no transferable mobile wallet.
+- Deployment stops movement using the existing grid reservation/snap behavior, pauses an assigned route, and takes two seconds. Stock is unavailable during deployment. A train must occupy friendly rail to deploy and to remain an available source. Vehicles need no additional footprint beyond their existing occupied cell.
+- Pack up withdraws availability immediately and takes two seconds. Movement commands cancel the existing delivery route as before, then wait for packing before following their normal path. Assigning or explicitly resuming a route also packs supplies first. Packing does not change inventory or fill fuel reserves.
+- Deployment never automatically resumes a route. Pack up by itself leaves a paused route paused; use Resume deliberately. Ordinary stopped but undeployed vehicles can still load/unload on explicitly assigned Depot routes, while Infantry delivery and construction/repair require deployment.
+- Select Infantry and use the Supply dropdown for one local source. Its choice applies to Deliver, construction and repair. Right-clicking a friendly cargo truck/train explicitly chooses it as a drop-off, including when temporarily packed; the worker waits until it is available. Give a subsequent Gather order to run trips to that drop-off. A selected local source can also be used through Deliver resources.
+- Infantry's existing 10-unit carry and harvesting rates remain unchanged. Partial deposits accept only available storage space and retain the remainder. A full, packed, hostile or destroyed explicit destination does not receive materials or silently redirect them to another stockpile. Change the source or issue another delivery order deliberately.
+- With no explicit choice, the HUD initially displays the nearest covering friendly available source. Once chosen, loss of coverage or packing leaves that source unavailable until the player chooses another. Opening Build again does not silently replace an unavailable chosen payer. Automatic unconfigured harvest return retains nearest available stockpile behavior; no resources transfer between stockpiles without an actor/order.
+
+## Construction, repair and operation
+
+- Infantry's Build payer list includes covering friendly Depots and deployed cargo trucks/trains. Its local stock readout includes E/I/W/C and combined capacity. One source must cover the Infantry and the complete construction footprint under the existing corner-cell checks. No combined payment, fallback payer or fuel-tank spending occurs. Preview and final placement recheck availability/range/funds.
+- Mobile stock can fund Depots, Generators, Barracks, Tank Factories and shared iron mines at their unchanged costs. The cargo truck's 100 total capacity limits what one truck can afford; a train holds 300. Neither receives a free testing iron grant. MineSupply in the exercise has authored test-only E75/I25; all normally produced cargo vehicles start empty. Depots retain the requested 500-iron test grant and one establishment Infantry.
+- An explicitly chosen mobile source can repair a friendly structure or shared mine while both the Infantry and target center are within its supply radius and the Infantry is within normal repair range. Existing 10 HP/second for 2 E/1 I remains. Packing/loss pauses repairs without borrowing from a nearby Depot. Legacy Depot-funded repair keeps its fixed payer rules.
+- Production and generator operation remain assigned to a Depot. Mobile construction pays only the construction cost; it does not automatically assign operating funds. Select a mobile-built Barracks, Factory or Generator and choose a covering friendly Depot in the new Assign Depot dropdown. The structure waits until assigned. Production queues must be empty to change operating source; subsequent production spends only the chosen Depot. Source capture still cancels paid production queues under the existing policy.
+- Rails retain the previously approved Depot-only construction and ownership policy. Rail is disabled in Build when a mobile payer is selected. Trains continue to move on connected friendly rails with shared ground traffic. This batch does not change rail ownership, signals or demolition.
+- A selected deployed vehicle, or the mobile payer selected during construction, displays a green supply-radius ring. The HUD shows supply and drop-off ranges, state, cargo and fuel as separate information.
+
+## Physical material piles
+
+- Infantry Drop materials leaves all carried iron, wood or coal in a reusable saved pile scene at its current position and stops its work order. Infantry death drops the same carried physical materials exactly once. Energy and onboard fuel do not become piles. Vehicle cargo destruction salvage is not enabled or specified by this batch.
+- Any player's Infantry can gather a pile with the existing Gather command and stockpile it in a friendly Depot or deployed cargo vehicle. The crate placeholder is shared across kinds; its label identifies material and remaining amount. Use Gather explicitly when a pile overlaps another target's click area.
+- Piles have no ownership, supply radius, spending API, decay or navigation claim. They can share a cell and do not block movement or construction. Extraction is bounded by the remaining amount, so multiple users cannot duplicate material. The depleted pile is removed. There is no merging, save/load persistence, attack/demolition or maximum count in this prototype.
+- Carried/piled wood still cannot generate energy until the generator fuel stage. Coal can be transported and recovered but has no deposit extraction or operating-fuel consumption yet. No unit stats, attacks, path solver, source-map pixels or baked terrain assets were changed.
+
+## Editable assets
+
+- assets/economy/mobile_supply_rules.tres: half-range multiplier, shared Depot rules reference, base Depot drop-off range, two-second deployment and packing. Construction radius follows the referenced Depot rules. If the Depot scene's drop-off setting changes from 7, update this base drop-off field too.
+- scenes/gameplay/cargo_vehicle.tscn and train.tscn: assigned mobile rules, saved radius-ring visuals and existing model slots. SupplyRules/RailRules still configure capacities, movement and route transfer time. Optional initial E/I/W/C fields are authored scenario inventories, default zero, bounded by capacity.
+- scenes/gameplay/material_pile.tscn: saved crate/label placeholder; material kind and initial quantity are editable for fixtures. Runtime health/cargo/pile state never modifies shared resources.
+
+## Editor exercise
+
+1. Open scenes/maps/mobile_supply_exercise.tscn and press F6. It inherits the rail exercise, disables the authored hostile, and adds two Cargo Trucks and a remote forestry Infantry. The camera starts beside MineSupply with E75/I25 and a nearby Infantry.
+2. Select MineSupply, click Deploy supplies and wait two seconds. Select the nearby Infantry, open Build, choose MineSupply in Pay from, and place Iron Mine on the empty red 2x2 patch immediately below the existing mine (world 150,154). MineSupply should become empty; the Depot remains E500/I500. Grass placement or insufficient cargo should charge nothing.
+3. Use the minimap to reach the remote forest area near world X98/Z28 (about 70% across, 56% down the minimap). Select ForestSupply and deploy it. Select ForestInfantry and choose ForestSupply in its Supply dropdown. Gather an accessible forest edge tile; two trips should deliver 20 wood to the truck and open the depleted tile. The main Depot stays unchanged.
+4. While Infantry is carrying material, click Drop materials. Use Gather on the labeled crate to collect it again and stockpile it. Death drops and opposing-side collection are covered by the automated test; this scene adds no enemy strategy.
+5. Order ForestSupply to move using right-click or Move. Delivery/spending stops immediately; the truck remains stationary for two seconds, then follows its route. Select it and deploy again to restore access. Full storage retains the worker's carried remainder.
+6. To try train supplies, return to the rail line near the main Depot. Assign the train a route loading a combined amount <=300, pause after loading, then deploy. Select nearby Infantry and choose Train as payer. To operate a train-funded Barracks/Factory/Generator, select the new building and explicitly assign a covering Depot. Move or Resume on the train packs for two seconds before departure. No fuel is required yet.
+
+Validation details are in MOBILE_SUPPLY_VALIDATION.md; MOBILE_SUPPLY_CHANGED.txt lists exact project files. No live physical input testing was performed.
+
+Later update: wood/coal generator burning is now implemented; see GENERATOR_BATCH.md. Earlier descriptions of free generator output or wood having no energy use are historical and superseded. Water/vehicle operating fuel and coal extraction remain pending.

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="RailRules" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/rails/rail_rules.gd" id="rules"]
+[resource]
+script = ExtResource("rules")
+rail_energy_cost = 0
+rail_iron_cost = 2
+cargo_energy_cost = 150
+cargo_iron_cost = 30
+cargo_capacity = 300
+cargo_speed = 8.0
+cargo_health = 80
+transfer_seconds = 2.0

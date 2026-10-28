@@ -1,0 +1,65 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/gameplay/skirmish.gd" id="game"]
+[ext_resource type="PackedScene" path="res://scenes/maps/terrain.tscn" id="terrain"]
+[ext_resource type="PackedScene" path="res://scenes/maps/lighting.tscn" id="lights"]
+[ext_resource type="PackedScene" path="res://scenes/camera/rts_camera.tscn" id="camera"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/depot.tscn" id="depot"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/infantry.tscn" id="infantry"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/hostile.tscn" id="enemy"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/ore_deposit.tscn" id="ore"]
+[ext_resource type="PackedScene" path="res://scenes/ui/skirmish_hud.tscn" id="hud"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/tracer.tscn" id="tracer"]
+[ext_resource type="Script" path="res://scripts/economy/depot_network.gd" id="network"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/depot_truck.tscn" id="truck"]
+[ext_resource type="Resource" path="res://assets/economy/supply_rules.tres" id="supply"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/energy_generator.tscn" id="generator"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/cargo_vehicle.tscn" id="cargo"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/construction_preview.tscn" id="preview"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/barracks.tscn" id="barracks"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/tank_factory.tscn" id="factory"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/wood_site.tscn" id="wood"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/iron_mine.tscn" id="mine"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/rail_network.tscn" id="rails"]
+[ext_resource type="Resource" path="res://assets/economy/engineering_rules.tres" id="engineering"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/material_pile.tscn" id="pile"]
+[node name="ResourceSkirmish" type="Node3D" groups=["skirmish"]]
+editor_description = "Playable gather-print-fight scenario. Native actors and reusable Visuals slots. Positions are authored on the existing map."
+script = ExtResource("game")
+tracer_scene = ExtResource("tracer")
+pile_scene = ExtResource("pile")
+[node name="DepotNetwork" type="Node" parent="."]
+script = ExtResource("network")
+depot_scene = ExtResource("depot")
+truck_scene = ExtResource("truck")
+generator_scene = ExtResource("generator")
+cargo_scene = ExtResource("cargo")
+barracks_scene = ExtResource("barracks")
+tank_factory_scene = ExtResource("factory")
+supply_rules = ExtResource("supply")
+mine_scene = ExtResource("mine")
+engineering_rules = ExtResource("engineering")
+[node name="ConstructionPreview" parent="." instance=ExtResource("preview")]
+[node name="Terrain" parent="." instance=ExtResource("terrain")]
+[node name="RailNetwork" parent="." instance=ExtResource("rails")]
+[node name="Lighting" parent="." instance=ExtResource("lights")]
+[node name="CameraRig" parent="." instance=ExtResource("camera")]
+position = Vector3(170,0,150)
+default_zoom = 72.0
+preview_zoom = 72.0
+[node name="Entities" type="Node3D" parent="."]
+[node name="Buildings" type="Node3D" parent="Entities"]
+[node name="Depot" parent="Entities/Buildings" instance=ExtResource("depot")]
+position = Vector3(170,0,150)
+[node name="IronMine" parent="Entities/Buildings" instance=ExtResource("mine")]
+position = Vector3(150,0,150)
+[node name="Resources" type="Node3D" parent="Entities"]
+[node name="OreDeposit" parent="Entities/Resources" instance=ExtResource("ore")]
+position = Vector3(150.5,0,150.5)
+[node name="WoodStand" parent="Entities/Resources" instance=ExtResource("wood")]
+position = Vector3(160,0,172)
+[node name="Units" type="Node3D" parent="Entities"]
+[node name="Infantry" parent="Entities/Units" instance=ExtResource("infantry")]
+position = Vector3(164.5,0,159.5)
+[node name="Hostile" parent="Entities/Units" instance=ExtResource("enemy")]
+position = Vector3(184.5,0,120.5)
+[node name="Interface" parent="." instance=ExtResource("hud")]

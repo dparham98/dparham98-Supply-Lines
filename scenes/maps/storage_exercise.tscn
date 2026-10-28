@@ -1,0 +1,12 @@
+[gd_scene format=3]
+[ext_resource type="PackedScene" path="res://scenes/maps/rail_exercise.tscn" id="base"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/cargo_vehicle.tscn" id="cargo"]
+[node name="StorageExercise" instance=ExtResource("base")]
+message = "Storage test: send 20 coal to EastDepot. Only 10 fits; the Train retains the remainder."
+[node name="Depot" parent="Entities/Buildings" index="0"]
+initial_coal = 100
+[node name="EastDepot" parent="Entities/Buildings" index="2"]
+storage_capacity_override = 600
+initial_energy = 90
+[node name="CargoTruck" parent="Entities/Units" instance=ExtResource("cargo")]
+position = Vector3(177.5,0,160.5)

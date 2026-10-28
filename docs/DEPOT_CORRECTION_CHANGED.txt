@@ -1,0 +1,15 @@
+README.md
+docs/DEPOT_CORRECTION_CHANGED.txt
+docs/DEPOT_CORRECTION_VALIDATION.md
+docs/DEPOT_PRODUCTION_CORRECTION.md
+docs/ECONOMY_PLAN.md
+docs/EXPLICIT_DESIGN_BACKLOG.md
+scripts/gameplay/depot.gd
+scripts/gameplay/skirmish.gd
+scripts/gameplay/skirmish_hud.gd
+tests/depot_correction_test.gd
+tests/depot_correction_test.gd.uid
+tests/depot_test.gd
+tests/hud_click_test.gd
+tests/skirmish_test.gd
+tests/supply_test.gd

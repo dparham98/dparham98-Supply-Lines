@@ -1,0 +1,17 @@
+[gd_scene format=3]
+[ext_resource type="PackedScene" path="res://scenes/terrain/tree.tscn" id="tree"]
+[sub_resource type="StandardMaterial3D" id="mat"]
+albedo_color = Color(0.2,0.9,0.25,1)
+shading_mode = 0
+[sub_resource type="TorusMesh" id="ring"]
+inner_radius = 1.7
+outer_radius = 1.85
+material = SubResource("mat")
+[node name="WoodStandModel" type="Node3D"]
+[node name="Tree" parent="." instance=ExtResource("tree")]
+position = Vector3(-0.6,0,-0.5)
+[node name="Tree2" parent="." instance=ExtResource("tree")]
+position = Vector3(0.6,0,0.5)
+[node name="Marker" type="MeshInstance3D" parent="."]
+position = Vector3(0,0.1,0)
+mesh = SubResource("ring")

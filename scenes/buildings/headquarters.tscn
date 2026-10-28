@@ -1,0 +1,16 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/buildings/headquarters.gd" id="1_5ctyw"]
+[ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="2_l6mfu"]
+[ext_resource type="PackedScene" path="res://scenes/models/headquarters_placeholder.tscn" id="3_rpl24"]
+
+[node name="Headquarters" type="Node3D" unique_id=1841515064 groups=["headquarters"]]
+editor_description = "Reusable gameplay scene. Visuals is the model slot; root is the ground pivot. Place instances in the world normally."
+script = ExtResource("1_5ctyw")
+
+[node name="Visuals" type="Node3D" parent="." unique_id=1588486984]
+editor_description = "Assign your imported model scene to Model Scene in the Inspector. Keep the model rooted at its feet."
+script = ExtResource("2_l6mfu")
+model_scene = ExtResource("3_rpl24")
+
+[node name="Model" parent="Visuals" unique_id=1238966400 instance=ExtResource("3_rpl24")]

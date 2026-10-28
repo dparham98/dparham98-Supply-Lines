@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/units/unit_stats.gd" id="stats"]
+
+[ext_resource type="Resource" path="res://assets/movement/scout.tres" id="mobility"]
+
+[resource]
+script = ExtResource("stats")
+unit_id = &"scout"
+display_name = "Scout"
+energy_cost = 35
+iron_cost = 5
+max_health = 40
+movement_speed = 4.0
+attack_range = 3.0
+vision = 8.0
+combat_notation = "8/2"
+damage = 8
+attack_interval = 2.0
+abilities = Array[StringName]([])
+fire_while_moving = true
+mobility = ExtResource("mobility")

@@ -1,0 +1,59 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/unit_agent.gd" id="agent"]
+[ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
+[ext_resource type="PackedScene" path="res://scenes/models/grenadier_placeholder.tscn" id="model"]
+
+[ext_resource type="Resource" path="res://assets/units/grenadier.tres" id="stats"]
+
+[sub_resource type="StandardMaterial3D" id="r1"]
+albedo_color = Color(0.2,1,0.6,1)
+roughness = 0.85
+shading_mode = 0
+
+[sub_resource type="TorusMesh" id="r2"]
+inner_radius = 0.85
+outer_radius = 0.96
+rings = 20
+ring_segments = 6
+material = SubResource("r1")
+
+[node name="Grenadier" type="Node3D"]
+script = ExtResource("agent")
+unit_stats = ExtResource("stats")
+can_construct = false
+can_gather = false
+can_capture_depots = false
+use_prototype_combat_for_unresolved_stats = false
+
+[node name="Visuals" type="Node3D" parent="."]
+script = ExtResource("slot")
+model_scene = ExtResource("model")
+
+[node name="Model" parent="Visuals" instance=ExtResource("model")]
+
+[node name="SelectionRing" type="MeshInstance3D" parent="."]
+position = Vector3(0,0.08,0)
+visible = false
+mesh = SubResource("r2")
+
+[node name="Status" type="Label3D" parent="."]
+position = Vector3(0,3.3,0)
+billboard = 1
+no_depth_test = true
+font_size = 30
+pixel_size = 0.04
+outline_size = 6
+modulate = Color(0.65,0.95,1,1)
+text = "INFANTRY · 100/100"
+
+[node name="Cargo" type="Label3D" parent="."]
+position = Vector3(0,4.0,0)
+billboard = 1
+no_depth_test = true
+font_size = 27
+pixel_size = 0.04
+outline_size = 6
+modulate = Color(1,0.8,0.35,1)
+text = "0 Ore"
+

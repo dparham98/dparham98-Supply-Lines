@@ -1,0 +1,115 @@
+[gd_scene format=3]
+[ext_resource type="PackedScene" path="res://scenes/maps/resource_skirmish.tscn" id="base"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/depot.tscn" id="depot"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/rail_segment.tscn" id="rail"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/train.tscn" id="train"]
+[node name="RailExercise" instance=ExtResource("base")]
+message = "Rail exercise: select the Train, choose Depot to EastDepot, set cargo, and assign a route."
+[node name="CameraRig" parent="." index="5"]
+position = Vector3(185,0,150)
+startup_focus = 0
+default_zoom = 55.0
+preview_zoom = 55.0
+[node name="Depot" parent="Entities/Buildings" index="0"]
+initial_wood = 100
+[node name="EastDepot" parent="Entities/Buildings" instance=ExtResource("depot")]
+position = Vector3(200,0,150)
+initial_energy = 0
+[node name="Rails" type="Node3D" parent="Entities" index="2"]
+[node name="Rail420" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(170.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Rail421" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(171.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Rail422" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(172.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Rail423" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(173.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Rail424" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(174.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Rail425" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(175.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Rail426" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(176.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Rail427" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(177.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Rail428" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(178.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Rail429" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(179.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Rail430" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(180.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Rail431" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(181.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Rail432" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(182.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Rail433" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(183.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Rail434" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(184.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Rail435" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(185.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Rail436" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(186.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/EastDepot")
+[node name="Rail437" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(187.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/EastDepot")
+[node name="Rail438" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(188.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/EastDepot")
+[node name="Rail439" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(189.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/EastDepot")
+[node name="Rail440" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(190.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/EastDepot")
+[node name="Rail441" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(191.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/EastDepot")
+[node name="Rail442" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(192.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/EastDepot")
+[node name="Rail443" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(193.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/EastDepot")
+[node name="Rail444" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(194.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/EastDepot")
+[node name="Rail445" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(195.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/EastDepot")
+[node name="Rail446" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(196.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/EastDepot")
+[node name="Rail447" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(197.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/EastDepot")
+[node name="Rail448" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(198.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/EastDepot")
+[node name="Rail449" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(199.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/EastDepot")
+[node name="Rail450" parent="Entities/Rails" instance=ExtResource("rail")]
+position = Vector3(200.5,0,156.5)
+assigned_depot_path = NodePath("../../Buildings/EastDepot")
+[node name="Train" parent="Entities/Units" instance=ExtResource("train")]
+position = Vector3(170.5,0,156.5)
+[node name="Hostile" parent="Entities/Units" index="1"]
+process_mode = 4

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/units/unit_stats.gd" id="stats"]
+
+[resource]
+script = ExtResource("stats")
+unit_id = &"grenadier"
+display_name = "Grenadier"
+energy_cost = 85
+iron_cost = 15
+max_health = 60
+movement_speed = 2.0
+attack_range = 6.0
+vision = 5.0
+combat_notation = "20/3"
+damage = 20
+attack_interval = 3.0
+abilities = Array[StringName]([])
+splash_radius = 3.0
+heavy_target_damage = 40
+heavy_target_interval = 3.0

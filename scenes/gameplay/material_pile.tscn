@@ -1,0 +1,21 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/economy/material_pile.gd" id="script"]
+[sub_resource type="StandardMaterial3D" id="mat"]
+albedo_color = Color(0.65,0.48,0.24,1)
+roughness = 0.95
+[sub_resource type="BoxMesh" id="mesh"]
+size = Vector3(0.9,0.45,0.9)
+material = SubResource("mat")
+[node name="MaterialPile" type="Node3D"]
+script = ExtResource("script")
+[node name="Visuals" type="Node3D" parent="."]
+[node name="Crate" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0,0.23,0)
+mesh = SubResource("mesh")
+[node name="Label" type="Label3D" parent="."]
+position = Vector3(0,1.5,0)
+billboard = 1
+no_depth_test = true
+font_size = 25
+pixel_size = 0.025
+text = "Material pile"

@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/camera/rts_camera.gd" id="1_31k0y"]
+
+[node name="CameraRig" type="Node3D" unique_id=1602357723 groups=["camera_rig"]]
+editor_description = "Ground focus pivot. Tune navigation, zoom, rotation, bounds and preview here."
+script = ExtResource("1_31k0y")
+
+[node name="YawPivot" type="Node3D" parent="."]
+editor_description = "Horizontal orbit; driven by yaw controls on the rig."
+[node name="PitchPivot" type="Node3D" parent="YawPivot"]
+rotation_degrees = Vector3(-50, 0, 0)
+editor_description = "Tilt; set Pitch Degrees on the rig root."
+[node name="Camera" type="Camera3D" parent="YawPivot/PitchPivot" unique_id=161938446]
+position = Vector3(0, 0, 110)
+projection = 1
+current = true
+size = 140.0
+near = 0.1
+far = 3000.0

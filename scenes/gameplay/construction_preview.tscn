@@ -1,0 +1,19 @@
+[gd_scene format=3]
+[sub_resource type="StandardMaterial3D" id="mat"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.2,1,0.4,0.45)
+[sub_resource type="BoxMesh" id="mesh"]
+size = Vector3(1,0.15,1)
+material = SubResource("mat")
+[node name="ConstructionPreview" type="Node3D"]
+visible = false
+[node name="Footprint" type="MeshInstance3D" parent="."]
+mesh = SubResource("mesh")
+[node name="Status" type="Label3D" parent="."]
+position = Vector3(0,2,0)
+billboard = 1
+font_size = 30
+pixel_size = 0.03
+no_depth_test = true
+text = "PLACEMENT"

@@ -1,0 +1,5 @@
+[gd_resource type="Resource" script_class="DepotRules" format=3]
+[ext_resource type="Script" path="res://scripts/economy/depot_rules.gd" id="rules"]
+[resource]
+script = ExtResource("rules")
+testing_starting_iron = 500

@@ -1,0 +1,322 @@
+[
+  {
+    "source": "C:\\Users\\video\\.codex\\.chatgpt-projects\\g-p-6ad16a23380c8191877dbcafdb316068\\scout_work\\scout_completed.blend",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Characters\\Scout\\Scout.blend",
+    "sha256": "903051BB690CB1FD01FC6D419B9AFDAD9ED44AB7DB33701A8476AF7A37868F63"
+  },
+  {
+    "source": "C:\\Users\\video\\.codex\\.chatgpt-projects\\g-p-6acede77d274819180f1bf15a327591a\\supply_lines_infantry_review\\v2\\infantry_refined_v2.blend",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Characters\\Infantry\\Infantry.blend",
+    "sha256": "D6674F61367DF6E263CC5E2782863ACAA9F5C9BF79D61204C33CDCF7B6443846"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Documents\\supply-lines\\Tank.blend",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Vehicles\\Tank\\Tank.blend",
+    "sha256": "3D56B1E24C983CD75D0219137DCFCEC664F80AEBBA0E23E8617430007B40662E"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\2D-3D Infantry Test.blend",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\2D-3D Infantry Test.blend",
+    "sha256": "9B66DE8C2187B4A19ABABD58D69C86176833B794A4CDFF1A6434D835C9FF6A47"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\2D-3D Infantry Test.blend1",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\2D-3D Infantry Test.blend1",
+    "sha256": "63838F73D42AB72CEF8026166BA18B2D2118480013450770510B5308892CF872"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\AI Test Model.blend",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\AI Test Model.blend",
+    "sha256": "670AA447530059D11D30916C2F6424B8865F1548BBB301A2A337FFA7C6860AE4"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\AI Test Model.blend1",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\AI Test Model.blend1",
+    "sha256": "B3C43CCFAC68A32D6154DF97C042162A3428E90FFF79075CC87D72655F3C8E5F"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\AI Test Model.fbx",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\AI Test Model.fbx",
+    "sha256": "F387DD62C2A844750115B65860671F6BE345DE243D0B868AF71A40DC4DDE9452"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Depot Art.png",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Depot Art.png",
+    "sha256": "CCF827A56309D6E70546E0F20EDD8FB7A228B5F6B7F80147E3DF0D5684F323E3"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Depot Art.png",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\References\\Depot Art.png",
+    "sha256": "CCF827A56309D6E70546E0F20EDD8FB7A228B5F6B7F80147E3DF0D5684F323E3"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Infantry Art.png",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Infantry Art.png",
+    "sha256": "1D0AAAC0345F4B5D6BA4AD9F7CD46B28FE8055A9D7371DF31B5C9C2A42753A21"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Infantry Art.png",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\References\\Infantry Art.png",
+    "sha256": "1D0AAAC0345F4B5D6BA4AD9F7CD46B28FE8055A9D7371DF31B5C9C2A42753A21"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Infantry Cut.png",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Infantry Cut.png",
+    "sha256": "FF82D682C159E6B592C70B56CA623CC3787BBF8E03FCE2C22F4B5BA0FA36A1F6"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Infantry Cut.png",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\References\\Infantry Cut.png",
+    "sha256": "FF82D682C159E6B592C70B56CA623CC3787BBF8E03FCE2C22F4B5BA0FA36A1F6"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Mini Map.png",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Mini Map.png",
+    "sha256": "475F3AF71BAF6954B6A951F181A9B99380FF38A85B76C617627C38C8192CE1E0"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Mini Map.png",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\References\\Mini Map.png",
+    "sha256": "475F3AF71BAF6954B6A951F181A9B99380FF38A85B76C617627C38C8192CE1E0"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\new scout.blend",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\new scout.blend",
+    "sha256": "0154F97BB95F735049ECE1A63C031851EB13F08003FA1472EC752FB45B394689"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\new scout.blend1",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\new scout.blend1",
+    "sha256": "AD71D04FD0B3B259FB761D9C7C4B7CFBD55636E87B886A6C9D962883BFA8032D"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\new scout.fbx",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\new scout.fbx",
+    "sha256": "92ABD11CC8BA645B77C4A1546CE20B04EBF5EC78FE379313BA006CA9F5C9D2E5"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Scout 2D side.png",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Scout 2D side.png",
+    "sha256": "537AF5BD046BC25173FE268F873124320D9A5326C87E427BE615F751C5961D64"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Scout 2D side.png",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\References\\Scout 2D side.png",
+    "sha256": "537AF5BD046BC25173FE268F873124320D9A5326C87E427BE615F751C5961D64"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Scout 2D.png",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Scout 2D.png",
+    "sha256": "280260A6D567D37E425C644494A3CECE770906250933B5E23544649E2E7CBEFB"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Scout 2D.png",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\References\\Scout 2D.png",
+    "sha256": "280260A6D567D37E425C644494A3CECE770906250933B5E23544649E2E7CBEFB"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Scout.png",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Scout.png",
+    "sha256": "1AEFB997F56A626B66DC93FDA468069E8AC67224741F23F16A95A9AA7016678F"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Scout.png",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\References\\Scout.png",
+    "sha256": "1AEFB997F56A626B66DC93FDA468069E8AC67224741F23F16A95A9AA7016678F"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Tank.png",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Tank.png",
+    "sha256": "B1051A6392CF947CE3EB41D6001258F7829F6615E3A9011802D85712FA8952C0"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Tank.png",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\References\\Tank.png",
+    "sha256": "B1051A6392CF947CE3EB41D6001258F7829F6615E3A9011802D85712FA8952C0"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\EAR.webp",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\EAR.webp",
+    "sha256": "D107F46D29EEAE93DF52A77EE48B8162AAC37B2052DEE3F09750F4BD496222AD"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\EAR.webp",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\References\\EAR.webp",
+    "sha256": "D107F46D29EEAE93DF52A77EE48B8162AAC37B2052DEE3F09750F4BD496222AD"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Infantry COLOR.blend",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Infantry COLOR.blend",
+    "sha256": "4CEA91E9C1F8BDBCB090C1C195643379574BFF3BBABD18A023E00CD62B2D9623"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Infantry COLOR.blend1",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Infantry COLOR.blend1",
+    "sha256": "63954F61BDA90448EFE2B2D53141D5640CA206FFC5317F9F67AE8C73CAF2EFD1"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Infantry COLOR.fbx",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Infantry COLOR.fbx",
+    "sha256": "7DBB40C4E838364BC7922ADC4A6FEEDF49F911116C248FD8954A131169381087"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Infantry.blend",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Infantry.blend",
+    "sha256": "82F37DFD2C0693B5730365485A439BB47835F82F8A86048E35698830F2CC1168"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Infantry.blend1",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Infantry.blend1",
+    "sha256": "DF92E07A3B7160B59A2A7056BBFA68C6414BDBF45C022BB469942EE3BE89280B"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Infantry.fbx",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Infantry.fbx",
+    "sha256": "F4C1FF9DE2719169A3D69B5CAB13CEBFF2CCE6DF2F6BF2E47CEE2DAF680022FA"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\microsoft test.glb",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\microsoft test.glb",
+    "sha256": "26EA08607A12577CAEE21C1379667D96CEC87545D7652A8EE130C9C75ACCB680"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Scout.blend",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Scout.blend",
+    "sha256": "EA3959F6EF9B9E7EFB7DD5A87552D33843B94C08A8D31E243B44E6776E0E6FE1"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Scout.blend1",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Scout.blend1",
+    "sha256": "FCC388653BB425A249406230C836B77DEF77F30A942483CA52F362A9524BEE49"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Scout.fbx",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Scout.fbx",
+    "sha256": "98102F432B74FABE44C2EDEA9AD7985E6178C3F70985DEAD66740C605BCEA15C"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Skeleton.blend",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Skeleton.blend",
+    "sha256": "8529EAE40AB8E16B6E9BD95F8EAE1A12EBF9967AE45555E874C5BE5314F8F044"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Skeleton.fbx",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Skeleton.fbx",
+    "sha256": "3791340AEAEFA8690AEA85520FBAC1D0D37B0A3D8152A43B91B1B892D9215DAB"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Skeleton.glb",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Skeleton.glb",
+    "sha256": "745383283886995A350B4D06E09EDA35935091C0A0E5ACBD432FAFD6C3A2BE1E"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Stable Sword Inward Slash.fbx",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Stable Sword Inward Slash.fbx",
+    "sha256": "1B080B7CE8AB815C6D9212B2499B616DD708006F0DD5148D676A1C0FEC8D3AB5"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Animations\\Fast Run.fbx",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Animations\\Fast Run.fbx",
+    "sha256": "AB16EA3FE160746C9125743BD94445B1AB6881ADDEF4CD06AFC46495C8253431"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Animations\\Gunplay.fbx",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Animations\\Gunplay.fbx",
+    "sha256": "966FF570BBB9E3121F8BF2D5792595D13A08BC0987151CD0A4487F5DD160CE62"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Animations\\Idle.fbx",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Animations\\Idle.fbx",
+    "sha256": "38E5E74A61B27FA2C452B87A42488743AF5C9829065509DFCB6CB4894E650377"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Animations\\Run With Sword.fbx",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Animations\\Run With Sword.fbx",
+    "sha256": "3C1BDC96EA3FB6F794AF9B4E106514A3CCA9533FD4CFBE7BA4C663A96DCC0999"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Animations\\Running (1).fbx",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Animations\\Running (1).fbx",
+    "sha256": "89B552E9EF2E7138DC9B931FEB019C64903DCE986053A0112CDEBB05A5AD0787"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Animations\\Running.fbx",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Animations\\Running.fbx",
+    "sha256": "F237ED12116486B6AEC24EBA1868E77280C9E127543D09036C7798FB1C0B0341"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Animations\\Shooting Gun.fbx",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Animations\\Shooting Gun.fbx",
+    "sha256": "F8A9F56E2667DE0EB6957A7411713DC1F6114B7F4C222827C7716DE049166C7A"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Animations\\Stable Sword Inward Slash.fbx",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Animations\\Stable Sword Inward Slash.fbx",
+    "sha256": "1B080B7CE8AB815C6D9212B2499B616DD708006F0DD5148D676A1C0FEC8D3AB5"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Animations\\Sword And Shield Slash.fbx",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Animations\\Sword And Shield Slash.fbx",
+    "sha256": "31927B7B81BF3324B6C91630679857D32347DB5C62173F7301C27D554F8F2C5A"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Animations\\Withdrawing Sword.fbx",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Animations\\Withdrawing Sword.fbx",
+    "sha256": "7429EA9C1C1D54AD0E26C48CD8F7B5108608054A1527DA58E3CE87CDBCADB57B"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\textures\\color_121212.hdr",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\textures\\color_121212.hdr",
+    "sha256": "C4C6BC7A125ABB414D9336A2B03C698F9DB650C7917B69068BEAEDB569CB2291"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Video Recordings\\Runnning & Shooting.mp4",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Video Recordings\\Runnning & Shooting.mp4",
+    "sha256": "5F38714DD747B224137108118BEEDE9853FD26FD376DAE00391C1DA303D8AC37"
+  },
+  {
+    "source": "C:\\Users\\video\\OneDrive\\Desktop\\Supply Lines\\Assets\\Video Recordings\\Saw Swipe.mp4",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Archive\\Originals\\Assets\\Video Recordings\\Saw Swipe.mp4",
+    "sha256": "07C6D14DF98FF9194740FB9262027C48581223F9069250E9DB8AF0FD9A5AFB55"
+  },
+  {
+    "source": "C:\\Users\\video\\.codex\\.chatgpt-projects\\g-p-6ad16a23380c8191877dbcafdb316068\\scout_work\\scout_back.png",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Previews\\Scout\\scout_back.png",
+    "sha256": "EA9C34F2556935B1ECABB79921D137EE57A839BA5E608E1D6FC505EBF19D7BD9"
+  },
+  {
+    "source": "C:\\Users\\video\\.codex\\.chatgpt-projects\\g-p-6ad16a23380c8191877dbcafdb316068\\scout_work\\scout_before_armor_refinement.blend",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Backups\\Scout\\scout_before_armor_refinement.blend",
+    "sha256": "C3C1BC73EC7918722DB78E13D068E839381C5FEF5AA52A9CCA06C2F6D5A38D1A"
+  },
+  {
+    "source": "C:\\Users\\video\\.codex\\.chatgpt-projects\\g-p-6ad16a23380c8191877dbcafdb316068\\scout_work\\scout_before_closed_helmet.blend",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Backups\\Scout\\scout_before_closed_helmet.blend",
+    "sha256": "BA4CA20E09A88AED2AD18962A25A2D4C1F8DDA4B52BFC8B60DCD12D58ECA0C6C"
+  },
+  {
+    "source": "C:\\Users\\video\\.codex\\.chatgpt-projects\\g-p-6ad16a23380c8191877dbcafdb316068\\scout_work\\scout_before_original_head.blend",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Backups\\Scout\\scout_before_original_head.blend",
+    "sha256": "EA1AB079F2CBCB71BA06BEB1C344BC6B049E67A31DB90C5979DDD1522C611AB8"
+  },
+  {
+    "source": "C:\\Users\\video\\.codex\\.chatgpt-projects\\g-p-6ad16a23380c8191877dbcafdb316068\\scout_work\\scout_before_reflective_visor.blend",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Backups\\Scout\\scout_before_reflective_visor.blend",
+    "sha256": "02B33CD7C0D9880157DED3D7DB0515545CFBEF65EAA4065618B6C34BFFC2A53B"
+  },
+  {
+    "source": "C:\\Users\\video\\.codex\\.chatgpt-projects\\g-p-6ad16a23380c8191877dbcafdb316068\\scout_work\\scout_front.png",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Previews\\Scout\\scout_front.png",
+    "sha256": "1CB0858CAAAF468227D4885D909EE71EE42AC04059A415D5BA99EE1653A707FC"
+  },
+  {
+    "source": "C:\\Users\\video\\.codex\\.chatgpt-projects\\g-p-6ad16a23380c8191877dbcafdb316068\\scout_work\\scout_side.png",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Previews\\Scout\\scout_side.png",
+    "sha256": "3ED0AA45C06924D395C738C6810FA60455912419C595D1B85E0619258DAA2283"
+  },
+  {
+    "source": "C:\\Users\\video\\.codex\\.chatgpt-projects\\g-p-6ad16a23380c8191877dbcafdb316068\\scout_work\\scout_three_quarter.png",
+    "destination": "C:\\Dev\\Supply-Lines\\Blender\\Previews\\Scout\\scout_three_quarter.png",
+    "sha256": "7075D551163AD76B0EF591DC69575C5D4097923751B0CC89AD9A0A99822578DC"
+  }
+]

@@ -1,0 +1,27 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/rails/rail_segment.gd" id="script"]
+[sub_resource type="StandardMaterial3D" id="mat"]
+albedo_color = Color(0.55,0.65,0.7,1)
+roughness = 0.8
+[sub_resource type="BoxMesh" id="rail"]
+size = Vector3(0.07,0.06,1)
+material = SubResource("mat")
+[node name="Rail" type="Node3D"]
+script = ExtResource("script")
+[node name="Visuals" type="Node3D" parent="."]
+[node name="NorthA" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.22,0.08,0)
+rotation_degrees = Vector3(0,0,0)
+mesh = SubResource("rail")
+[node name="NorthB" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.22,0.08,0)
+rotation_degrees = Vector3(0,0,0)
+mesh = SubResource("rail")
+[node name="EastA" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0,0.08,-0.22)
+rotation_degrees = Vector3(0,90,0)
+mesh = SubResource("rail")
+[node name="EastB" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0,0.08,0.22)
+rotation_degrees = Vector3(0,90,0)
+mesh = SubResource("rail")

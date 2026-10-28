@@ -1,0 +1,37 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/terrain/terrain_assets.gd" id="1_p0v8l"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/tree.tscn" id="2_i74y5"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/mountain.tscn" id="3_13jwb"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/ore_deposit.tscn" id="4_ylg51"]
+[ext_resource type="Material" path="res://assets/materials/terrain/terrain_surface.tres" id="5_0hond"]
+[ext_resource type="Script" path="res://scripts/terrain/terrain_grid.gd" id="6_k74ss"]
+[ext_resource type="PackedScene" path="res://scenes/maps/terrain_landmarks.tscn" id="7_6asp1"]
+
+[ext_resource type="Resource" path="res://assets/economy/harvesting_rules.tres" id="harvesting"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_g5c3x"]
+size = Vector2(500, 500)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_reksq"]
+size = Vector3(500, 0.1, 500)
+
+[node name="Terrain" type="Node3D" unique_id=2091800637]
+editor_description = "Ground contains terrain rules; Landmarks is the saved visible scenery. Edit asset slots and press Rebuild terrain scenery."
+script = ExtResource("1_p0v8l")
+tree_scene = ExtResource("2_i74y5")
+mountain_scene = ExtResource("3_13jwb")
+ore_scene = ExtResource("4_ylg51")
+
+[node name="Ground" type="MeshInstance3D" parent="." unique_id=397966350 groups=["terrain_grid"]]
+material_override = ExtResource("5_0hond")
+mesh = SubResource("PlaneMesh_g5c3x")
+script = ExtResource("6_k74ss")
+harvesting_rules = ExtResource("harvesting")
+
+[node name="GroundCollision" type="StaticBody3D" parent="Ground" unique_id=790766375]
+
+[node name="GroundBounds" type="CollisionShape3D" parent="Ground/GroundCollision" unique_id=2127097825]
+shape = SubResource("BoxShape3D_reksq")
+
+[node name="Landmarks" parent="." unique_id=1921902824 instance=ExtResource("7_6asp1")]

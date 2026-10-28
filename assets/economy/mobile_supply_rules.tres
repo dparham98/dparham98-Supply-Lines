@@ -1,0 +1,6 @@
+[gd_resource type="Resource" script_class="MobileSupplyRules" format=3]
+[ext_resource type="Script" path="res://scripts/economy/mobile_supply_rules.gd" id="script"]
+[ext_resource type="Resource" path="res://assets/economy/depot_rules.tres" id="depots"]
+[resource]
+script = ExtResource("script")
+depot_rules = ExtResource("depots")

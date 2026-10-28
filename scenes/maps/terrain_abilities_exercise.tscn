@@ -1,0 +1,20 @@
+[gd_scene format=3]
+[ext_resource type="PackedScene" path="res://scenes/maps/resource_skirmish.tscn" id="base"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/scout.tscn" id="scout"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/tank.tscn" id="tank"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/drone.tscn" id="drone"]
+[node name="TerrainAbilitiesExercise" instance=ExtResource("base")]
+message = "Terrain exercise: select Scout, Tank or Drone; right-click into the forest."
+[node name="CameraRig" parent="." index="4"]
+position = Vector3(97.5,0,25.5)
+startup_focus = 0
+default_zoom = 42.0
+preview_zoom = 42.0
+[node name="Hostile" parent="Entities/Units" index="1"]
+process_mode = 4
+[node name="ForestScout" parent="Entities/Units" instance=ExtResource("scout")]
+position = Vector3(100.5,0,24.5)
+[node name="ForestTank" parent="Entities/Units" instance=ExtResource("tank")]
+position = Vector3(100.5,0,26.5)
+[node name="FlyingDrone" parent="Entities/Units" instance=ExtResource("drone")]
+position = Vector3(100.5,0,30.5)

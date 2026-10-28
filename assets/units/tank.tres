@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/units/unit_stats.gd" id="stats"]
+
+[ext_resource type="Resource" path="res://assets/movement/tank.tres" id="mobility"]
+
+[resource]
+script = ExtResource("stats")
+unit_id = &"tank"
+display_name = "Tank"
+energy_cost = 150
+iron_cost = 35
+max_health = 150
+movement_speed = 3.0
+attack_range = 5.0
+vision = 7.0
+combat_notation = "12/1"
+damage = 12
+attack_interval = 1.0
+abilities = Array[StringName]([])
+fire_while_moving = true
+splash_radius = 3.0
+heavy_target_damage = 50
+heavy_target_interval = 3.0
+mobility = ExtResource("mobility")

@@ -1,0 +1,34 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/units/infantry.gd" id="1_4rbdi"]
+[ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="2_no17s"]
+[ext_resource type="PackedScene" path="res://scenes/models/infantry_placeholder.tscn" id="3_6sm4l"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_x8u3r"]
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.39157248, 0.84687316, 0.09530746, 1)
+
+[sub_resource type="TorusMesh" id="TorusMesh_dwbb1"]
+material = SubResource("StandardMaterial3D_x8u3r")
+inner_radius = 0.66
+outer_radius = 0.75
+rings = 16
+ring_segments = 6
+
+[node name="Infantry" type="Node3D" unique_id=1114915707 groups=["units"]]
+editor_description = "Reusable gameplay scene. Visuals is the model slot; root is the ground pivot. Place instances in the world normally."
+script = ExtResource("1_4rbdi")
+grid_position = Vector2i(48, 28)
+
+[node name="Visuals" type="Node3D" parent="." unique_id=295443358]
+editor_description = "Assign your imported model scene to Model Scene in the Inspector. Keep the model rooted at its feet."
+script = ExtResource("2_no17s")
+model_scene = ExtResource("3_6sm4l")
+
+[node name="Model" parent="Visuals" unique_id=1173448023 instance=ExtResource("3_6sm4l")]
+
+[node name="SelectionRing" type="MeshInstance3D" parent="." unique_id=70802308]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+visible = false
+mesh = SubResource("TorusMesh_dwbb1")

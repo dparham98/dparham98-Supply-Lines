@@ -1,0 +1,21 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/economy/construction_plan.gd" id="plan"]
+[ext_resource type="Shader" path="res://assets/shaders/construction_grid.gdshader" id="shader"]
+[sub_resource type="ShaderMaterial" id="grid_material"]
+shader = ExtResource("shader")
+[sub_resource type="BoxMesh" id="grid_mesh"]
+size = Vector3(1,0.05,1)
+material = SubResource("grid_material")
+[node name="ConstructionPlan" type="Node3D"]
+script = ExtResource("plan")
+[node name="Visuals" type="Node3D" parent="."]
+[node name="Grid" type="MeshInstance3D" parent="Visuals"]
+mesh = SubResource("grid_mesh")
+[node name="Label" type="Label3D" parent="."]
+position = Vector3(0,1.7,0)
+billboard = 1
+font_size = 30
+pixel_size = 0.03
+no_depth_test = true
+modulate = Color(1,0.8,0.2,1)
+text = "PENDING CONSTRUCTION"

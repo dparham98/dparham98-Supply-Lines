@@ -1,0 +1,13 @@
+[gd_scene format=3]
+[ext_resource type="PackedScene" path="res://scenes/maps/rail_exercise.tscn" id="base"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/energy_generator.tscn" id="generator"]
+[node name="GeneratorExercise" instance=ExtResource("base")]
+message = "Select Generator to choose wood/coal/either and pause. Fuel and output use its assigned Depot only. Coal here is authored test stock."
+[node name="Depot" parent="Entities/Buildings" index="0"]
+initial_wood = 20
+initial_coal = 10
+[node name="Generator" parent="Entities/Buildings" instance=ExtResource("generator")]
+position = Vector3(178,0,164)
+assigned_depot_path = NodePath("../Depot")
+[node name="Hostile" parent="Entities/Units" index="1"]
+process_mode = 4

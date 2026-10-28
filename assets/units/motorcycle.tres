@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/units/unit_stats.gd" id="stats"]
+
+[resource]
+script = ExtResource("stats")
+unit_id = &"motorcycle"
+display_name = "Motorcycle"
+energy_cost = 45
+iron_cost = 10
+max_health = 45
+movement_speed = 6.0
+attack_range = 3.0
+vision = 7.0
+combat_notation = "16/2"
+damage = 16
+attack_interval = 2.0
+abilities = Array[StringName]([])
+fire_while_moving = true

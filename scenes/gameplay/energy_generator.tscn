@@ -1,0 +1,20 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/economy/energy_generator.gd" id="script"]
+[ext_resource type="Resource" path="res://assets/economy/supply_rules.tres" id="rules"]
+[ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
+[ext_resource type="PackedScene" path="res://scenes/models/generator_placeholder.tscn" id="model"]
+[ext_resource type="Resource" path="res://assets/economy/generator_rules.tres" id="fuel"]
+[node name="Generator" type="Node3D"]
+script = ExtResource("script")
+rules = ExtResource("rules")
+fuel_rules = ExtResource("fuel")
+[node name="Visuals" type="Node3D" parent="."]
+script = ExtResource("slot")
+model_scene = ExtResource("model")
+[node name="Model" parent="Visuals" instance=ExtResource("model")]
+[node name="Status" type="Label3D" parent="."]
+position = Vector3(0,3.8,0)
+billboard = 1
+font_size = 26
+pixel_size = 0.03
+text = "LOCAL GENERATOR"

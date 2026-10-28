@@ -1,0 +1,78 @@
+[gd_scene format=3]
+
+
+[sub_resource type="StandardMaterial3D" id="r1"]
+albedo_color = Color(0.08,0.12,0.16,1)
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="r2"]
+albedo_color = Color(0.32,0.4,0.44,1)
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="r3"]
+albedo_color = Color(0.15,0.85,1,1)
+roughness = 0.85
+shading_mode = 0
+
+[sub_resource type="StandardMaterial3D" id="r4"]
+albedo_color = Color(0.95,0.45,0.12,1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="r5"]
+size = Vector3(8,0.8,8)
+material = SubResource("r1")
+
+[sub_resource type="BoxMesh" id="r6"]
+size = Vector3(5.6,0.2,5.6)
+material = SubResource("r2")
+
+[sub_resource type="BoxMesh" id="r7"]
+size = Vector3(0.65,5.2,0.8)
+material = SubResource("r4")
+
+[sub_resource type="BoxMesh" id="r8"]
+size = Vector3(0.65,5.2,0.8)
+material = SubResource("r4")
+
+[sub_resource type="BoxMesh" id="r9"]
+size = Vector3(7,0.65,0.9)
+material = SubResource("r2")
+
+[sub_resource type="BoxMesh" id="r10"]
+size = Vector3(1.3,0.9,1.3)
+material = SubResource("r3")
+
+[sub_resource type="BoxMesh" id="r11"]
+size = Vector3(1.1,1.3,0.5)
+material = SubResource("r3")
+
+[node name="DepotModel" type="Node3D"]
+
+
+[node name="Foundation" type="MeshInstance3D" parent="."]
+position = Vector3(0,0.4,0)
+mesh = SubResource("r5")
+
+[node name="PrintBed" type="MeshInstance3D" parent="."]
+position = Vector3(0,0.9,0)
+mesh = SubResource("r6")
+
+[node name="Pillar-3.2" type="MeshInstance3D" parent="."]
+position = Vector3(-3.2,3,0)
+mesh = SubResource("r7")
+
+[node name="Pillar3.2" type="MeshInstance3D" parent="."]
+position = Vector3(3.2,3,0)
+mesh = SubResource("r8")
+
+[node name="Gantry" type="MeshInstance3D" parent="."]
+position = Vector3(0,5.2,0)
+mesh = SubResource("r9")
+
+[node name="PrintHead" type="MeshInstance3D" parent="."]
+position = Vector3(0,4.5,0)
+mesh = SubResource("r10")
+
+[node name="Terminal" type="MeshInstance3D" parent="."]
+position = Vector3(2.7,1.5,3.2)
+mesh = SubResource("r11")

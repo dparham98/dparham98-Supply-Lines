@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_a7dtd"]
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.3712377, 0.10461648, 0.03560131, 1)
+roughness = 0.94
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_hshs5"]
+material = SubResource("StandardMaterial3D_a7dtd")
+top_radius = 0.25
+bottom_radius = 0.7
+height = 1.2
+radial_segments = 6
+rings = 1
+
+[node name="OreDeposit" type="Node3D" unique_id=1403441470]
+
+[node name="OreRock" type="MeshInstance3D" parent="." unique_id=1183227538]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+mesh = SubResource("CylinderMesh_hshs5")

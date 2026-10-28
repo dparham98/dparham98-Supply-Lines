@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/units/unit_stats.gd" id="stats"]
+
+[ext_resource type="Resource" path="res://assets/movement/drone.tres" id="mobility"]
+
+[resource]
+script = ExtResource("stats")
+unit_id = &"drone"
+display_name = "Drone"
+energy_cost = 60
+iron_cost = 5
+max_health = 30
+movement_speed = 6.0
+attack_range = -1.0
+vision = 9.0
+combat_notation = ""
+damage = -1
+attack_interval = -1.0
+abilities = Array[StringName]([])
+mobility = ExtResource("mobility")

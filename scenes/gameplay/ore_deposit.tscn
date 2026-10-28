@@ -1,0 +1,72 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/resource_node.gd" id="ore"]
+
+[sub_resource type="StandardMaterial3D" id="r1"]
+albedo_color = Color(0.66,0.25,0.12,1)
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="r2"]
+albedo_color = Color(1,0.65,0.18,1)
+roughness = 0.85
+shading_mode = 0
+
+[sub_resource type="CylinderMesh" id="r3"]
+top_radius = 0.25
+bottom_radius = 1.2
+height = 2.5
+radial_segments = 6
+material = SubResource("r1")
+
+[sub_resource type="CylinderMesh" id="r4"]
+top_radius = 0.25
+bottom_radius = 1
+height = 3
+radial_segments = 6
+material = SubResource("r1")
+
+[sub_resource type="CylinderMesh" id="r5"]
+top_radius = 0.25
+bottom_radius = 0.9
+height = 1.8
+radial_segments = 6
+material = SubResource("r1")
+
+[sub_resource type="CylinderMesh" id="r6"]
+top_radius = 2.5
+bottom_radius = 2.5
+height = 0.1
+radial_segments = 6
+material = SubResource("r2")
+
+[node name="OreDeposit" type="Node3D"]
+script = ExtResource("ore")
+
+[node name="Visuals" type="Node3D" parent="."]
+
+
+[node name="Ore0" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-1,1.25,0)
+mesh = SubResource("r3")
+
+[node name="Ore1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(1,1.5,0)
+mesh = SubResource("r4")
+
+[node name="Ore2" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0,0.9,1.1)
+mesh = SubResource("r5")
+
+[node name="Marker" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0,0.08,0)
+mesh = SubResource("r6")
+
+[node name="Label" type="Label3D" parent="."]
+position = Vector3(0,4.2,0)
+billboard = 1
+no_depth_test = true
+font_size = 38
+pixel_size = 0.04
+outline_size = 6
+modulate = Color(1,0.78,0.3,1)
+text = "Ore · 500"

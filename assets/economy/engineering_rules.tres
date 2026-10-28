@@ -1,0 +1,4 @@
+[gd_resource type="Resource" script_class="EngineeringRules" format=3]
+[ext_resource type="Script" path="res://scripts/economy/engineering_rules.gd" id="rules"]
+[resource]
+script = ExtResource("rules")

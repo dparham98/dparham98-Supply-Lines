@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/units/unit_stats.gd" id="stats"]
+
+[resource]
+script = ExtResource("stats")
+unit_id = &"infantry"
+display_name = "Infantry"
+energy_cost = 100
+iron_cost = 20
+max_health = 55
+movement_speed = 2.0
+attack_range = 5.0
+vision = 7.0
+combat_notation = "8/1"
+damage = 8
+attack_interval = 1.0
+abilities = Array[StringName]([])

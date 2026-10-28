@@ -1,0 +1,25 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# Godot export output and per-user export settings
+/build/
+/export/
+*.pck
+*.apk
+*.aab
+export_credentials.cfg
+
+# Godot 3 / mono leftovers
+.import/
+.mono/
+data_*/
+mono_crash.*.json
+
+# Editor / OS noise
+*.tmp
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.vs/

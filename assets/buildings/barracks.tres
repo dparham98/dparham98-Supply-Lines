@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ProductionBuildingStats" format=3]
+[ext_resource type="Script" path="res://scripts/production/production_building_stats.gd" id="stats"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/infantry.tscn" id="infantry"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/scout.tscn" id="scout"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/grenadier.tscn" id="grenadier"]
+[resource]
+script = ExtResource("stats")
+building_id = &"barracks"
+display_name = "Barracks"
+energy_cost = 100
+iron_cost = 45
+footprint = Vector2i(6,6)
+unit_scenes = Array[PackedScene]([ExtResource("infantry"),ExtResource("scout"),ExtResource("grenadier")])
