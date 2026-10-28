@@ -10,7 +10,7 @@ The bottom selection HUD, minimap and infantry Build menu are described in [BOTT
 
 For Milestone 3 power and cargo deliveries, open **scenes/maps/supply_routes.tscn** and press **F6**. See [supply exercise and editable rules](docs/MILESTONE_3.md). F5 retains the original skirmish.
 
-**Main working project:** C:\Dev\Supply-Lines. No GitHub workflow. The OneDrive project is an older preserved copy.
+**Authoritative source:** GitHub repository dparham98/dparham98-Supply-Lines. **Primary local Windows checkout:** C:\Dev\Supply-Lines for Godot editor, rendering and gameplay acceptance. Cloud development uses fresh clones, feature branches and pull requests; the OneDrive project is an older preserved copy. CI/headless tests do not replace human visual/input verification.
 
 Press **F5** to play First Contact: gather Ore, print infantry, defeat the hostile. Open **scenes/maps/resource_skirmish.tscn** to arrange this playable scenario. [Play instructions and edit guide](docs/FIRST_CONTACT.md).
 
