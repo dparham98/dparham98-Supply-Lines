@@ -10,7 +10,9 @@ Gameplay development is on hold until the cloud baseline is verified (see [PROJE
 - [x] Pinned Godot version (`.godot-version`), dev container and headless CI workflow.
 - [ ] Merge the `infra/cloud-dev-setup` PR after CI passes on GitHub.
 - [ ] Decide whether `Blender/` (332 MB, plain Git) should move to Git LFS or a separate art repository before the history grows.
-- [ ] Make test screenshot output directories configurable (several `tests/*runtime_check.gd` and `tests/*_test.gd` hard-code a Windows ChatGPT workspace path; only used when rendering).
+- [x] Portable test output (`tests/test_output.gd`, `$SUPPLY_LINES_TEST_OUTPUT`).
+- [ ] Investigate why the rebuilt `terrain_landmarks.tscn` differs from the committed one and triggers MultiMesh buffer-size errors in `forest_state_visuals.gd` (see PROJECT_HANDOFF.md).
+- [ ] Bump GitHub Actions off the Node 20 majors (`checkout`, `cache`, `upload-artifact`).
 - [ ] Rendered/visual checks need a GPU desktop. CI only proves headless import, startup and logic suites.
 
 ## 1. Confirmed design work still pending

@@ -36,7 +36,7 @@ Supply Lines is a Godot 4.7.2 (Forward Plus) 3D RTS prototype. Its central focus
 
 ## Development environments
 
-- **Local Windows**: open in Godot 4.7.2. Headless checks: `GODOT=C:/Dev/Tools/Godot_v4.7.2-stable_win64_console.exe bash ci/run_headless_checks.sh`.
+- **Local Windows**: open in Godot 4.7.2. Headless checks (on a clean checkout): `GODOT=C:/Dev/Tools/Godot_v4.7.2-stable_win64_console.exe bash ci/run_headless_checks.sh`. Logs, `summary.md` and test results go to `ci-logs/` (git-ignored). Test results and screenshots go to `$SUPPLY_LINES_TEST_OUTPUT`, or to Godot's `user://test_output` when that's unset (see `tests/test_output.gd`).
 - **Cloud (Codespaces or Dev Containers)**: `.devcontainer/` builds Ubuntu 24.04 with the pinned Godot on `PATH` as `godot`, and imports the project on create. Run `bash ci/run_headless_checks.sh`. There's no GPU or display, so the editor UI and rendered checks aren't available there.
 - **CI**: `.github/workflows/validate.yml` runs on pushes to `main`, on PRs and on manual dispatch. It installs the pinned Godot, then runs the editor import, a main-scene startup (120 frames) and every `tests/*_test.gd` suite. Logs are uploaded as an artifact.
 
@@ -52,8 +52,10 @@ Migration verification (local Windows, Godot 4.7.2, fresh clone of `main`):
 
 ## Known issues
 
-- `scene_setup_test.gd` regenerates `scenes/maps/terrain_landmarks.tscn`. Any suite that runs after it in the same checkout logs MultiMesh buffer-size errors, though its assertions still pass. The CI runner runs it last and restores the file. The test should eventually write to a temporary copy instead.
-- Several tests hard-code a Windows ChatGPT workspace path for screenshots. It's only used when rendering, so headless runs are unaffected.
+- **Fixed:** test scripts used to write results to a hard-coded Windows ChatGPT workspace path. On Linux that broke `camera_test`, `skirmish_test`, `terrain_test` and `scene_setup_test` (null `FileAccess`, then a hang until the 600-second timeout; CI run 40765034736). All test output now goes through `tests/test_output.gd`.
+- **Fixed:** `scene_setup_test.gd` exercises the Inspector rebuild, which saves `scenes/maps/terrain_landmarks.tscn`. The test now snapshots that file's bytes first, then restores and verifies them. Suites run in normal order, and the runner fails if any test leaves the checkout dirty.
+- **Open:** the rebuilt `terrain_landmarks.tscn` differs from the committed one. When the rebuilt version is loaded, `forest_state_visuals.gd:10` logs MultiMesh buffer-size errors. Pressing **Rebuild terrain scenery** in the editor may therefore produce a scene that doesn't match the forest-state visuals. This hasn't been investigated, because it's terrain-tool behaviour and outside the CI scope.
+- GitHub warns that `actions/checkout`, `cache` and `upload-artifact` v4 target Node 20 (they're forced to run on Node 24). This is informational; bumping the major versions is a separate change.
 - Eleven script and shader `.uid` files were missing locally. Godot generated them during the fresh import, and they're committed on the infrastructure branch so UIDs stay stable across machines.
 - Godot's editor uses LF line endings in Git (`.gitattributes`). Windows checkouts may show CRLF-to-LF warnings, which are harmless.
 - `Blender/` is in plain Git rather than LFS. Revisit that before adding many more binary revisions.
