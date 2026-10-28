@@ -1,14 +1,15 @@
 extends SceneTree
 var game: Node3D
 var hud: CanvasLayer
-const OUTPUT = "C:/Users/video/.codex/.chatgpt-projects/g-p-6ad16a23380c8191877dbcafdb316068/"
+const TestOutput = preload("res://tests/test_output.gd")
+const OUTPUT = ""
 func _initialize() -> void:
 	call_deferred("run")
 func shot(name: String) -> void:
 	hud._process(0)
 	for frame in range(6): await process_frame
 	await RenderingServer.frame_post_draw
-	root.get_texture().get_image().save_png(OUTPUT+name+".png")
+	TestOutput.save_png(self, root.get_texture().get_image(), OUTPUT+name+".png")
 func select_unit(unit: Node3D) -> void:
 	game.get_node("DepotNetwork").select_depot(null)
 	for candidate in get_nodes_in_group("units"): candidate.set_selected(candidate == unit)
@@ -34,4 +35,4 @@ func run() -> void:
 	root.size = Vector2i(1440,960)
 	await shot("bottom_hud_wide")
 	print("BOTTOM_HUD_RENDER_CHECK_PASSED")
-	quit()
+	quit(TestOutput.exit_code())

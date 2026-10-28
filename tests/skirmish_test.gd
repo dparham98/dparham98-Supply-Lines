@@ -1,5 +1,6 @@
 extends SceneTree
-const OUTPUT = "C:/Users/video/.codex/.chatgpt-projects/g-p-6ad16a23380c8191877dbcafdb316068/gameplay_work/"
+const TestOutput = preload("res://tests/test_output.gd")
+const OUTPUT = "gameplay_work/"
 var game: Node3D
 var normal_economy_rules: Resource
 var barracks: Node3D
@@ -18,7 +19,7 @@ func screenshot(name: String) -> void:
 	if DisplayServer.get_name() == "headless": return
 	for frame in range(4): await process_frame
 	await RenderingServer.frame_post_draw
-	root.get_texture().get_image().save_png(OUTPUT+name+".png")
+	TestOutput.save_png(self, root.get_texture().get_image(), OUTPUT+name+".png")
 func run() -> void:
 	root.size = Vector2i(1280,900)
 	game = load("res://scenes/maps/resource_skirmish.tscn").instantiate()
@@ -120,6 +121,6 @@ func run() -> void:
 	worker.command_gather(ore)
 	step(1.0/60)
 	assert(worker.order in ["idle","return"])
-	FileAccess.open(OUTPUT+"skirmish_results.json",FileAccess.WRITE).store_string(JSON.stringify({"gather_deliver_print_ranged_kill":true,"ore_delivered_before_print":delivered,"first_shot_distance":first_shot_distance,"orders_continue_deselected":true,"no_free_production":true,"finite_resource":true,"outcome":game.outcome},"\t"))
+	if not TestOutput.write_text(self, OUTPUT+"skirmish_results.json", JSON.stringify({"gather_deliver_print_ranged_kill":true,"ore_delivered_before_print":delivered,"first_shot_distance":first_shot_distance,"orders_continue_deselected":true,"no_free_production":true,"finite_resource":true,"outcome":game.outcome},"\t")): return
 	print("SKIRMISH_CHECKS_PASSED")
-	quit()
+	quit(TestOutput.exit_code())

@@ -1,4 +1,5 @@
 extends SceneTree
+const TestOutput = preload("res://tests/test_output.gd")
 func _initialize() -> void:
 	call_deferred("run")
 func run() -> void:
@@ -15,6 +16,6 @@ func run() -> void:
 	game.get_node("DepotNetwork").select_depot(game.depot)
 	for frame in range(8): await process_frame
 	await RenderingServer.frame_post_draw
-	root.get_texture().get_image().save_png("C:/Users/video/.codex/.chatgpt-projects/g-p-6ad16a23380c8191877dbcafdb316068/milestone2_runtime.png")
+	TestOutput.save_png(self, root.get_texture().get_image(), "milestone2_runtime.png")
 	print("DEPOT_RENDER_CHECK_PASSED")
-	quit()
+	quit(TestOutput.exit_code())

@@ -3,7 +3,8 @@ var game: Node3D
 var hud: CanvasLayer
 var worker: Node3D
 var mine: Node3D
-const OUTPUT = "C:/Users/video/.codex/.chatgpt-projects/g-p-6ad16a23380c8191877dbcafdb316068/"
+const TestOutput = preload("res://tests/test_output.gd")
+const OUTPUT = ""
 func _initialize() -> void:
 	call_deferred("run")
 func focus(point: Vector3) -> void:
@@ -18,7 +19,7 @@ func shot(name: String) -> void:
 	hud._process(0)
 	for frame in range(6): await process_frame
 	await RenderingServer.frame_post_draw
-	root.get_texture().get_image().save_png(OUTPUT+name+".png")
+	TestOutput.save_png(self, root.get_texture().get_image(), OUTPUT+name+".png")
 func step() -> void:
 	worker._process(1.0/60)
 	mine._process(1.0/60)
@@ -74,4 +75,4 @@ func run() -> void:
 	root.size = Vector2i(1440,960)
 	await shot("engineering_wide")
 	print("ENGINEERING_RENDER_CHECK_PASSED")
-	quit()
+	quit(TestOutput.exit_code())

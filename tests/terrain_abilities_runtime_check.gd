@@ -1,7 +1,8 @@
 extends SceneTree
 var game: Node3D
 var hud: CanvasLayer
-const OUTPUT = "C:/Users/video/.codex/.chatgpt-projects/g-p-6ad16a23380c8191877dbcafdb316068/"
+const TestOutput = preload("res://tests/test_output.gd")
+const OUTPUT = ""
 func _initialize() -> void: call_deferred("run")
 func check(value: bool, text: String) -> bool:
 	if value: return true
@@ -23,7 +24,7 @@ func shot(name: String) -> void:
 	for i in range(8): await process_frame
 	if DisplayServer.get_name() == "headless": return
 	await RenderingServer.frame_post_draw
-	root.get_texture().get_image().save_png(OUTPUT+name+".png")
+	TestOutput.save_png(self, root.get_texture().get_image(), OUTPUT+name+".png")
 func run() -> void:
 	root.size = Vector2i(1280,900)
 	game = load("res://scenes/maps/terrain_abilities_exercise.tscn").instantiate()
@@ -66,4 +67,4 @@ func run() -> void:
 	root.size = Vector2i(1440,960)
 	await shot("terrain_abilities_wide")
 	print("TERRAIN_ABILITIES_RUNTIME_CHECKS_PASSED")
-	quit()
+	quit(TestOutput.exit_code())

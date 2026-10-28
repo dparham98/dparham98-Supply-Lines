@@ -1,4 +1,5 @@
 extends SceneTree
+const TestOutput = preload("res://tests/test_output.gd")
 var game: Node3D
 func _initialize() -> void: call_deferred("run")
 func run() -> void:
@@ -26,7 +27,7 @@ func run() -> void:
 		await RenderingServer.frame_post_draw
 		var details = hud.info.get_node("Details")
 		assert(details.get_global_rect().end.y <= root.size.y)
-		root.get_texture().get_image().save_png("C:/Users/video/.codex/.chatgpt-projects/g-p-6ad16a23380c8191877dbcafdb316068/combat_"+id+".png")
+		TestOutput.save_png(self, root.get_texture().get_image(), "combat_"+id+".png")
 		unit.free()
 	print("COMBAT_RENDER_CHECK_PASSED")
-	quit()
+	quit(TestOutput.exit_code())
