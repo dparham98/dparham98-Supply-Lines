@@ -1,0 +1,16 @@
+{
+  "name": "Supply Lines (Godot 4.7.2 headless)",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "containerEnv": {
+    "GODOT": "/usr/local/bin/godot"
+  },
+  "postCreateCommand": "godot --headless --path . --import",
+  "customizations": {
+    "vscode": {
+      "extensions": ["geequlim.godot-tools"]
+    }
+  }
+}
