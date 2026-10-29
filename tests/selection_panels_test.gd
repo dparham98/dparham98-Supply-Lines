@@ -70,7 +70,7 @@ func run() -> void:
 	var truck = spawn("res://scenes/gameplay/cargo_vehicle.tscn",Vector3(-14,0,10))
 	truck.carried_coal = 30; truck.carried_energy = 10
 	select(truck)
-	if not check(shown("Storage") and hud.info.get_node("Storage/Head/Label").text == "Cargo" and hud.info.get_node("Storage/Head/Value").text == "40 / 100" and not hud.bars.get_node("Cargo").visible,"Cargo vehicle storage wrong"): return
+	if not check(shown("Storage") and hud.info.get_node("Storage/Head/Label").text == "Cargo · 0/4 crates" and hud.info.get_node("Storage/Head/Value").text == "40 / 100" and not hud.bars.get_node("Cargo").visible,"Cargo vehicle storage wrong"): return
 	if not check(hud.bars.get_node("FuelLabel").text == "Tank fuel" and hud.bars.get_node("Fuel").visible,"Cargo vehicle tank fuel not separate"): return
 	var outpost = load("res://scenes/gameplay/depot.tscn").instantiate()
 	outpost.name = "PanelOutpost"; outpost.team = "player"

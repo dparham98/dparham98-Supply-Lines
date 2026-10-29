@@ -505,41 +505,27 @@ layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 color = Color(0.498,0.827,0.902,1)
-[node name="EnergyCrated" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-color = Color(0.498,0.827,0.902,0.45)
 [node name="Iron" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 color = Color(0.604,0.655,0.678,1)
-[node name="IronCrated" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-color = Color(0.604,0.655,0.678,0.45)
 [node name="Wood" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 color = Color(0.435,0.682,0.353,1)
-[node name="WoodCrated" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-color = Color(0.435,0.682,0.353,0.45)
 [node name="Coal" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 color = Color(0.788,0.541,0.29,1)
-[node name="CoalCrated" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
+[node name="Crates" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
+visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
-color = Color(0.788,0.541,0.29,0.45)
+color = Color(0.56,0.4,0.22,1)
 [node name="Free" type="Control" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -666,7 +652,7 @@ layout_mode = 2
 [node name="Label" type="Label" parent="Bottom/Body/Row/Context/Shipment/Head"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Prepare shipment"
+text = "Crates beside"
 theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
 theme_override_font_sizes/font_size = 12
 [node name="Value" type="Label" parent="Bottom/Body/Row/Context/Shipment/Head"]
@@ -697,12 +683,12 @@ theme_override_font_sizes/font_size = 12
 custom_minimum_size = Vector2(22,22)
 layout_mode = 2
 text = "−"
-tooltip_text = "Unpack one energy crate"
+tooltip_text = "Unpack the nearest energy crate beside this stockpile into storage"
 [node name="Plus" type="Button" parent="Bottom/Body/Row/Context/Shipment/Rows/Energy"]
 custom_minimum_size = Vector2(22,22)
 layout_mode = 2
 text = "+"
-tooltip_text = "Pack 25 loose energy into a crate"
+tooltip_text = "Pack 25 loose energy into a crate beside this stockpile"
 [node name="Iron" type="HBoxContainer" parent="Bottom/Body/Row/Context/Shipment/Rows"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -722,12 +708,12 @@ theme_override_font_sizes/font_size = 12
 custom_minimum_size = Vector2(22,22)
 layout_mode = 2
 text = "−"
-tooltip_text = "Unpack one iron crate"
+tooltip_text = "Unpack the nearest iron crate beside this stockpile into storage"
 [node name="Plus" type="Button" parent="Bottom/Body/Row/Context/Shipment/Rows/Iron"]
 custom_minimum_size = Vector2(22,22)
 layout_mode = 2
 text = "+"
-tooltip_text = "Pack 25 loose iron into a crate"
+tooltip_text = "Pack 25 loose iron into a crate beside this stockpile"
 [node name="Wood" type="HBoxContainer" parent="Bottom/Body/Row/Context/Shipment/Rows"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -747,12 +733,12 @@ theme_override_font_sizes/font_size = 12
 custom_minimum_size = Vector2(22,22)
 layout_mode = 2
 text = "−"
-tooltip_text = "Unpack one wood crate"
+tooltip_text = "Unpack the nearest wood crate beside this stockpile into storage"
 [node name="Plus" type="Button" parent="Bottom/Body/Row/Context/Shipment/Rows/Wood"]
 custom_minimum_size = Vector2(22,22)
 layout_mode = 2
 text = "+"
-tooltip_text = "Pack 25 loose wood into a crate"
+tooltip_text = "Pack 25 loose wood into a crate beside this stockpile"
 [node name="Coal" type="HBoxContainer" parent="Bottom/Body/Row/Context/Shipment/Rows"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -772,17 +758,26 @@ theme_override_font_sizes/font_size = 12
 custom_minimum_size = Vector2(22,22)
 layout_mode = 2
 text = "−"
-tooltip_text = "Unpack one coal crate"
+tooltip_text = "Unpack the nearest coal crate beside this stockpile into storage"
 [node name="Plus" type="Button" parent="Bottom/Body/Row/Context/Shipment/Rows/Coal"]
 custom_minimum_size = Vector2(22,22)
 layout_mode = 2
 text = "+"
-tooltip_text = "Pack 25 loose coal into a crate"
-[node name="KeepStocked" type="CheckButton" parent="Bottom/Body/Row/Context/Shipment"]
+tooltip_text = "Pack 25 loose coal into a crate beside this stockpile"
+[node name="Foot" type="HBoxContainer" parent="Bottom/Body/Row/Context/Shipment"]
 layout_mode = 2
+theme_override_constants/separation = 4
+[node name="KeepStocked" type="CheckButton" parent="Bottom/Body/Row/Context/Shipment/Foot"]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "Keep stocked"
 theme_override_font_sizes/font_size = 12
-tooltip_text = "Repack crates up to these counts as vehicles collect them."
+tooltip_text = "Repack crates beside this stockpile up to these counts as vehicles collect them."
+[node name="EmptyCrate" type="Button" parent="Bottom/Body/Row/Context/Shipment/Foot"]
+layout_mode = 2
+text = "+ Empty"
+theme_override_font_sizes/font_size = 12
+tooltip_text = "Set down an empty crate beside this stockpile for workers to fill"
 [node name="Route" type="HBoxContainer" parent="Bottom/Body/Row/Context"]
 layout_mode = 2
 visible = false

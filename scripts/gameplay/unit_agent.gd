@@ -169,7 +169,7 @@ func _order_process(delta: float) -> void:
 		_repair(delta)
 		_update_display()
 		return
-	if order == "return" and return_explicit and not SupplySource.can_receive(return_depot,team):
+	if order == "return" and return_explicit and not _crate_receiver(return_depot) and not SupplySource.can_receive(return_depot,team):
 		_stop_route(); state = "Delivery paused · selected supply source unavailable"; _update_display(); return
 	if order == "gather" and is_instance_valid(source) and not source.can_extract(team):
 		_stop_route()
@@ -233,23 +233,24 @@ func run_order(entry: Dictionary) -> void:
 		"attack_move": command_attack_move(entry.point)
 		"deploy": command_deploy_at(entry.point)
 		"load", "unload":
-			if has_method("command_"+entry.kind): call("command_"+entry.kind,entry.target)
+			if has_method("command_"+entry.kind): call("command_"+entry.kind,entry.get("target"),entry.get("point"))
 func _start_next_order() -> void:
 	# Skip entries whose target is gone or that the unit refuses, such as an unreachable attack.
 	while order == "idle" and not order_queue.is_empty():
 		var entry: Dictionary = order_queue.pop_front()
-		if entry.kind in ["attack","gather","repair","capture","load","unload"] and not is_instance_valid(entry.get("target")): continue
+		if entry.kind in ["attack","gather","repair","capture","load","unload"] and not is_instance_valid(entry.get("target")) and not (entry.kind in ["load","unload"] and entry.get("point") != null): continue
 		run_order(entry)
 func order_point(entry: Dictionary) -> Variant:
 	if entry.kind in ["move","attack_move","deploy"]: return entry.point
 	var target = entry.get("target")
-	return target.global_position if is_instance_valid(target) else null
+	return target.global_position if is_instance_valid(target) else entry.get("point")
 # Destinations for the current order, then each queued order, for waypoint markers.
 func waypoint_points() -> Array[Vector3]:
 	var points: Array[Vector3] = []
 	var current = null
 	if order in ["move","attack_move","deploy"]: current = move_goal
 	elif order == "return" and is_instance_valid(return_depot): current = return_depot.global_position
+	elif order in ["load","unload"]: current = get("job_point")
 	elif order != "idle" and is_instance_valid(order_target): current = order_target.global_position
 	if current != null: points.append(current)
 	for entry in order_queue:
@@ -347,8 +348,31 @@ func _gather(delta: float) -> void:
 		_work_timer = 0
 		cargo += source.extract(mini(harvest_amount,carry_capacity-cargo),team)
 		if cargo >= carry_capacity or source.remaining <= 0: order = "return"
+## Workers can deliver into a friendly crate on the map (docs/CRATE_CONTAINERS.md).
+func _crate_receiver(node) -> bool:
+	return is_instance_valid(node) and node.is_in_group("supply_crates") and not node.is_queued_for_deletion() and node.team == team
+func _deliver_to_crate(crate: Node3D) -> void:
+	if global_position.distance_to(crate.global_position) > crate.dropoff_range:
+		if _retry <= 0:
+			state = "Delivering to crate"
+			if not _route_to_interaction(crate,crate.dropoff_range): state = "Crate unreachable"
+		return
+	if cargo > 0:
+		var accepted: int = crate.receive(cargo_kind,cargo)
+		if accepted > 0: game.delivered(crate,cargo_kind,accepted)
+		cargo -= accepted
+		if cargo > 0:
+			# Full or holding another resource: move on to the nearest crate next to it that fits.
+			for other in CrateYard.crates_near(get_tree(),crate.global_position,CrateYard.CLUSTER_RADIUS,team):
+				if other.accepts(cargo_kind): return_depot = other; return
+			state = "Crate full · carrying remainder"; return
+	order = "gather" if is_instance_valid(source) and source.remaining > 0 else "idle"
+	if order == "idle": state = "Delivered to crate"
 func _return_cargo() -> void:
 	var depot = return_depot
+	if _crate_receiver(depot): _deliver_to_crate(depot); return
+	if return_explicit and is_instance_valid(depot) and depot.is_in_group("supply_crates"):
+		_stop_route(); state = "Delivery paused · crate gone"; return
 	if not SupplySource.can_receive(depot,team):
 		if return_explicit:
 			_stop_route(); state = "Delivery paused · selected supply source unavailable"; return
@@ -528,7 +552,7 @@ func fuel_target() -> float:
 func is_stopped() -> bool:
 	return out_of_fuel or (_route.is_empty() and _moving_to.x < 0)
 func can_refuel_from(node) -> bool:
-	return node != self and SupplySource.covers(node,global_position,team) and node.stockpile.available(&"coal") > 0
+	return node != self and SupplySource.covers(node,global_position,team) and node.stockpile.amount(&"coal") > 0
 func set_fuel_source(node: Node3D) -> void:
 	fuel_source = node
 	fuel_source_explicit = is_instance_valid(node)
@@ -539,7 +563,7 @@ func choose_fuel_source() -> Node3D:
 	var best_distance := INF
 	for group in ["depots","mobile_supplies"]:
 		for candidate in get_tree().get_nodes_in_group(group):
-			if candidate == self or candidate.stockpile.available(&"coal") <= 0: continue
+			if candidate == self or candidate.stockpile.amount(&"coal") <= 0: continue
 			var d: float = candidate.global_position.distance_squared_to(global_position)
 			if d > best_distance or (is_equal_approx(d,best_distance) and candidate.get_instance_id() > best.get_instance_id()): continue
 			if SupplySource.covers(candidate,global_position,team): best = candidate; best_distance = d

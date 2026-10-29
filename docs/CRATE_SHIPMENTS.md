@@ -1,5 +1,7 @@
 # Phase E: crate shipments
 
+> Superseded by `CRATE_CONTAINERS.md`: crates are now map objects, not a reservation inside Depot storage.
+
 This is the logistics redesign approved in `UI_OVERHAUL_PLAN.md`, on branch `feature/crate-shipments` from main `d6553cf`. It replaces the Cargo route panel. The numbers are editable prototypes.
 
 ## Rules

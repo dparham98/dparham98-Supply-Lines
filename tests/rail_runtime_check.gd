@@ -82,8 +82,9 @@ func run() -> void:
 	var train = game.get_node("Entities/Units/Train")
 	await click_at(rig.camera.unproject_position(train.selection_point()))
 	if not check(train.is_selected and hud.card.get_node("Load").visible and hud.object_name(train) == "Train","Train selection did not show crate tiles"): return
-	# Crate shipments replaced the route panel: two energy crates and one iron crate.
-	for kind in [&"energy",&"energy",&"iron"]: source.stockpile.pack(kind)
+	# Crates are map objects: two energy crates and one iron crate packed beside the source Depot.
+	for kind in [&"energy",&"energy",&"iron"]: CrateYard.pack(source,kind)
+	if not check(CrateYard.beside(source).size() == 3,"Crates were not set down beside the source Depot"): return
 	var energy: int = destination.energy
 	var iron: int = destination.iron
 	await click(hud.card.get_node("Load"))
@@ -98,7 +99,7 @@ func run() -> void:
 		train._process(1.0/60)
 		if train.order == "unload": break
 	await shot("rail_train_loaded")
-	if not check(train.stockpile.crate_count() == 3,"Train did not load the crates"): return
+	if not check(train.crates.size() == 3 and CrateYard.beside(source).is_empty(),"Train did not load the crates beside the Depot"): return
 	for frame in range(1200):
 		train._process(1.0/60)
 		if train.order == "idle": break

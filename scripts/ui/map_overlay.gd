@@ -17,7 +17,8 @@ const ORDER_COLORS := {"move": Color(0.498,0.827,0.902), "attack": Color(0.89,0.
 const ARMED_ICONS := {"move": "move", "attack": "attack", "gather": "gather", "repair": "repair", "capture": "capture", "load": "load", "unload": "unload", "deploy": "deploy", "build": "build"}
 var _armed_icons := {}
 ## Groups whose authored text labels this overlay replaces. Placement ghosts and waypoints keep theirs.
-const LABELLED_GROUPS := ["units","selectable_buildings","resources","material_piles","iron_deposits","construction_plans"]
+const LABELLED_GROUPS := ["units","selectable_buildings","resources","material_piles","supply_crates","iron_deposits","construction_plans"]
+const CRATE_COLOR := Color(0.56,0.4,0.22)
 const LABEL_NAMES := ["Status","Cargo","Label","Progress"]
 @export var bar_width := 34.0
 @export var icons: Dictionary = {}
@@ -62,6 +63,9 @@ func hover_target(screen: Vector2) -> Node3D:
 		for node in get_tree().get_nodes_in_group(group):
 			var d: float = Bounds.hit_distance(node,camera,screen)
 			if d < distance: distance = d; best = node
+	# Crates are small and sit right beside Depots: a hit on one wins over the larger box behind it.
+	for crate in get_tree().get_nodes_in_group("supply_crates"):
+		if Bounds.hit_distance(crate,camera,screen) < INF: return crate
 	return best
 func is_selected(node: Node) -> bool:
 	return node.get("is_selected") == true or node == game.selected_building
@@ -69,7 +73,13 @@ func team_color(node: Node) -> Color:
 	return TEAM_COLORS.get(str(node.get("team")),TEAM_COLORS["neutral"])
 # What to draw for one actor; tests read this instead of pixels.
 func status_for(node: Node3D) -> Dictionary:
-	var entry := {node = node, health = -1.0, progress = -1.0, icons = [], capture = -1.0, carry = {}, storage = {}}
+	var entry := {node = node, health = -1.0, progress = -1.0, icons = [], capture = -1.0, carry = {}, storage = {}, crate = {}, pips = []}
+	# Crates on the map always show their fill; vehicles show one pip per crate slot.
+	if node.is_in_group("supply_crates"):
+		entry.crate = {color = RESOURCE_COLORS.get(node.resource_kind,CRATE_COLOR), ratio = float(node.amount)/node.CAPACITY}
+		return entry
+	if node.get("crates") is Array and node.has_method("crate_slots") and (not node.crates.is_empty() or node == hovered or is_selected(node)):
+		for i in range(node.crate_slots()): entry.pips.append(RESOURCE_COLORS.get(node.crates[i].kind,CRATE_COLOR) if i < node.crates.size() else Color.TRANSPARENT)
 	var health = node.get("health")
 	var max_health = node.get("max_health")
 	if health != null and max_health != null and max_health > 0:
@@ -96,10 +106,10 @@ func status_for(node: Node3D) -> Dictionary:
 	return entry
 func entries() -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
-	for group in ["units","selectable_buildings"]:
+	for group in ["units","selectable_buildings","supply_crates"]:
 		for node in get_tree().get_nodes_in_group(group):
 			var entry := status_for(node)
-			if entry.health >= 0 or entry.progress >= 0 or not entry.icons.is_empty() or entry.capture >= 0 or not entry.carry.is_empty() or not entry.storage.is_empty(): out.append(entry)
+			if entry.health >= 0 or entry.progress >= 0 or not entry.icons.is_empty() or entry.capture >= 0 or not entry.carry.is_empty() or not entry.storage.is_empty() or not entry.crate.is_empty() or not entry.pips.is_empty(): out.append(entry)
 	return out
 # Route lines for selected friendly vehicles on a supply route.
 func route_lines() -> Array[Array]:
@@ -109,8 +119,8 @@ func route_lines() -> Array[Array]:
 		if unit.route_active and is_instance_valid(unit.origin_depot) and is_instance_valid(unit.destination_depot):
 			lines.append([unit.origin_depot.global_position,unit.destination_depot.global_position])
 		else:
-			var pair: Array = unit.shipment_pair()
-			if not pair.is_empty(): lines.append([pair[0].global_position,pair[1].global_position])
+			var stops: Array = unit.shipment_stops()
+			if not stops.is_empty(): lines.append([stops[0].point,stops[1].point])
 	return lines
 func _on_delivered(target: Node3D, kind: StringName, amount: int) -> void:
 	popups.append({node = target, text = "+%d %s" % [amount,str(kind)], color = RESOURCE_COLORS.get(kind,Color.WHITE), time = Time.get_ticks_msec()/1000.0})
@@ -189,6 +199,17 @@ func _draw() -> void:
 		if entry.progress >= 0:
 			draw_rect(Rect2(x,y+6,bar_width,3),TRACK)
 			draw_rect(Rect2(x,y+6,bar_width*clampf(entry.progress,0,1),3),Color(0.498,0.827,0.902))
+		if not entry.crate.is_empty():
+			# A short bar in the crate's resource colour, with a crate-brown end cap.
+			var w := bar_width*0.4
+			draw_rect(Rect2(top.x-w/2-5,y-1,5,5),CRATE_COLOR)
+			draw_rect(Rect2(top.x-w/2+1,y,w,3),TRACK)
+			draw_rect(Rect2(top.x-w/2+1,y,w*clampf(entry.crate.ratio,0,1),3),entry.crate.color)
+		if not entry.pips.is_empty():
+			for i in range(entry.pips.size()):
+				var pip := Rect2(x+i*7,y-8,5,5)
+				if entry.pips[i].a > 0: draw_rect(pip,entry.pips[i])
+				draw_rect(pip,CRATE_COLOR,false,1)
 		if not entry.carry.is_empty():
 			draw_rect(Rect2(x,y-6,bar_width*0.5,3),TRACK)
 			draw_rect(Rect2(x,y-6,bar_width*0.5*clampf(entry.carry.ratio,0,1),3),entry.carry.color)
@@ -255,6 +276,7 @@ func draw_armed(camera: Camera3D, font: Font) -> void:
 	draw_texture_rect(_armed_icons[icon_name],Rect2(at,Vector2(18,18)),false,color)
 	draw_string(font,at+Vector2(24,14),kind.replace("_","-").capitalize(),HORIZONTAL_ALIGNMENT_LEFT,-1,12,color)
 func hud_name(node: Node) -> String:
+	if node.is_in_group("supply_crates"): return "Empty crate" if node.amount == 0 else "%s crate" % str(node.material_kind).capitalize()
 	if node.is_in_group("material_piles"): return "%s pile" % str(node.material_kind).capitalize()
 	if node.is_in_group("iron_deposits"): return "Iron deposit · build a mine to gather"
 	if node.is_in_group("resources"): return str(node.get("resource_name")) if node.get("resource_name") != null else "Resource"
@@ -268,7 +290,10 @@ func update_hover_card(mouse: Vector2) -> void:
 	card.get_node("Body/Name").text = hud_name(node)
 	var line := ""
 	var ratio := -1.0
-	if node.is_in_group("resources") or node.is_in_group("material_piles") or node.is_in_group("iron_deposits"):
+	if node.is_in_group("supply_crates"):
+		line = "%d / %d · not Depot storage\nVehicles load it · workers fill or gather" % [node.amount,node.CAPACITY]
+		ratio = float(node.amount)/node.CAPACITY
+	elif node.is_in_group("resources") or node.is_in_group("material_piles") or node.is_in_group("iron_deposits"):
 		line = "%d left" % node.remaining
 		if node.get("amount") != null and node.amount > 0: ratio = float(node.remaining)/node.amount
 	elif node.is_in_group("construction_plans"):
@@ -279,6 +304,8 @@ func update_hover_card(mouse: Vector2) -> void:
 		var stockpile = node.get("stockpile")
 		if stockpile is ResourceStockpile and (node.is_in_group("depots") or node.get("is_cargo_vehicle") == true):
 			line += "\nStorage %d / %d" % [stockpile.total(),stockpile.capacity]
+			if node.get("crates") is Array and not node.crates.is_empty(): line += " · %d/%d crates aboard" % [node.crates.size(),node.crate_slots()]
+			elif node.is_in_group("depots") and not CrateYard.beside(node).is_empty(): line += " · %d crates beside" % CrateYard.beside(node).size()
 			ratio = float(stockpile.total())/maxi(1,stockpile.capacity)
 	card.get_node("Body/Line").text = line
 	var health = node.get("health")

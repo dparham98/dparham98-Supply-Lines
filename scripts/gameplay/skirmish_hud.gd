@@ -87,7 +87,7 @@ func _ready() -> void:
 			if vehicle.deployed: vehicle.pack_supplies()
 			elif not vehicle.deploy_supplies(): game.notify("Cannot deploy supplies here or during another transition."))
 	for mode in ["load","unload"]:
-		card.get_node(mode.capitalize()).pressed.connect(func(): game.pending_unit_command = mode; game.notify("Click a friendly Depot or deployed Cargo vehicle to %s. Shift queues, Esc cancels." % mode))
+		card.get_node(mode.capitalize()).pressed.connect(func(): game.pending_unit_command = mode; game.notify(("Click a crate, or a Depot to take the crates beside it." if mode == "load" else "Click a Depot to unpack, or open ground to set crates down.")+" Shift queues, Esc cancels."))
 	card.get_node("Trips").pressed.connect(func():
 		var vehicle = selected_cargo()
 		if vehicle:
@@ -100,12 +100,15 @@ func _ready() -> void:
 		var row = shipment.get_node("Rows/"+str(kind).capitalize())
 		row.get_node("Plus").pressed.connect(change_crates.bind(kind,1))
 		row.get_node("Minus").pressed.connect(change_crates.bind(kind,-1))
-	shipment.get_node("KeepStocked").toggled.connect(func(on: bool):
-		var stockpile = shipment_stockpile()
-		if stockpile == null: return
-		stockpile.keep_stocked = on
+	shipment.get_node("Foot/KeepStocked").toggled.connect(func(on: bool):
+		var owner_node = shipment_owner()
+		if owner_node == null: return
+		owner_node.stockpile.keep_stocked = on
 		if on:
-			for kind in RESOURCE_KINDS: stockpile.set_target(kind,stockpile.crate_count(kind)))
+			for kind in RESOURCE_KINDS: owner_node.stockpile.set_target(kind,CrateYard.count_beside(owner_node,kind)))
+	shipment.get_node("Foot/EmptyCrate").pressed.connect(func():
+		var owner_node = shipment_owner()
+		if owner_node != null and CrateYard.pack_empty(owner_node) == null: game.notify("No open tile beside %s for a crate." % owner_node.name))
 	card.get_node("DropMaterials").pressed.connect(func():
 		for unit in selected_units():
 			if unit.can_gather and unit.cargo > 0:
@@ -267,18 +270,17 @@ func show_storage(title: String, stockpile: ResourceStockpile) -> void:
 	var section = info.get_node("Storage")
 	section.visible = true
 	section.get_node("Head/Label").text = title
-	section.get_node("Head/Value").text = "%s / %s" % [grouped(stockpile.total()),grouped(stockpile.capacity)]
+	section.get_node("Head/Value").text = "%s / %s" % [grouped(stockpile.total()+stockpile.reserved),grouped(stockpile.capacity)]
 	var segments = section.get_node("Track/Segments")
 	for kind in RESOURCE_KINDS:
 		var amount := stockpile.amount(kind)
 		var segment: Control = segments.get_node(str(kind).capitalize())
-		var crated := stockpile.crated(kind)
-		segment.visible = amount-crated > 0
-		segment.size_flags_stretch_ratio = maxf(amount-crated,0.001)
-		var crated_segment: Control = segments.get_node(str(kind).capitalize()+"Crated")
-		crated_segment.visible = crated > 0
-		crated_segment.size_flags_stretch_ratio = maxf(crated,0.001)
-		section.get_node("Legend/%s/Amount" % str(kind).capitalize()).text = "%s %s%s" % [str(kind).capitalize(),grouped(amount)," · %d▢" % stockpile.crate_count(kind) if crated > 0 else ""]
+		segment.visible = amount > 0
+		segment.size_flags_stretch_ratio = maxf(amount,0.001)
+		section.get_node("Legend/%s/Amount" % str(kind).capitalize()).text = "%s %s" % [str(kind).capitalize(),grouped(amount)]
+	var crates_segment: Control = segments.get_node("Crates")
+	crates_segment.visible = stockpile.reserved > 0
+	crates_segment.size_flags_stretch_ratio = maxf(stockpile.reserved,0.001)
 	var free: Control = segments.get_node("Free")
 	free.visible = stockpile.space() > 0
 	free.size_flags_stretch_ratio = maxf(stockpile.space(),0.001)
@@ -340,17 +342,23 @@ func update_unit_sections(node: Node3D) -> void:
 	line.text = " · ".join(abilities)
 	line.visible = not abilities.is_empty()
 	if node.is_cargo_vehicle:
-		show_storage("Cargo",node.stockpile)
+		show_storage("Cargo · %d/%d crates" % [node.crates.size(),node.crate_slots()],node.stockpile)
+		if not node.crates.is_empty(): info.get_node("Details").text = "Crates aboard: "+crate_summary(node.crates)
 		# A legacy route, or the current crate trip (pickup → delivery), with progress between them.
-		var pair: Array = [node.origin_depot,node.destination_depot] if node.route_active and is_instance_valid(node.origin_depot) and is_instance_valid(node.destination_depot) else node.shipment_pair()
-		if not pair.is_empty():
-			state_label.text = "%s → %s · %s" % [pair[0].name,pair[1].name,("repeating" if node.repeating else "once") if node.route_active else "trips: "+TRIP_LABELS[node.trips]]
+		var ends: Array = []
+		if node.route_active and is_instance_valid(node.origin_depot) and is_instance_valid(node.destination_depot):
+			ends = [[str(node.origin_depot.name),node.origin_depot.global_position],[str(node.destination_depot.name),node.destination_depot.global_position]]
+		else:
+			var stops: Array = node.shipment_stops()
+			for i in range(stops.size()): ends.append([node.stop_title(stops[i],i == 0),stops[i].point])
+		if not ends.is_empty():
+			state_label.text = "%s → %s · %s" % [ends[0][0],ends[1][0],("repeating" if node.repeating else "once") if node.route_active else "trips: "+TRIP_LABELS[node.trips]]
 			var route = context.get_node("Route")
 			route.visible = true
-			route.get_node("From").text = str(pair[0].name)
-			route.get_node("To").text = str(pair[1].name)
-			var to_origin: float = node.global_position.distance_to(pair[0].global_position)
-			var to_destination: float = node.global_position.distance_to(pair[1].global_position)
+			route.get_node("From").text = ends[0][0]
+			route.get_node("To").text = ends[1][0]
+			var to_origin: float = node.global_position.distance_to(ends[0][1])
+			var to_destination: float = node.global_position.distance_to(ends[1][1])
 			route.get_node("Bar").max_value = 1.0
 			route.get_node("Bar").step = 0.0
 			route.get_node("Bar").value = to_origin/maxf(0.001,to_origin+to_destination)
@@ -486,7 +494,7 @@ func update_contents() -> void:
 			show_progress("Producing · "+DEPOT_PRODUCTS.get(kind,kind.capitalize()),"%d%%%s" % [roundi(node.progress/node.print_seconds*100)," · %d more queued" % (node.queue-1) if node.queue > 1 else ""],node.progress/node.print_seconds)
 		info.get_node("Details").text = "Queue %d / %d%s" % [node.queue,node.queue_limit," · capture %d%%" % roundi(node.capture_progress/node.rules.capture_seconds*100) if node.capture_progress > 0 else ""]
 		if node.team == "player":
-			show_shipment(node.stockpile)
+			show_shipment(node)
 			show_production("PrintTruck","Depot truck",node.rules.truck_energy_cost,node.rules.truck_iron_cost,node)
 			show_production("PrintCargo","Cargo vehicle",network.supply_rules.cargo_energy_cost,network.supply_rules.cargo_iron_cost,node)
 			var rails = game.get_node("RailNetwork").rules
@@ -549,8 +557,8 @@ func update_contents() -> void:
 			show_button("Load","Load crates")
 			show_button("Unload","Unload crates")
 			show_button("Trips","Trips: %s" % TRIP_LABELS[node.trips])
-			if node.supplies_available() and node.team == "player": show_shipment(node.stockpile)
-			hint_label.text = "Right-click a Depot to unload crates, or to load when empty. Shift queues stops. Trips: %s." % TRIP_LABELS[node.trips]
+			if node.supplies_available() and node.team == "player": show_shipment(node)
+			hint_label.text = "Right-click a crate to load it. Unload at a Depot to unpack, or on open ground to set crates down. Shift queues stops. Trips: %s." % TRIP_LABELS[node.trips]
 		elif node.is_depot_truck:
 			show_button("DeployTruck","Deploy")
 			hint_label.text = "Deploy on an empty 8 × 8 footprint. This vehicle does not carry transferable cargo."
@@ -704,27 +712,37 @@ func return_units() -> void:
 			unit.order_queue.clear()
 			unit.command_return(unit.supply_payer if unit.supply_payer_explicit else nearest_depot(unit))
 			if unit.supply_payer_explicit: unit.return_explicit = true
-# Prepare shipment: crates per resource at the selected Depot or deployed Cargo vehicle.
-func shipment_stockpile() -> ResourceStockpile:
+# Crates beside the selected Depot or deployed Cargo vehicle (docs/CRATE_CONTAINERS.md).
+func shipment_owner() -> Node3D:
 	var node = selected_object()
 	if not is_instance_valid(node) or node.get("team") != "player": return null
-	if node.is_in_group("depots") or (node.get("is_cargo_vehicle") == true and node.supplies_available()): return node.stockpile
+	if node.is_in_group("depots") or (node.get("is_cargo_vehicle") == true and node.supplies_available()): return node
 	return null
-func show_shipment(stockpile: ResourceStockpile) -> void:
+func show_shipment(owner_node: Node3D) -> void:
 	shipment_wanted = true
-	shipment.get_node("Head/Value").text = "%d crate%s · %d each" % [stockpile.crate_count(),"" if stockpile.crate_count() == 1 else "s",ResourceStockpile.CRATE]
+	var beside := CrateYard.beside(owner_node)
+	var empty := 0
+	for crate in beside:
+		if crate.amount == 0: empty += 1
+	shipment.get_node("Head/Value").text = "%d crate%s%s" % [beside.size(),"" if beside.size() == 1 else "s"," · %d empty" % empty if empty > 0 else ""]
 	for kind in RESOURCE_KINDS:
 		var row = shipment.get_node("Rows/"+str(kind).capitalize())
-		row.get_node("Count").text = "%s %d" % [str(kind).capitalize(),stockpile.crate_count(kind)]
-		row.get_node("Plus").disabled = stockpile.available(kind) < ResourceStockpile.CRATE
-		row.get_node("Minus").disabled = stockpile.crate_count(kind) == 0
-	shipment.get_node("KeepStocked").set_pressed_no_signal(stockpile.keep_stocked)
+		var count := CrateYard.count_beside(owner_node,kind)
+		row.get_node("Count").text = "%s %d" % [str(kind).capitalize(),count]
+		row.get_node("Plus").disabled = owner_node.stockpile.amount(kind) < ResourceStockpile.CRATE
+		row.get_node("Minus").disabled = count == 0
+	shipment.get_node("Foot/KeepStocked").set_pressed_no_signal(owner_node.stockpile.keep_stocked)
 func change_crates(kind: StringName, delta: int) -> void:
-	var stockpile := shipment_stockpile()
-	if stockpile == null: return
-	var changed: bool = stockpile.pack(kind) if delta > 0 else stockpile.unpack(kind)
-	if changed and stockpile.keep_stocked: stockpile.set_target(kind,stockpile.crate_count(kind))
-	if not changed: game.notify("Needs %d loose %s for a crate." % [ResourceStockpile.CRATE,kind] if delta > 0 else "No %s crate to unpack." % kind)
+	var owner_node := shipment_owner()
+	if owner_node == null: return
+	var changed: bool = (CrateYard.pack(owner_node,kind) != null) if delta > 0 else CrateYard.unpack(owner_node,kind) > 0
+	if changed and owner_node.stockpile.keep_stocked: owner_node.stockpile.set_target(kind,CrateYard.count_beside(owner_node,kind)+(0 if delta > 0 else -1))
+	if not changed: game.notify(("Needs %d loose %s, and an open tile beside it." % [ResourceStockpile.CRATE,kind]) if delta > 0 else "No %s crate beside it to unpack, or no storage space." % kind)
+## "Iron 25, Iron 25, Coal 10" for carried crates.
+func crate_summary(list: Array) -> String:
+	var parts: PackedStringArray = []
+	for crate in list: parts.append("Empty" if crate.amount == 0 else "%s %d" % [str(crate.kind).capitalize(),crate.amount])
+	return ", ".join(parts)
 # Distant stops for an armed Load or Unload: every friendly Depot, plus deployed trucks for trucks.
 func update_shipment_target(armed: bool) -> void:
 	shipment_target.visible = armed
@@ -739,7 +757,7 @@ func update_shipment_target(armed: bool) -> void:
 		shipment_signature = signature
 		shipment_target.clear()
 		shipment_target.add_item("%s at a distant stop…" % game.pending_unit_command.capitalize())
-		for stop in stops: shipment_target.add_item("%s · %d crates · %d space" % [stop.name,stop.stockpile.crate_count(),stop.stockpile.space()])
+		for stop in stops: shipment_target.add_item("%s · %d crates beside · %d space" % [stop.name,CrateYard.beside(stop).size(),stop.stockpile.space()])
 		shipment_target.select(0)
 	shipment_stops = stops
 func order_shipment_stop(index: int) -> void:
@@ -747,7 +765,7 @@ func order_shipment_stop(index: int) -> void:
 	var stop: Node3D = shipment_stops[index-1]
 	var queued := Input.is_key_pressed(KEY_SHIFT)
 	for unit in selected_units():
-		if unit.is_cargo_vehicle: game.give_order(unit,{kind = game.pending_unit_command, target = stop},queued)
+		if unit.is_cargo_vehicle: game.give_order(unit,{kind = game.pending_unit_command, target = stop, point = stop.global_position},queued)
 	game.notify("%s at %s %s." % [game.pending_unit_command.capitalize(),stop.name,"queued" if queued else "ordered"])
 	if not queued: game.pending_unit_command = ""
 	shipment_signature = ""

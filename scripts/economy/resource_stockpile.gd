@@ -5,13 +5,13 @@ var _capacity: int
 var capacity: int:
 	get: return _capacity
 	set(value):
-		if value >= 1 and value >= total(): _capacity = value
+		if value >= 1 and value >= total()+reserved: _capacity = value
 var _amounts: Dictionary = {}
-## Crate shipments (docs/CRATE_SHIPMENTS.md): whole crates of one resource, oldest first. Crated units
-## still count toward storage but are reserved: withdraw and spend never touch them.
+## Crates are separate map objects (docs/CRATE_CONTAINERS.md). A vehicle carrying crates reserves
+## their slots here, so loose cargo can't use the same space.
 const CRATE := 25
-var _crates: Array[StringName] = []
-## Keep stocked: repack crates up to these counts whenever loose stock allows.
+var reserved := 0
+## Keep stocked: the owner repacks crates beside it up to these counts while loose stock allows.
 var keep_stocked := false
 var stock_targets := {}
 func _init(limit: int = 2000) -> void:
@@ -22,47 +22,16 @@ func total() -> int:
 	var result := 0
 	for kind in KINDS: result += amount(kind)
 	return result
-func space() -> int: return maxi(0,capacity-total())
+func space() -> int: return maxi(0,capacity-total()-reserved)
 func resize(limit: int) -> bool:
-	if limit < 1 or limit < total(): return false
+	if limit < 1 or limit < total()+reserved: return false
 	capacity = limit
 	return true
 func set_amount(kind: StringName, value: int) -> void:
 	if not KINDS.has(kind): return
-	_amounts[kind] = clampi(value,crated(kind),space()+amount(kind))
-func crate_count(kind: StringName = &"") -> int:
-	return _crates.size() if kind.is_empty() else _crates.count(kind)
-func crated(kind: StringName) -> int: return crate_count(kind)*CRATE
-func crates() -> Array[StringName]: return _crates.duplicate()
-## Loose units that can be spent, withdrawn or packed.
-func available(kind: StringName) -> int: return amount(kind)-crated(kind)
-func pack(kind: StringName) -> bool:
-	if not KINDS.has(kind) or available(kind) < CRATE: return false
-	_crates.append(kind)
-	return true
-func unpack(kind: StringName) -> bool:
-	var index := _crates.rfind(kind)
-	if index < 0: return false
-	_crates.remove_at(index)
-	return true
-## Removes the oldest crate with its units; returns its resource or "" when none.
-func take_crate() -> StringName:
-	if _crates.is_empty(): return &""
-	var kind: StringName = _crates.pop_front()
-	_amounts[kind] -= CRATE
-	return kind
-## Adds a whole crate if it fits.
-func put_crate(kind: StringName) -> bool:
-	if not KINDS.has(kind) or space() < CRATE: return false
-	_amounts[kind] += CRATE
-	_crates.append(kind)
-	return true
+	_amounts[kind] = clampi(value,0,space()+amount(kind))
 func set_target(kind: StringName, count: int) -> void:
 	stock_targets[kind] = maxi(0,count)
-func restock() -> void:
-	if not keep_stocked: return
-	for kind in stock_targets:
-		while crate_count(kind) < stock_targets[kind] and pack(kind): pass
 func deposit(kind: StringName, requested: int) -> int:
 	if not KINDS.has(kind) or requested <= 0: return 0
 	var accepted := mini(requested,space())
@@ -70,17 +39,17 @@ func deposit(kind: StringName, requested: int) -> int:
 	return accepted
 func withdraw(kind: StringName, requested: int) -> int:
 	if not KINDS.has(kind) or requested <= 0: return 0
-	var taken := mini(requested,available(kind))
+	var taken := mini(requested,amount(kind))
 	_amounts[kind] -= taken
 	return taken
 func spend(costs: Dictionary) -> bool:
 	for kind in costs:
-		if not KINDS.has(kind) or typeof(costs[kind]) != TYPE_INT or costs[kind] < 0 or available(kind) < costs[kind]: return false
+		if not KINDS.has(kind) or typeof(costs[kind]) != TYPE_INT or costs[kind] < 0 or amount(kind) < costs[kind]: return false
 	for kind in costs: _amounts[kind] -= costs[kind]
 	return true
 static func transfer(source: ResourceStockpile, destination: ResourceStockpile, kind: StringName, requested: int) -> int:
 	if source == null or destination == null or source == destination or not KINDS.has(kind) or requested <= 0: return 0
-	var moved := mini(requested,mini(source.available(kind),destination.space()))
+	var moved := mini(requested,mini(source.amount(kind),destination.space()))
 	source.withdraw(kind,moved)
 	destination.deposit(kind,moved)
 	return moved

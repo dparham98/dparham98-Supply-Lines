@@ -148,6 +148,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not event is InputEventMouseButton or not event.pressed or event.button_index != MOUSE_BUTTON_RIGHT: return
 	issue_order(event.position,event.shift_pressed)
 	get_viewport().set_input_as_handled()
+## The friendly crate under the pointer, if any.
+func pick_crate(screen: Vector2) -> Node3D:
+	var crate := pick_target(screen,"supply_crates")
+	return crate if is_instance_valid(crate) and crate.team == "player" else null
 func pick_target(screen: Vector2, group: String, _radius := 34.0) -> Node3D:
 	var camera := get_viewport().get_camera_3d()
 	var closest: Node3D
@@ -172,6 +176,7 @@ func issue_order(screen: Vector2, queued := false) -> void:
 	var mobile := pick_target(screen,"mobile_supplies",34)
 	if is_instance_valid(mobile) and mobile.team == "player": dropoff = mobile
 	var building := pick_target(screen,"selectable_buildings",50)
+	var crate := pick_crate(screen)
 	var camera := get_viewport().get_camera_3d()
 	var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(screen),camera.project_ray_normal(screen))
 	var selected := 0
@@ -180,6 +185,8 @@ func issue_order(screen: Vector2, queued := false) -> void:
 		if unit.team != "player" or not unit.is_selected: continue
 		selected += 1
 		if enemy: give_order(unit,{kind = "attack", target = enemy},queued)
+		elif crate and unit.is_cargo_vehicle and not unit.is_in_group("rail_trains"): give_order(unit,{kind = "load", target = crate, point = crate.global_position},queued)
+		elif crate and unit.can_gather and unit.cargo > 0 and crate.accepts(unit.cargo_kind): give_order(unit,{kind = "return", target = crate},queued)
 		elif point != null and ground.get_tile_at_position(point) != null and ground.get_terrain(ground.get_tile_at_position(point)) == 3 and unit.can_gather:
 			give_order(unit,{kind = "gather", target = ground.forest_source(ground.get_tile_at_position(point))},queued)
 			forest_ordered = true
@@ -199,6 +206,7 @@ func issue_order(screen: Vector2, queued := false) -> void:
 	if selected == 0: notify("Left-click an infantry unit first.")
 	elif queued: notify("Order queued. Shift-right-click adds more; a plain order replaces the queue.")
 	elif enemy: notify("Attack order: approach and fire at range.")
+	elif crate: notify("Crate order: vehicles load it; workers deliver into it or gather from it.")
 	elif forest_ordered: notify("Harvest wood from the forest tile and deliver it to a friendly Depot.")
 	elif resource: notify("Gather %s and deliver to a friendly Depot." % resource.resource_kind)
 	elif dropoff: notify("Return carried resources or repair this Depot.")
@@ -226,10 +234,12 @@ func issue_card_order(screen: Vector2, queued := false) -> void:
 	elif pending_unit_command == "repair": target = pick_target(screen,"selectable_buildings",50)
 	elif pending_unit_command == "capture": target = pick_target(screen,"capturable_buildings",50)
 	elif pending_unit_command in ["load","unload"]:
-		# Crate stops: a friendly Depot, or a deployed Cargo vehicle when one is under the pointer.
-		target = pick_target(screen,"depots",50)
-		var mobile := pick_target(screen,"mobile_supplies",34)
-		if is_instance_valid(mobile) and mobile.get("deployed") == true: target = mobile
+		# Crate stops: a crate, a friendly Depot, or a deployed Cargo vehicle under the pointer.
+		target = pick_crate(screen)
+		if target == null:
+			target = pick_target(screen,"depots",50)
+			var mobile := pick_target(screen,"mobile_supplies",34)
+			if is_instance_valid(mobile) and mobile.get("deployed") == true: target = mobile
 	var ground_point = Plane(Vector3.UP,0).intersects_ray(get_viewport().get_camera_3d().project_ray_origin(screen),get_viewport().get_camera_3d().project_ray_normal(screen))
 	# Attack on open ground is attack-move.
 	if pending_unit_command == "attack" and not is_instance_valid(target) and ground_point != null:
@@ -250,6 +260,21 @@ func issue_card_order(screen: Vector2, queued := false) -> void:
 			accepted += 1
 		if accepted > 0:
 			notify("Deploy %s." % ("queued" if queued else "ordered"))
+			if not queued: pending_unit_command = ""
+		return
+	# Load and Unload also take open ground: crates are picked up near, or set down at, that point.
+	if pending_unit_command in ["load","unload"]:
+		if not is_instance_valid(target) and ground_point == null: return
+		var ordered := 0
+		for unit in get_tree().get_nodes_in_group("units"):
+			if unit.team != "player" or not unit.is_selected or not unit.is_cargo_vehicle: continue
+			var point_or_target: Vector3 = target.global_position if is_instance_valid(target) else ground_point
+			if not unit.stop_valid(pending_unit_command,target if is_instance_valid(target) and not (target.is_in_group("supply_crates") and pending_unit_command == "unload") else null,point_or_target):
+				notify("Trains load and unload at friendly Depots." if unit.is_in_group("rail_trains") else "Can't %s there." % pending_unit_command); continue
+			give_order(unit,{kind = pending_unit_command, target = target if is_instance_valid(target) else null, point = point_or_target},queued)
+			ordered += 1
+		if ordered > 0:
+			notify(pending_unit_command.capitalize()+(" order queued. Shift-click adds more; Esc stops." if queued else " order issued."))
 			if not queued: pending_unit_command = ""
 		return
 	if pending_unit_command != "move" and not is_instance_valid(target):
