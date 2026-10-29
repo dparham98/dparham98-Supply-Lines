@@ -35,7 +35,7 @@ func run() -> void:
 	if not check(hud.shown == train and hud.card.get_node("Load").visible and hud.card.get_node("Unload").visible,"Train selection did not show crate tiles"): return
 	# Crate shipments replaced the route panel: stops are chosen from the HUD's distant-stop list.
 	source.energy = 100
-	source.stockpile.pack(&"energy"); source.stockpile.pack(&"energy")
+	CrateYard.pack(source,&"energy"); CrateYard.pack(source,&"energy")
 	var delivered: int = target.stockpile.amount(&"energy")
 	await click(hud.card.get_node("Load"))
 	if not check(game.pending_unit_command == "load" and hud.shipment_target.visible and hud.shipment_stops.has(source) and hud.shipment_stops.has(target),"Distant stops unavailable with cut rails"): return
@@ -54,16 +54,16 @@ func run() -> void:
 	for i in range(60*30):
 		train._process(1.0/60)
 		if train.order == "unload": break
-	if not check(train.order == "unload" and train.stockpile.crate_count(&"energy") == 2 and source.stockpile.crate_count() == 0,"Train did not load the crates"): return
+	if not check(train.order == "unload" and train.crate_units(&"energy") == 50 and CrateYard.beside(source).is_empty(),"Train did not load the crates"): return
 	for i in range(60*5): train._process(1.0/60)
-	if not check(train.state.contains("blocked") and train.stockpile.crate_count() == 2 and target.stockpile.amount(&"energy") == delivered,"Cut rails did not hold the delivery"): return
+	if not check(train.state.contains("blocked") and train.crates.size() == 2 and target.stockpile.amount(&"energy") == delivered,"Cut rails did not hold the delivery"): return
 	var replacement = rails.segment_scene.instantiate()
 	replacement.assigned_depot = payer; replacement.position = game.ground.tile_to_world(gap)
 	game.add_child(replacement)
 	for i in range(60*60):
 		train._process(1.0/60)
 		if train.order == "idle": break
-	if not check(train.order == "idle" and target.stockpile.amount(&"energy") == delivered+50 and train.stockpile.total() == 0,"Repaired rails did not complete the delivery"): return
+	if not check(train.order == "idle" and target.stockpile.amount(&"energy") == delivered+50 and train.crates.is_empty(),"Repaired rails did not complete the delivery"): return
 	# Trains only stop at Depots: a deployed truck is not offered or accepted.
 	var truck = load("res://scenes/gameplay/cargo_vehicle.tscn").instantiate()
 	truck.position = source.global_position+Vector3(-10,0,8)

@@ -63,8 +63,8 @@ func run() -> void:
 	var destination = game.get_node("Entities/Buildings/EastDepot")
 	await click_at(rig.camera.unproject_position(train.selection_point()))
 	if not check(train.is_selected and hud.card.get_node("Load").visible,"Train storage HUD did not open"): return
-	# Two coal crates; the destination has room for only one, so the Train keeps the other.
-	game.depot.stockpile.pack(&"coal"); game.depot.stockpile.pack(&"coal")
+	# Two coal crates; the destination has room for 30, so the Train keeps the rest of the second.
+	CrateYard.pack(game.depot,&"coal"); CrateYard.pack(game.depot,&"coal")
 	destination.stockpile.set_amount(&"energy",destination.stockpile.amount(&"energy")+destination.stockpile.space()-30)
 	var coal: int = destination.coal
 	await click(hud.card.get_node("Load"))
@@ -76,9 +76,9 @@ func run() -> void:
 	game.pending_unit_command = ""
 	for frame in range(3000):
 		train._process(1.0/60)
-		if train.order == "idle" and train.order_queue.is_empty() and train.stockpile.total() > 0 and destination.coal > coal: break
+		if train.order == "idle" and train.order_queue.is_empty() and not train.crates.is_empty() and destination.coal > coal: break
 	await shot("storage_train_full")
-	if not check(train.stockpile.crate_count(&"coal") == 1 and destination.coal == coal+25 and "retained" in train.state,"Coal crate did not remain aboard at full storage"): return
+	if not check(train.crates.size() == 1 and train.crate_units(&"coal") == 20 and destination.coal == coal+30 and "retained" in train.state,"Coal crate did not remain aboard at full storage"): return
 	var end: Vector2 = hud.get_node("Bottom").get_global_rect().end
 	if not check(end.x <= root.size.x and end.y <= root.size.y,"Cargo controls overflow viewport"): return
 	destination.stockpile.withdraw(&"energy",25)
@@ -87,7 +87,7 @@ func run() -> void:
 		train._process(1.0/60)
 		if train.order == "idle": break
 	await shot("storage_delivery_complete")
-	if not check(destination.coal == coal+50 and train.stockpile.total() == 0,"Freed storage did not accept the remaining crate"): return
+	if not check(destination.coal == coal+50 and train.crates.is_empty(),"Freed storage did not accept the remaining crate"): return
 	root.size = Vector2i(1440,960)
 	await shot("storage_wide")
 	print("STORAGE_RUNTIME_CHECKS_PASSED")

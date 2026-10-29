@@ -26,7 +26,7 @@ func choose_fuel() -> StringName:
 	if fuel_preference == "either":
 		return &"wood" if assigned_depot.wood > 0 else (&"coal" if assigned_depot.coal > 0 else &"")
 	var kind := StringName(fuel_preference)
-	return kind if kind in [&"wood",&"coal"] and assigned_depot.stockpile.available(kind) > 0 else &""
+	return kind if kind in [&"wood",&"coal"] and assigned_depot.stockpile.amount(kind) > 0 else &""
 func set_fuel_preference(value: String) -> void:
 	if value in ["wood","coal","either"]: fuel_preference = value
 func output_rate() -> float:
@@ -34,7 +34,7 @@ func output_rate() -> float:
 	var kind := cycle_kind if not cycle_kind.is_empty() else choose_fuel()
 	return float(cycle_output)/cycle_seconds if not cycle_kind.is_empty() else float(fuel_rules.output(kind))/fuel_rules.seconds(kind)
 func cycle_ready() -> bool:
-	return source_valid() and assigned_depot.stockpile.available(cycle_kind) >= 1 and assigned_depot.stockpile.space() >= cycle_output
+	return source_valid() and assigned_depot.stockpile.amount(cycle_kind) >= 1 and assigned_depot.stockpile.space() >= cycle_output
 func describe_state() -> String:
 	if health <= 0: return "Destroyed"
 	if not source_valid(): return "Paused · assigned Depot unavailable"

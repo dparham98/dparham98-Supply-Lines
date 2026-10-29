@@ -33,7 +33,7 @@ func run() -> void:
 	assert(not vehicle.start_supply_route(first,outpost,-1,1,false))
 	assert(not vehicle.start_supply_route(first,outpost,0,0,false))
 	# Complete an actual waypoint-following load/travel/unload loop. The HUD route panel was
-	# replaced by crate shipments (crate_shipments_test); the route engine is still driven directly.
+	# replaced by crate containers (crate_containers_test); the route engine is still driven directly.
 	assert(vehicle.start_supply_route(first,outpost,60,40,false))
 	assert(vehicle.route_active and vehicle.origin_depot == first and vehicle.destination_depot == outpost)
 	for i in range(180*60):
