@@ -1,0 +1,108 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/ui/playtest_panel.gd" id="panel_script"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/infantry.tscn" id="infantry"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/scout.tscn" id="scout"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/grenadier.tscn" id="grenadier"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/tank.tscn" id="tank"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/motorcycle.tscn" id="motorcycle"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/drone.tscn" id="drone"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/ubermech.tscn" id="ubermech"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/cargo_vehicle.tscn" id="cargo"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/depot_truck.tscn" id="depot_truck"]
+[sub_resource type="StyleBoxFlat" id="panel"]
+bg_color = Color(0.025,0.045,0.06,0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.85,0.55,0.15,1)
+content_margin_left = 10.0
+content_margin_right = 10.0
+content_margin_top = 8.0
+content_margin_bottom = 8.0
+[node name="PlaytestPanel" type="PanelContainer"]
+visible = false
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 452.0
+offset_bottom = 12.0
+theme_override_styles/panel = SubResource("panel")
+script = ExtResource("panel_script")
+spawn_scenes = Array[PackedScene]([ExtResource("infantry"), ExtResource("scout"), ExtResource("grenadier"), ExtResource("tank"), ExtResource("motorcycle"), ExtResource("drone"), ExtResource("ubermech"), ExtResource("cargo"), ExtResource("depot_truck")])
+[node name="Body" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 6
+[node name="Title" type="Label" parent="Body"]
+layout_mode = 2
+text = "PLAYTEST TOOLS · F10 · development only"
+theme_override_colors/font_color = Color(0.95,0.7,0.3,1)
+[node name="Target" type="Label" parent="Body"]
+layout_mode = 2
+text = "Target: select a friendly Depot or Cargo vehicle"
+autowrap_mode = 2
+[node name="Resources" type="HBoxContainer" parent="Body"]
+layout_mode = 2
+[node name="Energy" type="Button" parent="Body/Resources"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "+100 Energy"
+[node name="Iron" type="Button" parent="Body/Resources"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "+100 Iron"
+[node name="Wood" type="Button" parent="Body/Resources"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "+100 Wood"
+[node name="Coal" type="Button" parent="Body/Resources"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "+100 Coal"
+[node name="Fuel" type="HBoxContainer" parent="Body"]
+layout_mode = 2
+[node name="Fill" type="Button" parent="Body/Fuel"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Fill selected fuel"
+[node name="Empty" type="Button" parent="Body/Fuel"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Empty selected fuel"
+[node name="Spawn" type="HBoxContainer" parent="Body"]
+layout_mode = 2
+[node name="Unit" type="OptionButton" parent="Body/Spawn"]
+layout_mode = 2
+size_flags_horizontal = 3
+[node name="Team" type="OptionButton" parent="Body/Spawn"]
+layout_mode = 2
+selected = 0
+item_count = 2
+popup/item_0/text = "Player"
+popup/item_0/id = 0
+popup/item_1/text = "Enemy"
+popup/item_1/id = 1
+[node name="Place" type="Button" parent="Body/Spawn"]
+layout_mode = 2
+text = "Spawn at click"
+[node name="Speed" type="HBoxContainer" parent="Body"]
+layout_mode = 2
+[node name="Pause" type="Button" parent="Body/Speed"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Pause"
+[node name="X1" type="Button" parent="Body/Speed"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "1×"
+[node name="X2" type="Button" parent="Body/Speed"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "2×"
+[node name="X4" type="Button" parent="Body/Speed"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "4×"
+[node name="Status" type="Label" parent="Body"]
+layout_mode = 2
+text = "Changes are immediate and unpaid."
+autowrap_mode = 2

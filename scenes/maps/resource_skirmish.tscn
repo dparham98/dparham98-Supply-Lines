@@ -29,6 +29,7 @@ tracer_scene = ExtResource("tracer")
 pile_scene = ExtResource("pile")
 vehicle_fuel_required = true
 testing_coal_amount = 200
+playtest_tools = true
 [node name="DepotNetwork" type="Node" parent="."]
 script = ExtResource("network")
 depot_scene = ExtResource("depot")
@@ -45,6 +46,7 @@ engineering_rules = ExtResource("engineering")
 [node name="RailNetwork" parent="." instance=ExtResource("rails")]
 [node name="Lighting" parent="." instance=ExtResource("lights")]
 [node name="CameraRig" parent="." instance=ExtResource("camera")]
+process_mode = 3
 position = Vector3(170,0,150)
 default_zoom = 72.0
 preview_zoom = 72.0

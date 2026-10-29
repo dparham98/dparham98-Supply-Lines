@@ -6,6 +6,8 @@ extends Node3D
 @export var vehicle_fuel_required := false
 ## Testing coal grant until coal extraction exists: a shared coal pile at Entities/Resources/TestingCoalPoint.
 @export var testing_coal_amount := 0
+## Development-only playtest panel on F10 (docs/PLAYTEST_TOOLS.md). Needs a debug build.
+@export var playtest_tools := false
 func drop_material(unit: Node3D) -> Node3D:
 	if not unit.can_gather or unit.cargo <= 0 or unit.cargo_kind not in [&"iron",&"wood",&"coal"]: return null
 	var pile = pile_scene.instantiate()

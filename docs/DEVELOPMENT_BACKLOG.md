@@ -17,7 +17,7 @@ The cloud baseline was verified on 2026-10-28 (see [PROJECT_HANDOFF.md](PROJECT_
 
 ## 1. Confirmed design work still pending
 
-- Vehicle fuel consumption and refueling: implemented on `feature/vehicle-fuel` (FUEL_BATCH.md), pending review and playtest. Drone fuel/landing rules remain open.
+- Vehicle fuel consumption and refueling: merged in PR #2 (FUEL_BATCH.md). Drone fuel/landing rules remain open.
 - Water generation and coal extraction (ECONOMY_PLAN.md).
 - Signals, rail demolition, research and upkeep: explicitly wanted, deferred by the user.
 - Additional transport controls (user said "return to later").
@@ -32,7 +32,8 @@ The cloud baseline was verified on 2026-10-28 (see [PROJECT_HANDOFF.md](PROJECT_
 
 ## 3. Suggested usability follow-ons (not yet requested)
 
-- Additive selection and control groups: implemented on `feature/hud-commands` with command card hotkeys (HUD_HOTKEYS.md), pending review and playtest.
+- Additive selection and control groups: merged with command card hotkeys in PR #3 (HUD_HOTKEYS.md).
+- Playtest tools panel (F10): implemented on `feature/playtest-tools` (PLAYTEST_TOOLS.md), pending review and playtest.
 - Better mixed-group ability controls.
 - Transport traffic and passing.
 - Pending-plan editing, priority and save/load.
