@@ -10,6 +10,8 @@ var pending: Array[PackedScene] = []
 var queue: int:
 	get: return pending.size()
 var progress := 0.0
+## True while a finished unit waits for a free exit cell (shown on the map).
+var exit_blocked := false
 var cells: Array[Vector2i] = []
 @onready var ground = get_tree().get_first_node_in_group("terrain_grid")
 @onready var game = get_tree().get_first_node_in_group("skirmish")
@@ -69,7 +71,8 @@ func _process(delta: float) -> void:
 		var queued_stats := unit_stats_for(pending[0])
 		var layer: int = queued_stats.mobility.layer if queued_stats.mobility != null else MobilityRules.Layer.GROUND
 		var cell := ProductionExit.find_cell(ground,global_position,stats.footprint,layer)
-		if cell.x < 0: $Status.text = stats.display_name+" · exit blocked, waiting"; return
+		exit_blocked = cell.x < 0
+		if exit_blocked: $Status.text = stats.display_name+" · exit blocked, waiting"; return
 		var scene = pending.pop_front()
 		var unit = scene.instantiate()
 		unit.team = team
