@@ -50,7 +50,7 @@ The selected vehicle's details show:
 - auto-refuel state and the current or pinned source;
 - for Trains, the round-trip warning.
 
-An **Auto-refuel** button toggles refuelling for every selected fuel-using vehicle. Cargo Trucks and Trains show the Supply panel in place of the command card, so the panel carries its own copy of the button (`SupplyRefuel`). There is no HUD control for pinning a source yet; pinning exists in the API only.
+An **Auto-refuel** button toggles refuelling for every selected fuel-using vehicle. Cargo Trucks and Trains open on their Supply route page; their Auto-refuel button is on the Orders page of the command card (HUD_LAYOUT.md). The earlier separate Supply panel copy was removed after review. There is no HUD control for pinning a source yet; pinning exists in the API only.
 
 ## Playtest feedback (2026-10-28)
 

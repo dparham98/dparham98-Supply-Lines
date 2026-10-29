@@ -55,8 +55,6 @@ var order := "idle"
 var order_target: Node3D
 ## Shift-queued orders (docs/COMMAND_QUEUE.md): {kind, target, point}. The next starts when the unit goes idle.
 var order_queue: Array[Dictionary] = []
-# Cargo vehicles tick fuel before delegating here; skip the second tick.
-var _skip_fuel_tick := false
 var source: Node3D
 var move_goal := Vector3.ZERO
 var _route: Array[Vector2i] = []
@@ -138,8 +136,10 @@ func command_return(target: Node3D = null) -> void:
 	state = "Returning "+str(cargo_kind)
 func _process(delta: float) -> void:
 	if _dead: return
-	if _skip_fuel_tick: _skip_fuel_tick = false
-	else: fuel_tick(delta)
+	fuel_tick(delta)
+	_order_process(delta)
+# Orders, movement and combat for one frame. Callers tick fuel first.
+func _order_process(delta: float) -> void:
 	if order == "idle" and not order_queue.is_empty() and not out_of_fuel: _start_next_order()
 	_cooldown = maxf(0,_cooldown-delta)
 	_retry = maxf(0,_retry-delta)
@@ -495,9 +495,16 @@ func set_fuel_source(node: Node3D) -> void:
 	fuel_source_explicit = is_instance_valid(node)
 func choose_fuel_source() -> Node3D:
 	if fuel_source_explicit: return fuel_source if can_refuel_from(fuel_source) else null
-	for candidate in SupplySource.candidates(get_tree(),global_position,team):
-		if can_refuel_from(candidate): return candidate
-	return null
+	# Nearest covering source with coal, ties by instance id as in SupplySource.candidates.
+	var best: Node3D
+	var best_distance := INF
+	for group in ["depots","mobile_supplies"]:
+		for candidate in get_tree().get_nodes_in_group(group):
+			if candidate == self or candidate.stockpile.amount(&"coal") <= 0: continue
+			var d: float = candidate.global_position.distance_squared_to(global_position)
+			if d > best_distance or (is_equal_approx(d,best_distance) and candidate.get_instance_id() > best.get_instance_id()): continue
+			if SupplySource.covers(candidate,global_position,team): best = candidate; best_distance = d
+	return best
 ## Whole coal units move from exactly one source into the tank; fractional rate time is banked.
 func fuel_tick(delta: float) -> void:
 	refuel_from = null

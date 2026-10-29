@@ -7,7 +7,7 @@ Phase 3 of the approved HUD plan, on branch `feature/command-queue` from main `9
 - **Shift-right-click** adds the right-click order to each selected unit's queue. This uses the same choice of attack, gather, deliver, repair, capture or move as a plain right-click.
 - **Shift-click with an armed card command** (Move, Attack, Gather, Repair, Capture) queues it and keeps the command armed for more targets. A plain click or Esc ends it.
 - A **plain order** (right-click, card command, Deliver) replaces the queue.
-- **Stop** clears the queue.
+- **Stop** and **Drop materials** clear the queue.
 - Queuing on an idle unit starts the order at once.
 
 ## Rules

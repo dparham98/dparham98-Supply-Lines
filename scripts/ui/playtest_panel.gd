@@ -85,6 +85,7 @@ func spawn_at(point: Vector3) -> Node3D:
 	return unit
 func toggle_pause() -> void:
 	get_tree().paused = not get_tree().paused
+	if get_tree().paused: game.cancel_armed()
 	report("Paused. Camera, selection and this panel still work; orders wait." if get_tree().paused else "Resumed.")
 func set_speed(scale: float) -> void:
 	Engine.time_scale = scale

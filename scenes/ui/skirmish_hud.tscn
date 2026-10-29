@@ -580,10 +580,6 @@ text = "Deploy supplies · 2s"
 shortcut = SubResource("shortcut_command_move")
 layout_mode = 2
 text = "Move · pack automatically"
-[node name="SupplyRefuel" type="Button" parent="Bottom/Body/Row/Commands/Supply"]
-shortcut = SubResource("shortcut_command_refuel")
-layout_mode = 2
-text = "Auto-refuel: on"
 [node name="DropMaterials" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_command_drop")
 layout_mode = 2

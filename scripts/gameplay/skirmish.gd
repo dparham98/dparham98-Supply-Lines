@@ -48,6 +48,17 @@ func _ready() -> void:
 		pile.position = get_node("Entities/Resources/TestingCoalPoint").position
 		get_node("Entities/Resources").add_child(pile)
 	$DepotNetwork.select_depot(depot)
+func armed() -> bool:
+	return not global_plan_kind.is_empty() or placing_rail or placing_depot or placing_generator or not placing_structure.is_empty() or not pending_unit_command.is_empty()
+# Esc, pausing and paused clicks drop any armed command or placement.
+func cancel_armed() -> void:
+	global_plan_kind = &""
+	placing_rail = false
+	placing_depot = false
+	placing_generator = false
+	placing_structure = &""
+	pending_unit_command = ""
+	$DepotNetwork.clear_builder()
 func notify(text: String) -> void:
 	message = text
 # Positioned alerts for the HUD feed, newest first. A key repeats at most every ALERT_REPEAT_SECONDS.
@@ -59,6 +70,8 @@ func alert(text: String, at: Vector3, key := "") -> void:
 	var now := Time.get_ticks_msec()/1000.0
 	if not key.is_empty():
 		if now-_alert_times.get(key,-INF) < ALERT_REPEAT_SECONDS: return
+		for old in _alert_times.keys():
+			if now-_alert_times[old] >= ALERT_REPEAT_SECONDS: _alert_times.erase(old)
 		_alert_times[key] = now
 	alerts.push_front({text = text, point = at, time = now})
 	if alerts.size() > ALERT_LIMIT: alerts.resize(ALERT_LIMIT)
@@ -83,14 +96,7 @@ func _process(_delta: float) -> void:
 			if (building.assigned_depot.energy >= stats.energy_cost or building.assigned_depot.generation_rate() > 0) and building.assigned_depot.iron >= stats.iron_cost: recovery = true
 	if players == 0 and not recovery: outcome = "DEFEAT — no units or local production funds remaining."
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		global_plan_kind = &""
-		placing_rail = false
-		placing_depot = false
-		placing_generator = false
-		placing_structure = &""
-		pending_unit_command = ""
-		$DepotNetwork.clear_builder()
+	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE: cancel_armed()
 	# Actor selection takes precedence over armed world actions.
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		if (not global_plan_kind.is_empty() or placing_rail or placing_depot or placing_generator or not placing_structure.is_empty() or pending_unit_command == "move") and get_node("/root/SelectionManager").switch_at(event.position):

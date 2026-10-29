@@ -46,8 +46,8 @@ func _ready() -> void:
 		if is_instance_valid(shown) and shown.is_in_group("energy_generators"):
 			shown.set_fuel_preference(["wood","coal","either"][index]))
 	card.get_node("ToggleRefuel").pressed.connect(toggle_refuel)
-	# Cargo Trucks and Trains show the Supply panel instead of the card.
-	supply.get_node("SupplyRefuel").pressed.connect(toggle_refuel)
+	# Supply panel buttons with fixed text get their key label once.
+	for id in ["MoveCargo","PauseRoute","CancelRoute"]: set_label(supply.get_node(id),supply.get_node(id).text)
 	card.get_node("ToggleGenerator").pressed.connect(func():
 		if is_instance_valid(shown) and shown.is_in_group("energy_generators"): shown.enabled = not shown.enabled)
 	supply.get_node("DeploySupplies").pressed.connect(func():
@@ -59,6 +59,7 @@ func _ready() -> void:
 	card.get_node("DropMaterials").pressed.connect(func():
 		for unit in selected_units():
 			if unit.can_gather and unit.cargo > 0:
+				unit.order_queue.clear()
 				unit._stop_route(); unit.order = "idle"; unit.source = null
 				game.drop_material(unit)
 		game.notify("Materials dropped. Any Infantry can gather the pile before spending it."))
@@ -172,9 +173,6 @@ func _process(_delta: float) -> void:
 		commands.get_node("Hint").text = "Right-click moves the group. Commands apply where each unit supports them. Details show the first unit."
 	# Apply final visibility once. Hiding a pressed button cancels its GUI gesture.
 	for button in card.get_children(): button.visible = desired_buttons.has(str(button.name))
-	for panel in [card,supply]:
-		for button in panel.get_children():
-			if button is Button and button.visible: label_hotkey(button)
 	update_strip(units)
 	update_feed()
 # Fuel and cargo bars under health. Fuel turns amber when low and red when empty.
@@ -226,10 +224,7 @@ func update_feed() -> void:
 	for i in feed.get_child_count(): feed.get_child(i).visible = i < feed_points.size()
 func focus_alert(index: int) -> void:
 	if index < feed_points.size(): game.get_node("CameraRig").focus_position(feed_points[index])
-# Show the bound key on the button. Shortcuts only fire for visible, enabled buttons.
-func label_hotkey(button: Button) -> void:
-	var key := hotkey_text(button)
-	if not key.is_empty() and not button.text.ends_with(" [%s]" % key): button.text += " [%s]" % key
+# Shortcuts only fire for visible, enabled buttons.
 func hotkey_text(button: Button) -> String:
 	if button.shortcut == null or button.shortcut.events.is_empty() or not button.shortcut.events[0] is InputEventAction: return ""
 	var action: StringName = button.shortcut.events[0].action
@@ -385,7 +380,12 @@ func update_contents() -> void:
 				refresh_build_menu()
 func show_button(id: String, text: String) -> void:
 	desired_buttons.append(id)
-	card.get_node(id).text = text
+	set_label(card.get_node(id),text)
+# Set a label with its hotkey; unchanged text isn't reassigned, so buttons don't relayout each frame.
+func set_label(button: Button, text: String) -> void:
+	var key := hotkey_text(button)
+	var label := text+(" [%s]" % key if not key.is_empty() else "")
+	if button.text != label: button.text = label
 func close_build() -> void:
 	global_build_open = false
 	game.global_plan_kind = &""
@@ -488,11 +488,8 @@ func update_supply_panel() -> void:
 	supply.get_node("CancelRoute").disabled = vehicle == null
 	if vehicle:
 		var button: Button = supply.get_node("DeploySupplies")
-		button.text = "Pack up supplies" if vehicle.deployed else "Deploy supplies · 2s"
+		set_label(button,"Pack up supplies" if vehicle.deployed else "Deploy supplies · 2s")
 		button.disabled = not vehicle.supply_transition.is_empty()
-		var refuel: Button = supply.get_node("SupplyRefuel")
-		refuel.visible = vehicle.fuel_active()
-		refuel.text = "Auto-refuel: %s" % ("on" if vehicle.auto_refuel else "off")
 		supply.get_node("RouteStatus").tooltip_text = "Supply range %.1f · Infantry delivery %.1f. Routes pause on deployment and resume explicitly." % [vehicle.mobile_rules.supply_radius(),vehicle.dropoff_range]
 		commands.get_node("Hint").text = "%s · Supply %.1f / drop-off %.1f. Right-click with Infantry to deliver. Movement packs first." % [vehicle.state,vehicle.mobile_rules.supply_radius(),vehicle.dropoff_range]
 		var endpoints := "%s → %s" % [vehicle.origin_depot.name if is_instance_valid(vehicle.origin_depot) else "none",vehicle.destination_depot.name if is_instance_valid(vehicle.destination_depot) else "none"]
@@ -504,7 +501,9 @@ func assign_route() -> void:
 	var b: int = supply.get_node("Destination").selected
 	if vehicle == null or a < 0 or b < 0 or a >= route_depots.size() or b >= route_depots.size(): return
 	var success: bool = vehicle.start_supply_route(route_depots[a],route_depots[b],int(supply.get_node("Amounts/Energy").value),int(supply.get_node("Amounts/Iron").value),supply.get_node("Repeat").button_pressed,int(supply.get_node("Amounts/Wood").value),int(supply.get_node("Amounts/Coal").value))
-	game.notify(vehicle.state if success else vehicle.route_error)
+	var text: String = vehicle.state if success else vehicle.route_error
+	if success and vehicle.is_in_group("rail_trains") and not vehicle.fuel_warning.is_empty(): text += " · Train fuel warning: "+vehicle.fuel_warning
+	game.notify(text)
 
 func begin_production_placement(kind: StringName) -> void:
 	if global_build_open: begin_global_placement(kind); return

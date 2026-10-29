@@ -82,9 +82,12 @@ func run() -> void:
 	truck.set_process(false)
 	focus(truck.global_position,45)
 	await click_at(target(truck))
-	var supply_refuel: Button = hud.supply.get_node("SupplyRefuel")
-	if not check(hud.shown == truck and supply_refuel.is_visible_in_tree(),"Cargo truck refuel toggle not shown"): return
-	await click(supply_refuel)
-	if not check(not truck.auto_refuel and supply_refuel.text.begins_with("Auto-refuel: off"),"Cargo truck refuel click failed"): return
+	if not check(hud.shown == truck and hud.pages.is_visible_in_tree(),"Cargo truck pages not shown"): return
+	# Cargo vehicles reach Auto-refuel from the Orders page of the command card.
+	await click(hud.pages.get_node("Orders"))
+	var truck_refuel: Button = hud.card.get_node("ToggleRefuel")
+	if not check(truck_refuel.is_visible_in_tree(),"Cargo truck refuel toggle not shown"): return
+	await click(truck_refuel)
+	if not check(not truck.auto_refuel and truck_refuel.text.begins_with("Auto-refuel: off"),"Cargo truck refuel click failed"): return
 	await shot("fuel_truck_toggle")
 	print("FUEL_RUNTIME_CHECKS_PASSED"); quit(TestOutput.exit_code())

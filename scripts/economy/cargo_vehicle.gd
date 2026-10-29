@@ -168,8 +168,7 @@ func _process(delta: float) -> void:
 		_update_display()
 		return
 	if not route_active:
-		_skip_fuel_tick = true
-		super._process(delta)
+		_order_process(delta)
 		return
 	if not endpoints_friendly():
 		if not route_paused: pause_supply_route()

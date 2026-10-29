@@ -28,6 +28,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			_same_type_pending = selecting and event.double_click
 		else: end_selection(event.position,null,event.shift_pressed)
 	elif event is InputEventKey and event.pressed and not event.echo:
+		var game = get_tree().get_first_node_in_group("skirmish")
+		if event.keycode == KEY_ESCAPE and get_tree().paused and game and game.armed():
+			game.cancel_armed()
+			get_viewport().set_input_as_handled()
+			return
 		for index in range(1,10):
 			if event.is_action_pressed("control_group_%d" % index):
 				if event.ctrl_pressed: save_group(index)
@@ -54,7 +59,9 @@ func switch_at(pos: Vector2) -> bool:
 	return true
 func start_selection(pos: Vector2) -> void:
 	var game = get_tree().get_first_node_in_group("skirmish")
-	if game and (not game.global_plan_kind.is_empty() or game.placing_rail or game.placing_depot or game.placing_generator or not game.placing_structure.is_empty() or not game.pending_unit_command.is_empty()):
+	# The paused skirmish can't complete an armed command, so a paused click cancels it and selects.
+	if game and get_tree().paused and game.armed(): game.cancel_armed()
+	if game and game.armed():
 		selecting = false
 		return
 	selecting = true

@@ -102,11 +102,16 @@ func run() -> void:
 	press(KEY_T)
 	if not check(not tank.auto_refuel and hud.card.get_node("ToggleRefuel").text.begins_with("Auto-refuel: off"),"T did not toggle the Tank's Auto-refuel"): return
 	press(KEY_T)
-	# The cargo Supply panel buttons have keys too, but typing into a field does not fire them.
+	# Cargo Auto-refuel lives on the Orders page; T does nothing on the route page.
 	select_only(truck)
 	press(KEY_T)
-	if not check(not truck.auto_refuel,"T did not toggle the truck's Supply panel button"): return
+	if not check(truck.auto_refuel,"T fired on the route page, which has no Auto-refuel"): return
+	hud.pages.get_node("Orders").pressed.emit(); hud._process(0)
 	press(KEY_T)
+	if not check(not truck.auto_refuel,"T did not toggle the truck on its Orders page"): return
+	press(KEY_T)
+	# The Supply panel buttons have keys too, but typing into a field does not fire them.
+	hud.pages.get_node("Route").pressed.emit(); hud._process(0)
 	var field: LineEdit = hud.supply.get_node("Amounts/Energy").get_line_edit()
 	field.grab_focus()
 	press(KEY_D)
