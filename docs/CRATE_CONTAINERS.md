@@ -81,7 +81,7 @@ These replace the crate reservation described in `CRATE_SHIPMENTS.md`. The user 
   - Shift-Unload on the ground;
   - a worker right-clicking an empty crate.
   - Its screenshots are `depot_crates`, `depot_hover_crates`, `cargo_crates_aboard` and `ground_drop`.
-- **Updated for map crates:** `rail_runtime_check`, `remote_routes_gui_test`, `storage_runtime_check` and `selection_panels_test`. The storage check's partial unload now keeps 20 units in the crate rather than a whole crate.
+- **Updated for map crates:** `rail_runtime_check`, `remote_routes_gui_test`, `storage_runtime_check` and `selection_panels_test` (which now expects "Cargo · 0/4 crates" and "Loose storage"). The storage check's partial unload now keeps 20 units in the crate rather than a whole crate.
 
 ## Notes
 
