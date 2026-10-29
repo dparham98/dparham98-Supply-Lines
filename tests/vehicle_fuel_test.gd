@@ -130,11 +130,12 @@ func run() -> void:
 	# Cargo vehicles show the Supply panel instead of the card, which carries its own toggle.
 	truck.set_selected(true)
 	hud._process(0)
-	var supply_refuel = hud.supply.get_node("SupplyRefuel")
-	if not check(hud.supply.visible and supply_refuel.visible and supply_refuel.text.begins_with("Auto-refuel: on"),"Cargo vehicle refuel toggle missing"): return
-	supply_refuel.pressed.emit(); hud._process(0)
-	if not check(not truck.auto_refuel and supply_refuel.text.begins_with("Auto-refuel: off"),"Cargo vehicle refuel toggle did not apply"): return
-	supply_refuel.pressed.emit()
+	hud.pages.get_node("Orders").pressed.emit(); hud._process(0)
+	var truck_refuel = hud.card.get_node("ToggleRefuel")
+	if not check(hud.card.visible and truck_refuel.visible and truck_refuel.text.begins_with("Auto-refuel: on"),"Cargo vehicle refuel toggle missing"): return
+	truck_refuel.pressed.emit(); hud._process(0)
+	if not check(not truck.auto_refuel and truck_refuel.text.begins_with("Auto-refuel: off"),"Cargo vehicle refuel toggle did not apply"): return
+	truck_refuel.pressed.emit()
 	truck.set_selected(false)
 	# Newly produced vehicles start empty, then refuel when stopped at the Depot.
 	depot.energy = 1000; depot.iron = 500; depot.coal = 100

@@ -15,7 +15,7 @@ All changes are immediate and unpaid.
 - **+100 Energy / Iron / Wood / Coal:** adds to the selected friendly Depot. If no Depot is selected, it goes to the selected friendly Cargo vehicle or Train. Storage capacity is respected and the panel says when storage is full. This covers loading coal into a Cargo Truck without the deploy or route workarounds.
 - **Fill / Empty selected fuel:** sets every selected fuel-using vehicle to a full or empty tank. Filling also clears out-of-fuel.
 - **Spawn at click:** choose a unit and a team (Player or Enemy), click the button, then click open ground. The unit snaps to the nearest cell it can use. Shift-click keeps placing; Esc or right-click stops. The spawn click doesn't change the selection. Spawned vehicles start fuelled. Trains aren't listed because they need rails.
-- **Pause / Resume:** pauses the game tree. The HUD, camera, selection and the panel keep running (process mode Always), so you can look around and inspect while paused. World orders, including right-click, are ignored until you resume.
+- **Pause / Resume:** pauses the game tree. The HUD, camera, selection and the panel keep running (process mode Always), so you can look around and inspect while paused. World orders, including right-click, are ignored until you resume. Pausing cancels any armed command or placement, and while paused Esc or a world click cancels one armed from the HUD, so nothing stays stuck.
 - **1× / 2× / 4×:** sets `Engine.time_scale`. The camera divides out the time scale, so pan and zoom speed don't change.
 - **Restart:** reloading the scene always resets to unpaused 1× speed.
 
