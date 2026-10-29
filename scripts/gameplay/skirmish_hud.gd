@@ -14,6 +14,7 @@ extends CanvasLayer
 var cargo_page := "route"
 var strip_types: Array[String] = []
 var feed_points: Array[Vector3] = []
+const UNAFFORDABLE := Color(0.941,0.698,0.29)
 const FEED_SECONDS := 45.0
 var route_depots: Array[Node3D] = []
 var local_sources: Array[Node3D] = []
@@ -47,7 +48,10 @@ func _ready() -> void:
 			shown.set_fuel_preference(["wood","coal","either"][index]))
 	card.get_node("ToggleRefuel").pressed.connect(toggle_refuel)
 	# Supply panel buttons with fixed text get their key label once.
-	for id in ["MoveCargo","PauseRoute","CancelRoute"]: set_label(supply.get_node(id),supply.get_node(id).text)
+	# Each bound button shows its key in a corner badge; tooltips also list it.
+	for panel in [card,supply]:
+		for button in panel.get_children():
+			if button is Button and button.has_node("Key"): button.get_node("Key").text = hotkey_text(button)
 	card.get_node("ToggleGenerator").pressed.connect(func():
 		if is_instance_valid(shown) and shown.is_in_group("energy_generators"): shown.enabled = not shown.enabled)
 	supply.get_node("DeploySupplies").pressed.connect(func():
@@ -274,7 +278,7 @@ func update_contents() -> void:
 		info.get_node("Details").text = "%s\nCost %d E / %d I\nPayer: %s\nDoes not block movement" % [node.state,node.spec.energy,node.spec.iron,payer_text if node.pinned else "Auto covering friendly Depot"]
 		commands.get_node("Title").text = "PENDING CONSTRUCTION"
 		commands.get_node("Hint").text = "Completes when terrain is clear and one friendly covering Depot can pay. Cancel is free."
-		show_button("CancelPlan","Cancel construction plan")
+		show_button("CancelPlan","Cancel plan")
 		return
 	if not is_instance_valid(node):
 		info.get_node("Name").text = "Nothing selected"
@@ -294,11 +298,11 @@ func update_contents() -> void:
 		commands.get_node("Title").text = "DEPOT · PRODUCTION"
 		info.get_node("Details").text = "Local E %d · I %d · W %d · C %d\nStorage %d / %d\nGeneration +%.1f E/s\nQueue %d / %d · %d%%\nCapture %d%% · territory %.0f" % [node.energy,node.iron,node.wood,node.coal,node.stockpile.total(),node.storage_capacity,node.generation_rate(),node.queue,node.queue_limit,roundi(node.progress/node.print_seconds*100),roundi(node.capture_progress/node.rules.capture_seconds*100),node.rules.construction_radius]
 		if node.team == "player":
-			show_button("PrintTruck","Depot Truck · %d E / %d I" % [node.rules.truck_energy_cost,node.rules.truck_iron_cost])
-			show_button("PrintCargo","Cargo Vehicle · %d E / %d I" % [network.supply_rules.cargo_energy_cost,network.supply_rules.cargo_iron_cost])
+			show_production("PrintTruck","Depot truck",node.rules.truck_energy_cost,node.rules.truck_iron_cost,node)
+			show_production("PrintCargo","Cargo vehicle",network.supply_rules.cargo_energy_cost,network.supply_rules.cargo_iron_cost,node)
 			var rails = game.get_node("RailNetwork").rules
-			show_button("PrintTrain","Train · %d E / %d I" % [rails.cargo_energy_cost,rails.cargo_iron_cost])
-			show_button("Build","Build structures / rail…")
+			show_production("PrintTrain","Train",rails.cargo_energy_cost,rails.cargo_iron_cost,node)
+			show_button("Build","Build…")
 			commands.get_node("Hint").text = "Spend this Depot only. Train launch/load/unload needs friendly track within %.0f units. New Depots include one infantry." % node.dropoff_range
 			if build_open:
 				commands.get_node("Title").text = "DEPOT · BUILD & LOCAL RESOURCES"
@@ -315,7 +319,7 @@ func update_contents() -> void:
 		if node.source_friendly():
 			for scene in node.stats.unit_scenes:
 				var stats = node.unit_stats_for(scene)
-				show_button("PrintInfantry" if stats.unit_id == &"infantry" else "Produce"+str(stats.unit_id).capitalize(),"%s · %d E / %d I" % [stats.display_name,stats.energy_cost,stats.iron_cost])
+				show_production("PrintInfantry" if stats.unit_id == &"infantry" else "Produce"+str(stats.unit_id).capitalize(),stats.display_name,stats.energy_cost,stats.iron_cost,node.assigned_depot)
 		commands.get_node("Hint").text = "Production uses this building’s assigned Depot only. Drone attacks and tentative abilities remain unspecified."
 	elif node.is_in_group("energy_generators"):
 		commands.get_node("Title").text = "GENERATOR · LOCAL POWER"
@@ -324,8 +328,8 @@ func update_contents() -> void:
 		info.get_node("Details").text = "Assigned Depot: %s\n%s\n%s\nCurrent rate %.1f E/s\nCycle: %s · %.1f / %.1fs" % [source.name if is_instance_valid(source) else "none",stock,node.describe_state(),node.output_rate(),str(node.cycle_kind) if not node.cycle_kind.is_empty() else "waiting",node.cycle_elapsed,node.cycle_seconds]
 		commands.get_node("GeneratorMode").select(["wood","coal","either"].find(node.fuel_preference))
 		commands.get_node("Hint").text = "Wood: 1 → %d E / %.1fs. Coal: 1 → %d E / %.1fs. Either uses wood first. Changes apply next cycle; full storage pauses fuel use." % [node.fuel_rules.wood_output,node.fuel_rules.wood_seconds,node.fuel_rules.coal_output,node.fuel_rules.coal_seconds]
-		if node.team == "player": show_button("ToggleGenerator","Pause generator" if node.enabled else "Resume generator")
-		if is_instance_valid(node.assigned_depot): show_button("FocusAssigned","Focus assigned Depot")
+		if node.team == "player": show_button("ToggleGenerator","Pause" if node.enabled else "Resume")
+		if is_instance_valid(node.assigned_depot): show_button("FocusAssigned","Focus Depot")
 	else:
 		var nearest = nearest_depot(node)
 		var proximity := "%s · %.1f units away" % [nearest.name,node.global_position.distance_to(nearest.global_position)] if nearest != null else "No friendly Depot"
@@ -360,20 +364,20 @@ func update_contents() -> void:
 				commands.get_node("Title").text = ("TRAIN" if node.is_in_group("rail_trains") else "CARGO VEHICLE")+" · ORDERS"
 				commands.get_node("Hint").text = "Move, Stop and Auto-refuel. Delivery route returns to route controls."
 		elif node.is_depot_truck:
-			show_button("DeployTruck","Deploy into Depot")
+			show_button("DeployTruck","Deploy")
 			commands.get_node("Hint").text = "Deploy on an empty 8 × 8 footprint. This vehicle does not carry transferable cargo."
 		else:
 			if node._attack_enabled: show_button("Attack","Attack")
 			if node.can_gather:
-				show_button("Gather","Gather iron / wood")
-				show_button("Return","Deliver resources")
-				show_button("DropMaterials","Drop materials")
-				card.get_node("DropMaterials").disabled = node.cargo <= 0
+				show_button("Gather","Gather")
+				show_button("Return","Deliver")
+				show_button("DropMaterials","Drop")
+				explain(card.get_node("DropMaterials"),node.cargo <= 0,"Nothing carried to drop.")
 			if node.can_construct: show_button("Build","Build…")
 			if node.can_repair:
-				show_button("Repair","Repair building")
+				show_button("Repair","Repair")
 				card.get_node("Repair").tooltip_text = "Restore up to %d HP every %.1fs for %d energy / %d iron from the selected local supply source. No wood is spent." % [node.engineering_rules.repair_hp,node.engineering_rules.repair_interval,node.engineering_rules.repair_energy,node.engineering_rules.repair_iron]
-			if node.can_capture_depots: show_button("Capture","Capture Depot")
+			if node.can_capture_depots: show_button("Capture","Capture")
 			commands.get_node("Hint").text = "Right-click to move, gather or attack. Nearest Depot distance is straight-line, not route length."
 			if build_open and node.can_construct:
 				commands.get_node("Title").text = "INFANTRY · BUILD & LOCAL RESOURCES"
@@ -382,10 +386,29 @@ func show_button(id: String, text: String) -> void:
 	desired_buttons.append(id)
 	set_label(card.get_node(id),text)
 # Set a label with its hotkey; unchanged text isn't reassigned, so buttons don't relayout each frame.
+# Unchanged text isn't reassigned, so buttons don't relayout every frame.
 func set_label(button: Button, text: String) -> void:
-	var key := hotkey_text(button)
-	var label := text+(" [%s]" % key if not key.is_empty() else "")
-	if button.text != label: button.text = label
+	if button.text != text: button.text = text
+# Production tiles: name over cost. Unaffordable costs turn amber and the tooltip says what's missing.
+func show_production(id: String, title: String, energy_cost: int, iron_cost: int, payer: Node) -> void:
+	show_button(id,"%s
+%d E · %d I" % [title,energy_cost,iron_cost])
+	var button: Button = card.get_node(id)
+	var missing := []
+	if is_instance_valid(payer):
+		if payer.energy < energy_cost: missing.append("%d more energy" % (energy_cost-payer.energy))
+		if payer.iron < iron_cost: missing.append("%d more iron" % (iron_cost-payer.iron))
+	if missing.is_empty():
+		button.remove_theme_color_override("font_color")
+		button.tooltip_text = "Costs %d energy and %d iron from %s." % [energy_cost,iron_cost,payer.name if is_instance_valid(payer) else "the paying Depot"]
+	else:
+		button.add_theme_color_override("font_color",UNAFFORDABLE)
+		button.tooltip_text = "Needs %s. Generation, deliveries and queued orders can still cover it." % " and ".join(missing)
+# Disabled actions stay visible and explain why.
+func explain(button: Button, disabled: bool, reason: String) -> void:
+	button.disabled = disabled
+	if disabled: button.tooltip_text = reason
+	elif button.tooltip_text == reason: button.tooltip_text = ""
 func close_build() -> void:
 	global_build_open = false
 	game.global_plan_kind = &""
@@ -483,13 +506,13 @@ func update_supply_panel() -> void:
 			elif id == "Destination" and depots.size() > 1: option.select(1)
 		route_depots = depots
 	var vehicle = selected_cargo()
-	supply.get_node("StartRoute").disabled = vehicle == null or route_depots.size() < 2
-	supply.get_node("PauseRoute").disabled = vehicle == null or not vehicle.route_active
-	supply.get_node("CancelRoute").disabled = vehicle == null
+	explain(supply.get_node("StartRoute"),vehicle == null or route_depots.size() < 2,"Needs two living friendly Depots.")
+	explain(supply.get_node("PauseRoute"),vehicle == null or not vehicle.route_active,"No route assigned.")
+	explain(supply.get_node("CancelRoute"),vehicle == null,"Select a Cargo vehicle or Train.")
 	if vehicle:
 		var button: Button = supply.get_node("DeploySupplies")
 		set_label(button,"Pack up supplies" if vehicle.deployed else "Deploy supplies · 2s")
-		button.disabled = not vehicle.supply_transition.is_empty()
+		explain(button,not vehicle.supply_transition.is_empty(),"Wait for deploying or packing to finish.")
 		supply.get_node("RouteStatus").tooltip_text = "Supply range %.1f · Infantry delivery %.1f. Routes pause on deployment and resume explicitly." % [vehicle.mobile_rules.supply_radius(),vehicle.dropoff_range]
 		commands.get_node("Hint").text = "%s · Supply %.1f / drop-off %.1f. Right-click with Infantry to deliver. Movement packs first." % [vehicle.state,vehicle.mobile_rules.supply_radius(),vehicle.dropoff_range]
 		var endpoints := "%s → %s" % [vehicle.origin_depot.name if is_instance_valid(vehicle.origin_depot) else "none",vehicle.destination_depot.name if is_instance_valid(vehicle.destination_depot) else "none"]

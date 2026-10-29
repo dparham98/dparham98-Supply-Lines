@@ -68,8 +68,8 @@ func run() -> void:
 	var stop: Button = hud.card.get_node("Stop")
 	var first := stop.text
 	hud._process(0); hud._process(0)
-	if not check(first == "Stop [S]" and stop.text == first,"Stop label unstable: %s / %s" % [first,stop.text]): return
-	if not check(hud.supply.get_node("MoveCargo").text.ends_with("[M]") and hud.supply.get_node("CancelRoute").text.ends_with("[X]"),"Fixed Supply panel labels lack keys"): return
+	if not check(first == "Stop" and stop.text == first and stop.get_node("Key").text == "S","Stop label unstable or badge wrong: %s / %s" % [first,stop.text]): return
+	if not check(hud.supply.get_node("MoveCargo/Key").text == "M" and hud.supply.get_node("CancelRoute/Key").text == "X","Supply panel key badges wrong"): return
 	# 7. One Auto-refuel button: the Supply panel no longer has its own copy.
 	if not check(not hud.supply.has_node("SupplyRefuel"),"Duplicate Supply panel Auto-refuel still present"): return
 	# 8. Alert throttle times are pruned once they expire.

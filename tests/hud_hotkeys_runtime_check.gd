@@ -54,7 +54,7 @@ func run() -> void:
 	rig.focus_position(depot.global_position+Vector3(4,0,12),45)
 	for frame in range(180): rig.advance_camera(1.0/60)
 	await click_at(target(worker))
-	if not check(worker.is_selected and hud.card.get_node("Gather").text.ends_with("[G]"),"Infantry card key labels missing"): return
+	if not check(worker.is_selected and hud.card.get_node("Gather/Key").text == "G","Infantry card key labels missing"): return
 	await shot("infantry_keys")
 	await press(KEY_M)
 	if not check(game.pending_unit_command == "move","M did not arm Move"): return

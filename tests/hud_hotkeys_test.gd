@@ -87,7 +87,7 @@ func run() -> void:
 	game.selected_building = null
 	# Keys press visible buttons and show their letter.
 	select_only(worker)
-	if not check(hud.card.get_node("Stop").text.ends_with("[S]") and hud.card.get_node("Move").text.ends_with("[M]"),"Button key labels missing"): return
+	if not check(hud.card.get_node("Stop/Key").text == "S" and hud.card.get_node("Move/Key").text == "M","Button key labels missing"): return
 	press(KEY_M)
 	if not check(game.pending_unit_command == "move","M did not arm Move"): return
 	game.pending_unit_command = ""
