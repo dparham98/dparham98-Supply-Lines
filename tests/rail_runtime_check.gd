@@ -41,6 +41,10 @@ func shot(name: String) -> void:
 	if DisplayServer.get_name() == "headless": return
 	await RenderingServer.frame_post_draw
 	TestOutput.save_png(self, root.get_texture().get_image(), OUTPUT+name+".png")
+func shift(down: bool) -> void:
+	var key := InputEventKey.new()
+	key.keycode = KEY_SHIFT; key.physical_keycode = KEY_SHIFT; key.pressed = down
+	Input.parse_input_event(key); Input.flush_buffered_events()
 func run() -> void:
 	root.size = Vector2i(1280,900)
 	game = load("res://scenes/maps/rail_exercise.tscn").instantiate()
@@ -77,26 +81,28 @@ func run() -> void:
 	await click(hud.build_menu.get_node("Actions/Back"))
 	var train = game.get_node("Entities/Units/Train")
 	await click_at(rig.camera.unproject_position(train.selection_point()))
-	if not check(train.is_selected and hud.supply.visible and hud.object_name(train) == "Train","Train selection did not open rail cargo HUD"): return
-	hud.supply.get_node("Source").select(hud.route_depots.find(source))
-	hud.supply.get_node("Destination").select(hud.route_depots.find(destination))
-	hud.supply.get_node("Amounts/Energy").value = 60
-	hud.supply.get_node("Amounts/Iron").value = 40
-	hud.supply.get_node("Amounts/Wood").value = 20
-	hud.supply.get_node("Repeat").button_pressed = false
+	if not check(train.is_selected and hud.card.get_node("Load").visible and hud.object_name(train) == "Train","Train selection did not show crate tiles"): return
+	# Crate shipments replaced the route panel: two energy crates and one iron crate.
+	for kind in [&"energy",&"energy",&"iron"]: source.stockpile.pack(kind)
 	var energy: int = destination.energy
 	var iron: int = destination.iron
-	var wood: int = destination.wood
-	await click(hud.supply.get_node("StartRoute"))
-	if not check(train.route_active and train.requested_wood == 20,"Train Assign route GUI failed"): return
-	for frame in range(180): train._process(1.0/60)
+	await click(hud.card.get_node("Load"))
+	hud.shipment_target.item_selected.emit(hud.shipment_stops.find(source)+1)
+	await click(hud.card.get_node("Unload"))
+	shift(true)
+	hud.shipment_target.item_selected.emit(hud.shipment_stops.find(destination)+1)
+	shift(false)
+	game.pending_unit_command = ""
+	if not check(train.order == "load" and train.shipment_pair() == [source,destination],"Train Load/Unload GUI failed"): return
+	for frame in range(600):
+		train._process(1.0/60)
+		if train.order == "unload": break
 	await shot("rail_train_loaded")
-	await click(hud.supply.get_node("PauseRoute"))
-	if not check(train.route_paused,"Train Pause GUI failed"): return
-	await click(hud.supply.get_node("PauseRoute"))
-	if not check(not train.route_paused,"Train Resume GUI failed"): return
-	for frame in range(900): train._process(1.0/60)
-	if not check(not train.route_active and destination.energy == energy+60 and destination.iron == iron+40 and destination.wood == wood+20,"GUI-assigned train failed cargo delivery"): return
+	if not check(train.stockpile.crate_count() == 3,"Train did not load the crates"): return
+	for frame in range(1200):
+		train._process(1.0/60)
+		if train.order == "idle": break
+	if not check(train.order == "idle" and destination.energy == energy+50 and destination.iron == iron+25,"GUI-ordered train failed crate delivery"): return
 	await shot("rail_train_delivered")
 	root.size = Vector2i(1440,960)
 	await shot("rail_train_wide")

@@ -68,9 +68,8 @@ func run() -> void:
 	game.get_node("Entities/Units").add_child(cargo)
 	cargo.set_process(false)
 	select_unit(cargo)
-	hud.supply.get_node("Amounts/Energy").value = 0
-	hud.supply.get_node("Amounts/Iron").value = 0
-	hud.supply.get_node("Amounts/Wood").value = 10
+	# Crate tiles replaced the route panel's per-trip amounts.
+	assert(hud.card.get_node("Load").visible,"Cargo crate tiles missing")
 	await shot("engineering_cargo_wood")
 	root.size = Vector2i(1440,960)
 	await shot("engineering_wide")

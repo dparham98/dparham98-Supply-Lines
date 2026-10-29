@@ -6,14 +6,15 @@ var supply_transition := ""
 var supply_timer := 0.0
 var storage_capacity: int:
 	get: return stockpile.capacity
+# Spendable (uncrated) stock when deployed as a supply source.
 var energy: int:
-	get: return carried_energy
+	get: return stockpile.available(&"energy")
 var iron: int:
-	get: return carried_iron
+	get: return stockpile.available(&"iron")
 var wood: int:
-	get: return carried_wood
+	get: return stockpile.available(&"wood")
 var coal: int:
-	get: return carried_coal
+	get: return stockpile.available(&"coal")
 var dropoff_range: float:
 	get: return mobile_rules.dropoff_radius()
 func supplies_available() -> bool:
@@ -155,8 +156,100 @@ func command_move(point: Vector3) -> void:
 	pack_supplies()
 	cancel_supply_route()
 	super.command_move(point)
-func command_return(_target: Node3D = null) -> void:
-	game.notify("Use the Supply panel to choose explicit cargo endpoints.")
+
+## Crate shipments (docs/CRATE_SHIPMENTS.md): Load takes prepared crates from a friendly Depot or
+## deployed Cargo vehicle; Unload unpacks them. Trips repeats the last Load/Unload pair.
+const TRIP_MODES := ["once","all","repeat"]
+var trips := "once"
+var job_target: Node3D
+var _trip_source: Node3D
+func shipment_endpoint(node) -> bool:
+	if not is_instance_valid(node) or node == self or not node.is_inside_tree() or node.is_queued_for_deletion() or node.get("team") != team: return false
+	if node.is_in_group("depots"): return node.health > 0
+	# Trains only use Depots with friendly track nearby; trucks also use deployed trucks.
+	return not is_in_group("rail_trains") and node.is_in_group("mobile_supplies") and node.get("deployed") == true and node.health > 0
+func command_load(node: Node3D) -> void:
+	_start_job("load",node)
+func command_unload(node: Node3D) -> void:
+	_start_job("unload",node)
+func _start_job(kind: String, node: Node3D) -> void:
+	if not shipment_endpoint(node): game.notify("Choose a friendly Depot%s." % ("" if is_in_group("rail_trains") else " or deployed Cargo vehicle")); return
+	pack_supplies()
+	cancel_supply_route()
+	_stop_route()
+	job_target = node
+	order_target = node
+	order = kind
+	transfer_timer = 0
+	state = "To %s at %s" % [kind,node.name]
+## Pickup and delivery stops of the current crate trip, from the current order, the queue or the
+## last pickup. Empty when there is no pair.
+func shipment_pair() -> Array:
+	var source = job_target if order == "load" else null
+	var target = job_target if order == "unload" else null
+	for entry in order_queue:
+		if entry.kind == "load" and not is_instance_valid(source): source = entry.target
+		if entry.kind == "unload" and not is_instance_valid(target): target = entry.target
+	if not is_instance_valid(source): source = _trip_source
+	return [source,target] if shipment_endpoint(source) and shipment_endpoint(target) and source != target else []
+func cycle_trips() -> String:
+	trips = TRIP_MODES[(TRIP_MODES.find(trips)+1)%TRIP_MODES.size()]
+	return trips
+func load_crates(source: Node3D) -> int:
+	var count := 0
+	while stockpile.space() >= ResourceStockpile.CRATE and source.stockpile.crate_count() > 0:
+		stockpile.put_crate(source.stockpile.take_crate())
+		count += 1
+	return count
+func unload_crates(target: Node3D) -> int:
+	var moved := {}
+	var count := 0
+	while stockpile.crate_count() > 0 and target.stockpile.space() >= ResourceStockpile.CRATE:
+		var kind := stockpile.take_crate()
+		target.stockpile.deposit(kind,ResourceStockpile.CRATE)
+		moved[kind] = moved.get(kind,0)+ResourceStockpile.CRATE
+		count += 1
+	for kind in moved: game.delivered(target,kind,moved[kind])
+	return count
+func _crate_job(delta: float) -> void:
+	if not shipment_endpoint(job_target):
+		order = "idle"; job_target = null; state = "Shipment stop lost · crates retained"; _update_display(); return
+	_retry = maxf(0,_retry-delta)
+	if not _route.is_empty() or _moving_to.x >= 0:
+		_walk(delta); _update_display(); return
+	var reach: float = job_target.dropoff_range
+	if global_position.distance_to(job_target.global_position) > reach:
+		transfer_timer = 0
+		if _retry <= 0:
+			state = "To %s at %s" % [order,job_target.name]
+			if not _route_to_interaction(job_target,reach): state = "Shipment route blocked · retrying"
+		_update_display(); return
+	transfer_timer += delta
+	state = "%s · %.1fs" % ["Loading" if order == "load" else "Unloading",maxf(0,supply_rules.transfer_seconds-transfer_timer)]
+	if transfer_timer < supply_rules.transfer_seconds: _update_display(); return
+	transfer_timer = 0
+	var stop := job_target
+	if order == "load":
+		var loaded := load_crates(stop)
+		if loaded == 0 and stockpile.crate_count() == 0:
+			if trips == "repeat": state = "Waiting for crates at %s" % stop.name; _update_display(); return
+			order = "idle"; job_target = null; state = "No crates ready at %s" % stop.name; _update_display(); return
+		_trip_source = stop
+		order = "idle"; job_target = null
+		state = "Loaded %d crate%s at %s" % [loaded,"" if loaded == 1 else "s",stop.name]
+	else:
+		var unloaded := unload_crates(stop)
+		order = "idle"; job_target = null
+		state = ("Unloaded %d crate%s" % [unloaded,"" if unloaded == 1 else "s"])+(" · %d retained, no space" % stockpile.crate_count() if stockpile.crate_count() > 0 else "")
+		# Trips: return to the last pickup while it has crates (all) or forever (repeat).
+		if trips != "once" and order_queue.is_empty() and shipment_endpoint(_trip_source) and (trips == "repeat" or _trip_source.stockpile.crate_count() > 0):
+			order_queue.append({kind = "load", target = _trip_source})
+			order_queue.append({kind = "unload", target = stop})
+	_update_display()
+func command_return(target: Node3D = null) -> void:
+	# Right-click on a Depot or deployed truck: deliver crates if carrying any, otherwise collect.
+	if shipment_endpoint(target): _start_job("unload" if stockpile.crate_count() > 0 else "load",target)
+	else: game.notify("Use Load and Unload on a friendly Depot or deployed Cargo vehicle.")
 func _process(delta: float) -> void:
 	if _dead: return
 	fuel_tick(delta)
@@ -164,11 +257,13 @@ func _process(delta: float) -> void:
 	$SupplyRadius.visible = supplies_available() and (is_selected or game.get_node("DepotNetwork").selected == self)
 	$SupplyRadius.scale = Vector3.ONE*mobile_rules.supply_radius()
 	if supplies_available():
+		stockpile.restock()
 		state = "Supplies deployed"
 		_update_display()
 		return
 	if not route_active:
-		_order_process(delta)
+		if order in ["load","unload"]: _crate_job(delta)
+		else: _order_process(delta)
 		return
 	if not endpoints_friendly():
 		if not route_paused: pause_supply_route()

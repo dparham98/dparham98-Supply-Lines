@@ -70,9 +70,6 @@ func run() -> void:
 	var truck = spawn("res://scenes/gameplay/cargo_vehicle.tscn",Vector3(-14,0,10))
 	truck.carried_coal = 30; truck.carried_energy = 10
 	select(truck)
-	# The route page hides Context until crate shipments replace it; its notes keep the cargo total.
-	if not check(not hud.context.visible and hud.info.get_node("Storage").visible and hud.info.get_node("Storage/Head/Value").text == "40 / 100","Route page lacks the cargo storage bar"): return
-	hud.pages.get_node("Orders").pressed.emit(); hud._process(0)
 	if not check(shown("Storage") and hud.info.get_node("Storage/Head/Label").text == "Cargo" and hud.info.get_node("Storage/Head/Value").text == "40 / 100" and not hud.bars.get_node("Cargo").visible,"Cargo vehicle storage wrong"): return
 	if not check(hud.bars.get_node("FuelLabel").text == "Tank fuel" and hud.bars.get_node("Fuel").visible,"Cargo vehicle tank fuel not separate"): return
 	var outpost = load("res://scenes/gameplay/depot.tscn").instantiate()
@@ -99,7 +96,6 @@ func run() -> void:
 	train.fuel = 0
 	if not check(train.start_supply_route(game.depot,game.get_node("Entities/Buildings/EastDepot"),1,0,false),"Train route failed"): return
 	select(train)
-	hud.pages.get_node("Orders").pressed.emit(); hud._process(0)
 	var needed: float = train.estimated_round_trip_fuel()
 	if needed > 0:
 		var tick: ColorRect = hud.bars.get_node("Fuel/Need")

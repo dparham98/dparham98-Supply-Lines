@@ -21,18 +21,18 @@ func select_only(unit: Node3D) -> void:
 	hud._process(0)
 func run() -> void:
 	root.size = Vector2i(1280,900)
-	# 1. A HUD route assignment keeps the Train round-trip fuel warning in the header.
+	# 1. A Train trip ordered from the HUD keeps the round-trip fuel warning in the header.
 	await fixture("res://scenes/maps/rail_exercise.tscn")
 	game.vehicle_fuel_required = true
 	var train = game.get_node("Entities/Units/Train")
 	train.fuel = 0
 	select_only(train)
 	var destination = game.get_node("Entities/Buildings/EastDepot")
-	hud.supply.get_node("Source").select(hud.route_depots.find(game.depot))
-	hud.supply.get_node("Destination").select(hud.route_depots.find(destination))
-	hud.supply.get_node("Amounts/Energy").value = 1
-	hud.assign_route()
-	if not check(train.route_active and not train.fuel_warning.is_empty() and "Train fuel warning" in game.message,"HUD route assignment hid the Train fuel warning: %s" % game.message): return
+	hud.card.get_node("Load").pressed.emit(); hud._process(0)
+	hud.shipment_target.item_selected.emit(hud.shipment_stops.find(game.depot)+1)
+	game.give_order(train,{kind = "unload", target = destination},true)
+	train._process(1.0/60)
+	if not check(not train.fuel_warning.is_empty() and "Train fuel warning" in game.message,"HUD-ordered trip hid the Train fuel warning: %s" % game.message): return
 	await fixture("res://scenes/maps/resource_skirmish.tscn")
 	var worker = game.get_node("Entities/Units/Infantry")
 	# 2. Drop materials ends the queue as well as the current order.
@@ -69,9 +69,9 @@ func run() -> void:
 	var first := stop.tooltip_text
 	hud._process(0); hud._process(0)
 	if not check(hud.label_of(stop) == "Stop" and stop.text.is_empty() and stop.tooltip_text == first and stop.get_node("Key").text == "S","Stop label unstable or badge wrong: %s / %s" % [first,stop.tooltip_text]): return
-	if not check(hud.supply.get_node("MoveCargo/Key").text == "M" and hud.supply.get_node("CancelRoute/Key").text == "X","Supply panel key badges wrong"): return
-	# 7. One Auto-refuel button: the Supply panel no longer has its own copy.
-	if not check(not hud.supply.has_node("SupplyRefuel"),"Duplicate Supply panel Auto-refuel still present"): return
+	if not check(hud.card.get_node("Load/Key").text == "L" and hud.card.get_node("Unload/Key").text == "U","Cargo tile key badges wrong"): return
+	# 7. One Auto-refuel button: the route panel and its copy are gone.
+	if not check(not hud.has_node("Bottom/Body/Row/Commands/Supply"),"Route panel still present"): return
 	# 8. Alert throttle times are pruned once they expire.
 	var now := Time.get_ticks_msec()/1000.0
 	game._alert_times["stale"] = now-game.ALERT_REPEAT_SECONDS-1

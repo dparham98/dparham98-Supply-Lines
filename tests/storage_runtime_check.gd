@@ -41,6 +41,10 @@ func shot(name: String) -> void:
 	if DisplayServer.get_name() == "headless": return
 	await RenderingServer.frame_post_draw
 	TestOutput.save_png(self, root.get_texture().get_image(), OUTPUT+name+".png")
+func shift(down: bool) -> void:
+	var key := InputEventKey.new()
+	key.keycode = KEY_SHIFT; key.physical_keycode = KEY_SHIFT; key.pressed = down
+	Input.parse_input_event(key); Input.flush_buffered_events()
 func run() -> void:
 	root.size = Vector2i(1280,900)
 	game = load("res://scenes/maps/storage_exercise.tscn").instantiate()
@@ -58,23 +62,32 @@ func run() -> void:
 	var train = game.get_node("Entities/Units/Train")
 	var destination = game.get_node("Entities/Buildings/EastDepot")
 	await click_at(rig.camera.unproject_position(train.selection_point()))
-	if not check(train.is_selected and hud.supply.visible,"Train storage HUD did not open"): return
-	hud.supply.get_node("Source").select(hud.route_depots.find(game.depot))
-	hud.supply.get_node("Destination").select(hud.route_depots.find(destination))
-	for id in ["Energy","Iron","Wood"]: hud.supply.get_node("Amounts/"+id).value = 0
-	hud.supply.get_node("Amounts/Coal").value = 20
-	hud.supply.get_node("Repeat").button_pressed = false
-	await click(hud.supply.get_node("StartRoute"))
-	if not check(train.route_active and train.requested_coal == 20,"Coal route GUI assignment failed"): return
-	for frame in range(1000): train._process(1.0/60)
+	if not check(train.is_selected and hud.card.get_node("Load").visible,"Train storage HUD did not open"): return
+	# Two coal crates; the destination has room for only one, so the Train keeps the other.
+	game.depot.stockpile.pack(&"coal"); game.depot.stockpile.pack(&"coal")
+	destination.stockpile.set_amount(&"energy",destination.stockpile.amount(&"energy")+destination.stockpile.space()-30)
+	var coal: int = destination.coal
+	await click(hud.card.get_node("Load"))
+	hud.shipment_target.item_selected.emit(hud.shipment_stops.find(game.depot)+1)
+	await click(hud.card.get_node("Unload"))
+	shift(true)
+	hud.shipment_target.item_selected.emit(hud.shipment_stops.find(destination)+1)
+	shift(false)
+	game.pending_unit_command = ""
+	for frame in range(3000):
+		train._process(1.0/60)
+		if train.order == "idle" and train.order_queue.is_empty() and train.stockpile.total() > 0 and destination.coal > coal: break
 	await shot("storage_train_full")
-	if not check(train.carried_coal == 10 and destination.coal == 10 and train.route_active,"Coal did not remain aboard at full storage"): return
-	var end: Vector2 = hud.supply.get_global_rect().end
-	if not check(end.x <= root.size.x and end.y <= root.size.y,"Coal cargo controls overflow viewport"): return
-	destination.stockpile.withdraw(&"energy",10)
-	for frame in range(180): train._process(1.0/60)
+	if not check(train.stockpile.crate_count(&"coal") == 1 and destination.coal == coal+25 and "retained" in train.state,"Coal crate did not remain aboard at full storage"): return
+	var end: Vector2 = hud.get_node("Bottom").get_global_rect().end
+	if not check(end.x <= root.size.x and end.y <= root.size.y,"Cargo controls overflow viewport"): return
+	destination.stockpile.withdraw(&"energy",25)
+	train.command_unload(destination)
+	for frame in range(600):
+		train._process(1.0/60)
+		if train.order == "idle": break
 	await shot("storage_delivery_complete")
-	if not check(destination.coal == 20 and not train.route_active,"Freed storage did not accept remainder"): return
+	if not check(destination.coal == coal+50 and train.stockpile.total() == 0,"Freed storage did not accept the remaining crate"): return
 	root.size = Vector2i(1440,960)
 	await shot("storage_wide")
 	print("STORAGE_RUNTIME_CHECKS_PASSED")

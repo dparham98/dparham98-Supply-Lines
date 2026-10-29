@@ -127,10 +127,9 @@ func run() -> void:
 	hud.card.get_node("ToggleRefuel").pressed.emit()
 	if not check(tank.auto_refuel,"Auto-refuel toggle did not apply"): return
 	tank.set_selected(false)
-	# Cargo vehicles show the Supply panel instead of the card, which carries its own toggle.
+	# Cargo vehicles use the same Auto-refuel tile on the command grid.
 	truck.set_selected(true)
 	hud._process(0)
-	hud.pages.get_node("Orders").pressed.emit(); hud._process(0)
 	var truck_refuel = hud.card.get_node("ToggleRefuel")
 	if not check(hud.card.visible and truck_refuel.visible and hud.label_of(truck_refuel).begins_with("Auto-refuel: on"),"Cargo vehicle refuel toggle missing"): return
 	truck_refuel.pressed.emit(); hud._process(0)

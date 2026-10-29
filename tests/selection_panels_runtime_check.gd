@@ -58,7 +58,6 @@ func run() -> void:
 	if not check(tank.is_selected and hud.context.get_node("Stats").visible,"Tank panel not shown"): return
 	await shot("tank_panel")
 	await click_at(target(truck))
-	await click_at(hud.pages.get_node("Orders").get_global_rect().get_center())
 	if not check(truck.is_selected and hud.info.get_node("Storage").visible,"Cargo panel not shown"): return
 	await shot("cargo_panel")
 	depot.energy = 1000; depot.iron = 1000; depot.stockpile.set_amount(&"coal",100)
@@ -73,7 +72,6 @@ func run() -> void:
 	train.start_supply_route(game.depot,game.get_node("Entities/Buildings/EastDepot"),1,0,true)
 	focus(train.global_position)
 	await click_at(target(train))
-	await click_at(hud.pages.get_node("Orders").get_global_rect().get_center())
 	if not check(train.is_selected and hud.info.get_node("Storage").visible,"Train panel not shown"): return
 	await shot("train_panel")
 	print("SELECTION_PANELS_RUNTIME_CHECK_PASSED"); quit(TestOutput.exit_code())

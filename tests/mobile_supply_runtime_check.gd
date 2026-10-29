@@ -76,7 +76,7 @@ func run() -> void:
 	await shot("mobile_supply_before")
 	await click_at(rig.camera.unproject_position(truck.selection_point()))
 	if not check(truck.is_selected,"Cargo selection failed"): return
-	await click(hud.supply.get_node("DeploySupplies"))
+	await click(hud.card.get_node("DeployCargo"))
 	if not check(truck.supply_transition == "deploying","Deploy supplies GUI failed"): return
 	step(truck,2.1)
 	if not check(truck.supplies_available(),"Cargo deployment failed"): return
@@ -102,7 +102,7 @@ func run() -> void:
 	if not check(mine.health == mine.max_health and truck.energy == 6 and truck.iron == 8,"Mobile repair GUI failed"): return
 	worker._stop_route(); worker.order = "idle"
 	await click_at(rig.camera.unproject_position(truck.selection_point()))
-	await click(hud.supply.get_node("MoveCargo"))
+	await click(hud.card.get_node("Move"))
 	var held: Vector3 = truck.global_position
 	await click_at(rig.camera.unproject_position(held+Vector3(0,0,4)))
 	if not check(truck.supply_transition == "packing" and not truck.supplies_available(),"Move GUI did not pack supplies"): return
@@ -115,7 +115,7 @@ func run() -> void:
 	var forester = game.get_node("Entities/Units/ForestInfantry")
 	focus(Vector3(100,0,28),42)
 	await click_at(rig.camera.unproject_position(forest.selection_point()))
-	await click(hud.supply.get_node("DeploySupplies")); step(forest,2.1)
+	await click(hud.card.get_node("DeployCargo")); step(forest,2.1)
 	await click_at(rig.camera.unproject_position(forester.selection_point()))
 	if not check(forester.is_selected,"Remote Infantry selection failed"): return
 	await choose(hud.commands.get_node("LocalSource"),hud.local_sources.find(forest))
@@ -147,7 +147,7 @@ func run() -> void:
 	train.carried_energy = 200; train.carried_iron = 90
 	focus(Vector3(170,0,157),60)
 	await click_at(rig.camera.unproject_position(train.selection_point()))
-	await click(hud.supply.get_node("DeploySupplies")); step(train,2.1)
+	await click(hud.card.get_node("DeployCargo")); step(train,2.1)
 	await click_at(rig.camera.unproject_position(worker.selection_point()))
 	await click(hud.card.get_node("Build"))
 	index = hud.build_depots.find(train)
