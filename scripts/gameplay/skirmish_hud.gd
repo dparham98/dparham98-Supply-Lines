@@ -349,8 +349,17 @@ func update_feed() -> void:
 		if now-entry.time <= FEED_SECONDS and feed_points.size() < feed.get_child_count():
 			var button: Button = feed.get_child(feed_points.size())
 			button.text = "%s · %ds" % [entry.text,int(now-entry.time)]
+			set_alert_style(button,entry.get("kind",""))
 			feed_points.append(entry.point)
 	for i in feed.get_child_count(): feed.get_child(i).visible = i < feed_points.size()
+const ALERT_STYLES := {"attack": ["attack",Color(0.89,0.35,0.31)], "lost": ["cancel",Color(0.89,0.35,0.31)], "fuel": ["refuel",Color(0.941,0.698,0.29)]}
+# Feed entries show an icon and colour for their alert kind.
+func set_alert_style(button: Button, kind: String) -> void:
+	var style: Array = ALERT_STYLES.get(kind,["focus",Color(0.498,0.827,0.902)])
+	if not _icons.has(style[0]): _icons[style[0]] = load("res://assets/ui/icons/%s.svg" % style[0])
+	button.icon = _icons[style[0]]
+	button.add_theme_color_override("icon_normal_color",style[1])
+	button.add_theme_color_override("icon_hover_color",style[1])
 func focus_alert(index: int) -> void:
 	if index < feed_points.size(): game.get_node("CameraRig").focus_position(feed_points[index])
 # Shortcuts only fire for visible, enabled buttons.

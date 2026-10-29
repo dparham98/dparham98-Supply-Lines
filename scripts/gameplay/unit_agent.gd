@@ -371,7 +371,7 @@ func _shoot(target: Node3D) -> void:
 	CombatResolver.strike(self,target)
 	if is_instance_valid(target) and game.has_method("mark_attacked"): game.mark_attacked(target)
 	if is_instance_valid(target) and target.is_in_group("selectable_buildings") and target.get("team") == "player" and team != "player" and game.has_method("alert"):
-		game.alert("%s under attack" % target.name,target.global_position,"attack:%d" % target.get_instance_id())
+		game.alert("%s under attack" % target.name,target.global_position,"attack:%d" % target.get_instance_id(),"attack")
 func _fire_during_movement() -> void:
 	if unit_stats == null or not unit_stats.fire_while_moving or not _attack_enabled: return
 	# Keep navigation/facing under the movement order; firing does not redirect the route.
@@ -482,7 +482,7 @@ func burn_fuel(distance: float) -> void:
 	fuel -= distance*fuel_rules.coal_per_movement_unit
 	if fuel <= 0.0001: fuel = 0; _mark_out_of_fuel()
 func _mark_out_of_fuel() -> void:
-	if not out_of_fuel and team == "player" and game.has_method("alert"): game.alert("%s out of fuel" % game.hud.object_name(self),global_position)
+	if not out_of_fuel and team == "player" and game.has_method("alert"): game.alert("%s out of fuel" % game.hud.object_name(self),global_position,"","fuel")
 	out_of_fuel = true
 func fuel_low() -> bool:
 	return fuel_active() and fuel < fuel_rules.reserve_capacity*fuel_rules.low_fuel_fraction
