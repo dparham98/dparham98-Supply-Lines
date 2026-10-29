@@ -100,20 +100,26 @@ func save_group(index: int) -> void:
 	var members: Array[Node3D] = []
 	for unit in get_tree().get_nodes_in_group("units"):
 		if unit.team == "player" and unit.is_selected: members.append(unit)
+	# With no units selected, a selected friendly building becomes the group.
+	var game = get_tree().get_first_node_in_group("skirmish")
+	if members.is_empty() and game and is_instance_valid(game.selected_building) and game.selected_building.get("team") == "player":
+		members.append(game.selected_building)
 	groups[index] = members
 func recall_group(index: int) -> void:
-	var members: Array = groups.get(index,[]).filter(func(unit): return is_instance_valid(unit) and unit.team == "player")
+	var members: Array = groups.get(index,[]).filter(func(unit): return is_instance_valid(unit) and unit.is_inside_tree() and unit.team == "player")
 	groups[index] = members
 	if members.is_empty(): return
 	selecting = false
+	var building: Node3D = members[0] if not members[0].is_in_group("units") else null
 	for unit in get_tree().get_nodes_in_group("units"):
 		if unit.team == "player": unit.set_selected(members.has(unit))
-	selection_changed(null)
+	selection_changed(building)
 	# Pressing the same group again quickly centres the camera on it.
 	var now := Time.get_ticks_msec()/1000.0
 	var game = get_tree().get_first_node_in_group("skirmish")
 	if index == _last_group and now-_last_group_time <= GROUP_DOUBLE_TAP_SECONDS and game and game.has_node("CameraRig"):
-		game.get_node("CameraRig").focus_selection()
+		if building != null: game.get_node("CameraRig").focus_position(building.global_position)
+		else: game.get_node("CameraRig").focus_selection()
 	_last_group = index
 	_last_group_time = now
 func selection_changed(closest: Node3D) -> void:

@@ -13,7 +13,7 @@ extends CanvasLayer
 @onready var hint_label: Label = $Bottom/Body/Row/Context/Hint
 @onready var hover_label: Label = $Bottom/Body/Row/Commands/Hover
 @onready var shipment = $Bottom/Body/Row/Context/Shipment
-@onready var shipment_target: OptionButton = $Bottom/Body/Row/Commands/ShipmentTarget
+@onready var shipment_target: OptionButton = $Bottom/Body/Row/Commands/OptionRow/ShipmentTarget
 var shipment_stops: Array[Node3D] = []
 var shipment_signature := ""
 # Applied once per frame: hiding the panel mid-frame would cancel a press on its buttons.
@@ -64,7 +64,7 @@ func _ready() -> void:
 		feed.get_child(i).pressed.connect(focus_alert.bind(i))
 	card.get_node("CancelPlan").pressed.connect(func():
 		if is_instance_valid(shown) and shown.is_in_group("construction_plans"): shown.cancel())
-	commands.get_node("GeneratorMode").item_selected.connect(func(index):
+	context.get_node("GeneratorMode").item_selected.connect(func(index):
 		if is_instance_valid(shown) and shown.is_in_group("energy_generators"):
 			shown.set_fuel_preference(["wood","coal","either"][index]))
 	card.get_node("ToggleRefuel").pressed.connect(toggle_refuel)
@@ -72,8 +72,13 @@ func _ready() -> void:
 	for button in card.get_children():
 		if button is Button: button.set_meta("detail",button.tooltip_text)
 	# Each bound button shows its key in a corner badge; tooltips also list it.
-	for button in card.get_children():
-		if button is Button and button.has_node("Key"): button.get_node("Key").text = hotkey_text(button)
+	for panel in [card,build_menu.get_node("Actions")]:
+		for button in panel.get_children():
+			if button is Button and button.has_node("Key"): button.get_node("Key").text = hotkey_text(button)
+	# Header buttons are text buttons: their key goes in the label.
+	for id in ["GlobalBuild","Focus"]:
+		var header: Button = $Bottom/Body/Header.get_node(id)
+		if not hotkey_text(header).is_empty(): header.text += " · "+hotkey_text(header)
 	card.get_node("ToggleGenerator").pressed.connect(func():
 		if is_instance_valid(shown) and shown.is_in_group("energy_generators"): shown.enabled = not shown.enabled)
 	card.get_node("DeployCargo").pressed.connect(func():
@@ -108,11 +113,11 @@ func _ready() -> void:
 				unit._stop_route(); unit.order = "idle"; unit.source = null
 				game.drop_material(unit)
 		game.notify("Materials dropped. Any Infantry can gather the pile before spending it."))
-	commands.get_node("LocalSource").item_selected.connect(func(index):
+	commands.get_node("OptionRow/LocalSource").item_selected.connect(func(index):
 		if is_instance_valid(shown) and index >= 0 and index < local_sources.size():
 			shown.supply_payer = local_sources[index]; shown.supply_payer_explicit = true
 			shown.return_depot = local_sources[index]; shown.return_explicit = true)
-	commands.get_node("AssignedSource").item_selected.connect(func(index):
+	context.get_node("AssignedSource").item_selected.connect(func(index):
 		if is_instance_valid(shown) and index >= 0 and index < assignment_sources.size():
 			game.notify("Depot assigned." if shown.assign_source(assignment_sources[index]) else "Assignment requires an empty production queue and a friendly covering Depot."))
 	for mode in ["move","attack","gather","repair","capture"]:
@@ -142,7 +147,7 @@ func _ready() -> void:
 	build_menu.get_node("Actions/Mine").pressed.connect(func(): begin_production_placement(&"iron_mine"))
 	build_menu.get_node("Actions/Barracks").pressed.connect(func(): begin_production_placement(&"barracks"))
 	build_menu.get_node("Actions/TankFactory").pressed.connect(func(): begin_production_placement(&"tank_factory"))
-	card.get_node("DeployTruck").pressed.connect(network.deploy_selected_truck)
+	card.get_node("DeployTruck").pressed.connect(func(): game.pending_unit_command = "deploy"; game.notify("Click a site for the Depot. Only an empty 8 × 8 footprint is accepted; Shift queues."))
 	card.get_node("FocusAssigned").pressed.connect(func():
 		if is_instance_valid(shown) and is_instance_valid(shown.assigned_depot): game.get_node("CameraRig").focus_position(shown.assigned_depot.global_position))
 	build_menu.get_node("Payer").item_selected.connect(func(index):
@@ -157,7 +162,7 @@ func _ready() -> void:
 				shown.supply_payer = build_depots[index]; shown.supply_payer_explicit = true)
 	build_menu.get_node("Actions/Depot").pressed.connect(func(): begin_placement(false))
 	build_menu.get_node("Actions/Generator").pressed.connect(func(): begin_placement(true))
-	build_menu.get_node("Actions/Back").pressed.connect(close_build)
+	build_menu.get_node("Actions/Back").pressed.connect(func(): game.cancel_armed(); close_build())
 	$Bottom/Body/Header/Focus.pressed.connect(func():
 		if is_instance_valid(shown): game.get_node("CameraRig").focus_position(shown.global_position))
 	$Bottom/Body/Header/Restart.pressed.connect(func(): get_tree().reload_current_scene())
@@ -427,11 +432,14 @@ func update_contents() -> void:
 	build_menu.visible = show_build
 	card.visible = not show_build
 	update_shipment_target(is_unit and node.is_cargo_vehicle and game.pending_unit_command in ["load","unload"])
-	commands.get_node("GeneratorMode").visible = not show_build and is_instance_valid(node) and node.is_in_group("energy_generators") and node.team == "player"
-	commands.get_node("LocalSource").visible = is_unit and node.can_gather and not show_build
-	commands.get_node("AssignedSource").visible = not show_build and is_instance_valid(node) and (node.is_in_group("production_buildings") or node.is_in_group("energy_generators")) and node.team == "player"
-	if commands.get_node("LocalSource").visible: update_local_source(node)
-	if commands.get_node("AssignedSource").visible: update_assignment(node)
+	context.get_node("GeneratorMode").visible = not show_build and is_instance_valid(node) and node.is_in_group("energy_generators") and node.team == "player"
+	commands.get_node("OptionRow/LocalSource").visible = is_unit and node.can_gather and not show_build
+	context.get_node("AssignedSource").visible = not show_build and is_instance_valid(node) and (node.is_in_group("production_buildings") or node.is_in_group("energy_generators")) and node.team == "player"
+	if commands.get_node("OptionRow/LocalSource").visible:
+		update_local_source(node)
+		# The picker only matters when there is a choice of stockpile.
+		commands.get_node("OptionRow/LocalSource").visible = local_sources.size() > 1
+	if context.get_node("AssignedSource").visible: update_assignment(node)
 	hint_label.visible = not show_build
 	info.get_node("Health").visible = is_instance_valid(node)
 	$Bottom/Body/Header/Focus.disabled = not is_instance_valid(node)
@@ -514,7 +522,7 @@ func update_contents() -> void:
 		set_stats([["Output","%.1f E/s" % node.output_rate()],["Burning",str(node.cycle_kind).capitalize() if not node.cycle_kind.is_empty() else "Waiting"],["Cycle","%.1f / %.1fs" % [node.cycle_elapsed,node.cycle_seconds]],["Mode",node.fuel_preference.capitalize()]])
 		if is_instance_valid(source): show_storage("%s storage" % source.name,source.stockpile)
 		info.get_node("Details").text = "Assigned Depot: %s" % (source.name if is_instance_valid(source) else "none")
-		commands.get_node("GeneratorMode").select(["wood","coal","either"].find(node.fuel_preference))
+		context.get_node("GeneratorMode").select(["wood","coal","either"].find(node.fuel_preference))
 		hint_label.text = "Wood: 1 → %d E / %.1fs. Coal: 1 → %d E / %.1fs. Either uses wood first. Changes apply next cycle; full storage pauses fuel use." % [node.fuel_rules.wood_output,node.fuel_rules.wood_seconds,node.fuel_rules.coal_output,node.fuel_rules.coal_seconds]
 		if node.team == "player": show_button("ToggleGenerator","Pause" if node.enabled else "Resume")
 		if is_instance_valid(node.assigned_depot): show_button("FocusAssigned","Focus Depot")
@@ -524,6 +532,7 @@ func update_contents() -> void:
 		var notes: Array[String] = []
 		notes.append("Nearest Depot: %s · %.1f units away" % [nearest.name,node.global_position.distance_to(nearest.global_position)] if nearest != null else "No friendly Depot")
 		if node.fuel_rules != null: notes.append(fuel_note(node))
+		if node.can_gather and is_instance_valid(node.supply_payer): notes.append("Pays from and delivers to %s" % node.supply_payer.name)
 		info.get_node("Details").text = "\n".join(notes)
 		commands.get_node("Title").text = "UNIT · ORDERS"
 		update_bars(node)
@@ -587,6 +596,9 @@ func update_hover_line() -> void:
 		text = hovered.tooltip_text
 	elif not game.pending_unit_command.is_empty():
 		text = "%s · click a target. Shift queues, Esc cancels." % game.pending_unit_command.capitalize()
+	# One line only: the label's height is fixed so hovering never moves the HUD.
+	text = text.replace("
+"," · ")
 	if hover_label.text != text: hover_label.text = text
 # Set a label with its hotkey; unchanged text isn't reassigned, so buttons don't relayout each frame.
 # Unchanged text isn't reassigned, so buttons don't relayout every frame.
@@ -752,7 +764,7 @@ func begin_production_placement(kind: StringName) -> void:
 
 func update_local_source(unit: Node3D) -> void:
 	var candidates := SupplySource.candidates(get_tree(),unit.global_position,unit.team)
-	var option: OptionButton = commands.get_node("LocalSource")
+	var option: OptionButton = commands.get_node("OptionRow/LocalSource")
 	var signature := str(unit.get_instance_id())+":"
 	for source in candidates: signature += str(source.get_instance_id())+":"
 	if signature != local_signature:
@@ -761,19 +773,19 @@ func update_local_source(unit: Node3D) -> void:
 	local_sources = candidates
 	for i in range(candidates.size()):
 		var source = candidates[i]
-		option.set_item_text(i,"Supply: %s · E%d I%d W%d C%d" % [source.name,source.energy,source.iron,source.wood,source.coal])
+		option.set_item_text(i,"Pay from, deliver to: %s · E%d I%d" % [source.name,source.energy,source.iron])
 	var index := candidates.find(unit.supply_payer) if is_instance_valid(unit.supply_payer) else -1
 	if not unit.supply_payer_explicit and not candidates.is_empty():
 		index = 0; unit.supply_payer = candidates[0]; unit.supply_payer_explicit = true
 		unit.return_depot = candidates[0]; unit.return_explicit = true
 	option.select(index)
 	option.text = "Selected supply unavailable · choose source" if index < 0 else option.get_item_text(index)
-	option.tooltip_text = "One source for construction/repair and Deliver. Choose a new source explicitly if it packs or is lost. Right-click a deployed vehicle to set a remote drop-off."
+	option.tooltip_text = "Which stockpile this unit pays from for building and repair, and delivers gathered materials to. Shown when more than one is in range."
 func update_assignment(building: Node3D) -> void:
 	var candidates: Array[Node3D] = []
 	for depot in get_tree().get_nodes_in_group("depots"):
 		if SupplySource.covers(depot,building.global_position,building.team): candidates.append(depot)
-	var option: OptionButton = commands.get_node("AssignedSource")
+	var option: OptionButton = context.get_node("AssignedSource")
 	var signature := str(building.get_instance_id())+":"
 	for source in candidates: signature += str(source.get_instance_id())+":"
 	if signature != assignment_signature:

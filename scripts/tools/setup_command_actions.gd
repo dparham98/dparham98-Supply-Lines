@@ -10,7 +10,10 @@ func _initialize() -> void:
 		# Moved from M and F, which now belong to Move and Focus assigned Depot.
 		"camera_overview": KEY_O, "camera_focus_hq": KEY_BACKSPACE,
 		"playtest_tools": KEY_F10, "map_show_all": KEY_ALT,
-		"command_load": KEY_L, "command_unload": KEY_U, "command_trips": KEY_C}
+		"command_load": KEY_L, "command_unload": KEY_U, "command_trips": KEY_C,
+		# Build page tiles (the card is hidden there, so letters can repeat) and header actions.
+		"build_depot": KEY_D, "build_generator": KEY_G, "build_barracks": KEY_B, "build_tank_factory": KEY_T, "build_mine": KEY_I, "build_rail": KEY_R, "build_back": KEY_ESCAPE,
+		"command_global_build": KEY_N}
 	for action in keys:
 		var event := InputEventKey.new()
 		event.physical_keycode = keys[action]

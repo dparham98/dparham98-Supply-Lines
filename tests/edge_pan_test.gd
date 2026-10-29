@@ -30,7 +30,8 @@ func check_edges() -> void:
 	assert(hud.get_node("Legend").get_meta("edge_pan_passthrough", false))
 	hud.free()
 	var selection_hud = load("res://scenes/ui/skirmish_hud.tscn").instantiate()
-	assert(selection_hud.get_node("Bottom").get_meta("edge_pan_passthrough", false))
+	# Playtest feedback (2026-10-29): edge pan must not trigger while the pointer is over the bottom HUD.
+	assert(not selection_hud.get_node("Bottom").get_meta("edge_pan_passthrough", false))
 	selection_hud.free()
 	rig.set_view(Vector3.ZERO,95,0,50)
 	rig.show_overview()

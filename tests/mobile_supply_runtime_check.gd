@@ -118,7 +118,8 @@ func run() -> void:
 	await click(hud.card.get_node("DeployCargo")); step(forest,2.1)
 	await click_at(rig.camera.unproject_position(forester.selection_point()))
 	if not check(forester.is_selected,"Remote Infantry selection failed"): return
-	await choose(hud.commands.get_node("LocalSource"),hud.local_sources.find(forest))
+	# The picker only shows when there is a choice; with one source it is chosen automatically.
+	if hud.commands.get_node("OptionRow/LocalSource").visible: await choose(hud.commands.get_node("OptionRow/LocalSource"),hud.local_sources.find(forest))
 	if not check(forester.supply_payer == forest,"Infantry supply popup did not select truck"): return
 	await click(hud.card.get_node("Gather"))
 	await click_at(rig.camera.unproject_position(game.ground.tile_to_world(Vector2i(345,275))))
@@ -166,7 +167,7 @@ func run() -> void:
 	await click(hud.build_menu.get_node("Actions/Back"))
 	await click_at(target(building))
 	if not check(hud.shown == building and building.assigned_depot == null,"Remote building selection/assignment wrong"): return
-	await choose(hud.commands.get_node("AssignedSource"),hud.assignment_sources.find(game.depot))
+	await choose(hud.context.get_node("AssignedSource"),hud.assignment_sources.find(game.depot))
 	if not check(building.assigned_depot == game.depot,"Operating Depot popup failed"): return
 	await click(hud.card.get_node("PrintInfantry"))
 	if not check(building.queue == 1 and game.depot.energy == 400 and game.depot.iron == 480 and train.energy == 100 and train.iron == 45,"Operating production charged mobile stock or ignored Depot choice"): return

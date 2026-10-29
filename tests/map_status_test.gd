@@ -98,7 +98,7 @@ func run() -> void:
 	if not check(overlay.hover_target(screen) == depot,"Hover did not pick the Depot"): return
 	overlay.hovered = depot
 	overlay.update_hover_card(screen)
-	if not check(overlay.card.visible and overlay.card.get_node("Body/Name").text == "Depot" and "Storage" in overlay.card.get_node("Body/Line").text and overlay.card.get_node("Body/Meter").visible,"Hover card wrong"): return
+	if not check(overlay.card.visible and overlay.card.get_node("Body/Name").text == "Depot" and "Storage" in overlay.card.get_node("Body/Line").text and overlay.card.get_node("Body/Storage").visible and overlay.card.get_node("Body/Health").visible,"Hover card wrong"): return
 	var pile = game.get_node("Entities/Resources/TestingCoalPile")
 	overlay.hovered = pile
 	overlay.update_hover_card(screen)

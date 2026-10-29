@@ -230,6 +230,28 @@ func issue_card_order(screen: Vector2, queued := false) -> void:
 		target = pick_target(screen,"depots",50)
 		var mobile := pick_target(screen,"mobile_supplies",34)
 		if is_instance_valid(mobile) and mobile.get("deployed") == true: target = mobile
+	var ground_point = Plane(Vector3.UP,0).intersects_ray(get_viewport().get_camera_3d().project_ray_origin(screen),get_viewport().get_camera_3d().project_ray_normal(screen))
+	# Attack on open ground is attack-move.
+	if pending_unit_command == "attack" and not is_instance_valid(target) and ground_point != null:
+		for unit in get_tree().get_nodes_in_group("units"):
+			if unit.team == "player" and unit.is_selected: give_order(unit,{kind = "attack_move", point = ground_point},queued)
+		notify("Attack-move %s. Units fire at anything in range on the way." % ("queued" if queued else "ordered"))
+		if not queued: pending_unit_command = ""
+		return
+	# Deploy: only a valid footprint is accepted, so invalid sites can't be queued.
+	if pending_unit_command == "deploy":
+		if ground_point == null: return
+		var accepted := 0
+		for unit in get_tree().get_nodes_in_group("units"):
+			if unit.team != "player" or not unit.is_selected or not unit.is_depot_truck: continue
+			if not $DepotNetwork.can_deploy_at(unit,ground_point):
+				notify("Can't deploy there: the 8 × 8 footprint must be empty buildable land."); return
+			give_order(unit,{kind = "deploy", point = ground_point},queued)
+			accepted += 1
+		if accepted > 0:
+			notify("Deploy %s." % ("queued" if queued else "ordered"))
+			if not queued: pending_unit_command = ""
+		return
 	if pending_unit_command != "move" and not is_instance_valid(target):
 		notify("Click an appropriate target for "+pending_unit_command+".")
 		return
