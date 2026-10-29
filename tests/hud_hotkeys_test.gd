@@ -100,7 +100,7 @@ func run() -> void:
 	if not check(tank.auto_refuel == before_tank,"Hidden Auto-refuel button fired"): return
 	select_only(tank)
 	press(KEY_T)
-	if not check(not tank.auto_refuel and hud.card.get_node("ToggleRefuel").text.begins_with("Auto-refuel: off"),"T did not toggle the Tank's Auto-refuel"): return
+	if not check(not tank.auto_refuel and hud.label_of(hud.card.get_node("ToggleRefuel")).begins_with("Auto-refuel: off"),"T did not toggle the Tank's Auto-refuel"): return
 	press(KEY_T)
 	# Cargo Auto-refuel lives on the Orders page; T does nothing on the route page.
 	select_only(truck)

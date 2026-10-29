@@ -55,15 +55,16 @@ func run() -> void:
 	# The first input after the window opens can be lost before it has focus.
 	for frame in range(30): await process_frame
 	await click_at(target(tank))
-	if not check(tank.is_selected and hud.info.get_node("Stats").visible,"Tank panel not shown"): return
+	if not check(tank.is_selected and hud.context.get_node("Stats").visible,"Tank panel not shown"): return
 	await shot("tank_panel")
 	await click_at(target(truck))
+	await click_at(hud.pages.get_node("Orders").get_global_rect().get_center())
 	if not check(truck.is_selected and hud.info.get_node("Storage").visible,"Cargo panel not shown"): return
 	await shot("cargo_panel")
 	depot.energy = 1000; depot.iron = 1000; depot.stockpile.set_amount(&"coal",100)
 	depot.request_cargo(); depot.request_cargo(); depot.progress = depot.print_seconds*0.62
 	await click_at(game.get_viewport().get_camera_3d().unproject_position(depot.global_position))
-	if not check(game.selected_building == depot and hud.info.get_node("Production").visible,"Depot production panel not shown"): return
+	if not check(game.selected_building == depot and hud.context.get_node("Production").visible,"Depot production panel not shown"): return
 	await shot("depot_panel")
 	await load_game("res://scenes/maps/rail_exercise.tscn")
 	game.vehicle_fuel_required = true
@@ -72,6 +73,7 @@ func run() -> void:
 	train.start_supply_route(game.depot,game.get_node("Entities/Buildings/EastDepot"),1,0,true)
 	focus(train.global_position)
 	await click_at(target(train))
+	await click_at(hud.pages.get_node("Orders").get_global_rect().get_center())
 	if not check(train.is_selected and hud.info.get_node("Storage").visible,"Train panel not shown"): return
 	await shot("train_panel")
 	print("SELECTION_PANELS_RUNTIME_CHECK_PASSED"); quit(TestOutput.exit_code())

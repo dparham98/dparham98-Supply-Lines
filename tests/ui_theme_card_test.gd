@@ -13,7 +13,7 @@ func select(unit: Node3D, building: Node3D = null) -> void:
 func visible_names() -> Array:
 	var names := []
 	for button in hud.card.get_children():
-		if button.visible: names.append(str(button.name))
+		if button is Button and button.visible: names.append(str(button.name))
 	return names
 func run() -> void:
 	root.size = Vector2i(1280,900)
@@ -37,26 +37,27 @@ func run() -> void:
 	select(worker)
 	var names := visible_names()
 	if not check(names.slice(0,4) == ["Move","Stop","Attack","Gather"] and names.find("Build") > names.find("Capture"),"Infantry card order wrong: %s" % [names]): return
-	if not check(hud.card.get_node("Gather").text == "Gather" and not hud.card.get_node("Gather").tooltip_text.is_empty(),"Tile label or tooltip wrong"): return
-	if not check(hud.card.get_node("Move").get_combined_minimum_size().y >= 38,"Tiles shorter than 38 px"): return
+	if not check(hud.label_of(hud.card.get_node("Gather")) == "Gather" and hud.card.get_node("Gather").text.is_empty() and hud.card.get_node("Gather").tooltip_text.begins_with("Gather [G]\n"),"Tile label or tooltip wrong"): return
+	# Fixed slots: Move top-left, Stop beside it, Gather starts the second row.
+	if not check(hud.card.get_node("Move").position == Vector2.ZERO and hud.card.get_node("Stop").position == Vector2(50,0) and hud.card.get_node("Gather").position == Vector2(0,50) and hud.card.get_node("Move").size == Vector2(46,46),"Tiles not on their fixed slots"): return
 	# Disabled actions stay visible and say why.
 	worker.cargo = 0; hud._process(0)
 	var drop: Button = hud.card.get_node("DropMaterials")
-	if not check(drop.visible and drop.disabled and drop.tooltip_text == "Nothing carried to drop.","Drop materials reason missing"): return
+	if not check(drop.visible and drop.disabled and drop.tooltip_text == "Drop [X]\nNothing carried to drop.","Drop materials reason missing: %s" % drop.tooltip_text): return
 	worker.cargo = 5; hud._process(0)
-	if not check(not drop.disabled and drop.tooltip_text.is_empty(),"Drop reason left after it became available"): return
+	if not check(not drop.disabled and not "Nothing carried" in drop.tooltip_text,"Drop reason left after it became available"): return
 	worker.cargo = 0
 	# Production tiles: name over cost, amber with a reason when unaffordable.
 	var depot = game.depot
 	select(null,depot)
 	var cargo: Button = hud.card.get_node("PrintCargo")
-	if not check(cargo.text.begins_with("Cargo vehicle\n") and " E · " in cargo.text and not cargo.has_theme_color_override("font_color"),"Affordable production tile wrong: %s" % cargo.text): return
+	if not check(hud.label_of(cargo) == "Cargo vehicle" and " E · " in cargo.tooltip_text and not cargo.has_theme_color_override("icon_normal_color"),"Affordable production tile wrong: %s" % cargo.tooltip_text): return
 	depot.energy = 0; depot.iron = 0
 	hud._process(0)
-	if not check(cargo.has_theme_color_override("font_color") and "Needs" in cargo.tooltip_text and "more energy" in cargo.tooltip_text,"Unaffordable production tile not marked"): return
+	if not check(cargo.has_theme_color_override("icon_normal_color") and "needs" in cargo.tooltip_text and "more energy" in cargo.tooltip_text,"Unaffordable production tile not marked"): return
 	depot.energy = 1000; depot.iron = 1000
 	hud._process(0)
-	if not check(not cargo.has_theme_color_override("font_color") and cargo.tooltip_text.begins_with("Costs"),"Production tile stayed amber after funds arrived"): return
+	if not check(not cargo.has_theme_color_override("icon_normal_color") and "from Depot" in cargo.tooltip_text,"Production tile stayed amber after funds arrived"): return
 	# The global Build button stays in the header.
 	if not check(hud.get_node("Bottom/Body/Header/GlobalBuild").is_visible_in_tree(),"Global Build button missing"): return
 	print("UI_THEME_CARD_TEST_PASSED")

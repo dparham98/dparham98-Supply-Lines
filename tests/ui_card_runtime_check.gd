@@ -49,6 +49,6 @@ func run() -> void:
 	await shot("tank_card")
 	depot.iron = 0
 	await click_at(game.get_viewport().get_camera_3d().unproject_position(depot.global_position))
-	if not check(game.selected_building == depot and hud.card.get_node("PrintCargo").has_theme_color_override("font_color"),"Depot card or unaffordable cost not shown"): return
+	if not check(game.selected_building == depot and hud.card.get_node("PrintCargo").has_theme_color_override("icon_normal_color"),"Depot card or unaffordable cost not shown"): return
 	await shot("depot_card")
 	print("UI_CARD_RUNTIME_CHECK_PASSED"); quit(TestOutput.exit_code())

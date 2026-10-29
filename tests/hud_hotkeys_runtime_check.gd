@@ -68,6 +68,6 @@ func run() -> void:
 	await shot("group_recalled")
 	await click_at(target(tank))
 	await press(KEY_T)
-	if not check(not tank.auto_refuel and hud.card.get_node("ToggleRefuel").text.begins_with("Auto-refuel: off"),"T did not toggle Auto-refuel"): return
+	if not check(not tank.auto_refuel and hud.label_of(hud.card.get_node("ToggleRefuel")).begins_with("Auto-refuel: off"),"T did not toggle Auto-refuel"): return
 	await shot("tank_keys")
 	print("HUD_HOTKEYS_RUNTIME_CHECK_PASSED"); quit(TestOutput.exit_code())
