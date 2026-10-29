@@ -100,6 +100,7 @@ func route_request_valid(origin, destination, energy: int, iron: int, wood: int,
 func start_supply_route(origin: Node3D, destination: Node3D, energy: int, iron: int, repeat_route: bool, wood: int = 0, coal: int = 0) -> bool:
 	# Assignment has no distance, coverage, current stock or current-path prerequisite.
 	if not route_request_valid(origin,destination,energy,iron,wood,coal): return false
+	order_queue.clear()
 	pack_supplies()
 	_disconnect_endpoints()
 	_stop_route()
@@ -167,6 +168,7 @@ func _process(delta: float) -> void:
 		_update_display()
 		return
 	if not route_active:
+		_skip_fuel_tick = true
 		super._process(delta)
 		return
 	if not endpoints_friendly():

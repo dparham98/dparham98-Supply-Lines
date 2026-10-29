@@ -53,6 +53,10 @@ var state := "Idle"
 var grid_position := Vector2i.ZERO
 var order := "idle"
 var order_target: Node3D
+## Shift-queued orders (docs/COMMAND_QUEUE.md): {kind, target, point}. The next starts when the unit goes idle.
+var order_queue: Array[Dictionary] = []
+# Cargo vehicles tick fuel before delegating here; skip the second tick.
+var _skip_fuel_tick := false
 var source: Node3D
 var move_goal := Vector3.ZERO
 var _route: Array[Vector2i] = []
@@ -134,7 +138,9 @@ func command_return(target: Node3D = null) -> void:
 	state = "Returning "+str(cargo_kind)
 func _process(delta: float) -> void:
 	if _dead: return
-	fuel_tick(delta)
+	if _skip_fuel_tick: _skip_fuel_tick = false
+	else: fuel_tick(delta)
+	if order == "idle" and not order_queue.is_empty() and not out_of_fuel: _start_next_order()
 	_cooldown = maxf(0,_cooldown-delta)
 	_retry = maxf(0,_retry-delta)
 	if order == "attack" and (not is_instance_valid(order_target) or not CombatResolver.can_hit(self,order_target)):
@@ -179,6 +185,40 @@ func _process(delta: float) -> void:
 			var enemy = _nearest_opponent()
 			if enemy: _shoot(enemy)
 	_update_display()
+# Queue an order behind the current one, or start it now when idle.
+func queue_order(entry: Dictionary) -> void:
+	if order == "idle" and order_queue.is_empty() and not out_of_fuel: run_order(entry)
+	else: order_queue.append(entry)
+func run_order(entry: Dictionary) -> void:
+	match entry.kind:
+		"move": command_move(entry.point)
+		"attack": command_attack(entry.target)
+		"gather": command_gather(entry.target)
+		"return": command_return(entry.get("target"))
+		"repair": command_repair(entry.target)
+		"capture": command_capture(entry.target)
+func _start_next_order() -> void:
+	# Skip entries whose target is gone or that the unit refuses, such as an unreachable attack.
+	while order == "idle" and not order_queue.is_empty():
+		var entry: Dictionary = order_queue.pop_front()
+		if entry.kind in ["attack","gather","repair","capture"] and not is_instance_valid(entry.get("target")): continue
+		run_order(entry)
+func order_point(entry: Dictionary) -> Variant:
+	if entry.kind == "move": return entry.point
+	var target = entry.get("target")
+	return target.global_position if is_instance_valid(target) else null
+# Destinations for the current order, then each queued order, for waypoint markers.
+func waypoint_points() -> Array[Vector3]:
+	var points: Array[Vector3] = []
+	var current = null
+	if order == "move": current = move_goal
+	elif order == "return" and is_instance_valid(return_depot): current = return_depot.global_position
+	elif order != "idle" and is_instance_valid(order_target): current = order_target.global_position
+	if current != null: points.append(current)
+	for entry in order_queue:
+		var point = order_point(entry)
+		if point != null: points.append(point)
+	return points
 func _route_to_point(point: Vector3) -> bool:
 	var cell = ground.get_tile_at_position(point)
 	if cell == null: return false
