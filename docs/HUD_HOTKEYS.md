@@ -47,3 +47,5 @@ Two camera keys moved: overview is now **O** (was M) and focus HQ is now **Backs
   - Shift toggle and add, double-click same-type selection, and control group save, recall and pruning.
 - `tests/hud_hotkeys_runtime_check.gd` (rendered) uses real window clicks and key presses. Its screenshots are `infantry_keys`, `group_recalled` and `tank_keys`.
 - Needs a human playtest for feel and key choices.
+- All 29 headless suites passed through `ci/run_headless_checks.sh` on Windows, and every rendered check passed except the known `mobile_supply_runtime_check` failure that predates this branch.
+- In one batch run, `fuel_runtime_check` and `hud_hotkeys_runtime_check` each failed once on their first synthetic click. Both then passed 12 out of 12 re-runs, so this looks like the real cursor interfering with the window, not a code failure. Treat a single failure there as a reason to re-run, not as proof.
