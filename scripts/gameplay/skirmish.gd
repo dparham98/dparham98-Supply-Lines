@@ -225,6 +225,11 @@ func issue_card_order(screen: Vector2, queued := false) -> void:
 				target = ground.forest_source(cell)
 	elif pending_unit_command == "repair": target = pick_target(screen,"selectable_buildings",50)
 	elif pending_unit_command == "capture": target = pick_target(screen,"capturable_buildings",50)
+	elif pending_unit_command in ["load","unload"]:
+		# Crate stops: a friendly Depot, or a deployed Cargo vehicle when one is under the pointer.
+		target = pick_target(screen,"depots",50)
+		var mobile := pick_target(screen,"mobile_supplies",34)
+		if is_instance_valid(mobile) and mobile.get("deployed") == true: target = mobile
 	if pending_unit_command != "move" and not is_instance_valid(target):
 		notify("Click an appropriate target for "+pending_unit_command+".")
 		return

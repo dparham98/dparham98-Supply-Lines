@@ -32,13 +32,9 @@ func run() -> void:
 	assert(not vehicle.start_supply_route(first,outpost,90,20,false))
 	assert(not vehicle.start_supply_route(first,outpost,-1,1,false))
 	assert(not vehicle.start_supply_route(first,outpost,0,0,false))
-	# Complete an actual waypoint-following load/travel/unload loop.
-	vehicle.set_selected(true)
-	var hud = game.get_node("Interface")
-	hud.update_supply_panel()
-	hud.supply.get_node("Source").select(hud.route_depots.find(first))
-	hud.supply.get_node("Destination").select(hud.route_depots.find(outpost))
-	hud.supply.get_node("StartRoute").pressed.emit()
+	# Complete an actual waypoint-following load/travel/unload loop. The HUD route panel was
+	# replaced by crate shipments (crate_shipments_test); the route engine is still driven directly.
+	assert(vehicle.start_supply_route(first,outpost,60,40,false))
 	assert(vehicle.route_active and vehicle.origin_depot == first and vehicle.destination_depot == outpost)
 	for i in range(180*60):
 		step(1.0/60)

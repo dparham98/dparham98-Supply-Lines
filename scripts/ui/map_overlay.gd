@@ -100,8 +100,12 @@ func entries() -> Array[Dictionary]:
 func route_lines() -> Array[Array]:
 	var lines: Array[Array] = []
 	for unit in get_tree().get_nodes_in_group("units"):
-		if unit.get("is_cargo_vehicle") and unit.is_selected and unit.route_active and is_instance_valid(unit.origin_depot) and is_instance_valid(unit.destination_depot):
+		if not unit.get("is_cargo_vehicle") or not unit.is_selected: continue
+		if unit.route_active and is_instance_valid(unit.origin_depot) and is_instance_valid(unit.destination_depot):
 			lines.append([unit.origin_depot.global_position,unit.destination_depot.global_position])
+		else:
+			var pair: Array = unit.shipment_pair()
+			if not pair.is_empty(): lines.append([pair[0].global_position,pair[1].global_position])
 	return lines
 func _on_delivered(target: Node3D, kind: StringName, amount: int) -> void:
 	popups.append({node = target, text = "+%d %s" % [amount,str(kind)], color = RESOURCE_COLORS.get(kind,Color.WHITE), time = Time.get_ticks_msec()/1000.0})

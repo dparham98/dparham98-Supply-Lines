@@ -5,22 +5,28 @@ extends CanvasLayer
 @onready var card = $Bottom/Body/Row/Commands/Main
 @onready var info = $Bottom/Body/Row/Info
 @onready var build_menu = $Bottom/Body/Row/Commands/BuildMenu
-@onready var supply = $Bottom/Body/Row/Commands/Supply
 @onready var bars = $Bottom/Body/Row/Info/Bars
 @onready var strip = $Bottom/Body/Header/Selection
 @onready var feed = $Feed
-@onready var pages = $Bottom/Body/Header/Pages
 @onready var name_label: Label = $Bottom/Body/Row/Info/Head/Text/Name
 @onready var context = $Bottom/Body/Row/Context
 @onready var hint_label: Label = $Bottom/Body/Row/Context/Hint
 @onready var hover_label: Label = $Bottom/Body/Row/Commands/Hover
+@onready var shipment = $Bottom/Body/Row/Context/Shipment
+@onready var shipment_target: OptionButton = $Bottom/Body/Row/Commands/ShipmentTarget
+var shipment_stops: Array[Node3D] = []
+var shipment_signature := ""
+# Applied once per frame: hiding the panel mid-frame would cancel a press on its buttons.
+var shipment_wanted := false
 ## Fixed command slots, row-major in the 4 × 3 grid. Commands that never share a card may share a slot.
 const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 4, "Return": 5, "DropMaterials": 6, "Build": 7,
 	"Repair": 8, "Capture": 9, "DeployTruck": 10, "CancelPlan": 11,
+	"DeployCargo": 2, "Load": 4, "Unload": 5, "Trips": 6,
 	"PrintTruck": 0, "PrintCargo": 1, "PrintTrain": 2,
 	"PrintInfantry": 0, "ProduceScout": 1, "ProduceGrenadier": 2, "ProduceTank": 3, "ProduceMotorcycle": 4, "ProduceDrone": 5, "ProduceUbermech": 6,
 	"ToggleGenerator": 0, "FocusAssigned": 1}
 const TILE := 46
+const TRIP_LABELS := {"once": "once", "all": "all available", "repeat": "repeat"}
 ## One icon per stat row (assets/ui/icons).
 const STAT_ICONS := {"Speed": "speed", "Range": "focus", "Damage": "damage", "Vision": "scout", "Vs buildings": "depot", "Splash": "splash",
 	"Cost": "cost", "Deploys": "deploy", "Output": "generator", "Burning": "refuel", "Cycle": "cycle", "Mode": "mode",
@@ -31,18 +37,15 @@ const OFF_ICON := Color(0.373,0.463,0.502)
 const RESOURCE_KINDS := [&"energy",&"iron",&"wood",&"coal"]
 var _icons := {}
 # Cargo vehicles open on their delivery route page; Orders shows the ordinary command card.
-var cargo_page := "route"
 var strip_types: Array[String] = []
 var feed_points: Array[Vector3] = []
 const UNAFFORDABLE := Color(0.941,0.698,0.29)
 const FEED_SECONDS := 45.0
-var route_depots: Array[Node3D] = []
 var local_sources: Array[Node3D] = []
 var local_signature := ""
 var assignment_sources: Array[Node3D] = []
 var assignment_signature := ""
 var build_depots: Array[Node3D] = []
-var depot_signature := ""
 var build_signature := ""
 var payer_initialized := false
 var build_open := false
@@ -55,8 +58,6 @@ var shown: Node3D
 var desired_buttons: Array[String] = []
 func _ready() -> void:
 	$Bottom/Body/Header/GlobalBuild.pressed.connect(open_global_build)
-	pages.get_node("Orders").pressed.connect(func(): cargo_page = "orders")
-	pages.get_node("Route").pressed.connect(func(): cargo_page = "route")
 	for i in strip.get_child_count():
 		strip.get_child(i).pressed.connect(narrow_selection.bind(i))
 	for i in feed.get_child_count():
@@ -71,17 +72,35 @@ func _ready() -> void:
 	for button in card.get_children():
 		if button is Button: button.set_meta("detail",button.tooltip_text)
 	# Each bound button shows its key in a corner badge; tooltips also list it.
-	for panel in [card,supply]:
-		for button in panel.get_children():
-			if button is Button and button.has_node("Key"): button.get_node("Key").text = hotkey_text(button)
+	for button in card.get_children():
+		if button is Button and button.has_node("Key"): button.get_node("Key").text = hotkey_text(button)
 	card.get_node("ToggleGenerator").pressed.connect(func():
 		if is_instance_valid(shown) and shown.is_in_group("energy_generators"): shown.enabled = not shown.enabled)
-	supply.get_node("DeploySupplies").pressed.connect(func():
+	card.get_node("DeployCargo").pressed.connect(func():
 		var vehicle = selected_cargo()
 		if vehicle:
 			if vehicle.deployed: vehicle.pack_supplies()
 			elif not vehicle.deploy_supplies(): game.notify("Cannot deploy supplies here or during another transition."))
-	supply.get_node("MoveCargo").pressed.connect(func(): game.pending_unit_command = "move"; game.notify("Click a destination. Supplies pack before departure."))
+	for mode in ["load","unload"]:
+		card.get_node(mode.capitalize()).pressed.connect(func(): game.pending_unit_command = mode; game.notify("Click a friendly Depot or deployed Cargo vehicle to %s. Shift queues, Esc cancels." % mode))
+	card.get_node("Trips").pressed.connect(func():
+		var vehicle = selected_cargo()
+		if vehicle:
+			var mode: String = vehicle.cycle_trips()
+			for unit in selected_units():
+				if unit.is_cargo_vehicle: unit.trips = mode
+			game.notify("Trips: %s." % TRIP_LABELS[mode]))
+	shipment_target.item_selected.connect(order_shipment_stop)
+	for kind in RESOURCE_KINDS:
+		var row = shipment.get_node("Rows/"+str(kind).capitalize())
+		row.get_node("Plus").pressed.connect(change_crates.bind(kind,1))
+		row.get_node("Minus").pressed.connect(change_crates.bind(kind,-1))
+	shipment.get_node("KeepStocked").toggled.connect(func(on: bool):
+		var stockpile = shipment_stockpile()
+		if stockpile == null: return
+		stockpile.keep_stocked = on
+		if on:
+			for kind in RESOURCE_KINDS: stockpile.set_target(kind,stockpile.crate_count(kind)))
 	card.get_node("DropMaterials").pressed.connect(func():
 		for unit in selected_units():
 			if unit.can_gather and unit.cargo > 0:
@@ -139,16 +158,6 @@ func _ready() -> void:
 	build_menu.get_node("Actions/Depot").pressed.connect(func(): begin_placement(false))
 	build_menu.get_node("Actions/Generator").pressed.connect(func(): begin_placement(true))
 	build_menu.get_node("Actions/Back").pressed.connect(close_build)
-	supply.get_node("StartRoute").pressed.connect(assign_route)
-	supply.get_node("PauseRoute").pressed.connect(func():
-		var vehicle = selected_cargo()
-		if vehicle:
-			if vehicle.route_paused:
-				if not vehicle.resume_supply_route(): game.notify(vehicle.route_error)
-			elif vehicle.route_active: vehicle.pause_supply_route())
-	supply.get_node("CancelRoute").pressed.connect(func():
-		var vehicle = selected_cargo()
-		if vehicle: vehicle.cancel_supply_route())
 	$Bottom/Body/Header/Focus.pressed.connect(func():
 		if is_instance_valid(shown): game.get_node("CameraRig").focus_position(shown.global_position))
 	$Bottom/Body/Header/Restart.pressed.connect(func(): get_tree().reload_current_scene())
@@ -200,6 +209,7 @@ func _process(_delta: float) -> void:
 	# Apply final visibility once. Hiding a pressed button cancels its GUI gesture.
 	for button in card.get_children():
 		if button is Button: button.visible = desired_buttons.has(str(button.name))
+	shipment.visible = shipment_wanted
 	place_tiles()
 	update_hover_line()
 	update_strip(units)
@@ -257,9 +267,13 @@ func show_storage(title: String, stockpile: ResourceStockpile) -> void:
 	for kind in RESOURCE_KINDS:
 		var amount := stockpile.amount(kind)
 		var segment: Control = segments.get_node(str(kind).capitalize())
-		segment.visible = amount > 0
-		segment.size_flags_stretch_ratio = maxf(amount,0.001)
-		section.get_node("Legend/%s/Amount" % str(kind).capitalize()).text = "%s %s" % [str(kind).capitalize(),grouped(amount)]
+		var crated := stockpile.crated(kind)
+		segment.visible = amount-crated > 0
+		segment.size_flags_stretch_ratio = maxf(amount-crated,0.001)
+		var crated_segment: Control = segments.get_node(str(kind).capitalize()+"Crated")
+		crated_segment.visible = crated > 0
+		crated_segment.size_flags_stretch_ratio = maxf(crated,0.001)
+		section.get_node("Legend/%s/Amount" % str(kind).capitalize()).text = "%s %s%s" % [str(kind).capitalize(),grouped(amount)," · %d▢" % stockpile.crate_count(kind) if crated > 0 else ""]
 	var free: Control = segments.get_node("Free")
 	free.visible = stockpile.space() > 0
 	free.size_flags_stretch_ratio = maxf(stockpile.space(),0.001)
@@ -322,14 +336,16 @@ func update_unit_sections(node: Node3D) -> void:
 	line.visible = not abilities.is_empty()
 	if node.is_cargo_vehicle:
 		show_storage("Cargo",node.stockpile)
-		if node.route_active and is_instance_valid(node.origin_depot) and is_instance_valid(node.destination_depot):
-			state_label.text = "%s → %s%s" % [node.origin_depot.name,node.destination_depot.name," · repeating" if node.repeating else ""]
+		# A legacy route, or the current crate trip (pickup → delivery), with progress between them.
+		var pair: Array = [node.origin_depot,node.destination_depot] if node.route_active and is_instance_valid(node.origin_depot) and is_instance_valid(node.destination_depot) else node.shipment_pair()
+		if not pair.is_empty():
+			state_label.text = "%s → %s · %s" % [pair[0].name,pair[1].name,("repeating" if node.repeating else "once") if node.route_active else "trips: "+TRIP_LABELS[node.trips]]
 			var route = context.get_node("Route")
 			route.visible = true
-			route.get_node("From").text = str(node.origin_depot.name)
-			route.get_node("To").text = str(node.destination_depot.name)
-			var to_origin: float = node.global_position.distance_to(node.origin_depot.global_position)
-			var to_destination: float = node.global_position.distance_to(node.destination_depot.global_position)
+			route.get_node("From").text = str(pair[0].name)
+			route.get_node("To").text = str(pair[1].name)
+			var to_origin: float = node.global_position.distance_to(pair[0].global_position)
+			var to_destination: float = node.global_position.distance_to(pair[1].global_position)
 			route.get_node("Bar").max_value = 1.0
 			route.get_node("Bar").step = 0.0
 			route.get_node("Bar").value = to_origin/maxf(0.001,to_origin+to_destination)
@@ -398,25 +414,19 @@ func update_contents() -> void:
 	if node != shown:
 		close_build()
 		shown = node
-		cargo_page = "route"
 	for bar in bars.get_children(): bar.visible = false
 	bars.get_node("Fuel/Need").visible = false
 	for section in ["Production","Route","Stats","Abilities"]: context.get_node(section).visible = false
 	info.get_node("Storage").visible = false
+	shipment_wanted = false
 	info.get_node("Warning").visible = false
 	state_label.text = ""
 	set_icon("")
 	var is_unit: bool = is_instance_valid(node) and node.is_in_group("units")
 	var show_build: bool = global_build_open or is_instance_valid(node) and build_open and ((is_unit and node.can_construct) or (node.is_in_group("depots") and node.team == "player"))
-	var show_supply: bool = is_unit and node.is_cargo_vehicle and not show_build and cargo_page == "route"
-	pages.visible = is_unit and node.is_cargo_vehicle and not show_build
-	pages.get_node("Orders").set_pressed_no_signal(cargo_page == "orders")
-	pages.get_node("Route").set_pressed_no_signal(cargo_page == "route")
-	supply.visible = show_supply
-	# The wide route page needs the Context column's width until crate shipments replace it.
-	context.visible = not show_supply
 	build_menu.visible = show_build
-	card.visible = not show_build and not show_supply
+	card.visible = not show_build
+	update_shipment_target(is_unit and node.is_cargo_vehicle and game.pending_unit_command in ["load","unload"])
 	commands.get_node("GeneratorMode").visible = not show_build and is_instance_valid(node) and node.is_in_group("energy_generators") and node.team == "player"
 	commands.get_node("LocalSource").visible = is_unit and node.can_gather and not show_build
 	commands.get_node("AssignedSource").visible = not show_build and is_instance_valid(node) and (node.is_in_group("production_buildings") or node.is_in_group("energy_generators")) and node.team == "player"
@@ -468,6 +478,7 @@ func update_contents() -> void:
 			show_progress("Producing · "+DEPOT_PRODUCTS.get(kind,kind.capitalize()),"%d%%%s" % [roundi(node.progress/node.print_seconds*100)," · %d more queued" % (node.queue-1) if node.queue > 1 else ""],node.progress/node.print_seconds)
 		info.get_node("Details").text = "Queue %d / %d%s" % [node.queue,node.queue_limit," · capture %d%%" % roundi(node.capture_progress/node.rules.capture_seconds*100) if node.capture_progress > 0 else ""]
 		if node.team == "player":
+			show_shipment(node.stockpile)
 			show_production("PrintTruck","Depot truck",node.rules.truck_energy_cost,node.rules.truck_iron_cost,node)
 			show_production("PrintCargo","Cargo vehicle",network.supply_rules.cargo_energy_cost,network.supply_rules.cargo_iron_cost,node)
 			var rails = game.get_node("RailNetwork").rules
@@ -524,11 +535,13 @@ func update_contents() -> void:
 			if node.auto_refuel: card.get_node("ToggleRefuel").remove_theme_color_override("icon_normal_color")
 			else: card.get_node("ToggleRefuel").add_theme_color_override("icon_normal_color",OFF_ICON)
 		if node.is_cargo_vehicle:
-			commands.get_node("Title").text = "TRAIN · RAIL DELIVERY ROUTE" if node.is_in_group("rail_trains") else "CARGO VEHICLE · DELIVERY ROUTE"
-			update_supply_panel()
-			if cargo_page == "orders":
-				commands.get_node("Title").text = ("TRAIN" if node.is_in_group("rail_trains") else "CARGO VEHICLE")+" · ORDERS"
-				hint_label.text = "Move, Stop and Auto-refuel. Delivery route returns to route controls."
+			show_button("DeployCargo","Pack up supplies" if node.deployed else "Deploy supplies")
+			explain(card.get_node("DeployCargo"),not node.supply_transition.is_empty(),"Wait for deploying or packing to finish.")
+			show_button("Load","Load crates")
+			show_button("Unload","Unload crates")
+			show_button("Trips","Trips: %s" % TRIP_LABELS[node.trips])
+			if node.supplies_available() and node.team == "player": show_shipment(node.stockpile)
+			hint_label.text = "Right-click a Depot to unload crates, or to load when empty. Shift queues stops. Trips: %s." % TRIP_LABELS[node.trips]
 		elif node.is_depot_truck:
 			show_button("DeployTruck","Deploy")
 			hint_label.text = "Deploy on an empty 8 × 8 footprint. This vehicle does not carry transferable cargo."
@@ -575,8 +588,6 @@ func update_hover_line() -> void:
 	elif not game.pending_unit_command.is_empty():
 		text = "%s · click a target. Shift queues, Esc cancels." % game.pending_unit_command.capitalize()
 	if hover_label.text != text: hover_label.text = text
-	# The route page has no tiles; hiding the line keeps that page inside the fixed HUD height.
-	hover_label.visible = not supply.visible
 # Set a label with its hotkey; unchanged text isn't reassigned, so buttons don't relayout each frame.
 # Unchanged text isn't reassigned, so buttons don't relayout every frame.
 func set_label(button: Button, text: String) -> void:
@@ -681,45 +692,53 @@ func return_units() -> void:
 			unit.order_queue.clear()
 			unit.command_return(unit.supply_payer if unit.supply_payer_explicit else nearest_depot(unit))
 			if unit.supply_payer_explicit: unit.return_explicit = true
-func update_supply_panel() -> void:
-	var depots: Array[Node3D] = []
+# Prepare shipment: crates per resource at the selected Depot or deployed Cargo vehicle.
+func shipment_stockpile() -> ResourceStockpile:
+	var node = selected_object()
+	if not is_instance_valid(node) or node.get("team") != "player": return null
+	if node.is_in_group("depots") or (node.get("is_cargo_vehicle") == true and node.supplies_available()): return node.stockpile
+	return null
+func show_shipment(stockpile: ResourceStockpile) -> void:
+	shipment_wanted = true
+	shipment.get_node("Head/Value").text = "%d crate%s · %d each" % [stockpile.crate_count(),"" if stockpile.crate_count() == 1 else "s",ResourceStockpile.CRATE]
+	for kind in RESOURCE_KINDS:
+		var row = shipment.get_node("Rows/"+str(kind).capitalize())
+		row.get_node("Count").text = "%s %d" % [str(kind).capitalize(),stockpile.crate_count(kind)]
+		row.get_node("Plus").disabled = stockpile.available(kind) < ResourceStockpile.CRATE
+		row.get_node("Minus").disabled = stockpile.crate_count(kind) == 0
+	shipment.get_node("KeepStocked").set_pressed_no_signal(stockpile.keep_stocked)
+func change_crates(kind: StringName, delta: int) -> void:
+	var stockpile := shipment_stockpile()
+	if stockpile == null: return
+	var changed: bool = stockpile.pack(kind) if delta > 0 else stockpile.unpack(kind)
+	if changed and stockpile.keep_stocked: stockpile.set_target(kind,stockpile.crate_count(kind))
+	if not changed: game.notify("Needs %d loose %s for a crate." % [ResourceStockpile.CRATE,kind] if delta > 0 else "No %s crate to unpack." % kind)
+# Distant stops for an armed Load or Unload: every friendly Depot, plus deployed trucks for trucks.
+func update_shipment_target(armed: bool) -> void:
+	shipment_target.visible = armed
+	if not armed: return
+	var vehicle = selected_cargo()
+	var stops: Array[Node3D] = []
 	var signature := ""
-	for depot in get_tree().get_nodes_in_group("depots"):
-		if SupplySource.available(depot,"player"): depots.append(depot); signature += str(depot.get_instance_id())+":"
-	if signature != depot_signature:
-		depot_signature = signature
-		for id in ["Source","Destination"]:
-			var option: OptionButton = supply.get_node(id)
-			var old = route_depots[option.selected] if option.selected >= 0 and option.selected < route_depots.size() else null
-			option.clear()
-			option.tooltip_text = "All living friendly Depots, regardless of vehicle distance. Assign now; travel uses valid ground paths or friendly rails."
-			for depot in depots: option.add_item(depot.name)
-			if is_instance_valid(old) and depots.has(old): option.select(depots.find(old))
-			elif id == "Destination" and depots.size() > 1: option.select(1)
-		route_depots = depots
-	var vehicle = selected_cargo()
-	explain(supply.get_node("StartRoute"),vehicle == null or route_depots.size() < 2,"Needs two living friendly Depots.")
-	explain(supply.get_node("PauseRoute"),vehicle == null or not vehicle.route_active,"No route assigned.")
-	explain(supply.get_node("CancelRoute"),vehicle == null,"Select a Cargo vehicle or Train.")
-	if vehicle:
-		var button: Button = supply.get_node("DeploySupplies")
-		set_label(button,"Pack up supplies" if vehicle.deployed else "Deploy supplies · 2s")
-		explain(button,not vehicle.supply_transition.is_empty(),"Wait for deploying or packing to finish.")
-		supply.get_node("RouteStatus").tooltip_text = "Supply range %.1f · Infantry delivery %.1f. Routes pause on deployment and resume explicitly." % [vehicle.mobile_rules.supply_radius(),vehicle.dropoff_range]
-		hint_label.text = "%s · Supply %.1f / drop-off %.1f. Right-click with Infantry to deliver. Movement packs first." % [vehicle.state,vehicle.mobile_rules.supply_radius(),vehicle.dropoff_range]
-		var endpoints := "%s → %s" % [vehicle.origin_depot.name if is_instance_valid(vehicle.origin_depot) else "none",vehicle.destination_depot.name if is_instance_valid(vehicle.destination_depot) else "none"]
-		supply.get_node("RouteStatus").text = (endpoints+(" · repeat" if vehicle.repeating else "")+" · "+("Paused · Resume explicitly" if vehicle.route_paused else vehicle.state)) if vehicle.route_active else "No route assigned · choose any two friendly Depots"
-		hint_label.text = "Assign from anywhere · Capacity %d total · Trains wait for friendly rails." % vehicle.stockpile.capacity
-func assign_route() -> void:
-	var vehicle = selected_cargo()
-	var a: int = supply.get_node("Source").selected
-	var b: int = supply.get_node("Destination").selected
-	if vehicle == null or a < 0 or b < 0 or a >= route_depots.size() or b >= route_depots.size(): return
-	var success: bool = vehicle.start_supply_route(route_depots[a],route_depots[b],int(supply.get_node("Amounts/Energy").value),int(supply.get_node("Amounts/Iron").value),supply.get_node("Repeat").button_pressed,int(supply.get_node("Amounts/Wood").value),int(supply.get_node("Amounts/Coal").value))
-	var text: String = vehicle.state if success else vehicle.route_error
-	if success and vehicle.is_in_group("rail_trains") and not vehicle.fuel_warning.is_empty(): text += " · Train fuel warning: "+vehicle.fuel_warning
-	game.notify(text)
-
+	for group in ["depots","mobile_supplies"]:
+		for node in get_tree().get_nodes_in_group(group):
+			if vehicle.shipment_endpoint(node): stops.append(node); signature += str(node.get_instance_id())+":"
+	if signature != shipment_signature:
+		shipment_signature = signature
+		shipment_target.clear()
+		shipment_target.add_item("%s at a distant stop…" % game.pending_unit_command.capitalize())
+		for stop in stops: shipment_target.add_item("%s · %d crates · %d space" % [stop.name,stop.stockpile.crate_count(),stop.stockpile.space()])
+		shipment_target.select(0)
+	shipment_stops = stops
+func order_shipment_stop(index: int) -> void:
+	if index <= 0 or index > shipment_stops.size(): return
+	var stop: Node3D = shipment_stops[index-1]
+	var queued := Input.is_key_pressed(KEY_SHIFT)
+	for unit in selected_units():
+		if unit.is_cargo_vehicle: game.give_order(unit,{kind = game.pending_unit_command, target = stop},queued)
+	game.notify("%s at %s %s." % [game.pending_unit_command.capitalize(),stop.name,"queued" if queued else "ordered"])
+	if not queued: game.pending_unit_command = ""
+	shipment_signature = ""
 func begin_production_placement(kind: StringName) -> void:
 	if global_build_open: begin_global_placement(kind); return
 	refresh_build_menu()

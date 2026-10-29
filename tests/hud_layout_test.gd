@@ -104,16 +104,8 @@ func run() -> void:
 		hostile._cooldown = 0
 		hostile._shoot(game.depot)
 	if not check(game.alerts[0].text == "Depot under attack" and game.alerts.size() == mini(before+1,game.ALERT_LIMIT),"Building attack alert missing or not throttled"): return
-	# Cargo vehicles: route page by default, Orders shows the command card.
+	# Cargo vehicles use the same command grid and both info columns (no route page or tabs).
 	await select([truck])
-	var pages = hud.pages
-	if not check(pages.visible and hud.supply.visible and not hud.card.visible,"Cargo did not open on the route page"): return
-	pages.get_node("Orders").pressed.emit(); hud._process(0)
-	if not check(hud.card.visible and not hud.supply.visible and hud.card.get_node("Move").visible and hud.card.get_node("ToggleRefuel").visible and "ORDERS" in hud.commands.get_node("Title").text,"Orders page wrong"): return
-	await select([worker])
-	await select([truck])
-	if not check(hud.supply.visible and not hud.card.visible,"Cargo page did not reset to route"): return
-	await select([worker])
-	if not check(not pages.visible,"Pages shown for Infantry"): return
+	if not check(hud.card.visible and hud.context.visible and hud.card.get_node("Load").visible and hud.card.get_node("ToggleRefuel").visible and not hud.has_node("Bottom/Body/Header/Pages"),"Cargo HUD wrong"): return
 	print("HUD_LAYOUT_TEST_PASSED")
 	quit(0)

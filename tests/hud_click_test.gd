@@ -92,13 +92,14 @@ func run() -> void:
 	var vehicle = game.get_node("Entities/Units/CargoVehicle")
 	vehicle.set_selected(true)
 	for frame in range(4): await process_frame
-	await click(hud.supply.get_node("StartRoute"))
-	if not check(vehicle.route_active,"Real GUI click failed: Assign cargo route"): return
-	await click(hud.supply.get_node("PauseRoute"))
-	if not check(vehicle.route_paused,"Real GUI click failed: Pause cargo route"): return
-	await click(hud.supply.get_node("PauseRoute"))
-	if not check(not vehicle.route_paused,"Real GUI click failed: Resume cargo route"): return
-	await click(hud.supply.get_node("CancelRoute"))
-	if not check(not vehicle.route_active,"Real GUI click failed: Cancel cargo route"): return
+	# Cargo tiles replaced the route panel: arm Load, cycle Trips, then Stop.
+	await click(hud.card.get_node("Load"))
+	if not check(game.pending_unit_command == "load","Real GUI click failed: Load tile"): return
+	game.pending_unit_command = ""
+	await click(hud.card.get_node("Trips"))
+	if not check(vehicle.trips == "all","Real GUI click failed: Trips tile"): return
+	vehicle.command_load(game.depot)
+	await click(hud.card.get_node("Stop"))
+	if not check(vehicle.order == "idle","Real GUI click failed: Stop cargo vehicle"): return
 	print("HUD_GUI_CLICK_CHECKS_PASSED")
 	quit()

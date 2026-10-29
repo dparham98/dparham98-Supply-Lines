@@ -42,7 +42,7 @@ Approved by the user on 2026-10-29. This covers how information is shown in the 
 **D. Order feedback and polish**
 - Click pings, target highlights, hover rings, alert entries with icons, and a cleaner minimap.
 
-**E. Crate shipments (logistics redesign)**
+**E. Crate shipments (logistics redesign)** · implemented on `feature/crate-shipments` (CRATE_SHIPMENTS.md)
 - **Crates:** each crate holds 25 units of one resource. A Cargo vehicle (100) carries 4 crates and a Train (300) carries 12.
 - **Preparing shipments:** done at a Depot or a deployed Cargo vehicle. Crated stock is reserved: production, repair and refuelling can't spend it, but it still counts toward storage.
 - **Keep stocked:** a Depot setting that repacks crates as they're collected.

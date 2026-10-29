@@ -82,9 +82,8 @@ func run() -> void:
 	truck.set_process(false)
 	focus(truck.global_position,45)
 	await click_at(target(truck))
-	if not check(hud.shown == truck and hud.pages.is_visible_in_tree(),"Cargo truck pages not shown"): return
-	# Cargo vehicles reach Auto-refuel from the Orders page of the command card.
-	await click(hud.pages.get_node("Orders"))
+	if not check(hud.shown == truck and hud.card.is_visible_in_tree(),"Cargo truck command grid not shown"): return
+	# Cargo vehicles use the same Auto-refuel tile on the command grid.
 	var truck_refuel: Button = hud.card.get_node("ToggleRefuel")
 	if not check(truck_refuel.is_visible_in_tree(),"Cargo truck refuel toggle not shown"): return
 	await click(truck_refuel)

@@ -44,7 +44,7 @@ func select_only(unit: Node3D) -> void:
 	hud._process(0)
 func visible_keys() -> Array:
 	var keys := []
-	for panel in [hud.card,hud.supply]:
+	for panel in [hud.card]:
 		if not panel.is_visible_in_tree(): continue
 		for button in panel.get_children():
 			if button is Button and button.visible and not hud.hotkey_text(button).is_empty(): keys.append(hud.hotkey_text(button))
@@ -63,7 +63,7 @@ func run() -> void:
 	if not check(key_of("command_move") == KEY_M and key_of("command_stop") == KEY_S and key_of("command_refuel") == KEY_T and key_of("control_group_1") == KEY_1,"Command hotkeys missing from the Input Map"): return
 	if not check(key_of("camera_overview") == KEY_O and key_of("camera_focus_hq") == KEY_BACKSPACE and key_of("camera_focus_selection") == KEY_HOME,"Camera keys not moved to O and Backspace"): return
 	var unbound := []
-	for panel in [hud.card,hud.supply]:
+	for panel in [hud.card]:
 		for button in panel.get_children():
 			if button is Button and button.shortcut != null and hud.hotkey_text(button).is_empty(): unbound.append(button.name)
 	if not check(unbound.is_empty(),"Shortcuts without an Input Map key: %s" % [unbound]): return
@@ -102,21 +102,14 @@ func run() -> void:
 	press(KEY_T)
 	if not check(not tank.auto_refuel and hud.label_of(hud.card.get_node("ToggleRefuel")).begins_with("Auto-refuel: off"),"T did not toggle the Tank's Auto-refuel"): return
 	press(KEY_T)
-	# Cargo Auto-refuel lives on the Orders page; T does nothing on the route page.
+	# Cargo tiles share the grid: T toggles Auto-refuel, L arms Load, D deploys supplies.
 	select_only(truck)
 	press(KEY_T)
-	if not check(truck.auto_refuel,"T fired on the route page, which has no Auto-refuel"): return
-	hud.pages.get_node("Orders").pressed.emit(); hud._process(0)
+	if not check(not truck.auto_refuel,"T did not toggle the truck's Auto-refuel"): return
 	press(KEY_T)
-	if not check(not truck.auto_refuel,"T did not toggle the truck on its Orders page"): return
-	press(KEY_T)
-	# The Supply panel buttons have keys too, but typing into a field does not fire them.
-	hud.pages.get_node("Route").pressed.emit(); hud._process(0)
-	var field: LineEdit = hud.supply.get_node("Amounts/Energy").get_line_edit()
-	field.grab_focus()
-	press(KEY_D)
-	if not check(not truck.deployed and truck.supply_transition.is_empty(),"Typing in a field fired Deploy"): return
-	field.release_focus()
+	press(KEY_L)
+	if not check(game.pending_unit_command == "load","L did not arm Load"): return
+	game.pending_unit_command = ""
 	press(KEY_D)
 	if not check(not truck.supply_transition.is_empty() or truck.deployed,"D did not deploy the truck"): return
 	# Selection: Shift toggles and adds, double-click picks the same type, control groups recall.

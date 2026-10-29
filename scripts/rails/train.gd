@@ -20,15 +20,22 @@ func start_supply_route(origin: Node3D, destination: Node3D, energy: int, iron: 
 	check_round_trip_fuel()
 	return true
 var fuel_warning := ""
-## Estimated coal for current position -> loading Depot -> unloading Depot -> loading Depot.
-## Returns -1 when the rails do not currently connect the route.
+## The pickup and delivery Depots of the current trip: a route, or a Load and Unload pair
+## from the current order, the queue or the last pickup. Empty when there is no pair.
+func trip_endpoints() -> Array:
+	if route_active: return [origin_depot,destination_depot] if endpoints_friendly() else []
+	return shipment_pair()
+var _trip_key := ""
+## Estimated coal for current position -> pickup Depot -> delivery Depot -> pickup Depot.
+## Returns -1 when there is no trip or the rails do not currently connect it.
 func estimated_round_trip_fuel() -> float:
-	if fuel_rules == null or not endpoints_friendly(): return -1
+	var pair := trip_endpoints()
+	if fuel_rules == null or pair.is_empty(): return -1
 	var cell = ground.get_tile_at_position(global_position)
 	if cell == null: return -1
-	var to_origin: Array[Vector2i] = rail_network.path_to_depot(cell,origin_depot,team,_owner_key(),false)
+	var to_origin: Array[Vector2i] = rail_network.path_to_depot(cell,pair[0],team,_owner_key(),false)
 	if to_origin.is_empty(): return -1
-	var leg: Array[Vector2i] = rail_network.path_to_depot(to_origin[-1],destination_depot,team,_owner_key(),false)
+	var leg: Array[Vector2i] = rail_network.path_to_depot(to_origin[-1],pair[1],team,_owner_key(),false)
 	if leg.is_empty(): return -1
 	return (_path_length(to_origin)+2*_path_length(leg))*fuel_rules.coal_per_movement_unit
 func _path_length(path: Array[Vector2i]) -> float:
@@ -38,7 +45,7 @@ func _path_length(path: Array[Vector2i]) -> float:
 ## Warn but allow (approved default): the route is kept even when the tank cannot cover it.
 func check_round_trip_fuel() -> void:
 	fuel_warning = ""
-	if not fuel_active(): return
+	if not fuel_active() or trip_endpoints().is_empty(): return
 	var needed := estimated_round_trip_fuel()
 	if needed < 0: fuel_warning = "Round-trip fuel unknown until rails connect."
 	elif needed > fuel: fuel_warning = "Round trip needs about %.0f coal; tank holds %.1f." % [needed,fuel]
@@ -70,6 +77,12 @@ func cancel_supply_route() -> void:
 func _process(delta: float) -> void:
 	if _dead: return
 	if _checked_revision != rail_network.revision: _rail_changed()
+	# Re-estimate the round trip whenever a Load/Unload pair changes.
+	var pair := trip_endpoints()
+	var key := "" if pair.is_empty() else "%d:%d" % [pair[0].get_instance_id(),pair[1].get_instance_id()]
+	if key != _trip_key:
+		_trip_key = key
+		if not route_active: check_round_trip_fuel()
 	if route_active and waiting_for_rail and not route_paused:
 		if not endpoints_friendly(): pause_supply_route()
 		else:

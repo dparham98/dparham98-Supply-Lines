@@ -32,29 +32,44 @@ func run() -> void:
 	var payer = rails.segments[gap].assigned_depot
 	rails.segments[gap].free()
 	await click_at(rig.camera.unproject_position(train.selection_point()))
-	if not check(hud.shown == train and hud.supply.visible,"Train selection did not open delivery panel"): return
-	if not check(hud.route_depots.has(source) and hud.route_depots.has(target) and not hud.supply.get_node("StartRoute").disabled,"Global endpoints unavailable with cut rails"): return
-	hud.supply.get_node("Source").select(hud.route_depots.find(source))
-	hud.supply.get_node("Destination").select(hud.route_depots.find(target))
-	var balance: int = source.energy
-	await click(hud.supply.get_node("StartRoute"))
-	if not check(train.route_active and train.waiting_for_rail and source.energy == balance and game.message.contains("waiting for friendly rails"),"Assign click rejected disconnected route or transferred early"): return
-	if not check(hud.supply.get_node("RouteStatus").text.contains("waiting for friendly rails"),"HUD did not explain accepted waiting route"): return
-	await click(hud.supply.get_node("PauseRoute"))
-	if not check(train.route_paused,"Pause click failed on queued route"): return
-	await click(hud.supply.get_node("PauseRoute"))
-	if not check(not train.route_paused and train.waiting_for_rail,"Resume should resume waiting before initial rail connection"): return
-	await click(hud.supply.get_node("CancelRoute"))
-	if not check(not train.route_active and not train.waiting_for_rail,"Cancel click retained queued route state"): return
-	await click(hud.supply.get_node("StartRoute"))
+	if not check(hud.shown == train and hud.card.get_node("Load").visible and hud.card.get_node("Unload").visible,"Train selection did not show crate tiles"): return
+	# Crate shipments replaced the route panel: stops are chosen from the HUD's distant-stop list.
+	source.energy = 100
+	source.stockpile.pack(&"energy"); source.stockpile.pack(&"energy")
+	var delivered: int = target.stockpile.amount(&"energy")
+	await click(hud.card.get_node("Load"))
+	if not check(game.pending_unit_command == "load" and hud.shipment_target.visible and hud.shipment_stops.has(source) and hud.shipment_stops.has(target),"Distant stops unavailable with cut rails"): return
+	hud.shipment_target.item_selected.emit(hud.shipment_stops.find(source)+1)
+	if not check(train.order == "load" and train.job_target == source and game.pending_unit_command.is_empty(),"Distant Load not ordered"): return
+	await click(hud.card.get_node("Unload"))
+	var shift := InputEventKey.new()
+	shift.keycode = KEY_SHIFT; shift.physical_keycode = KEY_SHIFT; shift.pressed = true
+	Input.parse_input_event(shift); Input.flush_buffered_events()
+	hud.shipment_target.item_selected.emit(hud.shipment_stops.find(target)+1)
+	shift.pressed = false
+	Input.parse_input_event(shift); Input.flush_buffered_events()
+	if not check(train.order_queue.size() == 1 and train.order_queue[0].kind == "unload" and train.order_queue[0].target == target,"Shift distant Unload not queued"): return
+	game.pending_unit_command = ""
+	# The pickup is reachable; the delivery waits for the cut rails without losing crates.
+	for i in range(60*30):
+		train._process(1.0/60)
+		if train.order == "unload": break
+	if not check(train.order == "unload" and train.stockpile.crate_count(&"energy") == 2 and source.stockpile.crate_count() == 0,"Train did not load the crates"): return
+	for i in range(60*5): train._process(1.0/60)
+	if not check(train.state.contains("blocked") and train.stockpile.crate_count() == 2 and target.stockpile.amount(&"energy") == delivered,"Cut rails did not hold the delivery"): return
 	var replacement = rails.segment_scene.instantiate()
 	replacement.assigned_depot = payer; replacement.position = game.ground.tile_to_world(gap)
 	game.add_child(replacement)
-	train._process(0.1)
-	if not check(not train.waiting_for_rail and not train.route_paused,"Initial connection did not release queued route"): return
-	# Invalid requests display the concrete cause and preserve the accepted route.
-	hud.supply.get_node("Amounts/Energy").value = 1000
-	await click(hud.supply.get_node("StartRoute"))
-	if not check(game.message.contains("capacity") and train.route_active and train.requested_energy == 60,"Invalid GUI assignment changed route or hid its reason: "+game.message): return
+	for i in range(60*60):
+		train._process(1.0/60)
+		if train.order == "idle": break
+	if not check(train.order == "idle" and target.stockpile.amount(&"energy") == delivered+50 and train.stockpile.total() == 0,"Repaired rails did not complete the delivery"): return
+	# Trains only stop at Depots: a deployed truck is not offered or accepted.
+	var truck = load("res://scenes/gameplay/cargo_vehicle.tscn").instantiate()
+	truck.position = source.global_position+Vector3(-10,0,8)
+	game.get_node("Entities/Units").add_child(truck); truck.set_process(false)
+	truck.deployed = true
+	train.command_load(truck)
+	if not check(train.order == "idle" and game.message.contains("friendly Depot"),"Train accepted a deployed truck as a stop"): return
 	print("REMOTE_ROUTES_GUI_CHECKS_PASSED")
 	quit()

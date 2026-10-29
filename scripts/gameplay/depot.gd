@@ -14,19 +14,19 @@ var storage_capacity: int:
 	get: return stockpile.capacity
 	set(value): stockpile.resize(value)
 var energy: int:
-	get: return stockpile.amount(&"energy")
-	set(value): stockpile.set_amount(&"energy",value)
+	get: return stockpile.available(&"energy")
+	set(value): stockpile.set_amount(&"energy",value+stockpile.crated(&"energy"))
 @export var initial_wood := 0
 @export var initial_coal := 0
 var wood: int:
-	get: return stockpile.amount(&"wood")
-	set(value): stockpile.set_amount(&"wood",value)
+	get: return stockpile.available(&"wood")
+	set(value): stockpile.set_amount(&"wood",value+stockpile.crated(&"wood"))
 var iron: int:
-	get: return stockpile.amount(&"iron")
-	set(value): stockpile.set_amount(&"iron",value)
+	get: return stockpile.available(&"iron")
+	set(value): stockpile.set_amount(&"iron",value+stockpile.crated(&"iron"))
 var coal: int:
-	get: return stockpile.amount(&"coal")
-	set(value): stockpile.set_amount(&"coal",value)
+	get: return stockpile.available(&"coal")
+	set(value): stockpile.set_amount(&"coal",value+stockpile.crated(&"coal"))
 var capture_team := ""
 var capture_progress := 0.0
 var pending: Array[String] = []
@@ -81,6 +81,7 @@ func request_infantry() -> bool:
 	game.notify("Depots grant one Infantry on establishment. Produce additional Infantry at Barracks.")
 	return false
 func _process(delta: float) -> void:
+	stockpile.restock()
 	update_capture(delta)
 	try_construction_infantry()
 	if queue <= 0: progress = 0; $Progress.text = "%s DEPOT · E %d / I %d · capture %d%%" % [team,energy,iron,roundi(capture_progress/rules.capture_seconds*100)]; return

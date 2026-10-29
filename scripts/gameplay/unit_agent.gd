@@ -197,11 +197,13 @@ func run_order(entry: Dictionary) -> void:
 		"return": command_return(entry.get("target"))
 		"repair": command_repair(entry.target)
 		"capture": command_capture(entry.target)
+		"load", "unload":
+			if has_method("command_"+entry.kind): call("command_"+entry.kind,entry.target)
 func _start_next_order() -> void:
 	# Skip entries whose target is gone or that the unit refuses, such as an unreachable attack.
 	while order == "idle" and not order_queue.is_empty():
 		var entry: Dictionary = order_queue.pop_front()
-		if entry.kind in ["attack","gather","repair","capture"] and not is_instance_valid(entry.get("target")): continue
+		if entry.kind in ["attack","gather","repair","capture","load","unload"] and not is_instance_valid(entry.get("target")): continue
 		run_order(entry)
 func order_point(entry: Dictionary) -> Variant:
 	if entry.kind == "move": return entry.point
@@ -491,7 +493,7 @@ func fuel_target() -> float:
 func is_stopped() -> bool:
 	return out_of_fuel or (_route.is_empty() and _moving_to.x < 0)
 func can_refuel_from(node) -> bool:
-	return node != self and SupplySource.covers(node,global_position,team) and node.stockpile.amount(&"coal") > 0
+	return node != self and SupplySource.covers(node,global_position,team) and node.stockpile.available(&"coal") > 0
 func set_fuel_source(node: Node3D) -> void:
 	fuel_source = node
 	fuel_source_explicit = is_instance_valid(node)
@@ -502,7 +504,7 @@ func choose_fuel_source() -> Node3D:
 	var best_distance := INF
 	for group in ["depots","mobile_supplies"]:
 		for candidate in get_tree().get_nodes_in_group(group):
-			if candidate == self or candidate.stockpile.amount(&"coal") <= 0: continue
+			if candidate == self or candidate.stockpile.available(&"coal") <= 0: continue
 			var d: float = candidate.global_position.distance_squared_to(global_position)
 			if d > best_distance or (is_equal_approx(d,best_distance) and candidate.get_instance_id() > best.get_instance_id()): continue
 			if SupplySource.covers(candidate,global_position,team): best = candidate; best_distance = d

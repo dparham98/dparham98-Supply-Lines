@@ -1,5 +1,5 @@
 extends SceneTree
-# Rendered HUD phase 4 check: real clicks on the type strip, alert feed and cargo pages.
+# Rendered HUD phase 4 check: real clicks on the type strip, alert feed and cargo tiles.
 var game: Node3D
 var hud: CanvasLayer
 const TestOutput = preload("res://tests/test_output.gd")
@@ -63,8 +63,6 @@ func run() -> void:
 	await click(entry)
 	if not check(rig._focus_target.is_equal_approx(depot.global_position),"Feed click did not focus the alert"): return
 	await click_at(target(truck))
-	if not check(truck.is_selected and hud.supply.is_visible_in_tree(),"Cargo route page not shown"): return
-	await click(hud.pages.get_node("Orders"))
-	if not check(hud.card.is_visible_in_tree() and hud.card.get_node("ToggleRefuel").is_visible_in_tree(),"Orders page click failed"): return
+	if not check(truck.is_selected and hud.card.get_node("Load").is_visible_in_tree() and hud.card.get_node("ToggleRefuel").is_visible_in_tree(),"Cargo crate tiles not shown"): return
 	await shot("cargo_orders")
 	print("HUD_LAYOUT_RUNTIME_CHECK_PASSED"); quit(TestOutput.exit_code())

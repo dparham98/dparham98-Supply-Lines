@@ -28,7 +28,7 @@ func run() -> void:
 	for path in ["Bottom","Feed","PlaytestPanel"]:
 		if not check(hud.get_node(path).theme == theme,"%s does not use the shared theme" % path): return
 	# Every bound card and Supply button has an icon and a badge showing its key.
-	for panel in [hud.card,hud.supply]:
+	for panel in [hud.card]:
 		for button in panel.get_children():
 			if not button is Button or button.shortcut == null: continue
 			if not check(button.icon != null and button.has_node("Key") and button.get_node("Key").text == hud.hotkey_text(button) and not button.get_node("Key").text.is_empty(),"%s lacks an icon or key badge" % button.name): return
