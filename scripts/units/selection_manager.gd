@@ -4,6 +4,8 @@ var selecting := false
 var start_pos := Vector2.ZERO
 var end_pos := Vector2.ZERO
 var drag_distance := 0.0
+# Selection keeps working while playtest tools pause the game.
+func _ready() -> void: process_mode = PROCESS_MODE_ALWAYS
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT: selecting = false
 func _input(event: InputEvent) -> void:

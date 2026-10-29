@@ -2,6 +2,7 @@
 [ext_resource type="Script" path="res://scripts/gameplay/skirmish_hud.gd" id="hud"]
 [ext_resource type="Script" path="res://scripts/ui/tactical_minimap.gd" id="map_script"]
 [ext_resource type="Texture2D" path="res://assets/maps/source_map.png" id="map"]
+[ext_resource type="PackedScene" path="res://scenes/ui/playtest_panel.tscn" id="playtest"]
 [sub_resource type="StyleBoxFlat" id="panel"]
 bg_color = Color(0.025,0.045,0.06,0.98)
 border_width_top = 2
@@ -114,6 +115,7 @@ action = &"produce_ubermech"
 [sub_resource type="Shortcut" id="shortcut_produce_ubermech"]
 events = [SubResource("key_produce_ubermech")]
 [node name="Interface" type="CanvasLayer"]
+process_mode = 3
 script = ExtResource("hud")
 [node name="Bottom" type="PanelContainer" parent="."]
 anchors_preset = 12
@@ -497,3 +499,4 @@ shortcut = SubResource("shortcut_command_cancel")
 layout_mode = 2
 visible = false
 text = "Cancel construction plan"
+[node name="PlaytestPanel" parent="." instance=ExtResource("playtest")]

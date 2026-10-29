@@ -63,6 +63,8 @@ func _process(delta: float) -> void:
 	if Engine.is_editor_hint():
 		_apply_editor_preview()
 		return
+	# Camera speed ignores playtest game speed.
+	if Engine.time_scale > 0: delta /= Engine.time_scale
 	if get_window().has_focus():
 		var pan := Input.get_vector("camera_pan_left", "camera_pan_right", "camera_pan_forward", "camera_pan_back")
 		var keyboard_panning := pan != Vector2.ZERO

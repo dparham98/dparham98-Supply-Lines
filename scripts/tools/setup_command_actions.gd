@@ -8,7 +8,8 @@ func _initialize() -> void:
 		"produce_scout": KEY_S, "produce_grenadier": KEY_G, "produce_tank": KEY_T, "produce_motorcycle": KEY_M, "produce_drone": KEY_D, "produce_ubermech": KEY_U,
 		"control_group_1": KEY_1, "control_group_2": KEY_2, "control_group_3": KEY_3, "control_group_4": KEY_4, "control_group_5": KEY_5, "control_group_6": KEY_6, "control_group_7": KEY_7, "control_group_8": KEY_8, "control_group_9": KEY_9,
 		# Moved from M and F, which now belong to Move and Focus assigned Depot.
-		"camera_overview": KEY_O, "camera_focus_hq": KEY_BACKSPACE}
+		"camera_overview": KEY_O, "camera_focus_hq": KEY_BACKSPACE,
+		"playtest_tools": KEY_F10}
 	for action in keys:
 		var event := InputEventKey.new()
 		event.physical_keycode = keys[action]
