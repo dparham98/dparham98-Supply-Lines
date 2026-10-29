@@ -6,6 +6,15 @@ extends CanvasLayer
 @onready var info = $Bottom/Body/Row/Info
 @onready var build_menu = $Bottom/Body/Row/Commands/BuildMenu
 @onready var supply = $Bottom/Body/Row/Commands/Supply
+@onready var bars = $Bottom/Body/Row/Info/Bars
+@onready var strip = $Bottom/Body/Selection
+@onready var feed = $Feed
+@onready var pages = $Bottom/Body/Header/Pages
+# Cargo vehicles open on their delivery route page; Orders shows the ordinary command card.
+var cargo_page := "route"
+var strip_types: Array[String] = []
+var feed_points: Array[Vector3] = []
+const FEED_SECONDS := 45.0
 var route_depots: Array[Node3D] = []
 var local_sources: Array[Node3D] = []
 var local_signature := ""
@@ -25,6 +34,12 @@ var shown: Node3D
 var desired_buttons: Array[String] = []
 func _ready() -> void:
 	$Bottom/Body/Header/GlobalBuild.pressed.connect(open_global_build)
+	pages.get_node("Orders").pressed.connect(func(): cargo_page = "orders")
+	pages.get_node("Route").pressed.connect(func(): cargo_page = "route")
+	for i in strip.get_child_count():
+		strip.get_child(i).pressed.connect(narrow_selection.bind(i))
+	for i in feed.get_child_count():
+		feed.get_child(i).pressed.connect(focus_alert.bind(i))
 	card.get_node("CancelPlan").pressed.connect(func():
 		if is_instance_valid(shown) and shown.is_in_group("construction_plans"): shown.cancel())
 	commands.get_node("GeneratorMode").item_selected.connect(func(index):
@@ -160,6 +175,57 @@ func _process(_delta: float) -> void:
 	for panel in [card,supply]:
 		for button in panel.get_children():
 			if button is Button and button.visible: label_hotkey(button)
+	update_strip(units)
+	update_feed()
+# Fuel and cargo bars under health. Fuel turns amber when low and red when empty.
+func update_bars(node: Node3D) -> void:
+	if node.fuel_active():
+		var fuel_bar: ProgressBar = bars.get_node("Fuel")
+		fuel_bar.max_value = node.fuel_rules.reserve_capacity
+		fuel_bar.value = node.fuel
+		fuel_bar.get_theme_stylebox("fill").bg_color = Color(0.95,0.3,0.25) if node.fuel <= 0 else (Color(1,0.72,0.2) if node.fuel_low() else Color(0.4,0.85,0.45))
+		bars.get_node("FuelLabel").visible = true
+		fuel_bar.visible = true
+	var capacity := 0
+	var carried := 0
+	if node.is_cargo_vehicle: capacity = node.stockpile.capacity; carried = node.stockpile.total()
+	elif node.can_gather: capacity = node.carry_capacity; carried = node.cargo
+	if capacity > 0:
+		var cargo_bar: ProgressBar = bars.get_node("Cargo")
+		cargo_bar.max_value = capacity
+		cargo_bar.value = carried
+		bars.get_node("CargoLabel").visible = true
+		cargo_bar.visible = true
+# One button per unit type in a mixed selection.
+func update_strip(units: Array[Node3D]) -> void:
+	var counts := {}
+	var names := {}
+	strip_types.clear()
+	for unit in units:
+		var key: String = unit.scene_file_path
+		if not counts.has(key): strip_types.append(key); names[key] = object_name(unit)
+		counts[key] = counts.get(key,0)+1
+	strip.visible = units.size() > 1 and not global_build_open
+	for i in strip.get_child_count():
+		var button: Button = strip.get_child(i)
+		button.visible = strip.visible and i < strip_types.size()
+		if button.visible: button.text = "%s ×%d" % [names[strip_types[i]],counts[strip_types[i]]]
+func narrow_selection(index: int) -> void:
+	if index >= strip_types.size(): return
+	var keep_type := not Input.is_key_pressed(KEY_SHIFT)
+	for unit in selected_units():
+		unit.set_selected((unit.scene_file_path == strip_types[index]) == keep_type)
+func update_feed() -> void:
+	var now := Time.get_ticks_msec()/1000.0
+	feed_points.clear()
+	for entry in game.alerts:
+		if now-entry.time <= FEED_SECONDS and feed_points.size() < feed.get_child_count():
+			var button: Button = feed.get_child(feed_points.size())
+			button.text = "%s · %ds" % [entry.text,int(now-entry.time)]
+			feed_points.append(entry.point)
+	for i in feed.get_child_count(): feed.get_child(i).visible = i < feed_points.size()
+func focus_alert(index: int) -> void:
+	if index < feed_points.size(): game.get_node("CameraRig").focus_position(feed_points[index])
 # Show the bound key on the button. Shortcuts only fire for visible, enabled buttons.
 func label_hotkey(button: Button) -> void:
 	var key := hotkey_text(button)
@@ -176,9 +242,14 @@ func update_contents() -> void:
 	if node != shown:
 		close_build()
 		shown = node
+		cargo_page = "route"
+	for bar in bars.get_children(): bar.visible = false
 	var is_unit: bool = is_instance_valid(node) and node.is_in_group("units")
 	var show_build: bool = global_build_open or is_instance_valid(node) and build_open and ((is_unit and node.can_construct) or (node.is_in_group("depots") and node.team == "player"))
-	var show_supply: bool = is_unit and node.is_cargo_vehicle and not show_build
+	var show_supply: bool = is_unit and node.is_cargo_vehicle and not show_build and cargo_page == "route"
+	pages.visible = is_unit and node.is_cargo_vehicle and not show_build
+	pages.get_node("Orders").set_pressed_no_signal(cargo_page == "orders")
+	pages.get_node("Route").set_pressed_no_signal(cargo_page == "route")
 	supply.visible = show_supply
 	build_menu.visible = show_build
 	card.visible = not show_build and not show_supply
@@ -283,12 +354,16 @@ func update_contents() -> void:
 		elif node.is_depot_truck: cost_energy = node.deployment_rules.truck_energy_cost; cost_iron = node.deployment_rules.truck_iron_cost
 		info.get_node("Details").text = "%s\n%s\nNearest Depot: %s\nSpeed %.1f · vision %.1f\n%s\nCost %d E / %d I" % [node.state,cargo_text,proximity,node.move_speed,node.vision,combat,cost_energy,cost_iron]
 		commands.get_node("Title").text = "UNIT · ORDERS"
+		update_bars(node)
 		show_button("Move","Move")
 		show_button("Stop","Stop")
 		if node.fuel_active(): show_button("ToggleRefuel","Auto-refuel: %s" % ("on" if node.auto_refuel else "off"))
 		if node.is_cargo_vehicle:
 			commands.get_node("Title").text = "TRAIN · RAIL DELIVERY ROUTE" if node.is_in_group("rail_trains") else "CARGO VEHICLE · DELIVERY ROUTE"
 			update_supply_panel()
+			if cargo_page == "orders":
+				commands.get_node("Title").text = ("TRAIN" if node.is_in_group("rail_trains") else "CARGO VEHICLE")+" · ORDERS"
+				commands.get_node("Hint").text = "Move, Stop and Auto-refuel. Delivery route returns to route controls."
 		elif node.is_depot_truck:
 			show_button("DeployTruck","Deploy into Depot")
 			commands.get_node("Hint").text = "Deploy on an empty 8 × 8 footprint. This vehicle does not carry transferable cargo."

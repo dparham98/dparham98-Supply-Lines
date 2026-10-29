@@ -11,6 +11,19 @@ content_margin_left = 12.0
 content_margin_right = 12.0
 content_margin_top = 8.0
 content_margin_bottom = 8.0
+[sub_resource type="StyleBoxFlat" id="bar_background"]
+bg_color = Color(0.12,0.17,0.21,1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.22,0.32,0.38,1)
+[sub_resource type="StyleBoxFlat" id="health_fill"]
+bg_color = Color(0.3,0.75,0.9,1)
+[sub_resource type="StyleBoxFlat" id="fuel_fill"]
+bg_color = Color(0.4,0.85,0.45,1)
+[sub_resource type="StyleBoxFlat" id="cargo_fill"]
+bg_color = Color(0.85,0.7,0.35,1)
 [sub_resource type="StyleBoxFlat" id="selection_box"]
 bg_color = Color(0.1,0.7,1,0.12)
 border_width_left = 1
@@ -122,7 +135,7 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -300.0
+offset_top = -232.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_styles/panel = SubResource("panel")
@@ -137,6 +150,20 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "SUPPLY LINES · Select a unit or building"
 clip_text = true
+[node name="Pages" type="HBoxContainer" parent="Bottom/Body/Header"]
+layout_mode = 2
+visible = false
+[node name="Orders" type="Button" parent="Bottom/Body/Header/Pages"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Orders"
+[node name="Route" type="Button" parent="Bottom/Body/Header/Pages"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+button_pressed = true
+text = "Delivery route"
 [node name="GlobalBuild" type="Button" parent="Bottom/Body/Header"]
 layout_mode = 2
 text = "Build…"
@@ -147,6 +174,58 @@ text = "Focus selection"
 [node name="Restart" type="Button" parent="Bottom/Body/Header"]
 layout_mode = 2
 text = "Restart"
+[node name="Selection" type="HBoxContainer" parent="Bottom/Body"]
+layout_mode = 2
+visible = false
+theme_override_constants/separation = 6
+[node name="Type1" type="Button" parent="Bottom/Body/Selection"]
+layout_mode = 2
+visible = false
+tooltip_text = "Click: keep only this type. Shift-click: remove this type."
+theme_override_font_sizes/font_size = 13
+text = "Type"
+[node name="Type2" type="Button" parent="Bottom/Body/Selection"]
+layout_mode = 2
+visible = false
+tooltip_text = "Click: keep only this type. Shift-click: remove this type."
+theme_override_font_sizes/font_size = 13
+text = "Type"
+[node name="Type3" type="Button" parent="Bottom/Body/Selection"]
+layout_mode = 2
+visible = false
+tooltip_text = "Click: keep only this type. Shift-click: remove this type."
+theme_override_font_sizes/font_size = 13
+text = "Type"
+[node name="Type4" type="Button" parent="Bottom/Body/Selection"]
+layout_mode = 2
+visible = false
+tooltip_text = "Click: keep only this type. Shift-click: remove this type."
+theme_override_font_sizes/font_size = 13
+text = "Type"
+[node name="Type5" type="Button" parent="Bottom/Body/Selection"]
+layout_mode = 2
+visible = false
+tooltip_text = "Click: keep only this type. Shift-click: remove this type."
+theme_override_font_sizes/font_size = 13
+text = "Type"
+[node name="Type6" type="Button" parent="Bottom/Body/Selection"]
+layout_mode = 2
+visible = false
+tooltip_text = "Click: keep only this type. Shift-click: remove this type."
+theme_override_font_sizes/font_size = 13
+text = "Type"
+[node name="Type7" type="Button" parent="Bottom/Body/Selection"]
+layout_mode = 2
+visible = false
+tooltip_text = "Click: keep only this type. Shift-click: remove this type."
+theme_override_font_sizes/font_size = 13
+text = "Type"
+[node name="Type8" type="Button" parent="Bottom/Body/Selection"]
+layout_mode = 2
+visible = false
+tooltip_text = "Click: keep only this type. Shift-click: remove this type."
+theme_override_font_sizes/font_size = 13
+text = "Type"
 [node name="Row" type="HBoxContainer" parent="Bottom/Body"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -154,7 +233,7 @@ theme_override_constants/separation = 18
 [node name="MapColumn" type="VBoxContainer" parent="Bottom/Body/Row"]
 layout_mode = 2
 [node name="Map" type="Control" parent="Bottom/Body/Row/MapColumn"]
-custom_minimum_size = Vector2(224,224)
+custom_minimum_size = Vector2(176,176)
 layout_mode = 2
 clip_contents = true
 mouse_filter = 0
@@ -181,15 +260,50 @@ clip_text = true
 custom_minimum_size = Vector2(0,14)
 layout_mode = 2
 show_percentage = false
+theme_override_styles/background = SubResource("bar_background")
+theme_override_styles/fill = SubResource("health_fill")
 [node name="HealthText" type="Label" parent="Bottom/Body/Row/Info"]
 layout_mode = 2
 text = "Select a unit or building"
+[node name="Bars" type="GridContainer" parent="Bottom/Body/Row/Info"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 3
+[node name="FuelLabel" type="Label" parent="Bottom/Body/Row/Info/Bars"]
+layout_mode = 2
+visible = false
+text = "Fuel"
+theme_override_font_sizes/font_size = 12
+[node name="Fuel" type="ProgressBar" parent="Bottom/Body/Row/Info/Bars"]
+custom_minimum_size = Vector2(0,10)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+visible = false
+show_percentage = false
+theme_override_styles/background = SubResource("bar_background")
+theme_override_styles/fill = SubResource("fuel_fill")
+[node name="CargoLabel" type="Label" parent="Bottom/Body/Row/Info/Bars"]
+layout_mode = 2
+visible = false
+text = "Cargo"
+theme_override_font_sizes/font_size = 12
+[node name="Cargo" type="ProgressBar" parent="Bottom/Body/Row/Info/Bars"]
+custom_minimum_size = Vector2(0,10)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+visible = false
+show_percentage = false
+theme_override_styles/background = SubResource("bar_background")
+theme_override_styles/fill = SubResource("cargo_fill")
 [node name="Details" type="Label" parent="Bottom/Body/Row/Info"]
 layout_mode = 2
 custom_minimum_size = Vector2(280,0)
 autowrap_mode = 2
 text = "Object details appear here."
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 [node name="Commands" type="VBoxContainer" parent="Bottom/Body/Row"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -216,72 +330,72 @@ popup/item_2/id = 2
 [node name="Main" type="GridContainer" parent="Bottom/Body/Row/Commands"]
 layout_mode = 2
 columns = 3
-theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
 [node name="Move" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_command_move")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Move"
 [node name="Attack" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_command_attack")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Attack"
 [node name="Gather" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_command_gather")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Gather iron"
 [node name="Stop" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_command_stop")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Stop"
 [node name="Return" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_command_return")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Return cargo"
 [node name="Build" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_command_build")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Build…"
 [node name="PrintInfantry" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_infantry")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Print infantry"
 [node name="PrintTruck" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_depot_truck")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Print Depot Truck"
 [node name="PrintCargo" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_cargo")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Print cargo vehicle"
 [node name="DeployTruck" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_command_deploy")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Deploy Depot Truck"
 [node name="FocusAssigned" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_command_focus_assigned")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Focus assigned Depot"
 [node name="Hint" type="Label" parent="Bottom/Body/Row/Commands"]
@@ -387,74 +501,74 @@ theme_override_font_sizes/font_size = 13
 [node name="ProduceScout" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_scout")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Scout"
 
 [node name="ProduceGrenadier" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_grenadier")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Grenadier"
 
 [node name="ProduceTank" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_tank")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Tank"
 
 [node name="ProduceMotorcycle" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_motorcycle")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Motorcycle"
 
 [node name="ProduceDrone" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_drone")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Drone"
 
 [node name="ProduceUbermech" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_ubermech")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Ubermech"
 
 [node name="Repair" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_command_repair")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Repair building"
 
 [node name="Capture" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_command_capture")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Capture Depot / mine"
 
 [node name="PrintTrain" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_train")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Print train"
 [node name="Rail" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Rail tile"
 
 [node name="Mine" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Iron Mine"
 
@@ -473,20 +587,20 @@ text = "Auto-refuel: on"
 [node name="DropMaterials" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_command_drop")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 size_flags_horizontal = 3
 text = "Drop materials"
 
 [node name="ToggleGenerator" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_command_pause")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 text = "Pause generator"
 
 [node name="ToggleRefuel" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_command_refuel")
 layout_mode = 2
-custom_minimum_size = Vector2(0,36)
+custom_minimum_size = Vector2(0,30)
 text = "Auto-refuel: on"
 
 [node name="SelectionBox" type="Panel" parent="."]
@@ -499,4 +613,42 @@ shortcut = SubResource("shortcut_command_cancel")
 layout_mode = 2
 visible = false
 text = "Cancel construction plan"
+[node name="Feed" type="VBoxContainer" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -432.0
+offset_top = 44.0
+offset_right = -12.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_constants/separation = 4
+[node name="Entry1" type="Button" parent="Feed"]
+layout_mode = 2
+visible = false
+alignment = 2
+tooltip_text = "Click to move the camera here."
+theme_override_font_sizes/font_size = 13
+text = "Alert"
+[node name="Entry2" type="Button" parent="Feed"]
+layout_mode = 2
+visible = false
+alignment = 2
+tooltip_text = "Click to move the camera here."
+theme_override_font_sizes/font_size = 13
+text = "Alert"
+[node name="Entry3" type="Button" parent="Feed"]
+layout_mode = 2
+visible = false
+alignment = 2
+tooltip_text = "Click to move the camera here."
+theme_override_font_sizes/font_size = 13
+text = "Alert"
+[node name="Entry4" type="Button" parent="Feed"]
+layout_mode = 2
+visible = false
+alignment = 2
+tooltip_text = "Click to move the camera here."
+theme_override_font_sizes/font_size = 13
+text = "Alert"
 [node name="PlaytestPanel" parent="." instance=ExtResource("playtest")]
