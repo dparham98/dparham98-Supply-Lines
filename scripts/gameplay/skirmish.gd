@@ -50,8 +50,21 @@ func _ready() -> void:
 	$DepotNetwork.select_depot(depot)
 func notify(text: String) -> void:
 	message = text
+# Positioned alerts for the HUD feed, newest first. A key repeats at most every ALERT_REPEAT_SECONDS.
+var alerts: Array[Dictionary] = []
+var _alert_times := {}
+const ALERT_REPEAT_SECONDS := 10.0
+const ALERT_LIMIT := 8
+func alert(text: String, at: Vector3, key := "") -> void:
+	var now := Time.get_ticks_msec()/1000.0
+	if not key.is_empty():
+		if now-_alert_times.get(key,-INF) < ALERT_REPEAT_SECONDS: return
+		_alert_times[key] = now
+	alerts.push_front({text = text, point = at, time = now})
+	if alerts.size() > ALERT_LIMIT: alerts.resize(ALERT_LIMIT)
 func unit_died(unit: Node3D) -> void:
 	if unit.team == "enemy": enemies_killed += 1; notify("Hostile eliminated.")
+	elif unit.team == "player": alert("%s lost" % hud.object_name(unit),unit.global_position)
 func _process(_delta: float) -> void:
 	if ore_delivered > 0 and units_printed > 0 and enemies_killed > 0: outcome = "VICTORY — gather, print, fight complete!"
 	var players := 0
