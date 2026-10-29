@@ -1,0 +1,31 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="marker_material"]
+shading_mode = 0
+albedo_color = Color(1,0.82,0.25,0.85)
+transparency = 1
+no_depth_test = true
+
+[sub_resource type="CylinderMesh" id="disc"]
+material = SubResource("marker_material")
+top_radius = 0.7
+bottom_radius = 0.7
+height = 0.06
+radial_segments = 24
+rings = 1
+
+[node name="WaypointMarker" type="Node3D"]
+
+[node name="Disc" type="MeshInstance3D" parent="."]
+position = Vector3(0,0.15,0)
+mesh = SubResource("disc")
+
+[node name="Order" type="Label3D" parent="."]
+position = Vector3(0,1.4,0)
+billboard = 1
+no_depth_test = true
+font_size = 30
+pixel_size = 0.04
+outline_size = 6
+modulate = Color(1,0.85,0.35,1)
+text = "1"

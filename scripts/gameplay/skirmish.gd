@@ -109,11 +109,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if not pending_unit_command.is_empty() and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		issue_card_order(event.position)
+		issue_card_order(event.position,event.shift_pressed)
 		get_viewport().set_input_as_handled()
 		return
 	if not event is InputEventMouseButton or not event.pressed or event.button_index != MOUSE_BUTTON_RIGHT: return
-	issue_order(event.position)
+	issue_order(event.position,event.shift_pressed)
 	get_viewport().set_input_as_handled()
 func pick_target(screen: Vector2, group: String, _radius := 34.0) -> Node3D:
 	var camera := get_viewport().get_camera_3d()
@@ -123,7 +123,13 @@ func pick_target(screen: Vector2, group: String, _radius := 34.0) -> Node3D:
 		var d: float = preload("res://scripts/units/selection_bounds.gd").hit_distance(node,camera,screen)
 		if d < distance: distance = d; closest = node
 	return closest
-func issue_order(screen: Vector2) -> void:
+# Shift-held orders join each unit's queue; plain orders replace it (docs/COMMAND_QUEUE.md).
+func give_order(unit: Node3D, entry: Dictionary, queued: bool) -> void:
+	if queued: unit.queue_order(entry)
+	else:
+		unit.order_queue.clear()
+		unit.run_order(entry)
+func issue_order(screen: Vector2, queued := false) -> void:
 	var enemy := pick_target(screen,"enemies")
 	var resource := pick_target(screen,"resources",48)
 	var dropoff := pick_target(screen,"depots",50)
@@ -137,24 +143,25 @@ func issue_order(screen: Vector2) -> void:
 	for unit in get_tree().get_nodes_in_group("units"):
 		if unit.team != "player" or not unit.is_selected: continue
 		selected += 1
-		if enemy: unit.command_attack(enemy)
+		if enemy: give_order(unit,{kind = "attack", target = enemy},queued)
 		elif point != null and ground.get_tile_at_position(point) != null and ground.get_terrain(ground.get_tile_at_position(point)) == 3 and unit.can_gather:
-			unit.command_gather(ground.forest_source(ground.get_tile_at_position(point)))
+			give_order(unit,{kind = "gather", target = ground.forest_source(ground.get_tile_at_position(point))},queued)
 			forest_ordered = true
-		elif dropoff and dropoff.is_in_group("mobile_supplies") and unit.can_gather: unit.command_return(dropoff)
-		elif resource: unit.command_gather(resource)
-		elif dropoff and dropoff.team == unit.team and unit.cargo > 0: unit.command_return(dropoff)
-		elif building and building.team == unit.team and building.health < building.max_health and unit.can_repair: unit.command_repair(building)
-		elif building and building.is_in_group("capturable_buildings") and building.team != unit.team and unit.can_capture_depots: unit.command_capture(building)
-		elif building and CombatResolver.can_hit(unit,building): unit.command_attack(building)
-		elif dropoff and dropoff.team == unit.team: unit.command_return(dropoff)
+		elif dropoff and dropoff.is_in_group("mobile_supplies") and unit.can_gather: give_order(unit,{kind = "return", target = dropoff},queued)
+		elif resource: give_order(unit,{kind = "gather", target = resource},queued)
+		elif dropoff and dropoff.team == unit.team and unit.cargo > 0: give_order(unit,{kind = "return", target = dropoff},queued)
+		elif building and building.team == unit.team and building.health < building.max_health and unit.can_repair: give_order(unit,{kind = "repair", target = building},queued)
+		elif building and building.is_in_group("capturable_buildings") and building.team != unit.team and unit.can_capture_depots: give_order(unit,{kind = "capture", target = building},queued)
+		elif building and CombatResolver.can_hit(unit,building): give_order(unit,{kind = "attack", target = building},queued)
+		elif dropoff and dropoff.team == unit.team: give_order(unit,{kind = "return", target = dropoff},queued)
 		elif point != null and unit.can_gather and ground.get_tile_at_position(point) != null and ground.get_terrain(ground.get_tile_at_position(point)) == 5:
 			notify("Build an Iron Mine on this deposit before gathering iron.")
 		elif point != null:
 			var cell = ground.get_tile_at_position(point)
-			if cell != null and ground.can_traverse(cell,unit.mobility_layer(),unit._owner_key()): unit.command_move(point)
+			if cell != null and ground.can_traverse(cell,unit.mobility_layer(),unit._owner_key()): give_order(unit,{kind = "move", point = point},queued)
 			else: notify("That terrain is blocked. Right-click open land, resources, or a hostile.")
 	if selected == 0: notify("Left-click an infantry unit first.")
+	elif queued: notify("Order queued. Shift-right-click adds more; a plain order replaces the queue.")
 	elif enemy: notify("Attack order: approach and fire at range.")
 	elif forest_ordered: notify("Harvest wood from the forest tile and deliver it to a friendly Depot.")
 	elif resource: notify("Gather %s and deliver to a friendly Depot." % resource.resource_kind)
@@ -164,7 +171,7 @@ func show_shot(start: Vector3, end: Vector3, team: String) -> void:
 	add_child(shot)
 	shot.configure(start,end,team)
 
-func issue_card_order(screen: Vector2) -> void:
+func issue_card_order(screen: Vector2, queued := false) -> void:
 	var target: Node3D
 	if pending_unit_command == "attack":
 		target = pick_target(screen,"enemies")
@@ -189,10 +196,9 @@ func issue_card_order(screen: Vector2) -> void:
 	var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(screen),camera.project_ray_normal(screen))
 	for unit in get_tree().get_nodes_in_group("units"):
 		if unit.team != "player" or not unit.is_selected: continue
-		if pending_unit_command == "attack": unit.command_attack(target)
-		elif pending_unit_command == "gather": unit.command_gather(target)
-		elif pending_unit_command == "repair": unit.command_repair(target)
-		elif pending_unit_command == "capture": unit.command_capture(target)
-		elif point != null: unit.command_move(point)
-	notify(pending_unit_command.capitalize()+" order issued.")
-	pending_unit_command = ""
+		if pending_unit_command == "move":
+			if point != null: give_order(unit,{kind = "move", point = point},queued)
+		else: give_order(unit,{kind = pending_unit_command, target = target},queued)
+	# Shift keeps the command armed so several targets can be queued.
+	notify(pending_unit_command.capitalize()+(" order queued. Shift-click adds more; Esc stops." if queued else " order issued."))
+	if not queued: pending_unit_command = ""

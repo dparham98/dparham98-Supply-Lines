@@ -382,11 +382,13 @@ func begin_placement(generator: bool) -> void:
 	game.notify("Click empty land within paying Depot territory. Esc cancels. No resource pooling.")
 func stop_units() -> void:
 	for unit in selected_units():
+		unit.order_queue.clear()
 		if unit.is_cargo_vehicle: unit.cancel_supply_route()
 		else: unit._stop_route(); unit.order = "idle"; unit.source = null; unit.order_target = null
 func return_units() -> void:
 	for unit in selected_units():
 		if not unit.is_cargo_vehicle and not unit.is_depot_truck:
+			unit.order_queue.clear()
 			unit.command_return(unit.supply_payer if unit.supply_payer_explicit else nearest_depot(unit))
 			if unit.supply_payer_explicit: unit.return_explicit = true
 func update_supply_panel() -> void:
