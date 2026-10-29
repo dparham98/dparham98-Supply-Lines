@@ -66,9 +66,9 @@ func run() -> void:
 	# 6. Button labels carry their key and stay unchanged between frames.
 	select_only(worker)
 	var stop: Button = hud.card.get_node("Stop")
-	var first := stop.text
+	var first := stop.tooltip_text
 	hud._process(0); hud._process(0)
-	if not check(first == "Stop" and stop.text == first and stop.get_node("Key").text == "S","Stop label unstable or badge wrong: %s / %s" % [first,stop.text]): return
+	if not check(hud.label_of(stop) == "Stop" and stop.text.is_empty() and stop.tooltip_text == first and stop.get_node("Key").text == "S","Stop label unstable or badge wrong: %s / %s" % [first,stop.tooltip_text]): return
 	if not check(hud.supply.get_node("MoveCargo/Key").text == "M" and hud.supply.get_node("CancelRoute/Key").text == "X","Supply panel key badges wrong"): return
 	# 7. One Auto-refuel button: the Supply panel no longer has its own copy.
 	if not check(not hud.supply.has_node("SupplyRefuel"),"Duplicate Supply panel Auto-refuel still present"): return

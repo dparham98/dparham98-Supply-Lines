@@ -4,6 +4,8 @@
 [ext_resource type="Texture2D" path="res://assets/maps/source_map.png" id="map"]
 [ext_resource type="PackedScene" path="res://scenes/ui/playtest_panel.tscn" id="playtest"]
 [ext_resource type="Theme" path="res://assets/ui/supply_lines_theme.tres" id="ui_theme"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/rail.svg" id="icon_rail"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/back.svg" id="icon_back"]
 [ext_resource type="Script" path="res://scripts/ui/map_overlay.gd" id="overlay_script"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/generator.svg" id="icon_generator"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/plan.svg" id="icon_plan"]
@@ -75,6 +77,17 @@ corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
+[sub_resource type="StyleBoxFlat" id="slot_empty"]
+bg_color = Color(0.059,0.094,0.118,1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.11,0.165,0.192,1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
 [sub_resource type="StyleBoxFlat" id="selection_box"]
 bg_color = Color(0.1,0.7,1,0.12)
 border_width_left = 1
@@ -314,6 +327,7 @@ stretch_mode = 0
 [node name="Info" type="VBoxContainer" parent="Bottom/Body/Row"]
 custom_minimum_size = Vector2(280,0)
 layout_mode = 2
+size_flags_horizontal = 3
 [node name="Head" type="HBoxContainer" parent="Bottom/Body/Row/Info"]
 layout_mode = 2
 theme_override_constants/separation = 8
@@ -403,224 +417,6 @@ layout_mode = 2
 visible = false
 text = ""
 theme_override_font_sizes/font_size = 12
-[node name="Storage" type="VBoxContainer" parent="Bottom/Body/Row/Info"]
-layout_mode = 2
-visible = false
-theme_override_constants/separation = 3
-[node name="Head" type="HBoxContainer" parent="Bottom/Body/Row/Info/Storage"]
-layout_mode = 2
-[node name="Label" type="Label" parent="Bottom/Body/Row/Info/Storage/Head"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = ""
-theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
-theme_override_font_sizes/font_size = 12
-[node name="Value" type="Label" parent="Bottom/Body/Row/Info/Storage/Head"]
-layout_mode = 2
-text = ""
-theme_override_font_sizes/font_size = 12
-[node name="Track" type="PanelContainer" parent="Bottom/Body/Row/Info/Storage"]
-custom_minimum_size = Vector2(0,12)
-layout_mode = 2
-theme_override_styles/panel = SubResource("bar_background")
-[node name="Segments" type="HBoxContainer" parent="Bottom/Body/Row/Info/Storage/Track"]
-layout_mode = 2
-theme_override_constants/separation = 0
-[node name="Energy" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-color = Color(0.498,0.827,0.902,1)
-[node name="Iron" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-color = Color(0.604,0.655,0.678,1)
-[node name="Wood" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-color = Color(0.435,0.682,0.353,1)
-[node name="Coal" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-color = Color(0.788,0.541,0.29,1)
-[node name="Free" type="Control" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-[node name="Legend" type="HFlowContainer" parent="Bottom/Body/Row/Info/Storage"]
-layout_mode = 2
-theme_override_constants/h_separation = 10
-[node name="Energy" type="HBoxContainer" parent="Bottom/Body/Row/Info/Storage/Legend"]
-layout_mode = 2
-theme_override_constants/separation = 4
-[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Legend/Energy"]
-custom_minimum_size = Vector2(8,8)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-color = Color(0.498,0.827,0.902,1)
-[node name="Amount" type="Label" parent="Bottom/Body/Row/Info/Storage/Legend/Energy"]
-layout_mode = 2
-text = "Energy 0"
-theme_override_font_sizes/font_size = 12
-[node name="Iron" type="HBoxContainer" parent="Bottom/Body/Row/Info/Storage/Legend"]
-layout_mode = 2
-theme_override_constants/separation = 4
-[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Legend/Iron"]
-custom_minimum_size = Vector2(8,8)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-color = Color(0.604,0.655,0.678,1)
-[node name="Amount" type="Label" parent="Bottom/Body/Row/Info/Storage/Legend/Iron"]
-layout_mode = 2
-text = "Iron 0"
-theme_override_font_sizes/font_size = 12
-[node name="Wood" type="HBoxContainer" parent="Bottom/Body/Row/Info/Storage/Legend"]
-layout_mode = 2
-theme_override_constants/separation = 4
-[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Legend/Wood"]
-custom_minimum_size = Vector2(8,8)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-color = Color(0.435,0.682,0.353,1)
-[node name="Amount" type="Label" parent="Bottom/Body/Row/Info/Storage/Legend/Wood"]
-layout_mode = 2
-text = "Wood 0"
-theme_override_font_sizes/font_size = 12
-[node name="Coal" type="HBoxContainer" parent="Bottom/Body/Row/Info/Storage/Legend"]
-layout_mode = 2
-theme_override_constants/separation = 4
-[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Legend/Coal"]
-custom_minimum_size = Vector2(8,8)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-color = Color(0.788,0.541,0.29,1)
-[node name="Amount" type="Label" parent="Bottom/Body/Row/Info/Storage/Legend/Coal"]
-layout_mode = 2
-text = "Coal 0"
-theme_override_font_sizes/font_size = 12
-[node name="Production" type="VBoxContainer" parent="Bottom/Body/Row/Info"]
-layout_mode = 2
-visible = false
-theme_override_constants/separation = 3
-[node name="Head" type="HBoxContainer" parent="Bottom/Body/Row/Info/Production"]
-layout_mode = 2
-[node name="Label" type="Label" parent="Bottom/Body/Row/Info/Production/Head"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = ""
-theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
-theme_override_font_sizes/font_size = 12
-[node name="Value" type="Label" parent="Bottom/Body/Row/Info/Production/Head"]
-layout_mode = 2
-text = ""
-theme_override_font_sizes/font_size = 12
-[node name="Bar" type="ProgressBar" parent="Bottom/Body/Row/Info/Production"]
-custom_minimum_size = Vector2(0,8)
-layout_mode = 2
-show_percentage = false
-theme_override_styles/background = SubResource("bar_background")
-theme_override_styles/fill = SubResource("progress_fill")
-[node name="Route" type="HBoxContainer" parent="Bottom/Body/Row/Info"]
-layout_mode = 2
-visible = false
-theme_override_constants/separation = 6
-[node name="From" type="Label" parent="Bottom/Body/Row/Info/Route"]
-layout_mode = 2
-text = "Load"
-theme_override_colors/font_color = Color(0.498,0.827,0.902,1)
-theme_override_font_sizes/font_size = 12
-[node name="Bar" type="ProgressBar" parent="Bottom/Body/Row/Info/Route"]
-custom_minimum_size = Vector2(0,4)
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 4
-show_percentage = false
-theme_override_styles/background = SubResource("bar_background")
-theme_override_styles/fill = SubResource("route_fill")
-[node name="To" type="Label" parent="Bottom/Body/Row/Info/Route"]
-layout_mode = 2
-text = "Unload"
-theme_override_font_sizes/font_size = 12
-[node name="Stats" type="GridContainer" parent="Bottom/Body/Row/Info"]
-layout_mode = 2
-visible = false
-columns = 4
-theme_override_constants/h_separation = 10
-theme_override_constants/v_separation = 1
-[node name="K1" type="Label" parent="Bottom/Body/Row/Info/Stats"]
-layout_mode = 2
-text = ""
-theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
-theme_override_font_sizes/font_size = 12
-[node name="V1" type="Label" parent="Bottom/Body/Row/Info/Stats"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = ""
-theme_override_font_sizes/font_size = 12
-[node name="K2" type="Label" parent="Bottom/Body/Row/Info/Stats"]
-layout_mode = 2
-text = ""
-theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
-theme_override_font_sizes/font_size = 12
-[node name="V2" type="Label" parent="Bottom/Body/Row/Info/Stats"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = ""
-theme_override_font_sizes/font_size = 12
-[node name="K3" type="Label" parent="Bottom/Body/Row/Info/Stats"]
-layout_mode = 2
-text = ""
-theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
-theme_override_font_sizes/font_size = 12
-[node name="V3" type="Label" parent="Bottom/Body/Row/Info/Stats"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = ""
-theme_override_font_sizes/font_size = 12
-[node name="K4" type="Label" parent="Bottom/Body/Row/Info/Stats"]
-layout_mode = 2
-text = ""
-theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
-theme_override_font_sizes/font_size = 12
-[node name="V4" type="Label" parent="Bottom/Body/Row/Info/Stats"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = ""
-theme_override_font_sizes/font_size = 12
-[node name="K5" type="Label" parent="Bottom/Body/Row/Info/Stats"]
-layout_mode = 2
-text = ""
-theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
-theme_override_font_sizes/font_size = 12
-[node name="V5" type="Label" parent="Bottom/Body/Row/Info/Stats"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = ""
-theme_override_font_sizes/font_size = 12
-[node name="K6" type="Label" parent="Bottom/Body/Row/Info/Stats"]
-layout_mode = 2
-text = ""
-theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
-theme_override_font_sizes/font_size = 12
-[node name="V6" type="Label" parent="Bottom/Body/Row/Info/Stats"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = ""
-theme_override_font_sizes/font_size = 12
-[node name="Abilities" type="Label" parent="Bottom/Body/Row/Info"]
-layout_mode = 2
-visible = false
-autowrap_mode = 2
-text = ""
-theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
-theme_override_font_sizes/font_size = 12
 [node name="Warning" type="Label" parent="Bottom/Body/Row/Info"]
 layout_mode = 2
 visible = false
@@ -635,19 +431,254 @@ autowrap_mode = 2
 text = "Object details appear here."
 theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
 theme_override_font_sizes/font_size = 12
-[node name="Commands" type="VBoxContainer" parent="Bottom/Body/Row"]
+[node name="Context" type="VBoxContainer" parent="Bottom/Body/Row"]
+custom_minimum_size = Vector2(240,0)
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_constants/separation = 5
+[node name="Storage" type="VBoxContainer" parent="Bottom/Body/Row/Context"]
+layout_mode = 2
+visible = false
+theme_override_constants/separation = 3
+[node name="Head" type="HBoxContainer" parent="Bottom/Body/Row/Context/Storage"]
+layout_mode = 2
+[node name="Label" type="Label" parent="Bottom/Body/Row/Context/Storage/Head"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
+[node name="Value" type="Label" parent="Bottom/Body/Row/Context/Storage/Head"]
+layout_mode = 2
+text = ""
+theme_override_font_sizes/font_size = 12
+[node name="Track" type="PanelContainer" parent="Bottom/Body/Row/Context/Storage"]
+custom_minimum_size = Vector2(0,12)
+layout_mode = 2
+theme_override_styles/panel = SubResource("bar_background")
+[node name="Segments" type="HBoxContainer" parent="Bottom/Body/Row/Context/Storage/Track"]
+layout_mode = 2
+theme_override_constants/separation = 0
+[node name="Energy" type="ColorRect" parent="Bottom/Body/Row/Context/Storage/Track/Segments"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+color = Color(0.498,0.827,0.902,1)
+[node name="Iron" type="ColorRect" parent="Bottom/Body/Row/Context/Storage/Track/Segments"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+color = Color(0.604,0.655,0.678,1)
+[node name="Wood" type="ColorRect" parent="Bottom/Body/Row/Context/Storage/Track/Segments"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+color = Color(0.435,0.682,0.353,1)
+[node name="Coal" type="ColorRect" parent="Bottom/Body/Row/Context/Storage/Track/Segments"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+color = Color(0.788,0.541,0.29,1)
+[node name="Free" type="Control" parent="Bottom/Body/Row/Context/Storage/Track/Segments"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+[node name="Legend" type="HFlowContainer" parent="Bottom/Body/Row/Context/Storage"]
+layout_mode = 2
+theme_override_constants/h_separation = 10
+[node name="Energy" type="HBoxContainer" parent="Bottom/Body/Row/Context/Storage/Legend"]
+layout_mode = 2
+theme_override_constants/separation = 4
+[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Context/Storage/Legend/Energy"]
+custom_minimum_size = Vector2(8,8)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.498,0.827,0.902,1)
+[node name="Amount" type="Label" parent="Bottom/Body/Row/Context/Storage/Legend/Energy"]
+layout_mode = 2
+text = "Energy 0"
+theme_override_font_sizes/font_size = 12
+[node name="Iron" type="HBoxContainer" parent="Bottom/Body/Row/Context/Storage/Legend"]
+layout_mode = 2
+theme_override_constants/separation = 4
+[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Context/Storage/Legend/Iron"]
+custom_minimum_size = Vector2(8,8)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.604,0.655,0.678,1)
+[node name="Amount" type="Label" parent="Bottom/Body/Row/Context/Storage/Legend/Iron"]
+layout_mode = 2
+text = "Iron 0"
+theme_override_font_sizes/font_size = 12
+[node name="Wood" type="HBoxContainer" parent="Bottom/Body/Row/Context/Storage/Legend"]
+layout_mode = 2
+theme_override_constants/separation = 4
+[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Context/Storage/Legend/Wood"]
+custom_minimum_size = Vector2(8,8)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.435,0.682,0.353,1)
+[node name="Amount" type="Label" parent="Bottom/Body/Row/Context/Storage/Legend/Wood"]
+layout_mode = 2
+text = "Wood 0"
+theme_override_font_sizes/font_size = 12
+[node name="Coal" type="HBoxContainer" parent="Bottom/Body/Row/Context/Storage/Legend"]
+layout_mode = 2
+theme_override_constants/separation = 4
+[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Context/Storage/Legend/Coal"]
+custom_minimum_size = Vector2(8,8)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.788,0.541,0.29,1)
+[node name="Amount" type="Label" parent="Bottom/Body/Row/Context/Storage/Legend/Coal"]
+layout_mode = 2
+text = "Coal 0"
+theme_override_font_sizes/font_size = 12
+[node name="Production" type="VBoxContainer" parent="Bottom/Body/Row/Context"]
+layout_mode = 2
+visible = false
+theme_override_constants/separation = 3
+[node name="Head" type="HBoxContainer" parent="Bottom/Body/Row/Context/Production"]
+layout_mode = 2
+[node name="Label" type="Label" parent="Bottom/Body/Row/Context/Production/Head"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
+[node name="Value" type="Label" parent="Bottom/Body/Row/Context/Production/Head"]
+layout_mode = 2
+text = ""
+theme_override_font_sizes/font_size = 12
+[node name="Bar" type="ProgressBar" parent="Bottom/Body/Row/Context/Production"]
+custom_minimum_size = Vector2(0,8)
+layout_mode = 2
+show_percentage = false
+theme_override_styles/background = SubResource("bar_background")
+theme_override_styles/fill = SubResource("progress_fill")
+[node name="Route" type="HBoxContainer" parent="Bottom/Body/Row/Context"]
+layout_mode = 2
+visible = false
+theme_override_constants/separation = 6
+[node name="From" type="Label" parent="Bottom/Body/Row/Context/Route"]
+layout_mode = 2
+text = "Load"
+theme_override_colors/font_color = Color(0.498,0.827,0.902,1)
+theme_override_font_sizes/font_size = 12
+[node name="Bar" type="ProgressBar" parent="Bottom/Body/Row/Context/Route"]
+custom_minimum_size = Vector2(0,4)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+show_percentage = false
+theme_override_styles/background = SubResource("bar_background")
+theme_override_styles/fill = SubResource("route_fill")
+[node name="To" type="Label" parent="Bottom/Body/Row/Context/Route"]
+layout_mode = 2
+text = "Unload"
+theme_override_font_sizes/font_size = 12
+[node name="Stats" type="GridContainer" parent="Bottom/Body/Row/Context"]
+layout_mode = 2
+visible = false
+columns = 4
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 1
+[node name="K1" type="Label" parent="Bottom/Body/Row/Context/Stats"]
+layout_mode = 2
+text = ""
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
+[node name="V1" type="Label" parent="Bottom/Body/Row/Context/Stats"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+theme_override_font_sizes/font_size = 12
+[node name="K2" type="Label" parent="Bottom/Body/Row/Context/Stats"]
+layout_mode = 2
+text = ""
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
+[node name="V2" type="Label" parent="Bottom/Body/Row/Context/Stats"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+theme_override_font_sizes/font_size = 12
+[node name="K3" type="Label" parent="Bottom/Body/Row/Context/Stats"]
+layout_mode = 2
+text = ""
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
+[node name="V3" type="Label" parent="Bottom/Body/Row/Context/Stats"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+theme_override_font_sizes/font_size = 12
+[node name="K4" type="Label" parent="Bottom/Body/Row/Context/Stats"]
+layout_mode = 2
+text = ""
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
+[node name="V4" type="Label" parent="Bottom/Body/Row/Context/Stats"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+theme_override_font_sizes/font_size = 12
+[node name="K5" type="Label" parent="Bottom/Body/Row/Context/Stats"]
+layout_mode = 2
+text = ""
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
+[node name="V5" type="Label" parent="Bottom/Body/Row/Context/Stats"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+theme_override_font_sizes/font_size = 12
+[node name="K6" type="Label" parent="Bottom/Body/Row/Context/Stats"]
+layout_mode = 2
+text = ""
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
+[node name="V6" type="Label" parent="Bottom/Body/Row/Context/Stats"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+theme_override_font_sizes/font_size = 12
+[node name="Abilities" type="Label" parent="Bottom/Body/Row/Context"]
+layout_mode = 2
+visible = false
+autowrap_mode = 2
+text = ""
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
+[node name="Hint" type="Label" parent="Bottom/Body/Row/Context"]
+layout_mode = 2
+autowrap_mode = 2
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
+text = "Commands change with selection."
+[node name="Commands" type="VBoxContainer" parent="Bottom/Body/Row"]
+layout_mode = 2
+custom_minimum_size = Vector2(212,0)
 theme_override_constants/separation = 6
 [node name="Title" type="Label" parent="Bottom/Body/Row/Commands"]
 layout_mode = 2
 text = "COMMAND CARD"
+autowrap_mode = 3
+theme_override_font_sizes/font_size = 12
 [node name="LocalSource" type="OptionButton" parent="Bottom/Body/Row/Commands"]
 layout_mode = 2
 visible = false
+fit_to_longest_item = false
+clip_text = true
 [node name="AssignedSource" type="OptionButton" parent="Bottom/Body/Row/Commands"]
 layout_mode = 2
 visible = false
+fit_to_longest_item = false
+clip_text = true
 [node name="GeneratorMode" type="OptionButton" parent="Bottom/Body/Row/Commands"]
 layout_mode = 2
 visible = false
@@ -658,20 +689,123 @@ popup/item_1/text = "Burn coal"
 popup/item_1/id = 1
 popup/item_2/text = "Either · wood first"
 popup/item_2/id = 2
-[node name="Main" type="GridContainer" parent="Bottom/Body/Row/Commands"]
+fit_to_longest_item = false
+clip_text = true
+[node name="Main" type="Control" parent="Bottom/Body/Row/Commands"]
+custom_minimum_size = Vector2(196,146)
 layout_mode = 2
-columns = 3
-theme_override_constants/h_separation = 6
-theme_override_constants/v_separation = 6
+size_flags_horizontal = 0
+mouse_filter = 2
+[node name="Slots" type="Control" parent="Bottom/Body/Row/Commands/Main"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+[node name="Slot0" type="Panel" parent="Bottom/Body/Row/Commands/Main/Slots"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 46.0
+offset_bottom = 46.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("slot_empty")
+[node name="Slot1" type="Panel" parent="Bottom/Body/Row/Commands/Main/Slots"]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 0.0
+offset_right = 96.0
+offset_bottom = 46.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("slot_empty")
+[node name="Slot2" type="Panel" parent="Bottom/Body/Row/Commands/Main/Slots"]
+layout_mode = 0
+offset_left = 100.0
+offset_top = 0.0
+offset_right = 146.0
+offset_bottom = 46.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("slot_empty")
+[node name="Slot3" type="Panel" parent="Bottom/Body/Row/Commands/Main/Slots"]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 0.0
+offset_right = 196.0
+offset_bottom = 46.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("slot_empty")
+[node name="Slot4" type="Panel" parent="Bottom/Body/Row/Commands/Main/Slots"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 50.0
+offset_right = 46.0
+offset_bottom = 96.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("slot_empty")
+[node name="Slot5" type="Panel" parent="Bottom/Body/Row/Commands/Main/Slots"]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 50.0
+offset_right = 96.0
+offset_bottom = 96.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("slot_empty")
+[node name="Slot6" type="Panel" parent="Bottom/Body/Row/Commands/Main/Slots"]
+layout_mode = 0
+offset_left = 100.0
+offset_top = 50.0
+offset_right = 146.0
+offset_bottom = 96.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("slot_empty")
+[node name="Slot7" type="Panel" parent="Bottom/Body/Row/Commands/Main/Slots"]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 50.0
+offset_right = 196.0
+offset_bottom = 96.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("slot_empty")
+[node name="Slot8" type="Panel" parent="Bottom/Body/Row/Commands/Main/Slots"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 100.0
+offset_right = 46.0
+offset_bottom = 146.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("slot_empty")
+[node name="Slot9" type="Panel" parent="Bottom/Body/Row/Commands/Main/Slots"]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 100.0
+offset_right = 96.0
+offset_bottom = 146.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("slot_empty")
+[node name="Slot10" type="Panel" parent="Bottom/Body/Row/Commands/Main/Slots"]
+layout_mode = 0
+offset_left = 100.0
+offset_top = 100.0
+offset_right = 146.0
+offset_bottom = 146.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("slot_empty")
+[node name="Slot11" type="Panel" parent="Bottom/Body/Row/Commands/Main/Slots"]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 100.0
+offset_right = 196.0
+offset_bottom = 146.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("slot_empty")
 [node name="Move" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 tooltip_text = "Click a destination. Shift-click queues it."
 shortcut = SubResource("shortcut_command_move")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-size_flags_horizontal = 3
-text = "Move"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_move")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Move"]
 layout_mode = 1
 anchors_preset = 1
@@ -690,12 +824,11 @@ text = "?"
 [node name="Stop" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 tooltip_text = "Stop and clear queued orders."
 shortcut = SubResource("shortcut_command_stop")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-size_flags_horizontal = 3
-text = "Stop"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_stop")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Stop"]
 layout_mode = 1
 anchors_preset = 1
@@ -714,12 +847,11 @@ text = "?"
 [node name="Attack" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 tooltip_text = "Click a hostile unit or building."
 shortcut = SubResource("shortcut_command_attack")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-size_flags_horizontal = 3
-text = "Attack"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_attack")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Attack"]
 layout_mode = 1
 anchors_preset = 1
@@ -738,12 +870,11 @@ text = "?"
 [node name="Gather" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 tooltip_text = "Click iron, wood or a material pile. Delivers to a friendly Depot."
 shortcut = SubResource("shortcut_command_gather")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-size_flags_horizontal = 3
-text = "Gather iron"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_gather")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Gather"]
 layout_mode = 1
 anchors_preset = 1
@@ -762,12 +893,11 @@ text = "?"
 [node name="Return" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 tooltip_text = "Deliver carried resources to the selected supply source."
 shortcut = SubResource("shortcut_command_return")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-size_flags_horizontal = 3
-text = "Return cargo"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_deliver")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Return"]
 layout_mode = 1
 anchors_preset = 1
@@ -786,12 +916,11 @@ text = "?"
 [node name="DropMaterials" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 tooltip_text = "Drop carried materials as a pile any Infantry can gather."
 shortcut = SubResource("shortcut_command_drop")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-size_flags_horizontal = 3
-text = "Drop materials"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_drop")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/DropMaterials"]
 layout_mode = 1
 anchors_preset = 1
@@ -809,12 +938,11 @@ theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="Repair" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_command_repair")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-size_flags_horizontal = 3
-text = "Repair building"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_repair")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Repair"]
 layout_mode = 1
 anchors_preset = 1
@@ -833,12 +961,11 @@ text = "?"
 [node name="Capture" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 tooltip_text = "Click a neutral or enemy Depot and stay uncontested."
 shortcut = SubResource("shortcut_command_capture")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-size_flags_horizontal = 3
-text = "Capture Depot / mine"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_capture")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Capture"]
 layout_mode = 1
 anchors_preset = 1
@@ -856,12 +983,11 @@ theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="PrintInfantry" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_infantry")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-size_flags_horizontal = 3
-text = "Print infantry"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_infantry")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/PrintInfantry"]
 layout_mode = 1
 anchors_preset = 1
@@ -879,12 +1005,11 @@ theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="ProduceScout" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_scout")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-size_flags_horizontal = 3
-text = "Scout"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_scout")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ProduceScout"]
 layout_mode = 1
 anchors_preset = 1
@@ -902,12 +1027,11 @@ theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="ProduceGrenadier" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_grenadier")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-size_flags_horizontal = 3
-text = "Grenadier"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_grenadier")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ProduceGrenadier"]
 layout_mode = 1
 anchors_preset = 1
@@ -925,12 +1049,11 @@ theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="ProduceTank" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_tank")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-size_flags_horizontal = 3
-text = "Tank"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_tank")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ProduceTank"]
 layout_mode = 1
 anchors_preset = 1
@@ -948,12 +1071,11 @@ theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="ProduceMotorcycle" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_motorcycle")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-size_flags_horizontal = 3
-text = "Motorcycle"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_motorcycle")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ProduceMotorcycle"]
 layout_mode = 1
 anchors_preset = 1
@@ -971,12 +1093,11 @@ theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="ProduceDrone" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_drone")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-size_flags_horizontal = 3
-text = "Drone"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_drone")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ProduceDrone"]
 layout_mode = 1
 anchors_preset = 1
@@ -994,12 +1115,11 @@ theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="ProduceUbermech" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_ubermech")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-size_flags_horizontal = 3
-text = "Ubermech"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_ubermech")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ProduceUbermech"]
 layout_mode = 1
 anchors_preset = 1
@@ -1017,12 +1137,11 @@ theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="PrintTruck" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_depot_truck")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-size_flags_horizontal = 3
-text = "Print Depot Truck"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_truck")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/PrintTruck"]
 layout_mode = 1
 anchors_preset = 1
@@ -1040,12 +1159,11 @@ theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="PrintCargo" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_cargo")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-size_flags_horizontal = 3
-text = "Print cargo vehicle"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_cargo")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/PrintCargo"]
 layout_mode = 1
 anchors_preset = 1
@@ -1063,12 +1181,11 @@ theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="PrintTrain" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_train")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-size_flags_horizontal = 3
-text = "Print train"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_train")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/PrintTrain"]
 layout_mode = 1
 anchors_preset = 1
@@ -1087,12 +1204,11 @@ text = "?"
 [node name="Build" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 tooltip_text = "Open the build menu for this unit or Depot."
 shortcut = SubResource("shortcut_command_build")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-size_flags_horizontal = 3
-text = "Build…"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_build")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Build"]
 layout_mode = 1
 anchors_preset = 1
@@ -1111,12 +1227,11 @@ text = "?"
 [node name="DeployTruck" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 tooltip_text = "Deploy into a new Depot on an empty 8 × 8 footprint."
 shortcut = SubResource("shortcut_command_deploy")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-size_flags_horizontal = 3
-text = "Deploy Depot Truck"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_deploy")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/DeployTruck"]
 layout_mode = 1
 anchors_preset = 1
@@ -1135,11 +1250,11 @@ text = "?"
 [node name="ToggleRefuel" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 tooltip_text = "Refuel automatically when stopped near a friendly source with coal."
 shortcut = SubResource("shortcut_command_refuel")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-text = "Auto-refuel: on"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_refuel")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ToggleRefuel"]
 layout_mode = 1
 anchors_preset = 1
@@ -1158,11 +1273,11 @@ text = "?"
 [node name="ToggleGenerator" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 tooltip_text = "Pause or resume this generator."
 shortcut = SubResource("shortcut_command_pause")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-text = "Pause generator"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_pause")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ToggleGenerator"]
 layout_mode = 1
 anchors_preset = 1
@@ -1181,12 +1296,11 @@ text = "?"
 [node name="FocusAssigned" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 tooltip_text = "Centre the camera on this building's assigned Depot."
 shortcut = SubResource("shortcut_command_focus_assigned")
-layout_mode = 2
-custom_minimum_size = Vector2(0,38)
-size_flags_horizontal = 3
-text = "Focus assigned Depot"
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
 icon = ExtResource("icon_focus")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/FocusAssigned"]
 layout_mode = 1
 anchors_preset = 1
@@ -1205,11 +1319,11 @@ text = "?"
 [node name="CancelPlan" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 tooltip_text = "Cancel this unpaid construction plan. Nothing is refunded because nothing was paid."
 shortcut = SubResource("shortcut_command_cancel")
-layout_mode = 2
+layout_mode = 0
 visible = false
-text = "Cancel construction plan"
+text = ""
 icon = ExtResource("icon_cancel")
-alignment = 0
+icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/CancelPlan"]
 layout_mode = 1
 anchors_preset = 1
@@ -1225,11 +1339,11 @@ horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
-[node name="Hint" type="Label" parent="Bottom/Body/Row/Commands"]
+[node name="Hover" type="Label" parent="Bottom/Body/Row/Commands"]
 layout_mode = 2
-autowrap_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "Commands change with selection."
+autowrap_mode = 3
+text = ""
+theme_override_font_sizes/font_size = 12
 [node name="BuildMenu" type="VBoxContainer" parent="Bottom/Body/Row/Commands"]
 layout_mode = 2
 visible = false
@@ -1237,31 +1351,59 @@ visible = false
 layout_mode = 2
 autowrap_mode = 2
 text = "LOCAL CONSTRUCTION RESOURCES"
+theme_override_font_sizes/font_size = 12
 [node name="Payer" type="OptionButton" parent="Bottom/Body/Row/Commands/BuildMenu"]
 layout_mode = 2
 tooltip_text = "Choose one friendly Depot or deployed cargo stockpile covering this infantry. No resource pooling."
+fit_to_longest_item = false
+clip_text = true
 [node name="Actions" type="GridContainer" parent="Bottom/Body/Row/Commands/BuildMenu"]
 layout_mode = 2
-columns = 2
+columns = 4
+theme_override_constants/h_separation = 4
+theme_override_constants/v_separation = 4
 [node name="Depot" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
 layout_mode = 2
-text = "Build Depot"
-size_flags_horizontal = 3
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("icon_depot")
+icon_alignment = 1
 [node name="Generator" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
 layout_mode = 2
-text = "Build generator"
-size_flags_horizontal = 3
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("icon_generator")
+icon_alignment = 1
 [node name="Barracks" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
 layout_mode = 2
-size_flags_horizontal = 3
-text = "Barracks · 100 E / 45 I"
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("icon_infantry")
+icon_alignment = 1
 [node name="TankFactory" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
 layout_mode = 2
-size_flags_horizontal = 3
-text = "Tank Factory · 200 E / 65 I"
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("icon_tank")
+icon_alignment = 1
+[node name="Mine" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
+layout_mode = 2
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("icon_mine")
+icon_alignment = 1
+[node name="Rail" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
+layout_mode = 2
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("icon_rail")
+icon_alignment = 1
 [node name="Back" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
 layout_mode = 2
-text = "Back"
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("icon_back")
+icon_alignment = 1
 [node name="Supply" type="GridContainer" parent="Bottom/Body/Row/Commands"]
 layout_mode = 2
 visible = false
@@ -1360,18 +1502,6 @@ max_lines_visible = 2
 text = "No route assigned"
 autowrap_mode = 2
 theme_override_font_sizes/font_size = 13
-
-[node name="Rail" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
-layout_mode = 2
-custom_minimum_size = Vector2(0,30)
-size_flags_horizontal = 3
-text = "Rail tile"
-
-[node name="Mine" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
-layout_mode = 2
-custom_minimum_size = Vector2(0,30)
-size_flags_horizontal = 3
-text = "Iron Mine"
 
 [node name="DeploySupplies" type="Button" parent="Bottom/Body/Row/Commands/Supply"]
 shortcut = SubResource("shortcut_command_deploy")

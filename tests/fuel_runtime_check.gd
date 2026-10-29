@@ -68,7 +68,7 @@ func run() -> void:
 	if not check(hud.shown == tank and hud.card.get_node("ToggleRefuel").visible and "LOW FUEL" in hud.info.get_node("Details").text,"Low-fuel tank HUD selection failed"): return
 	await shot("fuel_low")
 	await click(hud.card.get_node("ToggleRefuel"))
-	if not check(not tank.auto_refuel and hud.card.get_node("ToggleRefuel").text.begins_with("Auto-refuel: off"),"Auto-refuel click failed"): return
+	if not check(not tank.auto_refuel and hud.label_of(hud.card.get_node("ToggleRefuel")).begins_with("Auto-refuel: off"),"Auto-refuel click failed"): return
 	await shot("fuel_auto_off")
 	await click(hud.card.get_node("ToggleRefuel"))
 	depot.coal = 100
@@ -88,6 +88,6 @@ func run() -> void:
 	var truck_refuel: Button = hud.card.get_node("ToggleRefuel")
 	if not check(truck_refuel.is_visible_in_tree(),"Cargo truck refuel toggle not shown"): return
 	await click(truck_refuel)
-	if not check(not truck.auto_refuel and truck_refuel.text.begins_with("Auto-refuel: off"),"Cargo truck refuel click failed"): return
+	if not check(not truck.auto_refuel and hud.label_of(truck_refuel).begins_with("Auto-refuel: off"),"Cargo truck refuel click failed"): return
 	await shot("fuel_truck_toggle")
 	print("FUEL_RUNTIME_CHECKS_PASSED"); quit(TestOutput.exit_code())

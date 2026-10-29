@@ -11,6 +11,18 @@ extends CanvasLayer
 @onready var feed = $Feed
 @onready var pages = $Bottom/Body/Header/Pages
 @onready var name_label: Label = $Bottom/Body/Row/Info/Head/Text/Name
+@onready var context = $Bottom/Body/Row/Context
+@onready var hint_label: Label = $Bottom/Body/Row/Context/Hint
+@onready var hover_label: Label = $Bottom/Body/Row/Commands/Hover
+## Fixed command slots, row-major in the 4 × 3 grid. Commands that never share a card may share a slot.
+const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 4, "Return": 5, "DropMaterials": 6, "Build": 7,
+	"Repair": 8, "Capture": 9, "DeployTruck": 10, "CancelPlan": 11,
+	"PrintTruck": 0, "PrintCargo": 1, "PrintTrain": 2,
+	"PrintInfantry": 0, "ProduceScout": 1, "ProduceGrenadier": 2, "ProduceTank": 3, "ProduceMotorcycle": 4, "ProduceDrone": 5, "ProduceUbermech": 6,
+	"ToggleGenerator": 0, "FocusAssigned": 1}
+const TILE := 46
+const TILE_GAP := 4
+const OFF_ICON := Color(0.373,0.463,0.502)
 @onready var state_label: Label = $Bottom/Body/Row/Info/Head/Text/State
 const RESOURCE_KINDS := [&"energy",&"iron",&"wood",&"coal"]
 var _icons := {}
@@ -52,6 +64,8 @@ func _ready() -> void:
 			shown.set_fuel_preference(["wood","coal","either"][index]))
 	card.get_node("ToggleRefuel").pressed.connect(toggle_refuel)
 	# Supply panel buttons with fixed text get their key label once.
+	for button in card.get_children():
+		if button is Button: button.set_meta("detail",button.tooltip_text)
 	# Each bound button shows its key in a corner badge; tooltips also list it.
 	for panel in [card,supply]:
 		for button in panel.get_children():
@@ -178,9 +192,12 @@ func _process(_delta: float) -> void:
 	var units := selected_units()
 	if units.size() > 1 and not global_build_open:
 		commands.get_node("Title").text = "%d FRIENDLY UNITS SELECTED" % units.size()
-		commands.get_node("Hint").text = "Right-click moves the group. Commands apply where each unit supports them. Details show the first unit."
+		hint_label.text = "Right-click moves the group. Commands apply where each unit supports them. Details show the first unit."
 	# Apply final visibility once. Hiding a pressed button cancels its GUI gesture.
-	for button in card.get_children(): button.visible = desired_buttons.has(str(button.name))
+	for button in card.get_children():
+		if button is Button: button.visible = desired_buttons.has(str(button.name))
+	place_tiles()
+	update_hover_line()
 	update_strip(units)
 	update_feed()
 # Fuel and cargo bars under health. Fuel turns amber when low and red when empty.
@@ -228,7 +245,7 @@ func grouped(value: int) -> String:
 	return ("-" if value < 0 else "")+out
 # One storage bar split by resource against capacity, with a legend of exact amounts.
 func show_storage(title: String, stockpile: ResourceStockpile) -> void:
-	var section = info.get_node("Storage")
+	var section = context.get_node("Storage")
 	section.visible = true
 	section.get_node("Head/Label").text = title
 	section.get_node("Head/Value").text = "%s / %s" % [grouped(stockpile.total()),grouped(stockpile.capacity)]
@@ -243,7 +260,7 @@ func show_storage(title: String, stockpile: ResourceStockpile) -> void:
 	free.visible = stockpile.space() > 0
 	free.size_flags_stretch_ratio = maxf(stockpile.space(),0.001)
 func show_progress(label: String, value: String, ratio: float) -> void:
-	var section = info.get_node("Production")
+	var section = context.get_node("Production")
 	section.visible = true
 	section.get_node("Head/Label").text = label
 	section.get_node("Head/Value").text = value
@@ -252,7 +269,7 @@ func show_progress(label: String, value: String, ratio: float) -> void:
 	section.get_node("Bar").value = clampf(ratio,0,1)
 # Plain label and value pairs; information is never boxed.
 func set_stats(pairs: Array) -> void:
-	var grid = info.get_node("Stats")
+	var grid = context.get_node("Stats")
 	grid.visible = not pairs.is_empty()
 	for i in range(1,7):
 		var shown := i <= pairs.size()
@@ -294,14 +311,14 @@ func update_unit_sections(node: Node3D) -> void:
 		pairs.append(["Deploys","%d E · %d I" % [node.deployment_rules.deployed_energy,node.deployment_rules.testing_starting_iron if node.deployment_rules.testing_starting_iron >= 0 else node.deployment_rules.deployed_iron]])
 	pairs.append(["Cost","%d E · %d I" % [cost_energy,cost_iron]])
 	set_stats(pairs.slice(0,6))
-	var line = info.get_node("Abilities")
+	var line = context.get_node("Abilities")
 	line.text = " · ".join(abilities)
 	line.visible = not abilities.is_empty()
 	if node.is_cargo_vehicle:
 		show_storage("Cargo",node.stockpile)
 		if node.route_active and is_instance_valid(node.origin_depot) and is_instance_valid(node.destination_depot):
 			state_label.text = "%s → %s%s" % [node.origin_depot.name,node.destination_depot.name," · repeating" if node.repeating else ""]
-			var route = info.get_node("Route")
+			var route = context.get_node("Route")
 			route.visible = true
 			route.get_node("From").text = str(node.origin_depot.name)
 			route.get_node("To").text = str(node.destination_depot.name)
@@ -378,7 +395,8 @@ func update_contents() -> void:
 		cargo_page = "route"
 	for bar in bars.get_children(): bar.visible = false
 	bars.get_node("Fuel/Need").visible = false
-	for section in ["Storage","Production","Route","Stats","Abilities","Warning"]: info.get_node(section).visible = false
+	for section in ["Storage","Production","Route","Stats","Abilities"]: context.get_node(section).visible = false
+	info.get_node("Warning").visible = false
 	state_label.text = ""
 	set_icon("")
 	var is_unit: bool = is_instance_valid(node) and node.is_in_group("units")
@@ -388,6 +406,8 @@ func update_contents() -> void:
 	pages.get_node("Orders").set_pressed_no_signal(cargo_page == "orders")
 	pages.get_node("Route").set_pressed_no_signal(cargo_page == "route")
 	supply.visible = show_supply
+	# The wide route page needs the Context column's width until crate shipments replace it.
+	context.visible = not show_supply
 	build_menu.visible = show_build
 	card.visible = not show_build and not show_supply
 	commands.get_node("GeneratorMode").visible = not show_build and is_instance_valid(node) and node.is_in_group("energy_generators") and node.team == "player"
@@ -395,8 +415,7 @@ func update_contents() -> void:
 	commands.get_node("AssignedSource").visible = not show_build and is_instance_valid(node) and (node.is_in_group("production_buildings") or node.is_in_group("energy_generators")) and node.team == "player"
 	if commands.get_node("LocalSource").visible: update_local_source(node)
 	if commands.get_node("AssignedSource").visible: update_assignment(node)
-	commands.get_node("Hint").visible = not show_build
-	card.columns = 3
+	hint_label.visible = not show_build
 	info.get_node("Health").visible = is_instance_valid(node)
 	$Bottom/Body/Header/Focus.disabled = not is_instance_valid(node)
 	$Bottom/Body/Header/Message.text = game.outcome if not game.outcome.is_empty() else game.message
@@ -416,7 +435,7 @@ func update_contents() -> void:
 		var payer_text: String = str(node.payer.name) if is_instance_valid(node.payer) else "Unavailable"
 		info.get_node("Details").text = "%s\nCost %d E / %d I\nPayer: %s\nDoes not block movement" % [node.state,node.spec.energy,node.spec.iron,payer_text if node.pinned else "Auto covering friendly Depot"]
 		commands.get_node("Title").text = "PENDING CONSTRUCTION"
-		commands.get_node("Hint").text = "Completes when terrain is clear and one friendly covering Depot can pay. Cancel is free."
+		hint_label.text = "Completes when terrain is clear and one friendly covering Depot can pay. Cancel is free."
 		show_button("CancelPlan","Cancel plan")
 		return
 	if not is_instance_valid(node):
@@ -424,7 +443,7 @@ func update_contents() -> void:
 		info.get_node("HealthText").text = "Select a unit or building"
 		info.get_node("Details").text = "Minimap: click to move camera.\nBlue: friendly · red: hostile\nGrey: neutral · gold: resources"
 		commands.get_node("Title").text = "COMMAND CARD"
-		commands.get_node("Hint").text = "Left-click selects. Drag selects units. Right-click gives orders."
+		hint_label.text = "Left-click selects. Drag selects units. Right-click gives orders."
 		return
 	var units := selected_units()
 	name_label.text = object_name(node)+( " · +%d selected" % (units.size()-1) if units.size() > 1 else "")
@@ -432,9 +451,8 @@ func update_contents() -> void:
 	info.get_node("Health").value = node.health
 	info.get_node("HealthText").text = "Health %d / %d" % [node.health,node.max_health]
 	set_icon(icon_name(node))
-	commands.get_node("Hint").text = ""
+	hint_label.text = ""
 	if node.is_in_group("depots"):
-		card.columns = 2
 		commands.get_node("Title").text = "DEPOT · PRODUCTION"
 		state_label.text = "%s · territory %.0f · %+.1f E/s" % [team_label(node),node.rules.construction_radius,node.generation_rate()]
 		show_storage("Storage",node.stockpile)
@@ -448,7 +466,7 @@ func update_contents() -> void:
 			var rails = game.get_node("RailNetwork").rules
 			show_production("PrintTrain","Train",rails.cargo_energy_cost,rails.cargo_iron_cost,node)
 			show_button("Build","Build…")
-			commands.get_node("Hint").text = "Spend this Depot only. Train launch/load/unload needs friendly track within %.0f units. New Depots include one infantry." % node.dropoff_range
+			hint_label.text = "Spend this Depot only. Train launch/load/unload needs friendly track within %.0f units. New Depots include one infantry." % node.dropoff_range
 			if build_open:
 				commands.get_node("Title").text = "DEPOT · BUILD & LOCAL RESOURCES"
 				refresh_build_menu()
@@ -457,9 +475,8 @@ func update_contents() -> void:
 		state_label.text = "Shared · any side can gather, repair or destroy"
 		show_progress("Iron reserves","%s / %s" % [grouped(node.remaining),grouped(node.amount)],float(node.remaining)/maxi(1,node.amount))
 		info.get_node("Details").text = "Shared access · no capture"
-		commands.get_node("Hint").text = "Infantry gathers with right-click. Use its Repair card to repair this shared mine, or Attack to destroy it."
+		hint_label.text = "Infantry gathers with right-click. Use its Repair card to repair this shared mine, or Attack to destroy it."
 	elif node.is_in_group("production_buildings"):
-		card.columns = 2
 		commands.get_node("Title").text = node.stats.display_name.to_upper()+" · PRODUCTION"
 		var payer = node.assigned_depot
 		state_label.text = "%s · %s" % [team_label(node),("pays from "+str(payer.name)) if node.source_friendly() else "assigned Depot unavailable"]
@@ -471,7 +488,7 @@ func update_contents() -> void:
 			for scene in node.stats.unit_scenes:
 				var stats = node.unit_stats_for(scene)
 				show_production("PrintInfantry" if stats.unit_id == &"infantry" else "Produce"+str(stats.unit_id).capitalize(),stats.display_name,stats.energy_cost,stats.iron_cost,node.assigned_depot)
-		commands.get_node("Hint").text = "Production uses this building’s assigned Depot only. Drone attacks and tentative abilities remain unspecified."
+		hint_label.text = "Production uses this building’s assigned Depot only. Drone attacks and tentative abilities remain unspecified."
 	elif node.is_in_group("energy_generators"):
 		commands.get_node("Title").text = "GENERATOR · LOCAL POWER"
 		var source = node.assigned_depot
@@ -480,7 +497,7 @@ func update_contents() -> void:
 		if is_instance_valid(source): show_storage("%s storage" % source.name,source.stockpile)
 		info.get_node("Details").text = "Assigned Depot: %s" % (source.name if is_instance_valid(source) else "none")
 		commands.get_node("GeneratorMode").select(["wood","coal","either"].find(node.fuel_preference))
-		commands.get_node("Hint").text = "Wood: 1 → %d E / %.1fs. Coal: 1 → %d E / %.1fs. Either uses wood first. Changes apply next cycle; full storage pauses fuel use." % [node.fuel_rules.wood_output,node.fuel_rules.wood_seconds,node.fuel_rules.coal_output,node.fuel_rules.coal_seconds]
+		hint_label.text = "Wood: 1 → %d E / %.1fs. Coal: 1 → %d E / %.1fs. Either uses wood first. Changes apply next cycle; full storage pauses fuel use." % [node.fuel_rules.wood_output,node.fuel_rules.wood_seconds,node.fuel_rules.coal_output,node.fuel_rules.coal_seconds]
 		if node.team == "player": show_button("ToggleGenerator","Pause" if node.enabled else "Resume")
 		if is_instance_valid(node.assigned_depot): show_button("FocusAssigned","Focus Depot")
 	else:
@@ -489,22 +506,26 @@ func update_contents() -> void:
 		var notes: Array[String] = []
 		notes.append("Nearest Depot: %s · %.1f units away" % [nearest.name,node.global_position.distance_to(nearest.global_position)] if nearest != null else "No friendly Depot")
 		if node.fuel_rules != null: notes.append(fuel_note(node))
+		if node.is_cargo_vehicle and not context.visible: notes.append("Cargo %d / %d · Orders tab shows details" % [node.stockpile.total(),node.stockpile.capacity])
 		info.get_node("Details").text = "\n".join(notes)
 		commands.get_node("Title").text = "UNIT · ORDERS"
 		update_bars(node)
 		update_unit_sections(node)
 		show_button("Move","Move")
 		show_button("Stop","Stop")
-		if node.fuel_active(): show_button("ToggleRefuel","Auto-refuel: %s" % ("on" if node.auto_refuel else "off"))
+		if node.fuel_active():
+			show_button("ToggleRefuel","Auto-refuel: %s" % ("on" if node.auto_refuel else "off"))
+			if node.auto_refuel: card.get_node("ToggleRefuel").remove_theme_color_override("icon_normal_color")
+			else: card.get_node("ToggleRefuel").add_theme_color_override("icon_normal_color",OFF_ICON)
 		if node.is_cargo_vehicle:
 			commands.get_node("Title").text = "TRAIN · RAIL DELIVERY ROUTE" if node.is_in_group("rail_trains") else "CARGO VEHICLE · DELIVERY ROUTE"
 			update_supply_panel()
 			if cargo_page == "orders":
 				commands.get_node("Title").text = ("TRAIN" if node.is_in_group("rail_trains") else "CARGO VEHICLE")+" · ORDERS"
-				commands.get_node("Hint").text = "Move, Stop and Auto-refuel. Delivery route returns to route controls."
+				hint_label.text = "Move, Stop and Auto-refuel. Delivery route returns to route controls."
 		elif node.is_depot_truck:
 			show_button("DeployTruck","Deploy")
-			commands.get_node("Hint").text = "Deploy on an empty 8 × 8 footprint. This vehicle does not carry transferable cargo."
+			hint_label.text = "Deploy on an empty 8 × 8 footprint. This vehicle does not carry transferable cargo."
 		else:
 			if node._attack_enabled: show_button("Attack","Attack")
 			if node.can_gather:
@@ -517,36 +538,60 @@ func update_contents() -> void:
 				show_button("Repair","Repair")
 				card.get_node("Repair").tooltip_text = "Restore up to %d HP every %.1fs for %d energy / %d iron from the selected local supply source. No wood is spent." % [node.engineering_rules.repair_hp,node.engineering_rules.repair_interval,node.engineering_rules.repair_energy,node.engineering_rules.repair_iron]
 			if node.can_capture_depots: show_button("Capture","Capture")
-			commands.get_node("Hint").text = "Right-click to move, gather or attack. Nearest Depot distance is straight-line, not route length."
+			hint_label.text = "Right-click to move, gather or attack. Nearest Depot distance is straight-line, not route length."
 			if build_open and node.can_construct:
 				commands.get_node("Title").text = "INFANTRY · BUILD & LOCAL RESOURCES"
 				refresh_build_menu()
 func show_button(id: String, text: String) -> void:
 	desired_buttons.append(id)
-	set_label(card.get_node(id),text)
+	set_tile(card.get_node(id),text,str(card.get_node(id).get_meta("detail","")))
+# Icon-only tile: the label and detail go to the tooltip and the hover line.
+func set_tile(button: Button, label: String, detail: String) -> void:
+	button.set_meta("label",label)
+	if not button.text.is_empty(): button.text = ""
+	var key := hotkey_text(button)
+	var tip := label+(" [%s]" % key if not key.is_empty() else "")+("\n"+detail if not detail.is_empty() else "")
+	if button.tooltip_text != tip: button.tooltip_text = tip
+func label_of(button: Button) -> String:
+	return str(button.get_meta("label",button.text))
+func place_tiles() -> void:
+	for button in card.get_children():
+		if button is Button and button.visible and SLOTS.has(str(button.name)):
+			var slot: int = SLOTS[str(button.name)]
+			button.position = Vector2((slot%4)*(TILE+TILE_GAP),(slot/4)*(TILE+TILE_GAP))
+			button.size = Vector2(TILE,TILE)
+# Under the grid: the hovered tile, or the armed command, with its key and hint.
+func update_hover_line() -> void:
+	var hovered := get_viewport().gui_get_hovered_control()
+	var text := ""
+	if hovered is Button and (card.is_ancestor_of(hovered) or build_menu.is_ancestor_of(hovered)) and hovered.has_meta("label"):
+		text = hovered.tooltip_text
+	elif not game.pending_unit_command.is_empty():
+		text = "%s · click a target. Shift queues, Esc cancels." % game.pending_unit_command.capitalize()
+	if hover_label.text != text: hover_label.text = text
 # Set a label with its hotkey; unchanged text isn't reassigned, so buttons don't relayout each frame.
 # Unchanged text isn't reassigned, so buttons don't relayout every frame.
 func set_label(button: Button, text: String) -> void:
 	if button.text != text: button.text = text
 # Production tiles: name over cost. Unaffordable costs turn amber and the tooltip says what's missing.
 func show_production(id: String, title: String, energy_cost: int, iron_cost: int, payer: Node) -> void:
-	show_button(id,"%s
-%d E · %d I" % [title,energy_cost,iron_cost])
+	desired_buttons.append(id)
 	var button: Button = card.get_node(id)
 	var missing := []
 	if is_instance_valid(payer):
 		if payer.energy < energy_cost: missing.append("%d more energy" % (energy_cost-payer.energy))
 		if payer.iron < iron_cost: missing.append("%d more iron" % (iron_cost-payer.iron))
 	if missing.is_empty():
-		button.remove_theme_color_override("font_color")
-		button.tooltip_text = "Costs %d energy and %d iron from %s." % [energy_cost,iron_cost,payer.name if is_instance_valid(payer) else "the paying Depot"]
+		button.remove_theme_color_override("icon_normal_color")
+		set_tile(button,title,"%d E · %d I · from %s" % [energy_cost,iron_cost,payer.name if is_instance_valid(payer) else "the paying Depot"])
 	else:
-		button.add_theme_color_override("font_color",UNAFFORDABLE)
-		button.tooltip_text = "Needs %s. Generation, deliveries and queued orders can still cover it." % " and ".join(missing)
+		button.add_theme_color_override("icon_normal_color",UNAFFORDABLE)
+		set_tile(button,title,"%d E · %d I · needs %s" % [energy_cost,iron_cost," and ".join(missing)])
 # Disabled actions stay visible and explain why.
 func explain(button: Button, disabled: bool, reason: String) -> void:
 	button.disabled = disabled
-	if disabled: button.tooltip_text = reason
+	if button.has_meta("label"): set_tile(button,label_of(button),reason if disabled else str(button.get_meta("detail","")))
+	elif disabled: button.tooltip_text = reason
 	elif button.tooltip_text == reason: button.tooltip_text = ""
 func close_build() -> void:
 	global_build_open = false
@@ -596,16 +641,16 @@ func refresh_build_menu() -> void:
 	build_menu.get_node("Actions/Barracks").disabled = not valid
 	build_menu.get_node("Actions/TankFactory").disabled = not valid
 	build_menu.get_node("Actions/Mine").disabled = not valid
-	build_menu.get_node("Actions/Mine").text = "Iron Mine · %d E / %d I" % [network.engineering_rules.mine_energy_cost,network.engineering_rules.mine_iron_cost]
+	set_tile(build_menu.get_node("Actions/Mine"),"Iron mine","%d E · %d I" % [network.engineering_rules.mine_energy_cost,network.engineering_rules.mine_iron_cost])
 	build_menu.get_node("Actions/Rail").disabled = not valid or not payer.is_in_group("depots")
 	var rails = game.get_node("RailNetwork").rules
-	build_menu.get_node("Actions/Rail").text = "Rail tile · %d E / %d I" % [rails.rail_energy_cost,rails.rail_iron_cost]
+	set_tile(build_menu.get_node("Actions/Rail"),"Rail tile","%d E · %d I" % [rails.rail_energy_cost,rails.rail_iron_cost])
 	if valid:
-		build_menu.get_node("Actions/Depot").text = "Depot · %d E / %d I" % [network.depot_rules().depot_energy_cost,network.depot_rules().depot_iron_cost]
-		build_menu.get_node("Actions/Generator").text = "Generator · %d E / %d I" % [network.supply_rules.generator_energy_cost,network.supply_rules.generator_iron_cost]
+		set_tile(build_menu.get_node("Actions/Depot"),"Depot","%d E · %d I" % [network.depot_rules().depot_energy_cost,network.depot_rules().depot_iron_cost])
+		set_tile(build_menu.get_node("Actions/Generator"),"Generator","%d E · %d I" % [network.supply_rules.generator_energy_cost,network.supply_rules.generator_iron_cost])
 		for pair in [[&"barracks","Barracks"],[&"tank_factory","TankFactory"]]:
 			var preview = network.production_scene(pair[0]).instantiate()
-			build_menu.get_node("Actions/"+pair[1]).text = "%s · %d E / %d I" % [preview.stats.display_name,preview.stats.energy_cost,preview.stats.iron_cost]
+			set_tile(build_menu.get_node("Actions/"+pair[1]),preview.stats.display_name,"%d E · %d I" % [preview.stats.energy_cost,preview.stats.iron_cost])
 			preview.free()
 func begin_placement(generator: bool) -> void:
 	if global_build_open: begin_global_placement(&"generator" if generator else &"depot"); return
@@ -653,10 +698,10 @@ func update_supply_panel() -> void:
 		set_label(button,"Pack up supplies" if vehicle.deployed else "Deploy supplies · 2s")
 		explain(button,not vehicle.supply_transition.is_empty(),"Wait for deploying or packing to finish.")
 		supply.get_node("RouteStatus").tooltip_text = "Supply range %.1f · Infantry delivery %.1f. Routes pause on deployment and resume explicitly." % [vehicle.mobile_rules.supply_radius(),vehicle.dropoff_range]
-		commands.get_node("Hint").text = "%s · Supply %.1f / drop-off %.1f. Right-click with Infantry to deliver. Movement packs first." % [vehicle.state,vehicle.mobile_rules.supply_radius(),vehicle.dropoff_range]
+		hint_label.text = "%s · Supply %.1f / drop-off %.1f. Right-click with Infantry to deliver. Movement packs first." % [vehicle.state,vehicle.mobile_rules.supply_radius(),vehicle.dropoff_range]
 		var endpoints := "%s → %s" % [vehicle.origin_depot.name if is_instance_valid(vehicle.origin_depot) else "none",vehicle.destination_depot.name if is_instance_valid(vehicle.destination_depot) else "none"]
 		supply.get_node("RouteStatus").text = (endpoints+(" · repeat" if vehicle.repeating else "")+" · "+("Paused · Resume explicitly" if vehicle.route_paused else vehicle.state)) if vehicle.route_active else "No route assigned · choose any two friendly Depots"
-		commands.get_node("Hint").text = "Assign from anywhere · Capacity %d total · Trains wait for friendly rails." % vehicle.stockpile.capacity
+		hint_label.text = "Assign from anywhere · Capacity %d total · Trains wait for friendly rails." % vehicle.stockpile.capacity
 func assign_route() -> void:
 	var vehicle = selected_cargo()
 	var a: int = supply.get_node("Source").selected
@@ -749,4 +794,4 @@ func refresh_global_menu() -> void:
 		var spec: Dictionary = network.plan_spec(pair[0])
 		var button: Button = build_menu.get_node("Actions/"+pair[1])
 		button.disabled = false
-		button.text = "%s · %d E / %d I" % [spec.title,spec.energy,spec.iron]
+		set_tile(button,spec.title,"%d E · %d I · plan, paid when built" % [spec.energy,spec.iron])

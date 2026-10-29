@@ -41,7 +41,8 @@ func run() -> void:
 	var truck = spawn("res://scenes/gameplay/cargo_vehicle.tscn",Vector3(-14,0,10))
 	# Compact bar: shorter than the former fixed 300 px for ordinary selections.
 	await select([])
-	if not check(bottom.size.y <= 240,"Empty HUD %.0f px tall" % bottom.size.y): return
+	# The command hover line is reserved even when empty so the bar never jumps on hover.
+	if not check(bottom.size.y <= 250,"Empty HUD %.0f px tall" % bottom.size.y): return
 	await select([worker])
 	if not check(bottom.size.y < 300 and hud.info.get_node("Details").get_global_rect().end.y <= root.size.y,"Infantry HUD %.0f px tall or overflowing" % bottom.size.y): return
 	# Status bars: Infantry shows cargo only; a Tank shows fuel coloured by level.
