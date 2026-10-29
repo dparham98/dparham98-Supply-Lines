@@ -7,7 +7,7 @@ extends CanvasLayer
 @onready var build_menu = $Bottom/Body/Row/Commands/BuildMenu
 @onready var supply = $Bottom/Body/Row/Commands/Supply
 @onready var bars = $Bottom/Body/Row/Info/Bars
-@onready var strip = $Bottom/Body/Selection
+@onready var strip = $Bottom/Body/Header/Selection
 @onready var feed = $Feed
 @onready var pages = $Bottom/Body/Header/Pages
 @onready var name_label: Label = $Bottom/Body/Row/Info/Head/Text/Name
@@ -21,6 +21,10 @@ const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 
 	"PrintInfantry": 0, "ProduceScout": 1, "ProduceGrenadier": 2, "ProduceTank": 3, "ProduceMotorcycle": 4, "ProduceDrone": 5, "ProduceUbermech": 6,
 	"ToggleGenerator": 0, "FocusAssigned": 1}
 const TILE := 46
+## One icon per stat row (assets/ui/icons).
+const STAT_ICONS := {"Speed": "speed", "Range": "focus", "Damage": "damage", "Vision": "scout", "Vs buildings": "depot", "Splash": "splash",
+	"Cost": "cost", "Deploys": "deploy", "Output": "generator", "Burning": "refuel", "Cycle": "cycle", "Mode": "mode",
+	"Energy": "generator", "Iron": "mine", "Queue": "queue"}
 const TILE_GAP := 4
 const OFF_ICON := Color(0.373,0.463,0.502)
 @onready var state_label: Label = $Bottom/Body/Row/Info/Head/Text/State
@@ -245,7 +249,7 @@ func grouped(value: int) -> String:
 	return ("-" if value < 0 else "")+out
 # One storage bar split by resource against capacity, with a legend of exact amounts.
 func show_storage(title: String, stockpile: ResourceStockpile) -> void:
-	var section = context.get_node("Storage")
+	var section = info.get_node("Storage")
 	section.visible = true
 	section.get_node("Head/Label").text = title
 	section.get_node("Head/Value").text = "%s / %s" % [grouped(stockpile.total()),grouped(stockpile.capacity)]
@@ -273,11 +277,13 @@ func set_stats(pairs: Array) -> void:
 	grid.visible = not pairs.is_empty()
 	for i in range(1,7):
 		var shown := i <= pairs.size()
-		grid.get_node("K%d" % i).visible = shown
-		grid.get_node("V%d" % i).visible = shown
+		for part in ["I","K","V"]: grid.get_node("%s%d" % [part,i]).visible = shown
 		if shown:
 			grid.get_node("K%d" % i).text = pairs[i-1][0]
 			grid.get_node("V%d" % i).text = pairs[i-1][1]
+			var icon: String = STAT_ICONS.get(pairs[i-1][0],"focus")
+			if not _icons.has(icon): _icons[icon] = load("res://assets/ui/icons/%s.svg" % icon)
+			grid.get_node("I%d" % i).texture = _icons[icon]
 func fuel_note(node: Node) -> String:
 	if not node.fuel_active(): return "Fuel not required here"
 	var status := "OUT OF FUEL · " if node.out_of_fuel else ("LOW FUEL · " if node.fuel_low() else "")
@@ -395,7 +401,8 @@ func update_contents() -> void:
 		cargo_page = "route"
 	for bar in bars.get_children(): bar.visible = false
 	bars.get_node("Fuel/Need").visible = false
-	for section in ["Storage","Production","Route","Stats","Abilities"]: context.get_node(section).visible = false
+	for section in ["Production","Route","Stats","Abilities"]: context.get_node(section).visible = false
+	info.get_node("Storage").visible = false
 	info.get_node("Warning").visible = false
 	state_label.text = ""
 	set_icon("")
@@ -506,7 +513,6 @@ func update_contents() -> void:
 		var notes: Array[String] = []
 		notes.append("Nearest Depot: %s · %.1f units away" % [nearest.name,node.global_position.distance_to(nearest.global_position)] if nearest != null else "No friendly Depot")
 		if node.fuel_rules != null: notes.append(fuel_note(node))
-		if node.is_cargo_vehicle and not context.visible: notes.append("Cargo %d / %d · Orders tab shows details" % [node.stockpile.total(),node.stockpile.capacity])
 		info.get_node("Details").text = "\n".join(notes)
 		commands.get_node("Title").text = "UNIT · ORDERS"
 		update_bars(node)
@@ -569,6 +575,8 @@ func update_hover_line() -> void:
 	elif not game.pending_unit_command.is_empty():
 		text = "%s · click a target. Shift queues, Esc cancels." % game.pending_unit_command.capitalize()
 	if hover_label.text != text: hover_label.text = text
+	# The route page has no tiles; hiding the line keeps that page inside the fixed HUD height.
+	hover_label.visible = not supply.visible
 # Set a label with its hotkey; unchanged text isn't reassigned, so buttons don't relayout each frame.
 # Unchanged text isn't reassigned, so buttons don't relayout every frame.
 func set_label(button: Button, text: String) -> void:

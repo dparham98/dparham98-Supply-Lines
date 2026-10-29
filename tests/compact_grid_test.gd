@@ -58,5 +58,15 @@ func run() -> void:
 	if not check(" E · " in actions.get_node("Generator").tooltip_text and hud.label_of(actions.get_node("Generator")) == "Generator","Build tile tooltip lacks name or cost"): return
 	actions.get_node("Back").pressed.emit(); hud._process(0)
 	if not check(hud.card.visible and not hud.build_menu.visible,"Back did not return to the card"): return
+	# Fixed HUD height and a square framed minimap for every kind of selection.
+	var truck = load("res://scenes/gameplay/cargo_vehicle.tscn").instantiate()
+	truck.position = game.depot.global_position+Vector3(-14,0,10)
+	game.get_node("Entities/Units").add_child(truck); truck.set_process(false)
+	var map: Control = hud.get_node("Bottom/Body/Row/MapColumn/Map")
+	for case in [[null,null],[worker,null],[tank,null],[truck,null],[null,game.depot]]:
+		await select(case[0],case[1])
+		if not check(is_equal_approx(hud.get_node("Bottom").size.y,260) and map.size.x == map.size.y,"HUD height %.0f or map %s not fixed" % [hud.get_node("Bottom").size.y,map.size]): return
+	# Bars stay short: Info has a fixed width.
+	if not check(is_equal_approx(info.size.x,300) and hud.get_node("Bottom/Body/Row/Info/Health").size.x <= 300,"Info column not fixed at 300 px"): return
 	print("COMPACT_GRID_TEST_PASSED")
 	quit(0)

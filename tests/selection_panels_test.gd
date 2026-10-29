@@ -40,9 +40,9 @@ func run() -> void:
 	depot.stockpile.set_amount(&"coal",100)
 	select(null,depot)
 	if not check(info.get_node("Head/Icon").texture != null and "territory" in info.get_node("Head/Text/State").text,"Depot header wrong"): return
-	if not check(shown("Storage") and hud.context.get_node("Storage/Head/Label").text == "Storage" and hud.context.get_node("Storage/Head/Value").text == "%s / %s" % [hud.grouped(depot.stockpile.total()),hud.grouped(depot.stockpile.capacity)],"Depot storage header wrong"): return
-	var segments = hud.context.get_node("Storage/Track/Segments")
-	if not check(segments.get_node("Coal").visible and is_equal_approx(segments.get_node("Coal").size_flags_stretch_ratio,100) and not segments.get_node("Wood").visible and hud.context.get_node("Storage/Legend/Coal/Amount").text == "Coal 100","Storage segments or legend wrong"): return
+	if not check(shown("Storage") and hud.info.get_node("Storage/Head/Label").text == "Storage" and hud.info.get_node("Storage/Head/Value").text == "%s / %s" % [hud.grouped(depot.stockpile.total()),hud.grouped(depot.stockpile.capacity)],"Depot storage header wrong"): return
+	var segments = hud.info.get_node("Storage/Track/Segments")
+	if not check(segments.get_node("Coal").visible and is_equal_approx(segments.get_node("Coal").size_flags_stretch_ratio,100) and not segments.get_node("Wood").visible and hud.info.get_node("Storage/Legend/Coal/Amount").text == "Coal 100","Storage segments or legend wrong"): return
 	if not check(not shown("Production"),"Production shown with an empty queue"): return
 	depot.energy = 1000; depot.iron = 1000
 	if not check(depot.request_cargo() and depot.request_cargo(),"Cargo production refused"): return
@@ -71,9 +71,9 @@ func run() -> void:
 	truck.carried_coal = 30; truck.carried_energy = 10
 	select(truck)
 	# The route page hides Context until crate shipments replace it; its notes keep the cargo total.
-	if not check(not hud.context.visible and "Cargo 40 / 100" in hud.info.get_node("Details").text,"Route page lacks the cargo note"): return
+	if not check(not hud.context.visible and hud.info.get_node("Storage").visible and hud.info.get_node("Storage/Head/Value").text == "40 / 100","Route page lacks the cargo storage bar"): return
 	hud.pages.get_node("Orders").pressed.emit(); hud._process(0)
-	if not check(shown("Storage") and hud.context.get_node("Storage/Head/Label").text == "Cargo" and hud.context.get_node("Storage/Head/Value").text == "40 / 100" and not hud.bars.get_node("Cargo").visible,"Cargo vehicle storage wrong"): return
+	if not check(shown("Storage") and hud.info.get_node("Storage/Head/Label").text == "Cargo" and hud.info.get_node("Storage/Head/Value").text == "40 / 100" and not hud.bars.get_node("Cargo").visible,"Cargo vehicle storage wrong"): return
 	if not check(hud.bars.get_node("FuelLabel").text == "Tank fuel" and hud.bars.get_node("Fuel").visible,"Cargo vehicle tank fuel not separate"): return
 	var outpost = load("res://scenes/gameplay/depot.tscn").instantiate()
 	outpost.name = "PanelOutpost"; outpost.team = "player"

@@ -4,6 +4,7 @@
 [ext_resource type="Texture2D" path="res://assets/maps/source_map.png" id="map"]
 [ext_resource type="PackedScene" path="res://scenes/ui/playtest_panel.tscn" id="playtest"]
 [ext_resource type="Theme" path="res://assets/ui/supply_lines_theme.tres" id="ui_theme"]
+[ext_resource type="Script" path="res://scripts/ui/hud_ornament.gd" id="ornament_script"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/rail.svg" id="icon_rail"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/back.svg" id="icon_back"]
 [ext_resource type="Script" path="res://scripts/ui/map_overlay.gd" id="overlay_script"]
@@ -88,6 +89,21 @@ corner_radius_top_left = 6
 corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
+[sub_resource type="StyleBoxFlat" id="map_frame"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.039,0.071,0.086,1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.165,0.239,0.282,1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
 [sub_resource type="StyleBoxFlat" id="selection_box"]
 bg_color = Color(0.1,0.7,1,0.12)
 border_width_left = 1
@@ -211,16 +227,69 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -232.0
+offset_top = -260.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_styles/panel = SubResource("panel")
 metadata/edge_pan_passthrough = true
+custom_minimum_size = Vector2(0,260)
 [node name="Body" type="VBoxContainer" parent="Bottom"]
 layout_mode = 2
 theme_override_constants/separation = 6
 [node name="Header" type="HBoxContainer" parent="Bottom/Body"]
 layout_mode = 2
+[node name="Selection" type="HBoxContainer" parent="Bottom/Body/Header"]
+layout_mode = 2
+visible = false
+theme_override_constants/separation = 6
+[node name="Type1" type="Button" parent="Bottom/Body/Header/Selection"]
+layout_mode = 2
+visible = false
+tooltip_text = "Click: keep only this type. Shift-click: remove this type."
+theme_override_font_sizes/font_size = 13
+text = "Type"
+[node name="Type2" type="Button" parent="Bottom/Body/Header/Selection"]
+layout_mode = 2
+visible = false
+tooltip_text = "Click: keep only this type. Shift-click: remove this type."
+theme_override_font_sizes/font_size = 13
+text = "Type"
+[node name="Type3" type="Button" parent="Bottom/Body/Header/Selection"]
+layout_mode = 2
+visible = false
+tooltip_text = "Click: keep only this type. Shift-click: remove this type."
+theme_override_font_sizes/font_size = 13
+text = "Type"
+[node name="Type4" type="Button" parent="Bottom/Body/Header/Selection"]
+layout_mode = 2
+visible = false
+tooltip_text = "Click: keep only this type. Shift-click: remove this type."
+theme_override_font_sizes/font_size = 13
+text = "Type"
+[node name="Type5" type="Button" parent="Bottom/Body/Header/Selection"]
+layout_mode = 2
+visible = false
+tooltip_text = "Click: keep only this type. Shift-click: remove this type."
+theme_override_font_sizes/font_size = 13
+text = "Type"
+[node name="Type6" type="Button" parent="Bottom/Body/Header/Selection"]
+layout_mode = 2
+visible = false
+tooltip_text = "Click: keep only this type. Shift-click: remove this type."
+theme_override_font_sizes/font_size = 13
+text = "Type"
+[node name="Type7" type="Button" parent="Bottom/Body/Header/Selection"]
+layout_mode = 2
+visible = false
+tooltip_text = "Click: keep only this type. Shift-click: remove this type."
+theme_override_font_sizes/font_size = 13
+text = "Type"
+[node name="Type8" type="Button" parent="Bottom/Body/Header/Selection"]
+layout_mode = 2
+visible = false
+tooltip_text = "Click: keep only this type. Shift-click: remove this type."
+theme_override_font_sizes/font_size = 13
+text = "Type"
 [node name="Message" type="Label" parent="Bottom/Body/Header"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -250,66 +319,16 @@ text = "Focus selection"
 [node name="Restart" type="Button" parent="Bottom/Body/Header"]
 layout_mode = 2
 text = "Restart"
-[node name="Selection" type="HBoxContainer" parent="Bottom/Body"]
-layout_mode = 2
-visible = false
-theme_override_constants/separation = 6
-[node name="Type1" type="Button" parent="Bottom/Body/Selection"]
-layout_mode = 2
-visible = false
-tooltip_text = "Click: keep only this type. Shift-click: remove this type."
-theme_override_font_sizes/font_size = 13
-text = "Type"
-[node name="Type2" type="Button" parent="Bottom/Body/Selection"]
-layout_mode = 2
-visible = false
-tooltip_text = "Click: keep only this type. Shift-click: remove this type."
-theme_override_font_sizes/font_size = 13
-text = "Type"
-[node name="Type3" type="Button" parent="Bottom/Body/Selection"]
-layout_mode = 2
-visible = false
-tooltip_text = "Click: keep only this type. Shift-click: remove this type."
-theme_override_font_sizes/font_size = 13
-text = "Type"
-[node name="Type4" type="Button" parent="Bottom/Body/Selection"]
-layout_mode = 2
-visible = false
-tooltip_text = "Click: keep only this type. Shift-click: remove this type."
-theme_override_font_sizes/font_size = 13
-text = "Type"
-[node name="Type5" type="Button" parent="Bottom/Body/Selection"]
-layout_mode = 2
-visible = false
-tooltip_text = "Click: keep only this type. Shift-click: remove this type."
-theme_override_font_sizes/font_size = 13
-text = "Type"
-[node name="Type6" type="Button" parent="Bottom/Body/Selection"]
-layout_mode = 2
-visible = false
-tooltip_text = "Click: keep only this type. Shift-click: remove this type."
-theme_override_font_sizes/font_size = 13
-text = "Type"
-[node name="Type7" type="Button" parent="Bottom/Body/Selection"]
-layout_mode = 2
-visible = false
-tooltip_text = "Click: keep only this type. Shift-click: remove this type."
-theme_override_font_sizes/font_size = 13
-text = "Type"
-[node name="Type8" type="Button" parent="Bottom/Body/Selection"]
-layout_mode = 2
-visible = false
-tooltip_text = "Click: keep only this type. Shift-click: remove this type."
-theme_override_font_sizes/font_size = 13
-text = "Type"
 [node name="Row" type="HBoxContainer" parent="Bottom/Body"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 18
-[node name="MapColumn" type="VBoxContainer" parent="Bottom/Body/Row"]
+[node name="MapColumn" type="PanelContainer" parent="Bottom/Body/Row"]
 layout_mode = 2
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("map_frame")
 [node name="Map" type="Control" parent="Bottom/Body/Row/MapColumn"]
-custom_minimum_size = Vector2(176,176)
+custom_minimum_size = Vector2(200,200)
 layout_mode = 2
 clip_contents = true
 mouse_filter = 0
@@ -325,9 +344,9 @@ texture = ExtResource("map")
 expand_mode = 1
 stretch_mode = 0
 [node name="Info" type="VBoxContainer" parent="Bottom/Body/Row"]
-custom_minimum_size = Vector2(280,0)
+custom_minimum_size = Vector2(300,0)
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_horizontal = 0
 [node name="Head" type="HBoxContainer" parent="Bottom/Body/Row/Info"]
 layout_mode = 2
 theme_override_constants/separation = 8
@@ -417,6 +436,108 @@ layout_mode = 2
 visible = false
 text = ""
 theme_override_font_sizes/font_size = 12
+[node name="Storage" type="VBoxContainer" parent="Bottom/Body/Row/Info"]
+layout_mode = 2
+visible = false
+theme_override_constants/separation = 3
+[node name="Head" type="HBoxContainer" parent="Bottom/Body/Row/Info/Storage"]
+layout_mode = 2
+[node name="Label" type="Label" parent="Bottom/Body/Row/Info/Storage/Head"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
+[node name="Value" type="Label" parent="Bottom/Body/Row/Info/Storage/Head"]
+layout_mode = 2
+text = ""
+theme_override_font_sizes/font_size = 12
+[node name="Track" type="PanelContainer" parent="Bottom/Body/Row/Info/Storage"]
+custom_minimum_size = Vector2(0,12)
+layout_mode = 2
+theme_override_styles/panel = SubResource("bar_background")
+[node name="Segments" type="HBoxContainer" parent="Bottom/Body/Row/Info/Storage/Track"]
+layout_mode = 2
+theme_override_constants/separation = 0
+[node name="Energy" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+color = Color(0.498,0.827,0.902,1)
+[node name="Iron" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+color = Color(0.604,0.655,0.678,1)
+[node name="Wood" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+color = Color(0.435,0.682,0.353,1)
+[node name="Coal" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+color = Color(0.788,0.541,0.29,1)
+[node name="Free" type="Control" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+[node name="Legend" type="HFlowContainer" parent="Bottom/Body/Row/Info/Storage"]
+layout_mode = 2
+theme_override_constants/h_separation = 10
+[node name="Energy" type="HBoxContainer" parent="Bottom/Body/Row/Info/Storage/Legend"]
+layout_mode = 2
+theme_override_constants/separation = 4
+[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Legend/Energy"]
+custom_minimum_size = Vector2(8,8)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.498,0.827,0.902,1)
+[node name="Amount" type="Label" parent="Bottom/Body/Row/Info/Storage/Legend/Energy"]
+layout_mode = 2
+text = "Energy 0"
+theme_override_font_sizes/font_size = 12
+[node name="Iron" type="HBoxContainer" parent="Bottom/Body/Row/Info/Storage/Legend"]
+layout_mode = 2
+theme_override_constants/separation = 4
+[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Legend/Iron"]
+custom_minimum_size = Vector2(8,8)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.604,0.655,0.678,1)
+[node name="Amount" type="Label" parent="Bottom/Body/Row/Info/Storage/Legend/Iron"]
+layout_mode = 2
+text = "Iron 0"
+theme_override_font_sizes/font_size = 12
+[node name="Wood" type="HBoxContainer" parent="Bottom/Body/Row/Info/Storage/Legend"]
+layout_mode = 2
+theme_override_constants/separation = 4
+[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Legend/Wood"]
+custom_minimum_size = Vector2(8,8)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.435,0.682,0.353,1)
+[node name="Amount" type="Label" parent="Bottom/Body/Row/Info/Storage/Legend/Wood"]
+layout_mode = 2
+text = "Wood 0"
+theme_override_font_sizes/font_size = 12
+[node name="Coal" type="HBoxContainer" parent="Bottom/Body/Row/Info/Storage/Legend"]
+layout_mode = 2
+theme_override_constants/separation = 4
+[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Legend/Coal"]
+custom_minimum_size = Vector2(8,8)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.788,0.541,0.29,1)
+[node name="Amount" type="Label" parent="Bottom/Body/Row/Info/Storage/Legend/Coal"]
+layout_mode = 2
+text = "Coal 0"
+theme_override_font_sizes/font_size = 12
 [node name="Warning" type="Label" parent="Bottom/Body/Row/Info"]
 layout_mode = 2
 visible = false
@@ -426,118 +547,16 @@ theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
 theme_override_font_sizes/font_size = 12
 [node name="Details" type="Label" parent="Bottom/Body/Row/Info"]
 layout_mode = 2
-custom_minimum_size = Vector2(280,0)
+custom_minimum_size = Vector2(300,0)
 autowrap_mode = 2
 text = "Object details appear here."
 theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
 theme_override_font_sizes/font_size = 12
 [node name="Context" type="VBoxContainer" parent="Bottom/Body/Row"]
-custom_minimum_size = Vector2(240,0)
+custom_minimum_size = Vector2(250,0)
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_horizontal = 0
 theme_override_constants/separation = 5
-[node name="Storage" type="VBoxContainer" parent="Bottom/Body/Row/Context"]
-layout_mode = 2
-visible = false
-theme_override_constants/separation = 3
-[node name="Head" type="HBoxContainer" parent="Bottom/Body/Row/Context/Storage"]
-layout_mode = 2
-[node name="Label" type="Label" parent="Bottom/Body/Row/Context/Storage/Head"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = ""
-theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
-theme_override_font_sizes/font_size = 12
-[node name="Value" type="Label" parent="Bottom/Body/Row/Context/Storage/Head"]
-layout_mode = 2
-text = ""
-theme_override_font_sizes/font_size = 12
-[node name="Track" type="PanelContainer" parent="Bottom/Body/Row/Context/Storage"]
-custom_minimum_size = Vector2(0,12)
-layout_mode = 2
-theme_override_styles/panel = SubResource("bar_background")
-[node name="Segments" type="HBoxContainer" parent="Bottom/Body/Row/Context/Storage/Track"]
-layout_mode = 2
-theme_override_constants/separation = 0
-[node name="Energy" type="ColorRect" parent="Bottom/Body/Row/Context/Storage/Track/Segments"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-color = Color(0.498,0.827,0.902,1)
-[node name="Iron" type="ColorRect" parent="Bottom/Body/Row/Context/Storage/Track/Segments"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-color = Color(0.604,0.655,0.678,1)
-[node name="Wood" type="ColorRect" parent="Bottom/Body/Row/Context/Storage/Track/Segments"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-color = Color(0.435,0.682,0.353,1)
-[node name="Coal" type="ColorRect" parent="Bottom/Body/Row/Context/Storage/Track/Segments"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-color = Color(0.788,0.541,0.29,1)
-[node name="Free" type="Control" parent="Bottom/Body/Row/Context/Storage/Track/Segments"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-[node name="Legend" type="HFlowContainer" parent="Bottom/Body/Row/Context/Storage"]
-layout_mode = 2
-theme_override_constants/h_separation = 10
-[node name="Energy" type="HBoxContainer" parent="Bottom/Body/Row/Context/Storage/Legend"]
-layout_mode = 2
-theme_override_constants/separation = 4
-[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Context/Storage/Legend/Energy"]
-custom_minimum_size = Vector2(8,8)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-color = Color(0.498,0.827,0.902,1)
-[node name="Amount" type="Label" parent="Bottom/Body/Row/Context/Storage/Legend/Energy"]
-layout_mode = 2
-text = "Energy 0"
-theme_override_font_sizes/font_size = 12
-[node name="Iron" type="HBoxContainer" parent="Bottom/Body/Row/Context/Storage/Legend"]
-layout_mode = 2
-theme_override_constants/separation = 4
-[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Context/Storage/Legend/Iron"]
-custom_minimum_size = Vector2(8,8)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-color = Color(0.604,0.655,0.678,1)
-[node name="Amount" type="Label" parent="Bottom/Body/Row/Context/Storage/Legend/Iron"]
-layout_mode = 2
-text = "Iron 0"
-theme_override_font_sizes/font_size = 12
-[node name="Wood" type="HBoxContainer" parent="Bottom/Body/Row/Context/Storage/Legend"]
-layout_mode = 2
-theme_override_constants/separation = 4
-[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Context/Storage/Legend/Wood"]
-custom_minimum_size = Vector2(8,8)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-color = Color(0.435,0.682,0.353,1)
-[node name="Amount" type="Label" parent="Bottom/Body/Row/Context/Storage/Legend/Wood"]
-layout_mode = 2
-text = "Wood 0"
-theme_override_font_sizes/font_size = 12
-[node name="Coal" type="HBoxContainer" parent="Bottom/Body/Row/Context/Storage/Legend"]
-layout_mode = 2
-theme_override_constants/separation = 4
-[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Context/Storage/Legend/Coal"]
-custom_minimum_size = Vector2(8,8)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-color = Color(0.788,0.541,0.29,1)
-[node name="Amount" type="Label" parent="Bottom/Body/Row/Context/Storage/Legend/Coal"]
-layout_mode = 2
-text = "Coal 0"
-theme_override_font_sizes/font_size = 12
 [node name="Production" type="VBoxContainer" parent="Bottom/Body/Row/Context"]
 layout_mode = 2
 visible = false
@@ -584,69 +603,123 @@ theme_override_font_sizes/font_size = 12
 [node name="Stats" type="GridContainer" parent="Bottom/Body/Row/Context"]
 layout_mode = 2
 visible = false
-columns = 4
-theme_override_constants/h_separation = 10
-theme_override_constants/v_separation = 1
+columns = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 2
+[node name="I1" type="TextureRect" parent="Bottom/Body/Row/Context/Stats"]
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+size_flags_vertical = 4
+modulate = Color(0.498,0.827,0.902,1)
+expand_mode = 1
+stretch_mode = 5
 [node name="K1" type="Label" parent="Bottom/Body/Row/Context/Stats"]
 layout_mode = 2
 text = ""
 theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
 theme_override_font_sizes/font_size = 12
+custom_minimum_size = Vector2(92,0)
 [node name="V1" type="Label" parent="Bottom/Body/Row/Context/Stats"]
 layout_mode = 2
-size_flags_horizontal = 3
 text = ""
 theme_override_font_sizes/font_size = 12
+size_flags_horizontal = 3
+horizontal_alignment = 2
+[node name="I2" type="TextureRect" parent="Bottom/Body/Row/Context/Stats"]
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+size_flags_vertical = 4
+modulate = Color(0.498,0.827,0.902,1)
+expand_mode = 1
+stretch_mode = 5
 [node name="K2" type="Label" parent="Bottom/Body/Row/Context/Stats"]
 layout_mode = 2
 text = ""
 theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
 theme_override_font_sizes/font_size = 12
+custom_minimum_size = Vector2(92,0)
 [node name="V2" type="Label" parent="Bottom/Body/Row/Context/Stats"]
 layout_mode = 2
-size_flags_horizontal = 3
 text = ""
 theme_override_font_sizes/font_size = 12
+size_flags_horizontal = 3
+horizontal_alignment = 2
+[node name="I3" type="TextureRect" parent="Bottom/Body/Row/Context/Stats"]
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+size_flags_vertical = 4
+modulate = Color(0.498,0.827,0.902,1)
+expand_mode = 1
+stretch_mode = 5
 [node name="K3" type="Label" parent="Bottom/Body/Row/Context/Stats"]
 layout_mode = 2
 text = ""
 theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
 theme_override_font_sizes/font_size = 12
+custom_minimum_size = Vector2(92,0)
 [node name="V3" type="Label" parent="Bottom/Body/Row/Context/Stats"]
 layout_mode = 2
-size_flags_horizontal = 3
 text = ""
 theme_override_font_sizes/font_size = 12
+size_flags_horizontal = 3
+horizontal_alignment = 2
+[node name="I4" type="TextureRect" parent="Bottom/Body/Row/Context/Stats"]
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+size_flags_vertical = 4
+modulate = Color(0.498,0.827,0.902,1)
+expand_mode = 1
+stretch_mode = 5
 [node name="K4" type="Label" parent="Bottom/Body/Row/Context/Stats"]
 layout_mode = 2
 text = ""
 theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
 theme_override_font_sizes/font_size = 12
+custom_minimum_size = Vector2(92,0)
 [node name="V4" type="Label" parent="Bottom/Body/Row/Context/Stats"]
 layout_mode = 2
-size_flags_horizontal = 3
 text = ""
 theme_override_font_sizes/font_size = 12
+size_flags_horizontal = 3
+horizontal_alignment = 2
+[node name="I5" type="TextureRect" parent="Bottom/Body/Row/Context/Stats"]
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+size_flags_vertical = 4
+modulate = Color(0.498,0.827,0.902,1)
+expand_mode = 1
+stretch_mode = 5
 [node name="K5" type="Label" parent="Bottom/Body/Row/Context/Stats"]
 layout_mode = 2
 text = ""
 theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
 theme_override_font_sizes/font_size = 12
+custom_minimum_size = Vector2(92,0)
 [node name="V5" type="Label" parent="Bottom/Body/Row/Context/Stats"]
 layout_mode = 2
-size_flags_horizontal = 3
 text = ""
 theme_override_font_sizes/font_size = 12
+size_flags_horizontal = 3
+horizontal_alignment = 2
+[node name="I6" type="TextureRect" parent="Bottom/Body/Row/Context/Stats"]
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+size_flags_vertical = 4
+modulate = Color(0.498,0.827,0.902,1)
+expand_mode = 1
+stretch_mode = 5
 [node name="K6" type="Label" parent="Bottom/Body/Row/Context/Stats"]
 layout_mode = 2
 text = ""
 theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
 theme_override_font_sizes/font_size = 12
+custom_minimum_size = Vector2(92,0)
 [node name="V6" type="Label" parent="Bottom/Body/Row/Context/Stats"]
 layout_mode = 2
-size_flags_horizontal = 3
 text = ""
 theme_override_font_sizes/font_size = 12
+size_flags_horizontal = 3
+horizontal_alignment = 2
 [node name="Abilities" type="Label" parent="Bottom/Body/Row/Context"]
 layout_mode = 2
 visible = false
@@ -660,6 +733,11 @@ autowrap_mode = 2
 theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
 theme_override_font_sizes/font_size = 12
 text = "Commands change with selection."
+[node name="Ornament" type="Control" parent="Bottom/Body/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+script = ExtResource("ornament_script")
 [node name="Commands" type="VBoxContainer" parent="Bottom/Body/Row"]
 layout_mode = 2
 custom_minimum_size = Vector2(212,0)
@@ -669,6 +747,7 @@ layout_mode = 2
 text = "COMMAND CARD"
 autowrap_mode = 3
 theme_override_font_sizes/font_size = 12
+visible = false
 [node name="LocalSource" type="OptionButton" parent="Bottom/Body/Row/Commands"]
 layout_mode = 2
 visible = false
@@ -1349,9 +1428,10 @@ layout_mode = 2
 visible = false
 [node name="Bank" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu"]
 layout_mode = 2
-autowrap_mode = 2
+autowrap_mode = 0
 text = "LOCAL CONSTRUCTION RESOURCES"
 theme_override_font_sizes/font_size = 12
+clip_text = true
 [node name="Payer" type="OptionButton" parent="Bottom/Body/Row/Commands/BuildMenu"]
 layout_mode = 2
 tooltip_text = "Choose one friendly Depot or deployed cargo stockpile covering this infantry. No resource pooling."
@@ -1409,7 +1489,7 @@ layout_mode = 2
 visible = false
 columns = 2
 theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 6
+theme_override_constants/v_separation = 3
 [node name="FromLabel" type="Label" parent="Bottom/Body/Row/Commands/Supply"]
 layout_mode = 2
 text = "LOAD AT · any friendly Depot"
@@ -1497,11 +1577,10 @@ theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="RouteStatus" type="Label" parent="Bottom/Body/Row/Commands/Supply"]
 layout_mode = 2
-custom_minimum_size = Vector2(0,34)
-max_lines_visible = 2
+custom_minimum_size = Vector2(0,18)
 text = "No route assigned"
-autowrap_mode = 2
-theme_override_font_sizes/font_size = 13
+clip_text = true
+theme_override_font_sizes/font_size = 12
 
 [node name="DeploySupplies" type="Button" parent="Bottom/Body/Row/Commands/Supply"]
 shortcut = SubResource("shortcut_command_deploy")
