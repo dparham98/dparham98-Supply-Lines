@@ -17,6 +17,102 @@ border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
 border_color = Color(0.2,0.85,1,0.9)
+[sub_resource type="InputEventAction" id="key_command_attack"]
+action = &"command_attack"
+[sub_resource type="Shortcut" id="shortcut_command_attack"]
+events = [SubResource("key_command_attack")]
+[sub_resource type="InputEventAction" id="key_command_build"]
+action = &"command_build"
+[sub_resource type="Shortcut" id="shortcut_command_build"]
+events = [SubResource("key_command_build")]
+[sub_resource type="InputEventAction" id="key_command_cancel"]
+action = &"command_cancel"
+[sub_resource type="Shortcut" id="shortcut_command_cancel"]
+events = [SubResource("key_command_cancel")]
+[sub_resource type="InputEventAction" id="key_command_capture"]
+action = &"command_capture"
+[sub_resource type="Shortcut" id="shortcut_command_capture"]
+events = [SubResource("key_command_capture")]
+[sub_resource type="InputEventAction" id="key_command_deploy"]
+action = &"command_deploy"
+[sub_resource type="Shortcut" id="shortcut_command_deploy"]
+events = [SubResource("key_command_deploy")]
+[sub_resource type="InputEventAction" id="key_command_drop"]
+action = &"command_drop"
+[sub_resource type="Shortcut" id="shortcut_command_drop"]
+events = [SubResource("key_command_drop")]
+[sub_resource type="InputEventAction" id="key_command_focus_assigned"]
+action = &"command_focus_assigned"
+[sub_resource type="Shortcut" id="shortcut_command_focus_assigned"]
+events = [SubResource("key_command_focus_assigned")]
+[sub_resource type="InputEventAction" id="key_command_gather"]
+action = &"command_gather"
+[sub_resource type="Shortcut" id="shortcut_command_gather"]
+events = [SubResource("key_command_gather")]
+[sub_resource type="InputEventAction" id="key_command_move"]
+action = &"command_move"
+[sub_resource type="Shortcut" id="shortcut_command_move"]
+events = [SubResource("key_command_move")]
+[sub_resource type="InputEventAction" id="key_command_pause"]
+action = &"command_pause"
+[sub_resource type="Shortcut" id="shortcut_command_pause"]
+events = [SubResource("key_command_pause")]
+[sub_resource type="InputEventAction" id="key_command_refuel"]
+action = &"command_refuel"
+[sub_resource type="Shortcut" id="shortcut_command_refuel"]
+events = [SubResource("key_command_refuel")]
+[sub_resource type="InputEventAction" id="key_command_repair"]
+action = &"command_repair"
+[sub_resource type="Shortcut" id="shortcut_command_repair"]
+events = [SubResource("key_command_repair")]
+[sub_resource type="InputEventAction" id="key_command_return"]
+action = &"command_return"
+[sub_resource type="Shortcut" id="shortcut_command_return"]
+events = [SubResource("key_command_return")]
+[sub_resource type="InputEventAction" id="key_command_stop"]
+action = &"command_stop"
+[sub_resource type="Shortcut" id="shortcut_command_stop"]
+events = [SubResource("key_command_stop")]
+[sub_resource type="InputEventAction" id="key_produce_cargo"]
+action = &"produce_cargo"
+[sub_resource type="Shortcut" id="shortcut_produce_cargo"]
+events = [SubResource("key_produce_cargo")]
+[sub_resource type="InputEventAction" id="key_produce_depot_truck"]
+action = &"produce_depot_truck"
+[sub_resource type="Shortcut" id="shortcut_produce_depot_truck"]
+events = [SubResource("key_produce_depot_truck")]
+[sub_resource type="InputEventAction" id="key_produce_drone"]
+action = &"produce_drone"
+[sub_resource type="Shortcut" id="shortcut_produce_drone"]
+events = [SubResource("key_produce_drone")]
+[sub_resource type="InputEventAction" id="key_produce_grenadier"]
+action = &"produce_grenadier"
+[sub_resource type="Shortcut" id="shortcut_produce_grenadier"]
+events = [SubResource("key_produce_grenadier")]
+[sub_resource type="InputEventAction" id="key_produce_infantry"]
+action = &"produce_infantry"
+[sub_resource type="Shortcut" id="shortcut_produce_infantry"]
+events = [SubResource("key_produce_infantry")]
+[sub_resource type="InputEventAction" id="key_produce_motorcycle"]
+action = &"produce_motorcycle"
+[sub_resource type="Shortcut" id="shortcut_produce_motorcycle"]
+events = [SubResource("key_produce_motorcycle")]
+[sub_resource type="InputEventAction" id="key_produce_scout"]
+action = &"produce_scout"
+[sub_resource type="Shortcut" id="shortcut_produce_scout"]
+events = [SubResource("key_produce_scout")]
+[sub_resource type="InputEventAction" id="key_produce_tank"]
+action = &"produce_tank"
+[sub_resource type="Shortcut" id="shortcut_produce_tank"]
+events = [SubResource("key_produce_tank")]
+[sub_resource type="InputEventAction" id="key_produce_train"]
+action = &"produce_train"
+[sub_resource type="Shortcut" id="shortcut_produce_train"]
+events = [SubResource("key_produce_train")]
+[sub_resource type="InputEventAction" id="key_produce_ubermech"]
+action = &"produce_ubermech"
+[sub_resource type="Shortcut" id="shortcut_produce_ubermech"]
+events = [SubResource("key_produce_ubermech")]
 [node name="Interface" type="CanvasLayer"]
 script = ExtResource("hud")
 [node name="Bottom" type="PanelContainer" parent="."]
@@ -121,56 +217,67 @@ columns = 3
 theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 8
 [node name="Move" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_command_move")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 size_flags_horizontal = 3
 text = "Move"
 [node name="Attack" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_command_attack")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 size_flags_horizontal = 3
 text = "Attack"
 [node name="Gather" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_command_gather")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 size_flags_horizontal = 3
 text = "Gather iron"
 [node name="Stop" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_command_stop")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 size_flags_horizontal = 3
 text = "Stop"
 [node name="Return" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_command_return")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 size_flags_horizontal = 3
 text = "Return cargo"
 [node name="Build" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_command_build")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 size_flags_horizontal = 3
 text = "Build…"
 [node name="PrintInfantry" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_produce_infantry")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 size_flags_horizontal = 3
 text = "Print infantry"
 [node name="PrintTruck" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_produce_depot_truck")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 size_flags_horizontal = 3
 text = "Print Depot Truck"
 [node name="PrintCargo" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_produce_cargo")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 size_flags_horizontal = 3
 text = "Print cargo vehicle"
 [node name="DeployTruck" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_command_deploy")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 size_flags_horizontal = 3
 text = "Deploy Depot Truck"
 [node name="FocusAssigned" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_command_focus_assigned")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 size_flags_horizontal = 3
@@ -260,9 +367,11 @@ text = "Repeat route"
 layout_mode = 2
 text = "Assign delivery route"
 [node name="PauseRoute" type="Button" parent="Bottom/Body/Row/Commands/Supply"]
+shortcut = SubResource("shortcut_command_pause")
 layout_mode = 2
 text = "Pause / Resume route"
 [node name="CancelRoute" type="Button" parent="Bottom/Body/Row/Commands/Supply"]
+shortcut = SubResource("shortcut_command_cancel")
 layout_mode = 2
 text = "Cancel · keep cargo"
 [node name="RouteStatus" type="Label" parent="Bottom/Body/Row/Commands/Supply"]
@@ -274,54 +383,63 @@ autowrap_mode = 2
 theme_override_font_sizes/font_size = 13
 
 [node name="ProduceScout" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_produce_scout")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 size_flags_horizontal = 3
 text = "Scout"
 
 [node name="ProduceGrenadier" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_produce_grenadier")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 size_flags_horizontal = 3
 text = "Grenadier"
 
 [node name="ProduceTank" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_produce_tank")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 size_flags_horizontal = 3
 text = "Tank"
 
 [node name="ProduceMotorcycle" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_produce_motorcycle")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 size_flags_horizontal = 3
 text = "Motorcycle"
 
 [node name="ProduceDrone" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_produce_drone")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 size_flags_horizontal = 3
 text = "Drone"
 
 [node name="ProduceUbermech" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_produce_ubermech")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 size_flags_horizontal = 3
 text = "Ubermech"
 
 [node name="Repair" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_command_repair")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 size_flags_horizontal = 3
 text = "Repair building"
 
 [node name="Capture" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_command_capture")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 size_flags_horizontal = 3
 text = "Capture Depot / mine"
 
 [node name="PrintTrain" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_produce_train")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 size_flags_horizontal = 3
@@ -339,26 +457,32 @@ size_flags_horizontal = 3
 text = "Iron Mine"
 
 [node name="DeploySupplies" type="Button" parent="Bottom/Body/Row/Commands/Supply"]
+shortcut = SubResource("shortcut_command_deploy")
 layout_mode = 2
 text = "Deploy supplies · 2s"
 [node name="MoveCargo" type="Button" parent="Bottom/Body/Row/Commands/Supply"]
+shortcut = SubResource("shortcut_command_move")
 layout_mode = 2
 text = "Move · pack automatically"
 [node name="SupplyRefuel" type="Button" parent="Bottom/Body/Row/Commands/Supply"]
+shortcut = SubResource("shortcut_command_refuel")
 layout_mode = 2
 text = "Auto-refuel: on"
 [node name="DropMaterials" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_command_drop")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 size_flags_horizontal = 3
 text = "Drop materials"
 
 [node name="ToggleGenerator" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_command_pause")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 text = "Pause generator"
 
 [node name="ToggleRefuel" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_command_refuel")
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 text = "Auto-refuel: on"
@@ -369,6 +493,7 @@ mouse_filter = 2
 theme_override_styles/panel = SubResource("selection_box")
 
 [node name="CancelPlan" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_command_cancel")
 layout_mode = 2
 visible = false
 text = "Cancel construction plan"

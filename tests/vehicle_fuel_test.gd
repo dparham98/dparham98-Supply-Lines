@@ -131,9 +131,9 @@ func run() -> void:
 	truck.set_selected(true)
 	hud._process(0)
 	var supply_refuel = hud.supply.get_node("SupplyRefuel")
-	if not check(hud.supply.visible and supply_refuel.visible and supply_refuel.text == "Auto-refuel: on","Cargo vehicle refuel toggle missing"): return
+	if not check(hud.supply.visible and supply_refuel.visible and supply_refuel.text.begins_with("Auto-refuel: on"),"Cargo vehicle refuel toggle missing"): return
 	supply_refuel.pressed.emit(); hud._process(0)
-	if not check(not truck.auto_refuel and supply_refuel.text == "Auto-refuel: off","Cargo vehicle refuel toggle did not apply"): return
+	if not check(not truck.auto_refuel and supply_refuel.text.begins_with("Auto-refuel: off"),"Cargo vehicle refuel toggle did not apply"): return
 	supply_refuel.pressed.emit()
 	truck.set_selected(false)
 	# Newly produced vehicles start empty, then refuel when stopped at the Depot.

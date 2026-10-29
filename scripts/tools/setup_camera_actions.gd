@@ -1,6 +1,6 @@
 extends SceneTree
 func _initialize() -> void:
-	var keys := {"camera_pan_left": KEY_LEFT, "camera_pan_right": KEY_RIGHT, "camera_pan_forward": KEY_UP, "camera_pan_back": KEY_DOWN, "camera_rotate_left": KEY_Q, "camera_rotate_right": KEY_E, "camera_fast_pan": KEY_SHIFT, "camera_overview": KEY_M, "camera_focus_hq": KEY_F, "camera_focus_selection": KEY_HOME}
+	var keys := {"camera_pan_left": KEY_LEFT, "camera_pan_right": KEY_RIGHT, "camera_pan_forward": KEY_UP, "camera_pan_back": KEY_DOWN, "camera_rotate_left": KEY_Q, "camera_rotate_right": KEY_E, "camera_fast_pan": KEY_SHIFT, "camera_overview": KEY_O, "camera_focus_hq": KEY_BACKSPACE, "camera_focus_selection": KEY_HOME}
 	for action in keys:
 		var event := InputEventKey.new()
 		event.physical_keycode = keys[action]
