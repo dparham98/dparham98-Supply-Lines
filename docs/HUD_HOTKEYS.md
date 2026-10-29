@@ -15,7 +15,7 @@ Phase 1 of the HUD plan (hotkeys, queuing and HUD modernization), approved on 20
 | --- | --- |
 | Unit | M Move · A Attack · G Gather · S Stop · V Deliver · B Build · R Repair · C Capture · X Drop materials · T Auto-refuel · D Deploy into Depot |
 | Cargo Supply panel | M Move · D Deploy/pack · T Auto-refuel · P Pause/resume route · X Cancel route |
-| Depot | I Infantry · U Depot Truck · C Cargo Vehicle · T Train · B Build |
+| Depot | U Depot Truck · C Cargo Vehicle · T Train · B Build (I is bound, but Depots show no Infantry button) |
 | Production building | I Infantry · S Scout · G Grenadier · T Tank · M Motorcycle · D Drone · U Übermech |
 | Generator | P Pause/resume · F Focus assigned Depot |
 | Construction plan | X Cancel plan |

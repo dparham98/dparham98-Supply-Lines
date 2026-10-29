@@ -79,7 +79,7 @@ The baker uses static MeshInstance3D parts from the assigned scene and preserves
 - tests: terrain/navigation and saved-scene/asset-slot regression checks.
 - docs: implementation and maintenance notes.
 
-Camera.tscn at the root is a small compatibility entry that instances the main world; the project starts resource_skirmish.tscn. SelectionManager is one autoload, with no duplicate scene copy. Unit selection supports point/box selection and a visible selection ring. Camera controls: arrows/edges pan, Shift faster, middle-drag grab terrain, wheel zoom toward cursor, Q/E rotate, Backspace HQ, Home selected units, O overview/return. Select the CameraRig root to tune the Inspector settings. See docs/CAMERA_RIG.md. Godot editor F means frame selection. In game, command card buttons have letter hotkeys (docs/HUD_HOTKEYS.md).
+Camera.tscn at the root is a small compatibility entry that instances the main world; the project starts resource_skirmish.tscn. SelectionManager is one autoload, with no duplicate scene copy. Unit selection supports point/box selection and a visible selection ring. Camera controls: arrows/edges pan, Shift faster, middle-drag grab terrain, wheel zoom toward cursor, Q/E rotate, Backspace HQ, Home selected units, O overview/return. Select the CameraRig root to tune the Inspector settings. See docs/CAMERA_RIG.md. Godot editor F means frame selection. In game, command card buttons have letter hotkeys (docs/HUD_HOTKEYS.md), and F10 opens the development-only playtest panel (docs/PLAYTEST_TOOLS.md).
 
 The rebuild and refresh controls use Godot's supported [Inspector tool buttons](https://docs.godotengine.org/en/4.6/tutorials/scripting/gdscript/gdscript_exports.html#export-tool-button).
 
