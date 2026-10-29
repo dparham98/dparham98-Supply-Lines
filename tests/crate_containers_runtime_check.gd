@@ -63,8 +63,11 @@ func run() -> void:
 	if not game.selected_building == depot: await click_at(screen(depot.global_position))
 	if not check(game.selected_building == depot and hud.shipment.is_visible_in_tree(),"Depot crate panel not shown"): return
 	var iron: int = depot.iron
-	for i in 3: await click(hud.shipment.get_node("Rows/Iron/Plus"))
-	await click(hud.shipment.get_node("Rows/Coal/Plus"))
+	await click(hud.shipment.get_node("Pack/One"))
+	await click(hud.shipment.get_node("Pack/One"))
+	await click(hud.shipment.get_node("Pack/One"))
+	hud.shipment.get_node("Pack/Kind").select(3)
+	await click(hud.shipment.get_node("Pack/One"))
 	await click(hud.shipment.get_node("Foot/EmptyCrate"))
 	if not check(CrateYard.count_beside(depot,&"iron") == 3 and CrateYard.count_beside(depot,&"coal") == 1 and CrateYard.beside(depot).size() == 5 and depot.iron == iron-75,"Real clicks did not pack crates beside the Depot"): return
 	var iron_crate: Node3D
@@ -74,7 +77,13 @@ func run() -> void:
 		if crate.amount == 0: empty_crate = crate
 	await move_to(screen(iron_crate.global_position+Vector3(0,0.3,0)))
 	if not check(hud.get_node("MapOverlay").hovered == iron_crate and hud.get_node("HoverCard").visible,"Crate hover card missing"): return
+	if not check(hud.context.size.x <= 250.5 and hud.shipment.get_node("Pack").size.x <= 250.5,"Crate panel widened the Context column"): return
 	await shot("depot_crates")
+	# Hovering the Depot: its card shows the crates beside it as pips.
+	await move_to(screen(depot.global_position+Vector3(0,1,-1)))
+	var card_pips = hud.get_node("HoverCard/Body/Crates")
+	if not check(hud.get_node("MapOverlay").hovered == depot and card_pips.visible and card_pips.get_node("Pip4").visible and not card_pips.get_node("Pip5").visible,"Depot hover card crate pips missing"): return
+	await shot("depot_hover_crates")
 	# Load: click a crate on the map. The truck takes it and the filled crates next to it.
 	await click_at(screen(truck.selection_point()))
 	if not truck.is_selected: await click_at(screen(truck.selection_point()))

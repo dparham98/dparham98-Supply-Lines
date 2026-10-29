@@ -12,6 +12,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/icons/rail.svg" id="icon_rail"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/back.svg" id="icon_back"]
 [ext_resource type="Script" path="res://scripts/ui/map_overlay.gd" id="overlay_script"]
+[ext_resource type="PackedScene" path="res://scenes/ui/crate_pips.tscn" id="crate_pips"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/generator.svg" id="icon_generator"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/plan.svg" id="icon_plan"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/mine.svg" id="icon_mine"]
@@ -585,6 +586,9 @@ color = Color(0.788,0.541,0.29,1)
 layout_mode = 2
 text = "Coal 0"
 theme_override_font_sizes/font_size = 12
+[node name="Aboard" parent="Bottom/Body/Row/Info/Storage" instance=ExtResource("crate_pips")]
+visible = false
+layout_mode = 2
 [node name="Warning" type="Label" parent="Bottom/Body/Row/Info"]
 layout_mode = 2
 visible = false
@@ -659,122 +663,68 @@ theme_override_font_sizes/font_size = 12
 layout_mode = 2
 text = "crate = 25"
 theme_override_font_sizes/font_size = 12
-[node name="Rows" type="GridContainer" parent="Bottom/Body/Row/Context/Shipment"]
+[node name="Pips" parent="Bottom/Body/Row/Context/Shipment" instance=ExtResource("crate_pips")]
 layout_mode = 2
-columns = 2
-theme_override_constants/h_separation = 10
-theme_override_constants/v_separation = 2
-[node name="Energy" type="HBoxContainer" parent="Bottom/Body/Row/Context/Shipment/Rows"]
+clickable = true
+[node name="Pack" type="HBoxContainer" parent="Bottom/Body/Row/Context/Shipment"]
 layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 4
-[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Context/Shipment/Rows/Energy"]
-custom_minimum_size = Vector2(8,8)
+theme_override_constants/separation = 3
+[node name="Kind" type="OptionButton" parent="Bottom/Body/Row/Context/Shipment/Pack"]
+custom_minimum_size = Vector2(70,24)
+clip_text = true
+fit_to_longest_item = false
 layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-color = Color(0.498,0.827,0.902,1)
-[node name="Count" type="Label" parent="Bottom/Body/Row/Context/Shipment/Rows/Energy"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Energy 0"
+focus_mode = 0
 theme_override_font_sizes/font_size = 12
-[node name="Minus" type="Button" parent="Bottom/Body/Row/Context/Shipment/Rows/Energy"]
-custom_minimum_size = Vector2(22,22)
+tooltip_text = "Resource to pack"
+item_count = 4
+selected = 1
+popup/item_0/text = "Energy"
+popup/item_0/id = 0
+popup/item_1/text = "Iron"
+popup/item_1/id = 1
+popup/item_2/text = "Wood"
+popup/item_2/id = 2
+popup/item_3/text = "Coal"
+popup/item_3/id = 3
+[node name="One" type="Button" parent="Bottom/Body/Row/Context/Shipment/Pack"]
+custom_minimum_size = Vector2(24,24)
 layout_mode = 2
-text = "−"
-tooltip_text = "Unpack the nearest energy crate beside this stockpile into storage"
-[node name="Plus" type="Button" parent="Bottom/Body/Row/Context/Shipment/Rows/Energy"]
-custom_minimum_size = Vector2(22,22)
-layout_mode = 2
-text = "+"
-tooltip_text = "Pack 25 loose energy into a crate beside this stockpile"
-[node name="Iron" type="HBoxContainer" parent="Bottom/Body/Row/Context/Shipment/Rows"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 4
-[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Context/Shipment/Rows/Iron"]
-custom_minimum_size = Vector2(8,8)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-color = Color(0.604,0.655,0.678,1)
-[node name="Count" type="Label" parent="Bottom/Body/Row/Context/Shipment/Rows/Iron"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Iron 0"
+focus_mode = 0
 theme_override_font_sizes/font_size = 12
-[node name="Minus" type="Button" parent="Bottom/Body/Row/Context/Shipment/Rows/Iron"]
-custom_minimum_size = Vector2(22,22)
-layout_mode = 2
-text = "−"
-tooltip_text = "Unpack the nearest iron crate beside this stockpile into storage"
-[node name="Plus" type="Button" parent="Bottom/Body/Row/Context/Shipment/Rows/Iron"]
-custom_minimum_size = Vector2(22,22)
-layout_mode = 2
-text = "+"
-tooltip_text = "Pack 25 loose iron into a crate beside this stockpile"
-[node name="Wood" type="HBoxContainer" parent="Bottom/Body/Row/Context/Shipment/Rows"]
+text = "+1"
+tooltip_text = "Pack one crate (25 loose units) beside this stockpile"
+[node name="Truckload" type="Button" parent="Bottom/Body/Row/Context/Shipment/Pack"]
+custom_minimum_size = Vector2(0,24)
+clip_text = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 4
-[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Context/Shipment/Rows/Wood"]
-custom_minimum_size = Vector2(8,8)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-color = Color(0.435,0.682,0.353,1)
-[node name="Count" type="Label" parent="Bottom/Body/Row/Context/Shipment/Rows/Wood"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Wood 0"
+focus_mode = 0
 theme_override_font_sizes/font_size = 12
-[node name="Minus" type="Button" parent="Bottom/Body/Row/Context/Shipment/Rows/Wood"]
-custom_minimum_size = Vector2(22,22)
-layout_mode = 2
-text = "−"
-tooltip_text = "Unpack the nearest wood crate beside this stockpile into storage"
-[node name="Plus" type="Button" parent="Bottom/Body/Row/Context/Shipment/Rows/Wood"]
-custom_minimum_size = Vector2(22,22)
-layout_mode = 2
-text = "+"
-tooltip_text = "Pack 25 loose wood into a crate beside this stockpile"
-[node name="Coal" type="HBoxContainer" parent="Bottom/Body/Row/Context/Shipment/Rows"]
+text = "Truck"
+tooltip_text = "Truckload: pack until 4 crates of this resource are beside it (one Cargo truck)"
+[node name="Trainload" type="Button" parent="Bottom/Body/Row/Context/Shipment/Pack"]
+custom_minimum_size = Vector2(0,24)
+clip_text = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 4
-[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Context/Shipment/Rows/Coal"]
-custom_minimum_size = Vector2(8,8)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-color = Color(0.788,0.541,0.29,1)
-[node name="Count" type="Label" parent="Bottom/Body/Row/Context/Shipment/Rows/Coal"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Coal 0"
+focus_mode = 0
 theme_override_font_sizes/font_size = 12
-[node name="Minus" type="Button" parent="Bottom/Body/Row/Context/Shipment/Rows/Coal"]
-custom_minimum_size = Vector2(22,22)
-layout_mode = 2
-text = "−"
-tooltip_text = "Unpack the nearest coal crate beside this stockpile into storage"
-[node name="Plus" type="Button" parent="Bottom/Body/Row/Context/Shipment/Rows/Coal"]
-custom_minimum_size = Vector2(22,22)
-layout_mode = 2
-text = "+"
-tooltip_text = "Pack 25 loose coal into a crate beside this stockpile"
+text = "Train"
+tooltip_text = "Trainload: pack until 12 crates of this resource are beside it (one Train)"
 [node name="Foot" type="HBoxContainer" parent="Bottom/Body/Row/Context/Shipment"]
 layout_mode = 2
 theme_override_constants/separation = 4
-[node name="KeepStocked" type="CheckButton" parent="Bottom/Body/Row/Context/Shipment/Foot"]
+[node name="Refill" type="CheckButton" parent="Bottom/Body/Row/Context/Shipment/Foot"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Keep stocked"
+focus_mode = 0
+text = "Refill on pickup"
 theme_override_font_sizes/font_size = 12
-tooltip_text = "Repack crates beside this stockpile up to these counts as vehicles collect them."
+tooltip_text = "On: repack the crates beside it to these counts each time vehicles collect them. Off: leave the space empty."
 [node name="EmptyCrate" type="Button" parent="Bottom/Body/Row/Context/Shipment/Foot"]
 layout_mode = 2
+focus_mode = 0
 text = "+ Empty"
 theme_override_font_sizes/font_size = 12
 tooltip_text = "Set down an empty crate beside this stockpile for workers to fill"
@@ -2005,6 +1955,9 @@ color = Color(0.788,0.541,0.29,1)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
+[node name="Crates" parent="HoverCard/Body" instance=ExtResource("crate_pips")]
+visible = false
+layout_mode = 2
 [node name="Meter" type="ProgressBar" parent="HoverCard/Body"]
 custom_minimum_size = Vector2(0,5)
 layout_mode = 2

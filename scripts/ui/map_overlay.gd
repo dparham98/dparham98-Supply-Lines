@@ -322,6 +322,13 @@ func update_hover_card(mouse: Vector2) -> void:
 			segment.size_flags_stretch_ratio = maxf(stockpile.amount(kind),0.001)
 		card.get_node("Body/Storage/Segments/Free").size_flags_stretch_ratio = maxf(stockpile.space(),0.001)
 		ratio = -1.0
+	# Crates aboard a vehicle (with its free slots), or crates beside a Depot.
+	var pips = card.get_node("Body/Crates")
+	pips.visible = false
+	if node.get("crates") is Array and node.has_method("crate_slots"):
+		pips.visible = true; pips.show_crates(node.crates,node.crate_slots())
+	elif node.is_in_group("depots") and not CrateYard.beside(node).is_empty():
+		pips.visible = true; pips.show_crates(CrateYard.contents(CrateYard.beside(node)))
 	card.get_node("Body/Meter").visible = ratio >= 0
 	if ratio >= 0: card.get_node("Body/Meter").value = ratio
 	card.reset_size()

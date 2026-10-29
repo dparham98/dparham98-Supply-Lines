@@ -65,29 +65,53 @@ func run() -> void:
 	if not check(not tank.can_refuel_from(depot),"Refuelled from coal in a crate"): return
 	if not check(CrateYard.unpack(depot,&"wood") == 25 and depot.wood == 25 and crates_of(&"wood") == 0,"Unpack did not return the crate to storage"): return
 	CrateYard.unpack(depot,&"coal")
-	# The Depot panel counts crates beside it; + packs onto the map, − unpacks, + Empty adds one.
+	# The Depot panel shows crates beside it as pips; +1, Truckload and Trainload pack onto the map.
 	depot.iron = 200
 	select(null,depot)
 	var panel = hud.shipment
-	if not check(panel.visible and panel.get_node("Rows/Iron/Count").text == "Iron 1" and panel.get_node("Head/Label").text == "Crates beside" and "1 empty" in panel.get_node("Head/Value").text,"Crate panel missing or wrong"): return
-	panel.get_node("Rows/Iron/Plus").pressed.emit(); hud._process(0)
-	if not check(crates_of(&"iron") == 2 and depot.iron == 175 and panel.get_node("Rows/Iron/Count").text == "Iron 2","Plus did not pack a crate onto the map"): return
-	panel.get_node("Rows/Iron/Minus").pressed.emit(); hud._process(0)
+	var pips = panel.get_node("Pips")
+	if not check(panel.visible and panel.get_node("Head/Label").text == "Crates beside" and panel.get_node("Head/Value").text == "2 crates · 1 empty","Crate panel missing or wrong"): return
+	if not check(pips.get_node("Pip0").visible and pips.get_node("Pip0/Fill").color == pips.COLORS[&"iron"] and pips.get_node("Pip1/Fill").color == pips.EMPTY_CRATE and pips.get_node("Pip3").visible and not pips.get_node("Pip3/Fill").visible and not pips.get_node("Pip4").visible,"Crate pips wrong"): return
+	panel.get_node("Pack/Kind").select(1)
+	panel.get_node("Pack/One").pressed.emit(); hud._process(0)
+	if not check(crates_of(&"iron") == 2 and depot.iron == 175,"+1 did not pack a crate onto the map"): return
+	panel.get_node("Pack/Truckload").pressed.emit(); hud._process(0)
+	if not check(crates_of(&"iron") == 4 and depot.iron == 125,"Truckload did not fill to 4 crates"): return
+	panel.get_node("Pack/Truckload").pressed.emit(); hud._process(0)
+	if not check(crates_of(&"iron") == 4 and "Already 4" in game.message,"Truckload packed past a truckload"): return
+	depot.coal = 0
+	panel.get_node("Pack/Kind").select(3); hud._process(0)
+	if not check(panel.get_node("Pack/One").disabled and panel.get_node("Pack/Trainload").disabled,"Pack enabled without 25 loose coal"): return
+	panel.get_node("Pack/Kind").select(1); hud._process(0)
+	panel.get_node("Pack/Trainload").pressed.emit(); hud._process(0)
+	if not check(crates_of(&"iron") == 9 and depot.iron == 0 and "not enough loose iron" in game.message,"Trainload did not pack what stock allowed"): return
+	# Shift-click a pip to unpack that crate; a plain click only explains.
+	pips.pip_pressed.emit(0,false)
+	if not check(crates_of(&"iron") == 9 and "Shift-click" in game.message,"Plain pip click changed crates"): return
+	pips.pip_pressed.emit(0,true)
 	for node in get_nodes_in_group("supply_crates"):
 		if node.is_queued_for_deletion(): node.free()
-	if not check(crates_of(&"iron") == 1 and depot.iron == 200,"Minus did not unpack a crate into storage"): return
+	hud._process(0)
+	if not check(crates_of(&"iron") == 8 and depot.iron == 25,"Shift-click did not unpack the crate"): return
 	panel.get_node("Foot/EmptyCrate").pressed.emit(); hud._process(0)
-	if not check("2 empty" in panel.get_node("Head/Value").text,"+ Empty did not add an empty crate"): return
+	if not check(panel.get_node("Head/Value").text == "10 crates · 2 empty" and pips.get_node("Pip9").visible and not pips.get_node("Pip10").visible,"+ Empty did not add an empty crate"): return
 	var segments = hud.info.get_node("Storage/Track/Segments")
-	if not check(not segments.has_node("IronCrated") and not segments.get_node("Crates").visible and hud.info.get_node("Storage/Legend/Iron/Amount").text == "Iron 200","Depot storage still mixes in crates"): return
-	# Keep stocked repacks crates beside the Depot as they're taken.
-	panel.get_node("Foot/KeepStocked").toggled.emit(true)
-	if not check(stock.keep_stocked and stock.stock_targets[&"iron"] == 1,"Keep stocked did not record targets"): return
+	if not check(hud.info.get_node("Storage/Head/Label").text == "Loose storage" and not segments.has_node("IronCrated") and not segments.get_node("Crates").visible and hud.info.get_node("Storage/Legend/Iron/Amount").text == "Iron 25","Depot storage still mixes in crates"): return
+	# Refill after pickup repacks crates beside the Depot as they're taken; off leaves the gap.
+	panel.get_node("Foot/Refill").toggled.emit(true)
+	if not check(stock.refill and stock.refill_targets[&"iron"] == 8,"Refill did not record targets"): return
+	var taken := 0
 	for node in CrateYard.beside(depot):
-		if node.resource_kind == &"iron": node.free()
+		if node.resource_kind == &"iron" and taken < 2: node.free(); taken += 1
+	depot.iron = 50
 	depot._process(0.01)
-	if not check(crates_of(&"iron") == 1 and depot.iron == 175,"Keep stocked did not repack"): return
-	panel.get_node("Foot/KeepStocked").toggled.emit(false)
+	if not check(crates_of(&"iron") == 8 and depot.iron == 0,"Refill did not repack"): return
+	panel.get_node("Foot/Refill").toggled.emit(false)
+	for node in CrateYard.beside(depot):
+		if node.resource_kind == &"iron": node.free(); break
+	depot.iron = 25
+	depot._process(0.01)
+	if not check(crates_of(&"iron") == 7 and depot.iron == 25,"Leave empty still repacked"): return
 	if not check(is_equal_approx(hud.get_node("Bottom").size.y,260),"Crate panel broke the fixed HUD height"): return
 	clear_crates()
 	# Workers deliver into a crate and, when it fills, into the next crate beside it.
@@ -183,10 +207,11 @@ func run() -> void:
 	run_until(truck,func(): return truck.order == "idle",30)
 	# HUD: crates aboard, a separate Crates segment, and the overlay's crate pips.
 	select(truck)
-	if not check(hud.info.get_node("Storage/Head/Label").text == "Cargo · 1/4 crates" and segments.get_node("Crates").visible and "Coal 25" in hud.info.get_node("Details").text,"Crates aboard not shown"): return
+	var aboard_pips = hud.info.get_node("Storage/Aboard")
+	if not check(hud.info.get_node("Storage/Head/Label").text == "Cargo · 1/4 crates" and segments.get_node("Crates").visible and aboard_pips.visible and aboard_pips.get_node("Pip0/Fill").color == aboard_pips.COLORS[&"coal"] and aboard_pips.get_node("Pip3").visible and not aboard_pips.get_node("Pip3/Fill").visible,"Crates aboard not shown"): return
 	var overlay = hud.get_node("MapOverlay")
-	var pips: Array = overlay.status_for(truck).pips
-	if not check(pips.size() == 4 and pips[0] == overlay.RESOURCE_COLORS[&"coal"] and pips[1].a == 0,"Truck crate pips wrong"): return
+	var truck_pips: Array = overlay.status_for(truck).pips
+	if not check(truck_pips.size() == 4 and truck_pips[0] == overlay.RESOURCE_COLORS[&"coal"] and truck_pips[1].a == 0,"Truck crate pips wrong"): return
 	var marker = CrateYard.spawn(self,field+Vector2i(0,3),&"wood",10,"player")
 	var status: Dictionary = overlay.status_for(marker)
 	if not check(is_equal_approx(status.crate.ratio,0.4) and overlay.hud_name(marker) == "Wood crate","Crate overlay wrong"): return

@@ -1,0 +1,266 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/ui/crate_pips.gd" id="script"]
+[sub_resource type="StyleBoxFlat" id="slot"]
+bg_color = Color(0.09,0.11,0.12,0.6)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.56,0.4,0.22,1)
+[sub_resource type="StyleBoxFlat" id="slot_hover"]
+bg_color = Color(0.09,0.11,0.12,0.6)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.91,0.96,0.98,1)
+[node name="CratePips" type="HBoxContainer"]
+custom_minimum_size = Vector2(0,14)
+theme_override_constants/separation = 3
+mouse_filter = 2
+script = ExtResource("script")
+[node name="Pip0" type="Button" parent="."]
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+focus_mode = 0
+flat = false
+theme_override_styles/normal = SubResource("slot")
+theme_override_styles/hover = SubResource("slot_hover")
+theme_override_styles/pressed = SubResource("slot_hover")
+theme_override_styles/disabled = SubResource("slot")
+[node name="Fill" type="ColorRect" parent="Pip0"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = -2.0
+offset_bottom = -2.0
+mouse_filter = 2
+color = Color(0.604,0.655,0.678,1)
+[node name="Pip1" type="Button" parent="."]
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+focus_mode = 0
+flat = false
+theme_override_styles/normal = SubResource("slot")
+theme_override_styles/hover = SubResource("slot_hover")
+theme_override_styles/pressed = SubResource("slot_hover")
+theme_override_styles/disabled = SubResource("slot")
+[node name="Fill" type="ColorRect" parent="Pip1"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = -2.0
+offset_bottom = -2.0
+mouse_filter = 2
+color = Color(0.604,0.655,0.678,1)
+[node name="Pip2" type="Button" parent="."]
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+focus_mode = 0
+flat = false
+theme_override_styles/normal = SubResource("slot")
+theme_override_styles/hover = SubResource("slot_hover")
+theme_override_styles/pressed = SubResource("slot_hover")
+theme_override_styles/disabled = SubResource("slot")
+[node name="Fill" type="ColorRect" parent="Pip2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = -2.0
+offset_bottom = -2.0
+mouse_filter = 2
+color = Color(0.604,0.655,0.678,1)
+[node name="Pip3" type="Button" parent="."]
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+focus_mode = 0
+flat = false
+theme_override_styles/normal = SubResource("slot")
+theme_override_styles/hover = SubResource("slot_hover")
+theme_override_styles/pressed = SubResource("slot_hover")
+theme_override_styles/disabled = SubResource("slot")
+[node name="Fill" type="ColorRect" parent="Pip3"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = -2.0
+offset_bottom = -2.0
+mouse_filter = 2
+color = Color(0.604,0.655,0.678,1)
+[node name="Pip4" type="Button" parent="."]
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+focus_mode = 0
+flat = false
+theme_override_styles/normal = SubResource("slot")
+theme_override_styles/hover = SubResource("slot_hover")
+theme_override_styles/pressed = SubResource("slot_hover")
+theme_override_styles/disabled = SubResource("slot")
+[node name="Fill" type="ColorRect" parent="Pip4"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = -2.0
+offset_bottom = -2.0
+mouse_filter = 2
+color = Color(0.604,0.655,0.678,1)
+[node name="Pip5" type="Button" parent="."]
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+focus_mode = 0
+flat = false
+theme_override_styles/normal = SubResource("slot")
+theme_override_styles/hover = SubResource("slot_hover")
+theme_override_styles/pressed = SubResource("slot_hover")
+theme_override_styles/disabled = SubResource("slot")
+[node name="Fill" type="ColorRect" parent="Pip5"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = -2.0
+offset_bottom = -2.0
+mouse_filter = 2
+color = Color(0.604,0.655,0.678,1)
+[node name="Pip6" type="Button" parent="."]
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+focus_mode = 0
+flat = false
+theme_override_styles/normal = SubResource("slot")
+theme_override_styles/hover = SubResource("slot_hover")
+theme_override_styles/pressed = SubResource("slot_hover")
+theme_override_styles/disabled = SubResource("slot")
+[node name="Fill" type="ColorRect" parent="Pip6"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = -2.0
+offset_bottom = -2.0
+mouse_filter = 2
+color = Color(0.604,0.655,0.678,1)
+[node name="Pip7" type="Button" parent="."]
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+focus_mode = 0
+flat = false
+theme_override_styles/normal = SubResource("slot")
+theme_override_styles/hover = SubResource("slot_hover")
+theme_override_styles/pressed = SubResource("slot_hover")
+theme_override_styles/disabled = SubResource("slot")
+[node name="Fill" type="ColorRect" parent="Pip7"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = -2.0
+offset_bottom = -2.0
+mouse_filter = 2
+color = Color(0.604,0.655,0.678,1)
+[node name="Pip8" type="Button" parent="."]
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+focus_mode = 0
+flat = false
+theme_override_styles/normal = SubResource("slot")
+theme_override_styles/hover = SubResource("slot_hover")
+theme_override_styles/pressed = SubResource("slot_hover")
+theme_override_styles/disabled = SubResource("slot")
+[node name="Fill" type="ColorRect" parent="Pip8"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = -2.0
+offset_bottom = -2.0
+mouse_filter = 2
+color = Color(0.604,0.655,0.678,1)
+[node name="Pip9" type="Button" parent="."]
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+focus_mode = 0
+flat = false
+theme_override_styles/normal = SubResource("slot")
+theme_override_styles/hover = SubResource("slot_hover")
+theme_override_styles/pressed = SubResource("slot_hover")
+theme_override_styles/disabled = SubResource("slot")
+[node name="Fill" type="ColorRect" parent="Pip9"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = -2.0
+offset_bottom = -2.0
+mouse_filter = 2
+color = Color(0.604,0.655,0.678,1)
+[node name="Pip10" type="Button" parent="."]
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+focus_mode = 0
+flat = false
+theme_override_styles/normal = SubResource("slot")
+theme_override_styles/hover = SubResource("slot_hover")
+theme_override_styles/pressed = SubResource("slot_hover")
+theme_override_styles/disabled = SubResource("slot")
+[node name="Fill" type="ColorRect" parent="Pip10"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = -2.0
+offset_bottom = -2.0
+mouse_filter = 2
+color = Color(0.604,0.655,0.678,1)
+[node name="Pip11" type="Button" parent="."]
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+focus_mode = 0
+flat = false
+theme_override_styles/normal = SubResource("slot")
+theme_override_styles/hover = SubResource("slot_hover")
+theme_override_styles/pressed = SubResource("slot_hover")
+theme_override_styles/disabled = SubResource("slot")
+[node name="Fill" type="ColorRect" parent="Pip11"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = -2.0
+offset_bottom = -2.0
+mouse_filter = 2
+color = Color(0.604,0.655,0.678,1)
+[node name="More" type="Label" parent="."]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "+0"
