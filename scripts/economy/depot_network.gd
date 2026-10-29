@@ -60,21 +60,28 @@ func establish(point: Vector3, energy: int, iron: int) -> Node3D:
 func deploy_selected_truck() -> bool:
 	for unit in get_tree().get_nodes_in_group("units"):
 		if unit.team != "player" or not unit.is_selected or not unit.is_depot_truck: continue
-		# Clear this truck's reservation only while evaluating its exact footprint.
-		var point: Vector3 = unit.global_position
-		unit._stop_route()
-		for cell in unit._claimed.duplicate(): unit._release(cell)
-		if not can_place(point,null,true):
-			unit._claim(unit.grid_position)
-			game.notify("Truck needs an empty 8 × 8 footprint on buildable land."); return false
-		var rules = unit.deployment_rules
-		unit.remove_from_group("units")
-		unit.queue_free()
-		establish(point,rules.deployed_energy,rules.deployed_iron)
-		game.notify("Truck consumed; new Depot established with its configured starter inventory.")
-		return true
+		return deploy_truck(unit,unit.global_position)
 	game.notify("Select a Depot Truck to deploy.")
 	return false
+## Valid deploy site for this truck: an empty 8 × 8 footprint, ignoring the truck's own cells.
+func can_deploy_at(unit: Node3D, point: Vector3) -> bool:
+	var claimed: Array = unit._claimed.duplicate()
+	for cell in claimed: unit._release(cell)
+	var valid := can_place(point,null,true)
+	for cell in claimed: unit._claim(cell)
+	return valid
+func deploy_truck(unit: Node3D, point: Vector3) -> bool:
+	unit._stop_route()
+	for cell in unit._claimed.duplicate(): unit._release(cell)
+	if not can_place(point,null,true):
+		unit._claim(unit.grid_position)
+		game.notify("Truck needs an empty 8 × 8 footprint on buildable land."); return false
+	var rules = unit.deployment_rules
+	unit.remove_from_group("units")
+	unit.queue_free()
+	establish(point,rules.deployed_energy,rules.deployed_iron)
+	game.notify("Truck consumed; new Depot established with its configured starter inventory.")
+	return true
 
 func construct_generator(point: Vector3) -> bool:
 	if not builder_valid(): game.notify("Builder must remain selected, alive and inside the paying stockpile range."); return false

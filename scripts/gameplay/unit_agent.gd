@@ -127,6 +127,21 @@ func command_attack(node: Node3D) -> void:
 	order_target = node
 	source = null
 	state = "Attacking"
+## Attack-move: travel to a point, stopping to fire at anything that comes into range.
+func command_attack_move(point: Vector3) -> void:
+	if is_depot_truck or is_cargo_vehicle or not _attack_enabled: command_move(point); return
+	command_move(point)
+	order = "attack_move"
+	state = "Attack-moving"
+## Depot Truck: drive to a validated site, then deploy there (checked again on arrival).
+func command_deploy_at(point: Vector3) -> void:
+	if not is_depot_truck: return
+	_stop_route()
+	order = "deploy"
+	order_target = null
+	source = null
+	move_goal = point
+	state = "To deploy site"
 func command_return(target: Node3D = null) -> void:
 	return_depot = target
 	return_explicit = is_instance_valid(target)
@@ -161,6 +176,14 @@ func _order_process(delta: float) -> void:
 		_gather(delta)
 		_update_display()
 		return
+	if order == "attack_move":
+		var foe := _nearest_opponent()
+		if is_instance_valid(foe):
+			_stop_route()
+			state = "Attack-moving · engaging"
+			_shoot(foe)
+			_update_display()
+			return
 	if not _route.is_empty() or _moving_to.x >= 0:
 		if is_instance_valid(order_target) and ((order == "attack" and global_position.distance_to(order_target.global_position) <= attack_range) or (order == "repair" and global_position.distance_to(order_target.global_position) <= engineering_rules.repair_range)):
 			_stop_route()
@@ -170,6 +193,16 @@ func _order_process(delta: float) -> void:
 			_update_display()
 			return
 	match order:
+		"attack_move":
+			if global_position.distance_to(move_goal) < 1.5: order = "idle"; state = "Attack-move complete"
+			elif _retry <= 0:
+				if not _route_to_point(move_goal): state = "No route"; order = "idle"
+		"deploy":
+			if global_position.distance_to(move_goal) < 2.0:
+				order = "idle"
+				game.get_node("DepotNetwork").deploy_truck(self,move_goal)
+			elif _retry <= 0:
+				if not _route_to_point(move_goal): state = "Deploy site unreachable"; order = "idle"
 		"move":
 			if global_position.distance_to(move_goal) < 1.5: order = "idle"
 			elif _retry <= 0:
@@ -197,6 +230,8 @@ func run_order(entry: Dictionary) -> void:
 		"return": command_return(entry.get("target"))
 		"repair": command_repair(entry.target)
 		"capture": command_capture(entry.target)
+		"attack_move": command_attack_move(entry.point)
+		"deploy": command_deploy_at(entry.point)
 		"load", "unload":
 			if has_method("command_"+entry.kind): call("command_"+entry.kind,entry.target)
 func _start_next_order() -> void:
@@ -206,14 +241,14 @@ func _start_next_order() -> void:
 		if entry.kind in ["attack","gather","repair","capture","load","unload"] and not is_instance_valid(entry.get("target")): continue
 		run_order(entry)
 func order_point(entry: Dictionary) -> Variant:
-	if entry.kind == "move": return entry.point
+	if entry.kind in ["move","attack_move","deploy"]: return entry.point
 	var target = entry.get("target")
 	return target.global_position if is_instance_valid(target) else null
 # Destinations for the current order, then each queued order, for waypoint markers.
 func waypoint_points() -> Array[Vector3]:
 	var points: Array[Vector3] = []
 	var current = null
-	if order == "move": current = move_goal
+	if order in ["move","attack_move","deploy"]: current = move_goal
 	elif order == "return" and is_instance_valid(return_depot): current = return_depot.global_position
 	elif order != "idle" and is_instance_valid(order_target): current = order_target.global_position
 	if current != null: points.append(current)
