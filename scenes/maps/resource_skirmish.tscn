@@ -27,6 +27,8 @@ editor_description = "Playable gather-print-fight scenario. Native actors and re
 script = ExtResource("game")
 tracer_scene = ExtResource("tracer")
 pile_scene = ExtResource("pile")
+vehicle_fuel_required = true
+testing_coal_amount = 200
 [node name="DepotNetwork" type="Node" parent="."]
 script = ExtResource("network")
 depot_scene = ExtResource("depot")
@@ -57,6 +59,9 @@ position = Vector3(150,0,150)
 position = Vector3(150.5,0,150.5)
 [node name="WoodStand" parent="Entities/Resources" instance=ExtResource("wood")]
 position = Vector3(160,0,172)
+[node name="TestingCoalPoint" type="Marker3D" parent="Entities/Resources"]
+editor_description = "Where the testing coal pile (skirmish testing_coal_amount) appears until coal extraction exists."
+position = Vector3(178.5,0,163.5)
 [node name="Units" type="Node3D" parent="Entities"]
 [node name="Infantry" parent="Entities/Units" instance=ExtResource("infantry")]
 position = Vector3(164.5,0,159.5)

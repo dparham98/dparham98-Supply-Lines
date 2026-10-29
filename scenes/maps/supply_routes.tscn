@@ -3,6 +3,8 @@
 [ext_resource type="PackedScene" path="res://scenes/gameplay/depot.tscn" id="depot"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/cargo_vehicle.tscn" id="cargo"]
 [node name="SupplyRoutes" instance=ExtResource("base")]
+vehicle_fuel_required = false
+testing_coal_amount = 0
 starting_ore = 200
 [node name="Outpost" parent="Entities/Buildings" index="1" instance=ExtResource("depot")]
 position = Vector3(205,0,160)

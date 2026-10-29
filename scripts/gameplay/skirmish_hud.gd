@@ -30,6 +30,9 @@ func _ready() -> void:
 	commands.get_node("GeneratorMode").item_selected.connect(func(index):
 		if is_instance_valid(shown) and shown.is_in_group("energy_generators"):
 			shown.set_fuel_preference(["wood","coal","either"][index]))
+	card.get_node("ToggleRefuel").pressed.connect(toggle_refuel)
+	# Cargo Trucks and Trains show the Supply panel instead of the card.
+	supply.get_node("SupplyRefuel").pressed.connect(toggle_refuel)
 	card.get_node("ToggleGenerator").pressed.connect(func():
 		if is_instance_valid(shown) and shown.is_in_group("energy_generators"): shown.enabled = not shown.enabled)
 	supply.get_node("DeploySupplies").pressed.connect(func():
@@ -107,6 +110,11 @@ func _ready() -> void:
 	$Bottom/Body/Header/Focus.pressed.connect(func():
 		if is_instance_valid(shown): game.get_node("CameraRig").focus_position(shown.global_position))
 	$Bottom/Body/Header/Restart.pressed.connect(func(): get_tree().reload_current_scene())
+func toggle_refuel() -> void:
+	if not is_instance_valid(shown) or not shown.is_in_group("units"): return
+	var enable: bool = not shown.auto_refuel
+	for unit in selected_units():
+		if unit.fuel_active(): unit.auto_refuel = enable
 func selected_units() -> Array[Node3D]:
 	var units: Array[Node3D] = []
 	for unit in get_tree().get_nodes_in_group("units"):
@@ -253,7 +261,8 @@ func update_contents() -> void:
 		if node.mobility_layer() == MobilityRules.Layer.AIR: combat += "\nFlight · separate air layer"
 		elif node.unit_stats != null and node.unit_stats.mobility != null and node.unit_stats.mobility.clears_forest: combat += "\nClears forest on entry"
 		elif node.mobility_layer() == MobilityRules.Layer.FOREST: combat += "\nForest traversal"
-		if node.fuel_rules != null: combat += "\nFuel reserve %.0f / %.0f · not yet required" % [node.fuel,node.fuel_rules.reserve_capacity]
+		if node.fuel_rules != null: combat += "\n"+node.fuel_summary()
+		if node.is_in_group("rail_trains") and not node.fuel_warning.is_empty(): combat += "\n"+node.fuel_warning
 		var cost_energy: int = node.energy_cost
 		var cost_iron: int = node.iron_cost
 		if node.is_cargo_vehicle: cost_energy = node.supply_rules.cargo_energy_cost; cost_iron = node.supply_rules.cargo_iron_cost
@@ -262,6 +271,7 @@ func update_contents() -> void:
 		commands.get_node("Title").text = "UNIT · ORDERS"
 		show_button("Move","Move")
 		show_button("Stop","Stop")
+		if node.fuel_active(): show_button("ToggleRefuel","Auto-refuel: %s" % ("on" if node.auto_refuel else "off"))
 		if node.is_cargo_vehicle:
 			commands.get_node("Title").text = "TRAIN · RAIL DELIVERY ROUTE" if node.is_in_group("rail_trains") else "CARGO VEHICLE · DELIVERY ROUTE"
 			update_supply_panel()
@@ -389,6 +399,9 @@ func update_supply_panel() -> void:
 		var button: Button = supply.get_node("DeploySupplies")
 		button.text = "Pack up supplies" if vehicle.deployed else "Deploy supplies · 2s"
 		button.disabled = not vehicle.supply_transition.is_empty()
+		var refuel: Button = supply.get_node("SupplyRefuel")
+		refuel.visible = vehicle.fuel_active()
+		refuel.text = "Auto-refuel: %s" % ("on" if vehicle.auto_refuel else "off")
 		supply.get_node("RouteStatus").tooltip_text = "Supply range %.1f · Infantry delivery %.1f. Routes pause on deployment and resume explicitly." % [vehicle.mobile_rules.supply_radius(),vehicle.dropoff_range]
 		commands.get_node("Hint").text = "%s · Supply %.1f / drop-off %.1f. Right-click with Infantry to deliver. Movement packs first." % [vehicle.state,vehicle.mobile_rules.supply_radius(),vehicle.dropoff_range]
 		var endpoints := "%s → %s" % [vehicle.origin_depot.name if is_instance_valid(vehicle.origin_depot) else "none",vehicle.destination_depot.name if is_instance_valid(vehicle.destination_depot) else "none"]

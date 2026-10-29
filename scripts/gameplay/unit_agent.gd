@@ -18,6 +18,16 @@ var supply_payer_explicit := false
 @export var fuel_rules: FuelRules
 var fuel: float = 0.0:
 	set(value): fuel = clampf(value,0,fuel_rules.reserve_capacity if fuel_rules != null else 0.0)
+## Authored vehicles start fuelled; Depot/production spawns clear this so new vehicles start empty.
+@export var start_fuelled := true
+var auto_refuel := true
+@export_range(0,1,0.05) var desired_fuel_fraction := 1.0
+## Pinned refuel stockpile; when unset the nearest covering friendly source with coal is used.
+var fuel_source: Node3D
+var fuel_source_explicit := false
+var refuel_from: Node3D
+var out_of_fuel := false
+var _refuel_credit := 0.0
 @export var unit_stats: UnitStats
 ## Explicit compatibility policy while historical combat notation is unresolved.
 @export var use_prototype_combat_for_unresolved_stats := true
@@ -63,6 +73,7 @@ func _ready() -> void:
 	grid_position = ground.nearest_actor_cell(cell if cell != null else Vector2i(250,250),mobility_layer(),_owner_key())
 	global_position = ground.tile_to_world(grid_position)
 	_claim(grid_position)
+	if start_fuelled and fuel_active(): fuel = fuel_rules.reserve_capacity
 	_update_display()
 func set_selected(value: bool) -> void:
 	is_selected = value and team == "player"
@@ -123,6 +134,7 @@ func command_return(target: Node3D = null) -> void:
 	state = "Returning "+str(cargo_kind)
 func _process(delta: float) -> void:
 	if _dead: return
+	fuel_tick(delta)
 	_cooldown = maxf(0,_cooldown-delta)
 	_retry = maxf(0,_retry-delta)
 	if order == "attack" and (not is_instance_valid(order_target) or not CombatResolver.can_hit(self,order_target)):
@@ -213,7 +225,16 @@ func _walk(delta: float) -> void:
 		_route.remove_at(0)
 	var point: Vector3 = ground.tile_to_world(_moving_to)
 	_face(point)
-	global_position = global_position.move_toward(point,move_speed*delta)
+	var step := move_speed*delta
+	if fuel_active():
+		if out_of_fuel or fuel <= 0:
+			out_of_fuel = true
+			state = "Out of fuel · order paused"
+			return
+		if fuel_rules.coal_per_movement_unit > 0: step = minf(step,fuel/fuel_rules.coal_per_movement_unit)
+	var before := global_position
+	global_position = global_position.move_toward(point,step)
+	if fuel_active(): burn_fuel(before.distance_to(global_position))
 	if unit_stats != null and unit_stats.mobility != null and unit_stats.mobility.clears_forest:
 		var entered = ground.get_tile_at_position(global_position)
 		if entered != null: ground.clear_forest(entered)
@@ -409,3 +430,59 @@ func mobility_layer() -> int:
 	return unit_stats.mobility.layer if unit_stats != null and unit_stats.mobility != null else MobilityRules.Layer.GROUND
 func selection_point() -> Vector3:
 	return global_position+Vector3.UP*0.5+$Visuals.position
+
+## Vehicle fuel (economy stage 5). Tank fuel is separate from transferable stockpile coal.
+func fuel_active() -> bool:
+	return fuel_rules != null and fuel_rules.consumes_fuel and is_instance_valid(game) and game.get("vehicle_fuel_required") == true
+func burn_fuel(distance: float) -> void:
+	fuel -= distance*fuel_rules.coal_per_movement_unit
+	if fuel <= 0.0001: fuel = 0; out_of_fuel = true
+func fuel_low() -> bool:
+	return fuel_active() and fuel < fuel_rules.reserve_capacity*fuel_rules.low_fuel_fraction
+func fuel_target() -> float:
+	return fuel_rules.reserve_capacity*desired_fuel_fraction
+func is_stopped() -> bool:
+	return out_of_fuel or (_route.is_empty() and _moving_to.x < 0)
+func can_refuel_from(node) -> bool:
+	return node != self and SupplySource.covers(node,global_position,team) and node.stockpile.amount(&"coal") > 0
+func set_fuel_source(node: Node3D) -> void:
+	fuel_source = node
+	fuel_source_explicit = is_instance_valid(node)
+func choose_fuel_source() -> Node3D:
+	if fuel_source_explicit: return fuel_source if can_refuel_from(fuel_source) else null
+	for candidate in SupplySource.candidates(get_tree(),global_position,team):
+		if can_refuel_from(candidate): return candidate
+	return null
+## Whole coal units move from exactly one source into the tank; fractional rate time is banked.
+func fuel_tick(delta: float) -> void:
+	refuel_from = null
+	if not fuel_active(): return
+	if not auto_refuel or not is_stopped() or fuel_target()-fuel < 1:
+		_refuel_credit = 0
+		if out_of_fuel and fuel > 0 and (not auto_refuel or fuel_target()-fuel < 1): out_of_fuel = false
+		return
+	var from := choose_fuel_source()
+	if from == null:
+		_refuel_credit = 0
+		if out_of_fuel and fuel > 0: out_of_fuel = false # Resume on a partial tank once no source can add more.
+		return
+	refuel_from = from
+	_refuel_credit += fuel_rules.refuel_coal_per_second*delta
+	while _refuel_credit >= 1 and fuel_target()-fuel >= 1:
+		if from.stockpile.withdraw(&"coal",1) != 1: break
+		fuel += 1
+		_refuel_credit -= 1
+	if fuel_target()-fuel < 1:
+		_refuel_credit = 0
+		out_of_fuel = false
+	elif out_of_fuel: state = "Refuelling from %s · order paused" % from.name
+func fuel_summary() -> String:
+	if fuel_rules == null: return ""
+	if not fuel_active(): return "Fuel reserve %.0f / %.0f · not required here" % [fuel,fuel_rules.reserve_capacity]
+	var text := "Fuel %.1f / %.0f coal" % [fuel,fuel_rules.reserve_capacity]
+	if out_of_fuel: text += " · OUT OF FUEL"
+	elif fuel_low(): text += " · LOW FUEL"
+	var from := "nearest in range"
+	if is_instance_valid(refuel_from): from = str(refuel_from.name)
+	elif fuel_source_explicit and is_instance_valid(fuel_source): from = str(fuel_source.name)+" (pinned)"
+	return text+"\nAuto-refuel %s · source %s" % ["on" if auto_refuel else "off",from]

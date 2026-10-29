@@ -2,7 +2,7 @@
 
 Working backlog for Supply Lines after the cloud migration. [EXPLICIT_DESIGN_BACKLOG.md](EXPLICIT_DESIGN_BACKLOG.md) is still the authoritative record of original design requirements. When this file and that one disagree, the design backlog wins. Items marked **(?)** are tentative in the original notes. Don't invent their rules; ask first.
 
-Gameplay development is on hold until the cloud baseline is verified (see [PROJECT_HANDOFF.md](PROJECT_HANDOFF.md)).
+The cloud baseline was verified on 2026-10-28 (see [PROJECT_HANDOFF.md](PROJECT_HANDOFF.md)); gameplay work proceeds on feature branches and draft PRs.
 
 ## 0. Infrastructure (this migration)
 
@@ -17,7 +17,7 @@ Gameplay development is on hold until the cloud baseline is verified (see [PROJE
 
 ## 1. Confirmed design work still pending
 
-- Vehicle fuel consumption and refueling (ECONOMY_PLAN.md, STORAGE_BATCH.md).
+- Vehicle fuel consumption and refueling: implemented on `feature/vehicle-fuel` (FUEL_BATCH.md), pending review and playtest. Drone fuel/landing rules remain open.
 - Water generation and coal extraction (ECONOMY_PLAN.md).
 - Signals, rail demolition, research and upkeep: explicitly wanted, deferred by the user.
 - Additional transport controls (user said "return to later").

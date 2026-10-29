@@ -4,6 +4,8 @@
 [ext_resource type="PackedScene" path="res://scenes/gameplay/rail_segment.tscn" id="rail"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/train.tscn" id="train"]
 [node name="RailExercise" instance=ExtResource("base")]
+vehicle_fuel_required = false
+testing_coal_amount = 0
 message = "Rail exercise: select the Train, choose Depot to EastDepot, set cargo, and assign a route."
 [node name="CameraRig" parent="." index="5"]
 position = Vector3(185,0,150)
