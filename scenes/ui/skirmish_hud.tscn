@@ -344,6 +344,9 @@ text = "Deploy supplies · 2s"
 [node name="MoveCargo" type="Button" parent="Bottom/Body/Row/Commands/Supply"]
 layout_mode = 2
 text = "Move · pack automatically"
+[node name="SupplyRefuel" type="Button" parent="Bottom/Body/Row/Commands/Supply"]
+layout_mode = 2
+text = "Auto-refuel: on"
 [node name="DropMaterials" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 layout_mode = 2
 custom_minimum_size = Vector2(0,36)

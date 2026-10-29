@@ -75,4 +75,16 @@ func run() -> void:
 	step(tank,3)
 	if not check(tank.auto_refuel and depot.coal+tank.fuel == 108 and tank.fuel > 8,"Refuel after re-enabling failed"): return
 	await shot("fuel_refuelling")
+	# Cargo Trucks use the Supply panel; its toggle must take a real click too.
+	var truck = load("res://scenes/gameplay/cargo_vehicle.tscn").instantiate()
+	truck.position = depot.global_position+Vector3(-14,0,14)
+	game.get_node("Entities/Units").add_child(truck)
+	truck.set_process(false)
+	focus(truck.global_position,45)
+	await click_at(target(truck))
+	var supply_refuel: Button = hud.supply.get_node("SupplyRefuel")
+	if not check(hud.shown == truck and supply_refuel.is_visible_in_tree(),"Cargo truck refuel toggle not shown"): return
+	await click(supply_refuel)
+	if not check(not truck.auto_refuel and supply_refuel.text == "Auto-refuel: off","Cargo truck refuel click failed"): return
+	await shot("fuel_truck_toggle")
 	print("FUEL_RUNTIME_CHECKS_PASSED"); quit(TestOutput.exit_code())

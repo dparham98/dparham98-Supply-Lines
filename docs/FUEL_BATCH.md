@@ -50,7 +50,12 @@ The selected vehicle's details show:
 - auto-refuel state and the current or pinned source;
 - for Trains, the round-trip warning.
 
-An **Auto-refuel** button toggles refuelling for every selected fuel-using vehicle. There is no HUD control for pinning a source yet; pinning exists in the API only.
+An **Auto-refuel** button toggles refuelling for every selected fuel-using vehicle. Cargo Trucks and Trains show the Supply panel in place of the command card, so the panel carries its own copy of the button (`SupplyRefuel`). There is no HUD control for pinning a source yet; pinning exists in the API only.
+
+## Playtest feedback (2026-10-28)
+
+- Auto-refuel couldn't be toggled on Cargo Trucks and Trains, because the button sat only on the hidden command card. Fixed with the Supply panel button above.
+- Loading coal into a Cargo Truck is awkward. Today it means either deploying the truck and having Infantry deposit coal, or assigning a route and then stopping it to keep the cargo. A direct "load from this Depot" action is not designed yet and needs a decision.
 
 ## Not included
 

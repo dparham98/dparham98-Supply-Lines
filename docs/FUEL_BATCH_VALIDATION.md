@@ -21,19 +21,18 @@ These checks ran on Godot 4.7.2.stable.official.ed1daf0bf on Windows 11 (NVIDIA 
 - A truck never refuelling from its own cargo, and `spend_local` never touching tank fuel.
 - A stranded tank out of range staying empty, then being refuelled in place by a deployed truck.
 - Enemy sources ignored.
-- HUD: the LOW FUEL readout, toggle visibility and toggle action.
+- HUD: the LOW FUEL readout, toggle visibility and toggle action, including the Supply panel toggle for Cargo vehicles.
 - A Depot-produced vehicle starting empty, then refuelling at its Depot with coal conserved.
 - Earlier exercise scenes keeping fuel off.
 - The train round-trip estimate warning while still accepting the route.
 
 ## Rendered checks (windowed, Vulkan)
 
-- `fuel_runtime_check` passed. Real mouse clicks select a low-fuel Tank and toggle Auto-refuel off and back on, then refuelling is checked against the Depot's coal. The screenshots `fuel_low`, `fuel_auto_off` and `fuel_refuelling` (1280×900) were inspected: the HUD shows fuel, LOW FUEL, the source and the toggle state.
+- `fuel_runtime_check` passed. Real mouse clicks select a low-fuel Tank and toggle Auto-refuel off and back on, then refuelling is checked against the Depot's coal. A real click also toggles a Cargo Truck's Supply panel button. The screenshots `fuel_low`, `fuel_auto_off`, `fuel_refuelling` and `fuel_truck_toggle` (1280×900) were inspected: the HUD shows fuel, LOW FUEL, the source and the toggle state.
 - The existing runtime checks all passed except `mobile_supply_runtime_check`: bottom_hud, combat, depot, engineering, generator, harvesting, production_batch, rail, storage, supply and terrain_abilities.
 - `mobile_supply_runtime_check` fails at "Pile gather GUI did not stockpile materials". It fails the same way, twice, on a clean 7c2044a clone, so the failure predates this branch and is not caused by it.
 
 ## Not verified
 
-- No human playtest yet. Fuel balance, feel and readability need a Windows playtest of `resource_skirmish` before merge.
-- Linux CI has not run on this branch until it is pushed.
+- First human playtest (2026-10-28): every scenario worked. It found the missing Cargo/Train toggle (fixed) and awkward Cargo Truck coal loading (open). The toggle fix still needs a human re-check.
 - The terrain rebuild/MultiMesh issue is unrelated and still open.
