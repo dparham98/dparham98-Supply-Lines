@@ -330,6 +330,7 @@ func _return_cargo() -> void:
 		return
 	if cargo > 0:
 		var accepted: int = depot.stockpile.deposit(cargo_kind,cargo)
+		if accepted > 0 and game.has_method("delivered"): game.delivered(depot,cargo_kind,accepted)
 		if cargo_kind == &"wood": game.wood_delivered += accepted
 		elif cargo_kind == &"iron": game.ore_delivered += accepted
 		cargo -= accepted
@@ -368,6 +369,7 @@ func _shoot(target: Node3D) -> void:
 	var target_height: Vector3 = target.get_node("Visuals").position if target.has_node("Visuals") else Vector3.ZERO
 	game.show_shot(global_position+Vector3.UP*1.7+$Visuals.position,target.global_position+Vector3.UP*1.7+target_height,team)
 	CombatResolver.strike(self,target)
+	if is_instance_valid(target) and game.has_method("mark_attacked"): game.mark_attacked(target)
 	if is_instance_valid(target) and target.is_in_group("selectable_buildings") and target.get("team") == "player" and team != "player" and game.has_method("alert"):
 		game.alert("%s under attack" % target.name,target.global_position,"attack:%d" % target.get_instance_id())
 func _fire_during_movement() -> void:

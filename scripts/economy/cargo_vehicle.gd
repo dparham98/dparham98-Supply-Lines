@@ -204,7 +204,8 @@ func _process(delta: float) -> void:
 				else: state = "Waiting for source stock"
 			else:
 				for kind in ResourceStockpile.KINDS:
-					ResourceStockpile.transfer(stockpile,destination_depot.stockpile,kind,stockpile.amount(kind))
+					var moved: int = ResourceStockpile.transfer(stockpile,destination_depot.stockpile,kind,stockpile.amount(kind))
+					if moved > 0: game.delivered(destination_depot,kind,moved)
 				if stockpile.total() > 0: state = "Destination full · cargo retained"
 				elif repeating: stage = "loading"
 				else:

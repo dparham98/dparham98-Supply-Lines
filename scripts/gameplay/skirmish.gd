@@ -75,6 +75,20 @@ func alert(text: String, at: Vector3, key := "") -> void:
 		_alert_times[key] = now
 	alerts.push_front({text = text, point = at, time = now})
 	if alerts.size() > ALERT_LIMIT: alerts.resize(ALERT_LIMIT)
+# Map overlay hooks: when something was last hit, and resources arriving at a stockpile.
+var attacked_at := {}
+signal resources_delivered(target: Node3D, kind: StringName, amount: int)
+const ATTACK_MARK_SECONDS := 3.0
+func mark_attacked(target: Node3D) -> void:
+	var now := Time.get_ticks_msec()/1000.0
+	if attacked_at.size() > 64:
+		for id in attacked_at.keys():
+			if now-attacked_at[id] > ATTACK_MARK_SECONDS: attacked_at.erase(id)
+	attacked_at[target.get_instance_id()] = now
+func recently_attacked(target: Node3D) -> bool:
+	return Time.get_ticks_msec()/1000.0-attacked_at.get(target.get_instance_id(),-INF) <= ATTACK_MARK_SECONDS
+func delivered(target: Node3D, kind: StringName, amount: int) -> void:
+	resources_delivered.emit(target,kind,amount)
 func unit_died(unit: Node3D) -> void:
 	if unit.team == "enemy": enemies_killed += 1; notify("Hostile eliminated.")
 	elif unit.team == "player": alert("%s lost" % hud.object_name(unit),unit.global_position)
