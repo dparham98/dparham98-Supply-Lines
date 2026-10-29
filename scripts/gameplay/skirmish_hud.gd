@@ -10,6 +10,10 @@ extends CanvasLayer
 @onready var strip = $Bottom/Body/Selection
 @onready var feed = $Feed
 @onready var pages = $Bottom/Body/Header/Pages
+@onready var name_label: Label = $Bottom/Body/Row/Info/Head/Text/Name
+@onready var state_label: Label = $Bottom/Body/Row/Info/Head/Text/State
+const RESOURCE_KINDS := [&"energy",&"iron",&"wood",&"coal"]
+var _icons := {}
 # Cargo vehicles open on their delivery route page; Orders shows the ordinary command card.
 var cargo_page := "route"
 var strip_types: Array[String] = []
@@ -186,18 +190,139 @@ func update_bars(node: Node3D) -> void:
 		fuel_bar.max_value = node.fuel_rules.reserve_capacity
 		fuel_bar.value = node.fuel
 		fuel_bar.get_theme_stylebox("fill").bg_color = Color(0.95,0.3,0.25) if node.fuel <= 0 else (Color(1,0.72,0.2) if node.fuel_low() else Color(0.4,0.85,0.45))
-		bars.get_node("FuelLabel").visible = true
-		fuel_bar.visible = true
+		bars.get_node("FuelLabel").text = "Tank fuel" if node.is_cargo_vehicle else "Fuel"
+		bars.get_node("FuelValue").text = "%.0f / %.0f" % [node.fuel,node.fuel_rules.reserve_capacity]
+		for id in ["FuelLabel","Fuel","FuelValue"]: bars.get_node(id).visible = true
 	var capacity := 0
 	var carried := 0
-	if node.is_cargo_vehicle: capacity = node.stockpile.capacity; carried = node.stockpile.total()
-	elif node.can_gather: capacity = node.carry_capacity; carried = node.cargo
+	if node.can_gather and not node.is_cargo_vehicle: capacity = node.carry_capacity; carried = node.cargo
 	if capacity > 0:
 		var cargo_bar: ProgressBar = bars.get_node("Cargo")
 		cargo_bar.max_value = capacity
 		cargo_bar.value = carried
-		bars.get_node("CargoLabel").visible = true
-		cargo_bar.visible = true
+		bars.get_node("CargoValue").text = "%d / %d%s" % [carried,capacity," "+str(node.cargo_kind) if carried > 0 else ""]
+		for id in ["CargoLabel","Cargo","CargoValue"]: bars.get_node(id).visible = true
+const DEPOT_PRODUCTS := {"infantry":"Infantry","truck":"Depot truck","cargo":"Cargo vehicle","train":"Train"}
+func set_icon(id: String) -> void:
+	if id.is_empty(): info.get_node("Head/Icon").texture = null; return
+	if not _icons.has(id): _icons[id] = load("res://assets/ui/icons/%s.svg" % id)
+	info.get_node("Head/Icon").texture = _icons[id]
+func icon_name(node: Node) -> String:
+	if node.is_in_group("depots"): return "depot"
+	if node.is_in_group("mines"): return "mine"
+	if node.is_in_group("production_buildings"): return "factory"
+	if node.is_in_group("energy_generators"): return "generator"
+	if node.is_in_group("rail_trains"): return "train"
+	if node.get("is_cargo_vehicle"): return "cargo"
+	if node.get("is_depot_truck"): return "truck"
+	var id := str(node.unit_stats.unit_id) if node.get("unit_stats") != null else "infantry"
+	return id if ResourceLoader.exists("res://assets/ui/icons/%s.svg" % id) else "infantry"
+func team_label(node: Node) -> String:
+	return str(node.team).capitalize()
+func grouped(value: int) -> String:
+	var digits := str(absi(value))
+	var out := ""
+	for i in digits.length():
+		if i > 0 and (digits.length()-i) % 3 == 0: out += ","
+		out += digits[i]
+	return ("-" if value < 0 else "")+out
+# One storage bar split by resource against capacity, with a legend of exact amounts.
+func show_storage(title: String, stockpile: ResourceStockpile) -> void:
+	var section = info.get_node("Storage")
+	section.visible = true
+	section.get_node("Head/Label").text = title
+	section.get_node("Head/Value").text = "%s / %s" % [grouped(stockpile.total()),grouped(stockpile.capacity)]
+	var segments = section.get_node("Track/Segments")
+	for kind in RESOURCE_KINDS:
+		var amount := stockpile.amount(kind)
+		var segment: Control = segments.get_node(str(kind).capitalize())
+		segment.visible = amount > 0
+		segment.size_flags_stretch_ratio = maxf(amount,0.001)
+		section.get_node("Legend/%s/Amount" % str(kind).capitalize()).text = "%s %s" % [str(kind).capitalize(),grouped(amount)]
+	var free: Control = segments.get_node("Free")
+	free.visible = stockpile.space() > 0
+	free.size_flags_stretch_ratio = maxf(stockpile.space(),0.001)
+func show_progress(label: String, value: String, ratio: float) -> void:
+	var section = info.get_node("Production")
+	section.visible = true
+	section.get_node("Head/Label").text = label
+	section.get_node("Head/Value").text = value
+	section.get_node("Bar").max_value = 1.0
+	section.get_node("Bar").step = 0.0
+	section.get_node("Bar").value = clampf(ratio,0,1)
+# Plain label and value pairs; information is never boxed.
+func set_stats(pairs: Array) -> void:
+	var grid = info.get_node("Stats")
+	grid.visible = not pairs.is_empty()
+	for i in range(1,7):
+		var shown := i <= pairs.size()
+		grid.get_node("K%d" % i).visible = shown
+		grid.get_node("V%d" % i).visible = shown
+		if shown:
+			grid.get_node("K%d" % i).text = pairs[i-1][0]
+			grid.get_node("V%d" % i).text = pairs[i-1][1]
+func fuel_note(node: Node) -> String:
+	if not node.fuel_active(): return "Fuel not required here"
+	var status := "OUT OF FUEL · " if node.out_of_fuel else ("LOW FUEL · " if node.fuel_low() else "")
+	var lines: PackedStringArray = node.fuel_summary().split("\n")
+	return status+(lines[1] if lines.size() > 1 else "")
+func update_unit_sections(node: Node3D) -> void:
+	var pairs := [["Speed","%.1f" % node.move_speed]]
+	if node.vision > 0: pairs.append(["Vision","%.1f" % node.vision])
+	var abilities: Array[String] = []
+	if node.is_cargo_vehicle or node.is_depot_truck:
+		abilities.append("Non-combat vehicle")
+	elif node._attack_enabled:
+		pairs.insert(1,["Range","%.1f" % node.attack_range])
+		pairs.insert(2,["Damage","%d / %.1fs" % [node.attack_damage,node.shot_interval]])
+		if node.unit_stats != null:
+			var stats: UnitStats = node.unit_stats
+			if stats.heavy_target_damage >= 0:
+				pairs.append(["Vs buildings","%d / %.1fs" % [stats.heavy_target_damage,stats.heavy_target_interval]])
+				pairs.append(["Splash","%.1f" % stats.splash_radius])
+			if stats.fire_while_moving: abilities.append("Fires while moving")
+			if not stats.has_resolved_attack(): abilities.append("Fallback attack stats")
+	else: abilities.append("Attack unavailable · unresolved stats")
+	if node.mobility_layer() == MobilityRules.Layer.AIR: abilities.append("Flies on a separate air layer")
+	elif node.unit_stats != null and node.unit_stats.mobility != null and node.unit_stats.mobility.clears_forest: abilities.append("Clears forest")
+	elif node.mobility_layer() == MobilityRules.Layer.FOREST: abilities.append("Moves through forest")
+	var cost_energy: int = node.energy_cost
+	var cost_iron: int = node.iron_cost
+	if node.is_cargo_vehicle: cost_energy = node.supply_rules.cargo_energy_cost; cost_iron = node.supply_rules.cargo_iron_cost
+	elif node.is_depot_truck:
+		cost_energy = node.deployment_rules.truck_energy_cost; cost_iron = node.deployment_rules.truck_iron_cost
+		pairs.append(["Deploys","%d E · %d I" % [node.deployment_rules.deployed_energy,node.deployment_rules.testing_starting_iron if node.deployment_rules.testing_starting_iron >= 0 else node.deployment_rules.deployed_iron]])
+	pairs.append(["Cost","%d E · %d I" % [cost_energy,cost_iron]])
+	set_stats(pairs.slice(0,6))
+	var line = info.get_node("Abilities")
+	line.text = " · ".join(abilities)
+	line.visible = not abilities.is_empty()
+	if node.is_cargo_vehicle:
+		show_storage("Cargo",node.stockpile)
+		if node.route_active and is_instance_valid(node.origin_depot) and is_instance_valid(node.destination_depot):
+			state_label.text = "%s → %s%s" % [node.origin_depot.name,node.destination_depot.name," · repeating" if node.repeating else ""]
+			var route = info.get_node("Route")
+			route.visible = true
+			route.get_node("From").text = str(node.origin_depot.name)
+			route.get_node("To").text = str(node.destination_depot.name)
+			var to_origin: float = node.global_position.distance_to(node.origin_depot.global_position)
+			var to_destination: float = node.global_position.distance_to(node.destination_depot.global_position)
+			route.get_node("Bar").max_value = 1.0
+			route.get_node("Bar").step = 0.0
+			route.get_node("Bar").value = to_origin/maxf(0.001,to_origin+to_destination)
+	if node.is_in_group("rail_trains") and node.fuel_active():
+		var needed: float = node.estimated_round_trip_fuel()
+		if needed > 0:
+			var tick: ColorRect = bars.get_node("Fuel/Need")
+			tick.visible = true
+			var ratio := clampf(needed/node.fuel_rules.reserve_capacity,0,1)
+			tick.anchor_left = ratio; tick.anchor_right = ratio
+			tick.offset_left = -1; tick.offset_right = 1
+			info.get_node("Details").text += "
+Round trip needs about %.0f coal" % needed
+		if not node.fuel_warning.is_empty():
+			info.get_node("Warning").text = node.fuel_warning
+			info.get_node("Warning").visible = true
 # One button per unit type in a mixed selection.
 func update_strip(units: Array[Node3D]) -> void:
 	var counts := {}
@@ -243,6 +368,10 @@ func update_contents() -> void:
 		shown = node
 		cargo_page = "route"
 	for bar in bars.get_children(): bar.visible = false
+	bars.get_node("Fuel/Need").visible = false
+	for section in ["Storage","Production","Route","Stats","Abilities","Warning"]: info.get_node(section).visible = false
+	state_label.text = ""
+	set_icon("")
 	var is_unit: bool = is_instance_valid(node) and node.is_in_group("units")
 	var show_build: bool = global_build_open or is_instance_valid(node) and build_open and ((is_unit and node.can_construct) or (node.is_in_group("depots") and node.team == "player"))
 	var show_supply: bool = is_unit and node.is_cargo_vehicle and not show_build and cargo_page == "route"
@@ -266,13 +395,14 @@ func update_contents() -> void:
 		commands.get_node("Title").text = "GLOBAL BUILD · UNPAID PLANS"
 		refresh_global_menu()
 		info.get_node("Health").visible = false
-		info.get_node("Name").text = "Construction plans"
+		name_label.text = "Construction plans"
 		info.get_node("HealthText").text = "%d pending" % get_tree().get_nodes_in_group("construction_plans").size()
 		info.get_node("Details").text = "Place on valid terrain anywhere.\nPlans wait for one covering Depot\nwith the full local cost.\nClick a plan to inspect or cancel it."
 		return
 	if is_instance_valid(node) and node.is_in_group("construction_plans"):
 		info.get_node("Health").visible = false
-		info.get_node("Name").text = node.spec.title+" plan"
+		name_label.text = node.spec.title+" plan"
+		set_icon("plan")
 		info.get_node("HealthText").text = "Unpaid · no resources reserved"
 		var payer_text: String = str(node.payer.name) if is_instance_valid(node.payer) else "Unavailable"
 		info.get_node("Details").text = "%s\nCost %d E / %d I\nPayer: %s\nDoes not block movement" % [node.state,node.spec.energy,node.spec.iron,payer_text if node.pinned else "Auto covering friendly Depot"]
@@ -281,22 +411,28 @@ func update_contents() -> void:
 		show_button("CancelPlan","Cancel plan")
 		return
 	if not is_instance_valid(node):
-		info.get_node("Name").text = "Nothing selected"
+		name_label.text = "Nothing selected"
 		info.get_node("HealthText").text = "Select a unit or building"
 		info.get_node("Details").text = "Minimap: click to move camera.\nBlue: friendly · red: hostile\nGrey: neutral · gold: resources"
 		commands.get_node("Title").text = "COMMAND CARD"
 		commands.get_node("Hint").text = "Left-click selects. Drag selects units. Right-click gives orders."
 		return
 	var units := selected_units()
-	info.get_node("Name").text = object_name(node)+( " · +%d selected" % (units.size()-1) if units.size() > 1 else "")
+	name_label.text = object_name(node)+( " · +%d selected" % (units.size()-1) if units.size() > 1 else "")
 	info.get_node("Health").max_value = node.max_health
 	info.get_node("Health").value = node.health
-	info.get_node("HealthText").text = "Health %d / %d · %s" % [node.health,node.max_health,"shared" if node.is_in_group("mines") else node.team]
+	info.get_node("HealthText").text = "Health %d / %d" % [node.health,node.max_health]
+	set_icon(icon_name(node))
 	commands.get_node("Hint").text = ""
 	if node.is_in_group("depots"):
 		card.columns = 2
 		commands.get_node("Title").text = "DEPOT · PRODUCTION"
-		info.get_node("Details").text = "Local E %d · I %d · W %d · C %d\nStorage %d / %d\nGeneration +%.1f E/s\nQueue %d / %d · %d%%\nCapture %d%% · territory %.0f" % [node.energy,node.iron,node.wood,node.coal,node.stockpile.total(),node.storage_capacity,node.generation_rate(),node.queue,node.queue_limit,roundi(node.progress/node.print_seconds*100),roundi(node.capture_progress/node.rules.capture_seconds*100),node.rules.construction_radius]
+		state_label.text = "%s · territory %.0f · %+.1f E/s" % [team_label(node),node.rules.construction_radius,node.generation_rate()]
+		show_storage("Storage",node.stockpile)
+		if node.queue > 0:
+			var kind: String = node.pending[0] if not node.pending.is_empty() else ""
+			show_progress("Producing · "+DEPOT_PRODUCTS.get(kind,kind.capitalize()),"%d%%%s" % [roundi(node.progress/node.print_seconds*100)," · %d more queued" % (node.queue-1) if node.queue > 1 else ""],node.progress/node.print_seconds)
+		info.get_node("Details").text = "Queue %d / %d%s" % [node.queue,node.queue_limit," · capture %d%%" % roundi(node.capture_progress/node.rules.capture_seconds*100) if node.capture_progress > 0 else ""]
 		if node.team == "player":
 			show_production("PrintTruck","Depot truck",node.rules.truck_energy_cost,node.rules.truck_iron_cost,node)
 			show_production("PrintCargo","Cargo vehicle",network.supply_rules.cargo_energy_cost,network.supply_rules.cargo_iron_cost,node)
@@ -309,13 +445,19 @@ func update_contents() -> void:
 				refresh_build_menu()
 	elif node.is_in_group("mines"):
 		commands.get_node("Title").text = "SHARED MINE · IRON EXTRACTION"
-		info.get_node("Details").text = "Iron reserves %d / %d\nShared access · no capture\nAny side can gather or repair" % [node.remaining,node.amount]
+		state_label.text = "Shared · any side can gather, repair or destroy"
+		show_progress("Iron reserves","%s / %s" % [grouped(node.remaining),grouped(node.amount)],float(node.remaining)/maxi(1,node.amount))
+		info.get_node("Details").text = "Shared access · no capture"
 		commands.get_node("Hint").text = "Infantry gathers with right-click. Use its Repair card to repair this shared mine, or Attack to destroy it."
 	elif node.is_in_group("production_buildings"):
 		card.columns = 2
 		commands.get_node("Title").text = node.stats.display_name.to_upper()+" · PRODUCTION"
 		var payer = node.assigned_depot
-		info.get_node("Details").text = "Assigned Depot: %s\nLocal energy %d · iron %d\nQueue %d / %d · %d%%\n%s" % [payer.name if is_instance_valid(payer) else "none",payer.energy if is_instance_valid(payer) else 0,payer.iron if is_instance_valid(payer) else 0,node.queue,node.stats.queue_limit,roundi(node.progress/node.stats.print_seconds*100),"Ready" if node.source_friendly() else "Assigned Depot unavailable"]
+		state_label.text = "%s · %s" % [team_label(node),("pays from "+str(payer.name)) if node.source_friendly() else "assigned Depot unavailable"]
+		if node.queue > 0 and not node.pending.is_empty():
+			show_progress("Producing · "+node.unit_stats_for(node.pending[0]).display_name,"%d%%%s" % [roundi(node.progress/node.stats.print_seconds*100)," · %d more queued" % (node.queue-1) if node.queue > 1 else ""],node.progress/node.stats.print_seconds)
+		if is_instance_valid(payer): set_stats([["Energy",grouped(payer.energy)],["Iron",grouped(payer.iron)],["Queue","%d / %d" % [node.queue,node.stats.queue_limit]]])
+		info.get_node("Details").text = "Production uses this building's assigned Depot only."
 		if node.source_friendly():
 			for scene in node.stats.unit_scenes:
 				var stats = node.unit_stats_for(scene)
@@ -324,36 +466,24 @@ func update_contents() -> void:
 	elif node.is_in_group("energy_generators"):
 		commands.get_node("Title").text = "GENERATOR · LOCAL POWER"
 		var source = node.assigned_depot
-		var stock := "No assigned stockpile" if not is_instance_valid(source) else "E%d I%d W%d C%d · %d/%d" % [source.energy,source.iron,source.wood,source.coal,source.stockpile.total(),source.storage_capacity]
-		info.get_node("Details").text = "Assigned Depot: %s\n%s\n%s\nCurrent rate %.1f E/s\nCycle: %s · %.1f / %.1fs" % [source.name if is_instance_valid(source) else "none",stock,node.describe_state(),node.output_rate(),str(node.cycle_kind) if not node.cycle_kind.is_empty() else "waiting",node.cycle_elapsed,node.cycle_seconds]
+		state_label.text = node.describe_state()
+		set_stats([["Output","%.1f E/s" % node.output_rate()],["Burning",str(node.cycle_kind).capitalize() if not node.cycle_kind.is_empty() else "Waiting"],["Cycle","%.1f / %.1fs" % [node.cycle_elapsed,node.cycle_seconds]],["Mode",node.fuel_preference.capitalize()]])
+		if is_instance_valid(source): show_storage("%s storage" % source.name,source.stockpile)
+		info.get_node("Details").text = "Assigned Depot: %s" % (source.name if is_instance_valid(source) else "none")
 		commands.get_node("GeneratorMode").select(["wood","coal","either"].find(node.fuel_preference))
 		commands.get_node("Hint").text = "Wood: 1 → %d E / %.1fs. Coal: 1 → %d E / %.1fs. Either uses wood first. Changes apply next cycle; full storage pauses fuel use." % [node.fuel_rules.wood_output,node.fuel_rules.wood_seconds,node.fuel_rules.coal_output,node.fuel_rules.coal_seconds]
 		if node.team == "player": show_button("ToggleGenerator","Pause" if node.enabled else "Resume")
 		if is_instance_valid(node.assigned_depot): show_button("FocusAssigned","Focus Depot")
 	else:
 		var nearest = nearest_depot(node)
-		var proximity := "%s · %.1f units away" % [nearest.name,node.global_position.distance_to(nearest.global_position)] if nearest != null else "No friendly Depot"
-		var cargo_text := "%s carried %d / %d" % [str(node.cargo_kind).capitalize(),node.cargo,node.carry_capacity]
-		if node.is_cargo_vehicle: cargo_text = "Cargo E%d I%d W%d C%d / %d" % [node.carried_energy,node.carried_iron,node.carried_wood,node.carried_coal,node.stockpile.capacity]
-		elif node.is_depot_truck: cargo_text = "Deployment stock: E %d / I %d" % [node.deployment_rules.deployed_energy,node.deployment_rules.testing_starting_iron if node.deployment_rules.testing_starting_iron >= 0 else node.deployment_rules.deployed_iron]
-		var combat := "Non-combat vehicle" if node.is_cargo_vehicle or node.is_depot_truck else "Range %.1f · damage %d / %.2fs%s" % [node.attack_range,node.attack_damage,node.shot_interval," (fallback)" if node.unit_stats != null and not node.unit_stats.has_resolved_attack() else ""]
-		if not node._attack_enabled and not node.is_cargo_vehicle and not node.is_depot_truck: combat = "Attack unavailable · unresolved stats"
-		if node.unit_stats != null and node._attack_enabled:
-			var stats: UnitStats = node.unit_stats
-			if stats.heavy_target_damage >= 0: combat += "\nTank/building %d / %.1fs · splash %.1f" % [stats.heavy_target_damage,stats.heavy_target_interval,stats.splash_radius]
-			if stats.fire_while_moving: combat += " · Moving fire"
-		if node.mobility_layer() == MobilityRules.Layer.AIR: combat += "\nFlight · separate air layer"
-		elif node.unit_stats != null and node.unit_stats.mobility != null and node.unit_stats.mobility.clears_forest: combat += "\nClears forest on entry"
-		elif node.mobility_layer() == MobilityRules.Layer.FOREST: combat += "\nForest traversal"
-		if node.fuel_rules != null: combat += "\n"+node.fuel_summary()
-		if node.is_in_group("rail_trains") and not node.fuel_warning.is_empty(): combat += "\n"+node.fuel_warning
-		var cost_energy: int = node.energy_cost
-		var cost_iron: int = node.iron_cost
-		if node.is_cargo_vehicle: cost_energy = node.supply_rules.cargo_energy_cost; cost_iron = node.supply_rules.cargo_iron_cost
-		elif node.is_depot_truck: cost_energy = node.deployment_rules.truck_energy_cost; cost_iron = node.deployment_rules.truck_iron_cost
-		info.get_node("Details").text = "%s\n%s\nNearest Depot: %s\nSpeed %.1f · vision %.1f\n%s\nCost %d E / %d I" % [node.state,cargo_text,proximity,node.move_speed,node.vision,combat,cost_energy,cost_iron]
+		state_label.text = "%s · %s%s" % [team_label(node),node.state," · %d queued" % node.order_queue.size() if not node.order_queue.is_empty() else ""]
+		var notes: Array[String] = []
+		notes.append("Nearest Depot: %s · %.1f units away" % [nearest.name,node.global_position.distance_to(nearest.global_position)] if nearest != null else "No friendly Depot")
+		if node.fuel_rules != null: notes.append(fuel_note(node))
+		info.get_node("Details").text = "\n".join(notes)
 		commands.get_node("Title").text = "UNIT · ORDERS"
 		update_bars(node)
+		update_unit_sections(node)
 		show_button("Move","Move")
 		show_button("Stop","Stop")
 		if node.fuel_active(): show_button("ToggleRefuel","Auto-refuel: %s" % ("on" if node.auto_refuel else "off"))

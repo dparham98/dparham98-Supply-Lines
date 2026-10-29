@@ -4,6 +4,11 @@
 [ext_resource type="Texture2D" path="res://assets/maps/source_map.png" id="map"]
 [ext_resource type="PackedScene" path="res://scenes/ui/playtest_panel.tscn" id="playtest"]
 [ext_resource type="Theme" path="res://assets/ui/supply_lines_theme.tres" id="ui_theme"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/generator.svg" id="icon_generator"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/plan.svg" id="icon_plan"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/mine.svg" id="icon_mine"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/factory.svg" id="icon_factory"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/depot.svg" id="icon_depot"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/attack.svg" id="icon_attack"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/build.svg" id="icon_build"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/cancel.svg" id="icon_cancel"]
@@ -50,6 +55,10 @@ bg_color = Color(0.3,0.75,0.9,1)
 bg_color = Color(0.4,0.85,0.45,1)
 [sub_resource type="StyleBoxFlat" id="cargo_fill"]
 bg_color = Color(0.85,0.7,0.35,1)
+[sub_resource type="StyleBoxFlat" id="progress_fill"]
+bg_color = Color(0.498,0.827,0.902,1)
+[sub_resource type="StyleBoxFlat" id="route_fill"]
+bg_color = Color(0.941,0.698,0.29,1)
 [sub_resource type="StyleBoxFlat" id="selection_box"]
 bg_color = Color(0.1,0.7,1,0.12)
 border_width_left = 1
@@ -278,11 +287,31 @@ stretch_mode = 0
 [node name="Info" type="VBoxContainer" parent="Bottom/Body/Row"]
 custom_minimum_size = Vector2(280,0)
 layout_mode = 2
-[node name="Name" type="Label" parent="Bottom/Body/Row/Info"]
+[node name="Head" type="HBoxContainer" parent="Bottom/Body/Row/Info"]
+layout_mode = 2
+theme_override_constants/separation = 8
+[node name="Icon" type="TextureRect" parent="Bottom/Body/Row/Info/Head"]
+custom_minimum_size = Vector2(32,32)
+layout_mode = 2
+size_flags_vertical = 4
+modulate = Color(0.498,0.827,0.902,1)
+expand_mode = 1
+stretch_mode = 5
+[node name="Text" type="VBoxContainer" parent="Bottom/Body/Row/Info/Head"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+[node name="Name" type="Label" parent="Bottom/Body/Row/Info/Head/Text"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "Nothing selected"
 clip_text = true
+[node name="State" type="Label" parent="Bottom/Body/Row/Info/Head/Text"]
+layout_mode = 2
+text = ""
+clip_text = true
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
 [node name="Health" type="ProgressBar" parent="Bottom/Body/Row/Info"]
 custom_minimum_size = Vector2(0,14)
 layout_mode = 2
@@ -291,10 +320,13 @@ theme_override_styles/background = SubResource("bar_background")
 theme_override_styles/fill = SubResource("health_fill")
 [node name="HealthText" type="Label" parent="Bottom/Body/Row/Info"]
 layout_mode = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
 text = "Select a unit or building"
 [node name="Bars" type="GridContainer" parent="Bottom/Body/Row/Info"]
 layout_mode = 2
-columns = 2
+columns = 3
 theme_override_constants/h_separation = 6
 theme_override_constants/v_separation = 3
 [node name="FuelLabel" type="Label" parent="Bottom/Body/Row/Info/Bars"]
@@ -311,6 +343,20 @@ visible = false
 show_percentage = false
 theme_override_styles/background = SubResource("bar_background")
 theme_override_styles/fill = SubResource("fuel_fill")
+[node name="Need" type="ColorRect" parent="Bottom/Body/Row/Info/Bars/Fuel"]
+visible = false
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_right = 2.0
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.902,0.929,0.941,1)
+[node name="FuelValue" type="Label" parent="Bottom/Body/Row/Info/Bars"]
+layout_mode = 2
+visible = false
+text = ""
+theme_override_font_sizes/font_size = 12
 [node name="CargoLabel" type="Label" parent="Bottom/Body/Row/Info/Bars"]
 layout_mode = 2
 visible = false
@@ -325,12 +371,243 @@ visible = false
 show_percentage = false
 theme_override_styles/background = SubResource("bar_background")
 theme_override_styles/fill = SubResource("cargo_fill")
+[node name="CargoValue" type="Label" parent="Bottom/Body/Row/Info/Bars"]
+layout_mode = 2
+visible = false
+text = ""
+theme_override_font_sizes/font_size = 12
+[node name="Storage" type="VBoxContainer" parent="Bottom/Body/Row/Info"]
+layout_mode = 2
+visible = false
+theme_override_constants/separation = 3
+[node name="Head" type="HBoxContainer" parent="Bottom/Body/Row/Info/Storage"]
+layout_mode = 2
+[node name="Label" type="Label" parent="Bottom/Body/Row/Info/Storage/Head"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
+[node name="Value" type="Label" parent="Bottom/Body/Row/Info/Storage/Head"]
+layout_mode = 2
+text = ""
+theme_override_font_sizes/font_size = 12
+[node name="Track" type="PanelContainer" parent="Bottom/Body/Row/Info/Storage"]
+custom_minimum_size = Vector2(0,12)
+layout_mode = 2
+theme_override_styles/panel = SubResource("bar_background")
+[node name="Segments" type="HBoxContainer" parent="Bottom/Body/Row/Info/Storage/Track"]
+layout_mode = 2
+theme_override_constants/separation = 0
+[node name="Energy" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+color = Color(0.498,0.827,0.902,1)
+[node name="Iron" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+color = Color(0.604,0.655,0.678,1)
+[node name="Wood" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+color = Color(0.435,0.682,0.353,1)
+[node name="Coal" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+color = Color(0.788,0.541,0.29,1)
+[node name="Free" type="Control" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+[node name="Legend" type="HFlowContainer" parent="Bottom/Body/Row/Info/Storage"]
+layout_mode = 2
+theme_override_constants/h_separation = 10
+[node name="Energy" type="HBoxContainer" parent="Bottom/Body/Row/Info/Storage/Legend"]
+layout_mode = 2
+theme_override_constants/separation = 4
+[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Legend/Energy"]
+custom_minimum_size = Vector2(8,8)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.498,0.827,0.902,1)
+[node name="Amount" type="Label" parent="Bottom/Body/Row/Info/Storage/Legend/Energy"]
+layout_mode = 2
+text = "Energy 0"
+theme_override_font_sizes/font_size = 12
+[node name="Iron" type="HBoxContainer" parent="Bottom/Body/Row/Info/Storage/Legend"]
+layout_mode = 2
+theme_override_constants/separation = 4
+[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Legend/Iron"]
+custom_minimum_size = Vector2(8,8)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.604,0.655,0.678,1)
+[node name="Amount" type="Label" parent="Bottom/Body/Row/Info/Storage/Legend/Iron"]
+layout_mode = 2
+text = "Iron 0"
+theme_override_font_sizes/font_size = 12
+[node name="Wood" type="HBoxContainer" parent="Bottom/Body/Row/Info/Storage/Legend"]
+layout_mode = 2
+theme_override_constants/separation = 4
+[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Legend/Wood"]
+custom_minimum_size = Vector2(8,8)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.435,0.682,0.353,1)
+[node name="Amount" type="Label" parent="Bottom/Body/Row/Info/Storage/Legend/Wood"]
+layout_mode = 2
+text = "Wood 0"
+theme_override_font_sizes/font_size = 12
+[node name="Coal" type="HBoxContainer" parent="Bottom/Body/Row/Info/Storage/Legend"]
+layout_mode = 2
+theme_override_constants/separation = 4
+[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Legend/Coal"]
+custom_minimum_size = Vector2(8,8)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.788,0.541,0.29,1)
+[node name="Amount" type="Label" parent="Bottom/Body/Row/Info/Storage/Legend/Coal"]
+layout_mode = 2
+text = "Coal 0"
+theme_override_font_sizes/font_size = 12
+[node name="Production" type="VBoxContainer" parent="Bottom/Body/Row/Info"]
+layout_mode = 2
+visible = false
+theme_override_constants/separation = 3
+[node name="Head" type="HBoxContainer" parent="Bottom/Body/Row/Info/Production"]
+layout_mode = 2
+[node name="Label" type="Label" parent="Bottom/Body/Row/Info/Production/Head"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
+[node name="Value" type="Label" parent="Bottom/Body/Row/Info/Production/Head"]
+layout_mode = 2
+text = ""
+theme_override_font_sizes/font_size = 12
+[node name="Bar" type="ProgressBar" parent="Bottom/Body/Row/Info/Production"]
+custom_minimum_size = Vector2(0,8)
+layout_mode = 2
+show_percentage = false
+theme_override_styles/background = SubResource("bar_background")
+theme_override_styles/fill = SubResource("progress_fill")
+[node name="Route" type="HBoxContainer" parent="Bottom/Body/Row/Info"]
+layout_mode = 2
+visible = false
+theme_override_constants/separation = 6
+[node name="From" type="Label" parent="Bottom/Body/Row/Info/Route"]
+layout_mode = 2
+text = "Load"
+theme_override_colors/font_color = Color(0.498,0.827,0.902,1)
+theme_override_font_sizes/font_size = 12
+[node name="Bar" type="ProgressBar" parent="Bottom/Body/Row/Info/Route"]
+custom_minimum_size = Vector2(0,4)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+show_percentage = false
+theme_override_styles/background = SubResource("bar_background")
+theme_override_styles/fill = SubResource("route_fill")
+[node name="To" type="Label" parent="Bottom/Body/Row/Info/Route"]
+layout_mode = 2
+text = "Unload"
+theme_override_font_sizes/font_size = 12
+[node name="Stats" type="GridContainer" parent="Bottom/Body/Row/Info"]
+layout_mode = 2
+visible = false
+columns = 4
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 1
+[node name="K1" type="Label" parent="Bottom/Body/Row/Info/Stats"]
+layout_mode = 2
+text = ""
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
+[node name="V1" type="Label" parent="Bottom/Body/Row/Info/Stats"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+theme_override_font_sizes/font_size = 12
+[node name="K2" type="Label" parent="Bottom/Body/Row/Info/Stats"]
+layout_mode = 2
+text = ""
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
+[node name="V2" type="Label" parent="Bottom/Body/Row/Info/Stats"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+theme_override_font_sizes/font_size = 12
+[node name="K3" type="Label" parent="Bottom/Body/Row/Info/Stats"]
+layout_mode = 2
+text = ""
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
+[node name="V3" type="Label" parent="Bottom/Body/Row/Info/Stats"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+theme_override_font_sizes/font_size = 12
+[node name="K4" type="Label" parent="Bottom/Body/Row/Info/Stats"]
+layout_mode = 2
+text = ""
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
+[node name="V4" type="Label" parent="Bottom/Body/Row/Info/Stats"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+theme_override_font_sizes/font_size = 12
+[node name="K5" type="Label" parent="Bottom/Body/Row/Info/Stats"]
+layout_mode = 2
+text = ""
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
+[node name="V5" type="Label" parent="Bottom/Body/Row/Info/Stats"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+theme_override_font_sizes/font_size = 12
+[node name="K6" type="Label" parent="Bottom/Body/Row/Info/Stats"]
+layout_mode = 2
+text = ""
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
+[node name="V6" type="Label" parent="Bottom/Body/Row/Info/Stats"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+theme_override_font_sizes/font_size = 12
+[node name="Abilities" type="Label" parent="Bottom/Body/Row/Info"]
+layout_mode = 2
+visible = false
+autowrap_mode = 2
+text = ""
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
+[node name="Warning" type="Label" parent="Bottom/Body/Row/Info"]
+layout_mode = 2
+visible = false
+autowrap_mode = 2
+text = ""
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 12
 [node name="Details" type="Label" parent="Bottom/Body/Row/Info"]
 layout_mode = 2
 custom_minimum_size = Vector2(280,0)
 autowrap_mode = 2
 text = "Object details appear here."
-theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
+theme_override_font_sizes/font_size = 12
 [node name="Commands" type="VBoxContainer" parent="Bottom/Body/Row"]
 layout_mode = 2
 size_flags_horizontal = 3
