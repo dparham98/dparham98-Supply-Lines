@@ -10,6 +10,9 @@ const RED := Color(0.89,0.35,0.31)
 const TRACK := Color(0.055,0.09,0.114,0.85)
 const STORAGE_WARNING := 0.9
 const POPUP_SECONDS := 1.5
+const PING_SECONDS := 0.6
+const HIGHLIGHT_SECONDS := 0.8
+const ORDER_COLORS := {"move": Color(0.498,0.827,0.902), "attack": Color(0.89,0.35,0.31), "gather": Color(0.435,0.682,0.353), "return": Color(0.941,0.698,0.29), "repair": Color(0.941,0.698,0.29), "capture": Color(0.91,0.96,0.98)}
 ## Groups whose authored text labels this overlay replaces. Placement ghosts and waypoints keep theirs.
 const LABELLED_GROUPS := ["units","selectable_buildings","resources","material_piles","iron_deposits","construction_plans"]
 const LABEL_NAMES := ["Status","Cargo","Label","Progress"]
@@ -19,10 +22,13 @@ const LABEL_NAMES := ["Status","Cargo","Label","Progress"]
 @onready var card: PanelContainer = get_parent().get_node("HoverCard")
 var hovered: Node3D
 var popups: Array[Dictionary] = []
+var pings: Array[Dictionary] = []
 var _labels_hidden := {}
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	if game != null: game.resources_delivered.connect(_on_delivered)
+	if game != null:
+		game.resources_delivered.connect(_on_delivered)
+		game.order_given.connect(_on_order)
 func show_all() -> bool:
 	return InputMap.has_action("map_show_all") and Input.is_action_pressed("map_show_all")
 func _process(_delta: float) -> void:
@@ -33,6 +39,7 @@ func _process(_delta: float) -> void:
 	update_hover_card(mouse)
 	var now := Time.get_ticks_msec()/1000.0
 	popups = popups.filter(func(p): return now-p.time < POPUP_SECONDS and is_instance_valid(p.node))
+	pings = pings.filter(func(p): return now-p.time < HIGHLIGHT_SECONDS)
 	queue_redraw()
 # Runtime only: saved scenes keep their labels visible in the editor.
 func hide_actor_labels() -> void:
@@ -98,6 +105,25 @@ func route_lines() -> Array[Array]:
 	return lines
 func _on_delivered(target: Node3D, kind: StringName, amount: int) -> void:
 	popups.append({node = target, text = "+%d %s" % [amount,str(kind)], color = RESOURCE_COLORS.get(kind,Color.WHITE), time = Time.get_ticks_msec()/1000.0})
+# One ping per order: a group order emits once per unit, so repeats at the same spot are merged.
+func _on_order(kind: String, point: Vector3, target: Node3D, queued: bool) -> void:
+	var msec := Time.get_ticks_msec()
+	for ping in pings:
+		if ping.msec == msec and ping.kind == kind and ping.queued == queued and ping.point.distance_to(point) < 0.5: return
+	pings.append({kind = kind, point = point, target = target, queued = queued, time = msec/1000.0, msec = msec})
+# Unfilled ellipse outline (CanvasItem.draw_ellipse with filled off).
+func draw_ring(center: Vector2, radius: Vector2, color: Color, width: float) -> void:
+	draw_ellipse(center,radius.x,radius.y,color,false,width,true)
+# Dashed footprint for unpaid construction plans.
+func plan_outline(plan: Node3D, camera: Camera3D) -> PackedVector2Array:
+	var size: Vector2i = plan.spec.size
+	var a: Vector3 = game.ground.tile_to_world(plan.start)-Vector3(0.5,0,0.5)
+	var b: Vector3 = game.ground.tile_to_world(plan.start+size-Vector2i.ONE)+Vector3(0.5,0,0.5)
+	var corners := PackedVector2Array()
+	for corner in [Vector3(a.x,0,a.z),Vector3(b.x,0,a.z),Vector3(b.x,0,b.z),Vector3(a.x,0,b.z),Vector3(a.x,0,a.z)]:
+		if camera.is_position_behind(corner): return PackedVector2Array()
+		corners.append(camera.unproject_position(corner))
+	return corners
 func top_of(node: Node3D, camera: Camera3D) -> Vector2:
 	var rect: Rect2 = Bounds.screen_rect(node,camera)
 	if rect.size == Vector2.ZERO: return camera.unproject_position(node.global_position+Vector3.UP*2)
@@ -106,6 +132,30 @@ func _draw() -> void:
 	var camera := get_viewport().get_camera_3d()
 	if camera == null or game == null: return
 	var font := get_theme_default_font()
+	for plan in get_tree().get_nodes_in_group("construction_plans"):
+		var corners := plan_outline(plan,camera)
+		for i in range(corners.size()-1): draw_dashed_line(corners[i],corners[i+1],Color(0.91,0.96,0.98,0.8),1.5,6)
+	if is_instance_valid(hovered) and hovered.is_in_group("units") and not camera.is_position_behind(hovered.global_position):
+		var rect: Rect2 = Bounds.screen_rect(hovered,camera)
+		var color := Color(1,1,1,0.75) if hovered.team == "player" else Color(RED,0.85)
+		draw_ring(Vector2(rect.get_center().x,rect.end.y),Vector2(maxf(12,rect.size.x*0.6),maxf(5,rect.size.x*0.22)),color,1.5)
+	var now_pings := Time.get_ticks_msec()/1000.0
+	for ping in pings:
+		var age: float = now_pings-ping.time
+		var color: Color = ORDER_COLORS.get(ping.kind,Color.WHITE)
+		if is_instance_valid(ping.target) and not camera.is_position_behind(ping.target.global_position):
+			var rect: Rect2 = Bounds.screen_rect(ping.target,camera).grow(4)
+			color.a = 1.0-age/HIGHLIGHT_SECONDS
+			var k := minf(10,rect.size.x/3)
+			for c in [[rect.position,Vector2(1,1)],[Vector2(rect.end.x,rect.position.y),Vector2(-1,1)],[rect.end,Vector2(-1,-1)],[Vector2(rect.position.x,rect.end.y),Vector2(1,-1)]]:
+				draw_line(c[0],c[0]+Vector2(k*c[1].x,0),color,2)
+				draw_line(c[0],c[0]+Vector2(0,k*c[1].y),color,2)
+		elif age < PING_SECONDS and not camera.is_position_behind(ping.point):
+			var center := camera.unproject_position(ping.point)
+			var t := age/PING_SECONDS
+			color.a = 1.0-t
+			draw_ring(center,Vector2(6+16*t,3+8*t),color,2)
+			if not ping.queued: draw_ring(center,Vector2(3,1.5),color,2)
 	for line in route_lines():
 		if camera.is_position_behind(line[0]) or camera.is_position_behind(line[1]): continue
 		var a := camera.unproject_position(line[0])
@@ -179,5 +229,6 @@ func update_hover_card(mouse: Vector2) -> void:
 	if ratio >= 0: card.get_node("Body/Meter").value = ratio
 	card.reset_size()
 	var pos := mouse+Vector2(18,18)
-	var limit := get_viewport_rect().size-card.size-Vector2(4,4)
+	# Keep the card above the bottom HUD.
+	var limit := Vector2(get_viewport_rect().size.x,get_parent().get_node("Bottom").global_position.y)-card.size-Vector2(4,4)
 	card.position = pos.clamp(Vector2.ZERO,limit)

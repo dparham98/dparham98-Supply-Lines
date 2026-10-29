@@ -2,6 +2,9 @@ extends Control
 ## North-up map: world +X right, +Z down. Clicking changes camera focus only.
 @export var bounds := Rect2(-250,-250,500,500)
 @onready var game = get_tree().get_first_node_in_group("skirmish")
+const Overlay = preload("res://scripts/ui/map_overlay.gd")
+const EDGE := Color(0.04,0.07,0.09,0.9)
+const ALERT_PULSE_SECONDS := 6.0
 func _process(_delta: float) -> void:
 	queue_redraw()
 func world_to_map(point: Vector3) -> Vector2:
@@ -20,16 +23,28 @@ func _draw() -> void:
 		draw_rect(Rect2(top_left,size/500.0),Color(0.45,0.35,0.18))
 	for rail in get_tree().get_nodes_in_group("rails"):
 		draw_rect(Rect2(world_to_map(rail.global_position)-Vector2.ONE,Vector2(2,2)),Color(0.4,0.8,0.85) if game.get_node("RailNetwork").friendly(rail.cell,"player") else Color(0.85,0.3,0.25))
+	# Markers share the map overlay's team colours, with a dark edge so they read on any terrain.
 	for group in ["resources","selectable_buildings","units"]:
 		for node in get_tree().get_nodes_in_group(group):
 			if group == "resources" and node.is_in_group("mines"): continue
 			var point := world_to_map(node.global_position)
-			var color := Color(1,0.65,0.15)
-			if group != "resources":
-				color = Color(0.2,0.9,1) if node.team == "player" else (Color(1,0.3,0.25) if node.team == "enemy" else Color(0.75,0.75,0.75))
-			if group == "selectable_buildings": draw_rect(Rect2(point-Vector2(3,3),Vector2(6,6)),color)
-			else: draw_circle(point,2.5,color)
-			if (group == "units" and node.is_selected) or node == game.selected_building: draw_arc(point,5,0,TAU,16,Color.WHITE,1.5)
+			var color: Color = Overlay.RESOURCE_COLORS[&"coal"] if group == "resources" else Overlay.TEAM_COLORS.get(str(node.team),Overlay.TEAM_COLORS["neutral"])
+			if group == "selectable_buildings":
+				draw_rect(Rect2(point-Vector2(4,4),Vector2(8,8)),EDGE)
+				draw_rect(Rect2(point-Vector2(3,3),Vector2(6,6)),color)
+			elif group == "resources":
+				draw_colored_polygon(PackedVector2Array([point+Vector2(0,-3),point+Vector2(3,0),point+Vector2(0,3),point+Vector2(-3,0)]),color)
+			else:
+				draw_circle(point,3.2,EDGE)
+				draw_circle(point,2.3,color)
+			if (group == "units" and node.is_selected) or node == game.selected_building: draw_arc(point,6,0,TAU,16,Color.WHITE,1.5)
+	# Recent alerts pulse where they happened.
+	var now := Time.get_ticks_msec()/1000.0
+	for alert in game.alerts:
+		var age: float = now-alert.time
+		if age > ALERT_PULSE_SECONDS: continue
+		var pulse := fmod(age,1.0)
+		draw_arc(world_to_map(alert.point),4+8*pulse,0,TAU,20,Color(Overlay.RED,1.0-pulse),2)
 	var camera := game.get_viewport().get_camera_3d()
 	var viewport_size := game.get_viewport().get_visible_rect().size
 	var hud_top: float = game.get_node("Interface/Bottom").global_position.y
@@ -40,3 +55,4 @@ func _draw() -> void:
 	if outline.size() == 4:
 		outline.append(outline[0])
 		draw_polyline(outline,Color(1,1,1,0.85),1.0,true)
+	draw_rect(Rect2(Vector2.ZERO,size),Color(0.165,0.239,0.282),false,2)

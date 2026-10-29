@@ -66,14 +66,14 @@ var alerts: Array[Dictionary] = []
 var _alert_times := {}
 const ALERT_REPEAT_SECONDS := 10.0
 const ALERT_LIMIT := 8
-func alert(text: String, at: Vector3, key := "") -> void:
+func alert(text: String, at: Vector3, key := "", kind := "") -> void:
 	var now := Time.get_ticks_msec()/1000.0
 	if not key.is_empty():
 		if now-_alert_times.get(key,-INF) < ALERT_REPEAT_SECONDS: return
 		for old in _alert_times.keys():
 			if now-_alert_times[old] >= ALERT_REPEAT_SECONDS: _alert_times.erase(old)
 		_alert_times[key] = now
-	alerts.push_front({text = text, point = at, time = now})
+	alerts.push_front({text = text, point = at, time = now, kind = kind})
 	if alerts.size() > ALERT_LIMIT: alerts.resize(ALERT_LIMIT)
 # Map overlay hooks: when something was last hit, and resources arriving at a stockpile.
 var attacked_at := {}
@@ -91,7 +91,7 @@ func delivered(target: Node3D, kind: StringName, amount: int) -> void:
 	resources_delivered.emit(target,kind,amount)
 func unit_died(unit: Node3D) -> void:
 	if unit.team == "enemy": enemies_killed += 1; notify("Hostile eliminated.")
-	elif unit.team == "player": alert("%s lost" % hud.object_name(unit),unit.global_position)
+	elif unit.team == "player": alert("%s lost" % hud.object_name(unit),unit.global_position,"","lost")
 func _process(_delta: float) -> void:
 	if ore_delivered > 0 and units_printed > 0 and enemies_killed > 0: outcome = "VICTORY — gather, print, fight complete!"
 	var players := 0
@@ -157,7 +157,10 @@ func pick_target(screen: Vector2, group: String, _radius := 34.0) -> Node3D:
 		if d < distance: distance = d; closest = node
 	return closest
 # Shift-held orders join each unit's queue; plain orders replace it (docs/COMMAND_QUEUE.md).
+signal order_given(kind: String, point: Vector3, target: Node3D, queued: bool)
 func give_order(unit: Node3D, entry: Dictionary, queued: bool) -> void:
+	var target: Node3D = entry.get("target")
+	order_given.emit(entry.kind,target.global_position if is_instance_valid(target) else entry.get("point",Vector3.ZERO),target if is_instance_valid(target) else null,queued)
 	if queued: unit.queue_order(entry)
 	else:
 		unit.order_queue.clear()
