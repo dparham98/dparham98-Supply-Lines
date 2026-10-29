@@ -3,6 +3,32 @@
 [ext_resource type="Script" path="res://scripts/ui/tactical_minimap.gd" id="map_script"]
 [ext_resource type="Texture2D" path="res://assets/maps/source_map.png" id="map"]
 [ext_resource type="PackedScene" path="res://scenes/ui/playtest_panel.tscn" id="playtest"]
+[ext_resource type="Theme" path="res://assets/ui/supply_lines_theme.tres" id="ui_theme"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/attack.svg" id="icon_attack"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/build.svg" id="icon_build"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/cancel.svg" id="icon_cancel"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/capture.svg" id="icon_capture"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/cargo.svg" id="icon_cargo"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/deliver.svg" id="icon_deliver"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/deploy.svg" id="icon_deploy"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/drone.svg" id="icon_drone"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/drop.svg" id="icon_drop"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/focus.svg" id="icon_focus"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/gather.svg" id="icon_gather"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/grenadier.svg" id="icon_grenadier"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/infantry.svg" id="icon_infantry"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/motorcycle.svg" id="icon_motorcycle"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/move.svg" id="icon_move"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/pause.svg" id="icon_pause"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/refuel.svg" id="icon_refuel"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/repair.svg" id="icon_repair"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/route.svg" id="icon_route"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/scout.svg" id="icon_scout"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/stop.svg" id="icon_stop"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/tank.svg" id="icon_tank"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/train.svg" id="icon_train"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/truck.svg" id="icon_truck"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/ubermech.svg" id="icon_ubermech"]
 [sub_resource type="StyleBoxFlat" id="panel"]
 bg_color = Color(0.025,0.045,0.06,0.98)
 border_width_top = 2
@@ -131,6 +157,7 @@ events = [SubResource("key_produce_ubermech")]
 process_mode = 3
 script = ExtResource("hud")
 [node name="Bottom" type="PanelContainer" parent="."]
+theme = ExtResource("ui_theme")
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
@@ -333,71 +360,567 @@ columns = 3
 theme_override_constants/h_separation = 6
 theme_override_constants/v_separation = 6
 [node name="Move" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+tooltip_text = "Click a destination. Shift-click queues it."
 shortcut = SubResource("shortcut_command_move")
 layout_mode = 2
-custom_minimum_size = Vector2(0,30)
+custom_minimum_size = Vector2(0,38)
 size_flags_horizontal = 3
 text = "Move"
-[node name="Attack" type="Button" parent="Bottom/Body/Row/Commands/Main"]
-shortcut = SubResource("shortcut_command_attack")
-layout_mode = 2
-custom_minimum_size = Vector2(0,30)
-size_flags_horizontal = 3
-text = "Attack"
-[node name="Gather" type="Button" parent="Bottom/Body/Row/Commands/Main"]
-shortcut = SubResource("shortcut_command_gather")
-layout_mode = 2
-custom_minimum_size = Vector2(0,30)
-size_flags_horizontal = 3
-text = "Gather iron"
+icon = ExtResource("icon_move")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Move"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="Stop" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+tooltip_text = "Stop and clear queued orders."
 shortcut = SubResource("shortcut_command_stop")
 layout_mode = 2
-custom_minimum_size = Vector2(0,30)
+custom_minimum_size = Vector2(0,38)
 size_flags_horizontal = 3
 text = "Stop"
+icon = ExtResource("icon_stop")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Stop"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="Attack" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+tooltip_text = "Click a hostile unit or building."
+shortcut = SubResource("shortcut_command_attack")
+layout_mode = 2
+custom_minimum_size = Vector2(0,38)
+size_flags_horizontal = 3
+text = "Attack"
+icon = ExtResource("icon_attack")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Attack"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="Gather" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+tooltip_text = "Click iron, wood or a material pile. Delivers to a friendly Depot."
+shortcut = SubResource("shortcut_command_gather")
+layout_mode = 2
+custom_minimum_size = Vector2(0,38)
+size_flags_horizontal = 3
+text = "Gather iron"
+icon = ExtResource("icon_gather")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Gather"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="Return" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+tooltip_text = "Deliver carried resources to the selected supply source."
 shortcut = SubResource("shortcut_command_return")
 layout_mode = 2
-custom_minimum_size = Vector2(0,30)
+custom_minimum_size = Vector2(0,38)
 size_flags_horizontal = 3
 text = "Return cargo"
-[node name="Build" type="Button" parent="Bottom/Body/Row/Commands/Main"]
-shortcut = SubResource("shortcut_command_build")
+icon = ExtResource("icon_deliver")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Return"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="DropMaterials" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+tooltip_text = "Drop carried materials as a pile any Infantry can gather."
+shortcut = SubResource("shortcut_command_drop")
 layout_mode = 2
-custom_minimum_size = Vector2(0,30)
+custom_minimum_size = Vector2(0,38)
 size_flags_horizontal = 3
-text = "Build…"
+text = "Drop materials"
+icon = ExtResource("icon_drop")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/DropMaterials"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="Repair" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_command_repair")
+layout_mode = 2
+custom_minimum_size = Vector2(0,38)
+size_flags_horizontal = 3
+text = "Repair building"
+icon = ExtResource("icon_repair")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Repair"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="Capture" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+tooltip_text = "Click a neutral or enemy Depot and stay uncontested."
+shortcut = SubResource("shortcut_command_capture")
+layout_mode = 2
+custom_minimum_size = Vector2(0,38)
+size_flags_horizontal = 3
+text = "Capture Depot / mine"
+icon = ExtResource("icon_capture")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Capture"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="PrintInfantry" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_infantry")
 layout_mode = 2
-custom_minimum_size = Vector2(0,30)
+custom_minimum_size = Vector2(0,38)
 size_flags_horizontal = 3
 text = "Print infantry"
+icon = ExtResource("icon_infantry")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/PrintInfantry"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="ProduceScout" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_produce_scout")
+layout_mode = 2
+custom_minimum_size = Vector2(0,38)
+size_flags_horizontal = 3
+text = "Scout"
+icon = ExtResource("icon_scout")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ProduceScout"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="ProduceGrenadier" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_produce_grenadier")
+layout_mode = 2
+custom_minimum_size = Vector2(0,38)
+size_flags_horizontal = 3
+text = "Grenadier"
+icon = ExtResource("icon_grenadier")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ProduceGrenadier"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="ProduceTank" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_produce_tank")
+layout_mode = 2
+custom_minimum_size = Vector2(0,38)
+size_flags_horizontal = 3
+text = "Tank"
+icon = ExtResource("icon_tank")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ProduceTank"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="ProduceMotorcycle" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_produce_motorcycle")
+layout_mode = 2
+custom_minimum_size = Vector2(0,38)
+size_flags_horizontal = 3
+text = "Motorcycle"
+icon = ExtResource("icon_motorcycle")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ProduceMotorcycle"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="ProduceDrone" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_produce_drone")
+layout_mode = 2
+custom_minimum_size = Vector2(0,38)
+size_flags_horizontal = 3
+text = "Drone"
+icon = ExtResource("icon_drone")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ProduceDrone"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="ProduceUbermech" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_produce_ubermech")
+layout_mode = 2
+custom_minimum_size = Vector2(0,38)
+size_flags_horizontal = 3
+text = "Ubermech"
+icon = ExtResource("icon_ubermech")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ProduceUbermech"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="PrintTruck" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_depot_truck")
 layout_mode = 2
-custom_minimum_size = Vector2(0,30)
+custom_minimum_size = Vector2(0,38)
 size_flags_horizontal = 3
 text = "Print Depot Truck"
+icon = ExtResource("icon_truck")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/PrintTruck"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="PrintCargo" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 shortcut = SubResource("shortcut_produce_cargo")
 layout_mode = 2
-custom_minimum_size = Vector2(0,30)
+custom_minimum_size = Vector2(0,38)
 size_flags_horizontal = 3
 text = "Print cargo vehicle"
+icon = ExtResource("icon_cargo")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/PrintCargo"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="PrintTrain" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+shortcut = SubResource("shortcut_produce_train")
+layout_mode = 2
+custom_minimum_size = Vector2(0,38)
+size_flags_horizontal = 3
+text = "Print train"
+icon = ExtResource("icon_train")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/PrintTrain"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="Build" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+tooltip_text = "Open the build menu for this unit or Depot."
+shortcut = SubResource("shortcut_command_build")
+layout_mode = 2
+custom_minimum_size = Vector2(0,38)
+size_flags_horizontal = 3
+text = "Build…"
+icon = ExtResource("icon_build")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Build"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="DeployTruck" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+tooltip_text = "Deploy into a new Depot on an empty 8 × 8 footprint."
 shortcut = SubResource("shortcut_command_deploy")
 layout_mode = 2
-custom_minimum_size = Vector2(0,30)
+custom_minimum_size = Vector2(0,38)
 size_flags_horizontal = 3
 text = "Deploy Depot Truck"
+icon = ExtResource("icon_deploy")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/DeployTruck"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="ToggleRefuel" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+tooltip_text = "Refuel automatically when stopped near a friendly source with coal."
+shortcut = SubResource("shortcut_command_refuel")
+layout_mode = 2
+custom_minimum_size = Vector2(0,38)
+text = "Auto-refuel: on"
+icon = ExtResource("icon_refuel")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ToggleRefuel"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="ToggleGenerator" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+tooltip_text = "Pause or resume this generator."
+shortcut = SubResource("shortcut_command_pause")
+layout_mode = 2
+custom_minimum_size = Vector2(0,38)
+text = "Pause generator"
+icon = ExtResource("icon_pause")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ToggleGenerator"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="FocusAssigned" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+tooltip_text = "Centre the camera on this building's assigned Depot."
 shortcut = SubResource("shortcut_command_focus_assigned")
 layout_mode = 2
-custom_minimum_size = Vector2(0,30)
+custom_minimum_size = Vector2(0,38)
 size_flags_horizontal = 3
 text = "Focus assigned Depot"
+icon = ExtResource("icon_focus")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/FocusAssigned"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="CancelPlan" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+tooltip_text = "Cancel this unpaid construction plan. Nothing is refunded because nothing was paid."
+shortcut = SubResource("shortcut_command_cancel")
+layout_mode = 2
+visible = false
+text = "Cancel construction plan"
+icon = ExtResource("icon_cancel")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/CancelPlan"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="Hint" type="Label" parent="Bottom/Body/Row/Commands"]
 layout_mode = 2
 autowrap_mode = 2
@@ -482,14 +1005,50 @@ text = "Repeat route"
 [node name="StartRoute" type="Button" parent="Bottom/Body/Row/Commands/Supply"]
 layout_mode = 2
 text = "Assign delivery route"
+icon = ExtResource("icon_route")
+alignment = 0
 [node name="PauseRoute" type="Button" parent="Bottom/Body/Row/Commands/Supply"]
 shortcut = SubResource("shortcut_command_pause")
 layout_mode = 2
 text = "Pause / Resume route"
+icon = ExtResource("icon_pause")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Supply/PauseRoute"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="CancelRoute" type="Button" parent="Bottom/Body/Row/Commands/Supply"]
 shortcut = SubResource("shortcut_command_cancel")
 layout_mode = 2
 text = "Cancel · keep cargo"
+icon = ExtResource("icon_cancel")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Supply/CancelRoute"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="RouteStatus" type="Label" parent="Bottom/Body/Row/Commands/Supply"]
 layout_mode = 2
 custom_minimum_size = Vector2(0,34)
@@ -498,68 +1057,6 @@ text = "No route assigned"
 autowrap_mode = 2
 theme_override_font_sizes/font_size = 13
 
-[node name="ProduceScout" type="Button" parent="Bottom/Body/Row/Commands/Main"]
-shortcut = SubResource("shortcut_produce_scout")
-layout_mode = 2
-custom_minimum_size = Vector2(0,30)
-size_flags_horizontal = 3
-text = "Scout"
-
-[node name="ProduceGrenadier" type="Button" parent="Bottom/Body/Row/Commands/Main"]
-shortcut = SubResource("shortcut_produce_grenadier")
-layout_mode = 2
-custom_minimum_size = Vector2(0,30)
-size_flags_horizontal = 3
-text = "Grenadier"
-
-[node name="ProduceTank" type="Button" parent="Bottom/Body/Row/Commands/Main"]
-shortcut = SubResource("shortcut_produce_tank")
-layout_mode = 2
-custom_minimum_size = Vector2(0,30)
-size_flags_horizontal = 3
-text = "Tank"
-
-[node name="ProduceMotorcycle" type="Button" parent="Bottom/Body/Row/Commands/Main"]
-shortcut = SubResource("shortcut_produce_motorcycle")
-layout_mode = 2
-custom_minimum_size = Vector2(0,30)
-size_flags_horizontal = 3
-text = "Motorcycle"
-
-[node name="ProduceDrone" type="Button" parent="Bottom/Body/Row/Commands/Main"]
-shortcut = SubResource("shortcut_produce_drone")
-layout_mode = 2
-custom_minimum_size = Vector2(0,30)
-size_flags_horizontal = 3
-text = "Drone"
-
-[node name="ProduceUbermech" type="Button" parent="Bottom/Body/Row/Commands/Main"]
-shortcut = SubResource("shortcut_produce_ubermech")
-layout_mode = 2
-custom_minimum_size = Vector2(0,30)
-size_flags_horizontal = 3
-text = "Ubermech"
-
-[node name="Repair" type="Button" parent="Bottom/Body/Row/Commands/Main"]
-shortcut = SubResource("shortcut_command_repair")
-layout_mode = 2
-custom_minimum_size = Vector2(0,30)
-size_flags_horizontal = 3
-text = "Repair building"
-
-[node name="Capture" type="Button" parent="Bottom/Body/Row/Commands/Main"]
-shortcut = SubResource("shortcut_command_capture")
-layout_mode = 2
-custom_minimum_size = Vector2(0,30)
-size_flags_horizontal = 3
-text = "Capture Depot / mine"
-
-[node name="PrintTrain" type="Button" parent="Bottom/Body/Row/Commands/Main"]
-shortcut = SubResource("shortcut_produce_train")
-layout_mode = 2
-custom_minimum_size = Vector2(0,30)
-size_flags_horizontal = 3
-text = "Print train"
 [node name="Rail" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
 layout_mode = 2
 custom_minimum_size = Vector2(0,30)
@@ -576,40 +1073,51 @@ text = "Iron Mine"
 shortcut = SubResource("shortcut_command_deploy")
 layout_mode = 2
 text = "Deploy supplies · 2s"
+icon = ExtResource("icon_deploy")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Supply/DeploySupplies"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="MoveCargo" type="Button" parent="Bottom/Body/Row/Commands/Supply"]
 shortcut = SubResource("shortcut_command_move")
 layout_mode = 2
 text = "Move · pack automatically"
-[node name="DropMaterials" type="Button" parent="Bottom/Body/Row/Commands/Main"]
-shortcut = SubResource("shortcut_command_drop")
-layout_mode = 2
-custom_minimum_size = Vector2(0,30)
-size_flags_horizontal = 3
-text = "Drop materials"
-
-[node name="ToggleGenerator" type="Button" parent="Bottom/Body/Row/Commands/Main"]
-shortcut = SubResource("shortcut_command_pause")
-layout_mode = 2
-custom_minimum_size = Vector2(0,30)
-text = "Pause generator"
-
-[node name="ToggleRefuel" type="Button" parent="Bottom/Body/Row/Commands/Main"]
-shortcut = SubResource("shortcut_command_refuel")
-layout_mode = 2
-custom_minimum_size = Vector2(0,30)
-text = "Auto-refuel: on"
-
+icon = ExtResource("icon_move")
+alignment = 0
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Supply/MoveCargo"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="SelectionBox" type="Panel" parent="."]
 visible = false
 mouse_filter = 2
 theme_override_styles/panel = SubResource("selection_box")
 
-[node name="CancelPlan" type="Button" parent="Bottom/Body/Row/Commands/Main"]
-shortcut = SubResource("shortcut_command_cancel")
-layout_mode = 2
-visible = false
-text = "Cancel construction plan"
 [node name="Feed" type="VBoxContainer" parent="."]
+theme = ExtResource("ui_theme")
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0

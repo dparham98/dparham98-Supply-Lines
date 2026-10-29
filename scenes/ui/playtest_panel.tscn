@@ -1,5 +1,6 @@
 [gd_scene format=3]
 [ext_resource type="Script" path="res://scripts/ui/playtest_panel.gd" id="panel_script"]
+[ext_resource type="Theme" path="res://assets/ui/supply_lines_theme.tres" id="ui_theme"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/infantry.tscn" id="infantry"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/scout.tscn" id="scout"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/grenadier.tscn" id="grenadier"]
@@ -26,6 +27,7 @@ offset_left = 12.0
 offset_top = 12.0
 offset_right = 452.0
 offset_bottom = 12.0
+theme = ExtResource("ui_theme")
 theme_override_styles/panel = SubResource("panel")
 script = ExtResource("panel_script")
 spawn_scenes = Array[PackedScene]([ExtResource("infantry"), ExtResource("scout"), ExtResource("grenadier"), ExtResource("tank"), ExtResource("motorcycle"), ExtResource("drone"), ExtResource("ubermech"), ExtResource("cargo"), ExtResource("depot_truck")])
