@@ -3,6 +3,7 @@
 [ext_resource type="PackedScene" path="res://scenes/gameplay/energy_generator.tscn" id="generator"]
 [node name="EngineeringExercise" instance=ExtResource("base")]
 vehicle_fuel_required = false
+testing_coal_amount = 0
 [node name="DamagedGenerator" parent="Entities/Buildings" index="2" instance=ExtResource("generator")]
 position = Vector3(180,0,158)
 assigned_depot_path = NodePath("../Depot")

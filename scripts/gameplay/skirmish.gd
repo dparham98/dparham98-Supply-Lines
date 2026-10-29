@@ -4,6 +4,8 @@ extends Node3D
 @export var pile_scene: PackedScene
 ## Vehicles burn and refuel coal (docs/FUEL_BATCH.md). Earlier-batch exercise scenes turn this off.
 @export var vehicle_fuel_required := false
+## Testing coal grant until coal extraction exists: a shared coal pile at Entities/Resources/TestingCoalPoint.
+@export var testing_coal_amount := 0
 func drop_material(unit: Node3D) -> Node3D:
 	if not unit.can_gather or unit.cargo <= 0 or unit.cargo_kind not in [&"iron",&"wood",&"coal"]: return null
 	var pile = pile_scene.instantiate()
@@ -37,6 +39,12 @@ var outcome := ""
 @onready var hud = $Interface
 func _ready() -> void:
 	if depot.rules.testing_starting_iron < 0: ore = starting_ore
+	if testing_coal_amount > 0 and has_node("Entities/Resources/TestingCoalPoint"):
+		var pile = pile_scene.instantiate()
+		pile.name = "TestingCoalPile"
+		pile.material_kind = "coal"; pile.amount = testing_coal_amount
+		pile.position = get_node("Entities/Resources/TestingCoalPoint").position
+		get_node("Entities/Resources").add_child(pile)
 	$DepotNetwork.select_depot(depot)
 func notify(text: String) -> void:
 	message = text
