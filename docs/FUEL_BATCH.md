@@ -55,6 +55,7 @@ An **Auto-refuel** button toggles refuelling for every selected fuel-using vehic
 ## Playtest feedback (2026-10-28)
 
 - Auto-refuel couldn't be toggled on Cargo Trucks and Trains, because the button sat only on the hidden command card. Fixed with the Supply panel button above.
+- Later fix (`feature/command-queue`): idle Cargo vehicles and Trains ticked fuel twice per frame, so they refuelled at double the rate. They now tick once.
 - Loading coal into a Cargo Truck is awkward. Today it means either deploying the truck and having Infantry deposit coal, or assigning a route and then stopping it to keep the cargo. A direct "load from this Depot" action is not designed yet and needs a decision.
 
 ## Not included

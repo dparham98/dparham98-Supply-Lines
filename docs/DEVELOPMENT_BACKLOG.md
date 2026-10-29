@@ -33,7 +33,8 @@ The cloud baseline was verified on 2026-10-28 (see [PROJECT_HANDOFF.md](PROJECT_
 ## 3. Suggested usability follow-ons (not yet requested)
 
 - Additive selection and control groups: merged with command card hotkeys in PR #3 (HUD_HOTKEYS.md).
-- Playtest tools panel (F10): implemented on `feature/playtest-tools` (PLAYTEST_TOOLS.md), pending review and playtest.
+- Playtest tools panel (F10): merged in PR #4 (PLAYTEST_TOOLS.md).
+- Shift command queue with waypoint markers: implemented on `feature/command-queue` (COMMAND_QUEUE.md), pending review and playtest.
 - Better mixed-group ability controls.
 - Transport traffic and passing.
 - Pending-plan editing, priority and save/load.
