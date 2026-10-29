@@ -30,6 +30,11 @@ func _ready() -> void:
 	commands.get_node("GeneratorMode").item_selected.connect(func(index):
 		if is_instance_valid(shown) and shown.is_in_group("energy_generators"):
 			shown.set_fuel_preference(["wood","coal","either"][index]))
+	card.get_node("ToggleRefuel").pressed.connect(func():
+		if not is_instance_valid(shown) or not shown.is_in_group("units"): return
+		var enable: bool = not shown.auto_refuel
+		for unit in selected_units():
+			if unit.fuel_active(): unit.auto_refuel = enable)
 	card.get_node("ToggleGenerator").pressed.connect(func():
 		if is_instance_valid(shown) and shown.is_in_group("energy_generators"): shown.enabled = not shown.enabled)
 	supply.get_node("DeploySupplies").pressed.connect(func():
@@ -253,7 +258,8 @@ func update_contents() -> void:
 		if node.mobility_layer() == MobilityRules.Layer.AIR: combat += "\nFlight · separate air layer"
 		elif node.unit_stats != null and node.unit_stats.mobility != null and node.unit_stats.mobility.clears_forest: combat += "\nClears forest on entry"
 		elif node.mobility_layer() == MobilityRules.Layer.FOREST: combat += "\nForest traversal"
-		if node.fuel_rules != null: combat += "\nFuel reserve %.0f / %.0f · not yet required" % [node.fuel,node.fuel_rules.reserve_capacity]
+		if node.fuel_rules != null: combat += "\n"+node.fuel_summary()
+		if node.is_in_group("rail_trains") and not node.fuel_warning.is_empty(): combat += "\n"+node.fuel_warning
 		var cost_energy: int = node.energy_cost
 		var cost_iron: int = node.iron_cost
 		if node.is_cargo_vehicle: cost_energy = node.supply_rules.cargo_energy_cost; cost_iron = node.supply_rules.cargo_iron_cost
@@ -262,6 +268,7 @@ func update_contents() -> void:
 		commands.get_node("Title").text = "UNIT · ORDERS"
 		show_button("Move","Move")
 		show_button("Stop","Stop")
+		if node.fuel_active(): show_button("ToggleRefuel","Auto-refuel: %s" % ("on" if node.auto_refuel else "off"))
 		if node.is_cargo_vehicle:
 			commands.get_node("Title").text = "TRAIN · RAIL DELIVERY ROUTE" if node.is_in_group("rail_trains") else "CARGO VEHICLE · DELIVERY ROUTE"
 			update_supply_panel()

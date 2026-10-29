@@ -355,6 +355,11 @@ layout_mode = 2
 custom_minimum_size = Vector2(0,36)
 text = "Pause generator"
 
+[node name="ToggleRefuel" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+layout_mode = 2
+custom_minimum_size = Vector2(0,36)
+text = "Auto-refuel: on"
+
 [node name="SelectionBox" type="Panel" parent="."]
 visible = false
 mouse_filter = 2

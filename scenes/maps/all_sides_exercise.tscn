@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" path="res://scenes/gameplay/wood_site.tscn" id="wood"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/infantry.tscn" id="infantry"]
 [node name="AllSidesExercise" instance=ExtResource("base")]
+vehicle_fuel_required = false
 message = "Box the two workers and right-click the marked wood stand. They harvest from opposite sides and deliver to WorkshopDepot."
 [node name="CameraRig" parent="." index="5"]
 position = Vector3(186,0,192)

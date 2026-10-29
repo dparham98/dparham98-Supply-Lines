@@ -2,6 +2,8 @@ extends Node3D
 @export var starting_ore := 0
 @export var tracer_scene: PackedScene
 @export var pile_scene: PackedScene
+## Vehicles burn and refuel coal (docs/FUEL_BATCH.md). Earlier-batch exercise scenes turn this off.
+@export var vehicle_fuel_required := false
 func drop_material(unit: Node3D) -> Node3D:
 	if not unit.can_gather or unit.cargo <= 0 or unit.cargo_kind not in [&"iron",&"wood",&"coal"]: return null
 	var pile = pile_scene.instantiate()

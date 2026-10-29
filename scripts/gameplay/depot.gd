@@ -104,6 +104,7 @@ func _process(delta: float) -> void:
 		elif kind == "cargo": scene = game.get_node("DepotNetwork").cargo_scene
 		elif kind == "train": scene = game.get_node("RailNetwork").train_scene
 		var unit = scene.instantiate()
+		if "start_fuelled" in unit: unit.start_fuelled = false # New vehicles start empty.
 		unit.position = ground.tile_to_world(spawn)
 		game.get_node("Entities/Units").add_child(unit,true)
 		queue -= 1

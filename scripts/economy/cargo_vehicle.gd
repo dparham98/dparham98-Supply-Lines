@@ -158,6 +158,7 @@ func command_return(_target: Node3D = null) -> void:
 	game.notify("Use the Supply panel to choose explicit cargo endpoints.")
 func _process(delta: float) -> void:
 	if _dead: return
+	fuel_tick(delta)
 	if advance_supplies(delta): return
 	$SupplyRadius.visible = supplies_available() and (is_selected or game.get_node("DepotNetwork").selected == self)
 	$SupplyRadius.scale = Vector3.ONE*mobile_rules.supply_radius()

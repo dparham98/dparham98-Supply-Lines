@@ -18,7 +18,7 @@ Status: discussion plan, not implemented balance. Depot production correction, s
 2. Implemented; see HARVESTING_BATCH.md. Shared buildable iron mines and per-cell forestry. Remove ownership-restricted mine extraction/capture; preserve Depot capture. Replace direct extraction from bare iron sources. Keep original source-map pixels intact; use validated separate terrain/resource state.
 3. Implemented; see MOBILE_SUPPLY.md. Deployed Cargo Trucks/trains use the user-confirmed half-Depot supply/drop-off ranges (17.5/3.5), two-second deployment/packing and automatic packing before movement. Infantry delivery, explicit mobile construction/repair payment, deliberate/death drops and shared collectible physical piles are enabled. Production/generation remains explicitly Depot-bound.
 4. Wood/coal generation implemented; see GENERATOR_BATCH.md. Editable 1 wood -> 10 E/2s and 1 coal -> 50 E/5s, explicit modes, pause/resume, atomic cycle completion and full-storage/fuel pauses. Water mode remains pending approval of its exact behavior.
-5. Vehicle fuel consumption/refueling, train round-trip fuel checks, stranded-vehicle recovery, Drone landing/emergency rules once approved.
+5. Vehicle fuel implemented (pending review); see FUEL_BATCH.md. Consumption by distance, out-of-fuel pause, single-source automatic refuelling, deployed-vehicle recovery and a warn-only train round-trip check. Drone fuel and landing/emergency rules remain pending approval.
 6. Add coal extraction and distribute forests/materials more broadly in separate map-data assets after testing the economy. Do not introduce the later signals/research/upkeep/tiling systems during this pass.
 
 ## Proposed balance sheet — approval pending

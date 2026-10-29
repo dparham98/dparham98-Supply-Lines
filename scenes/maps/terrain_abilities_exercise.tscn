@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" path="res://scenes/gameplay/tank.tscn" id="tank"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/drone.tscn" id="drone"]
 [node name="TerrainAbilitiesExercise" instance=ExtResource("base")]
+vehicle_fuel_required = false
 message = "Terrain exercise: select Scout, Tank or Drone; right-click into the forest."
 [node name="CameraRig" parent="." index="4"]
 position = Vector3(97.5,0,25.5)

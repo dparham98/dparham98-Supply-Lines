@@ -17,7 +17,32 @@ func start_supply_route(origin: Node3D, destination: Node3D, energy: int, iron: 
 	waiting_for_rail = not route_connected()
 	_checked_revision = rail_network.revision
 	if waiting_for_rail: state = "Route assigned · waiting for friendly rails"
+	check_round_trip_fuel()
 	return true
+var fuel_warning := ""
+## Estimated coal for current position -> loading Depot -> unloading Depot -> loading Depot.
+## Returns -1 when the rails do not currently connect the route.
+func estimated_round_trip_fuel() -> float:
+	if fuel_rules == null or not endpoints_friendly(): return -1
+	var cell = ground.get_tile_at_position(global_position)
+	if cell == null: return -1
+	var to_origin: Array[Vector2i] = rail_network.path_to_depot(cell,origin_depot,team,_owner_key(),false)
+	if to_origin.is_empty(): return -1
+	var leg: Array[Vector2i] = rail_network.path_to_depot(to_origin[-1],destination_depot,team,_owner_key(),false)
+	if leg.is_empty(): return -1
+	return (_path_length(to_origin)+2*_path_length(leg))*fuel_rules.coal_per_movement_unit
+func _path_length(path: Array[Vector2i]) -> float:
+	var length := 0.0
+	for i in range(1,path.size()): length += ground.tile_to_world(path[i-1]).distance_to(ground.tile_to_world(path[i]))
+	return length
+## Warn but allow (approved default): the route is kept even when the tank cannot cover it.
+func check_round_trip_fuel() -> void:
+	fuel_warning = ""
+	if not fuel_active(): return
+	var needed := estimated_round_trip_fuel()
+	if needed < 0: fuel_warning = "Round-trip fuel unknown until rails connect."
+	elif needed > fuel: fuel_warning = "Round trip needs about %.0f coal; tank holds %.1f." % [needed,fuel]
+	if not fuel_warning.is_empty(): game.notify("Train fuel warning: "+fuel_warning)
 func _rail_changed() -> void:
 	_checked_revision = rail_network.revision
 	if not route_active or route_paused: return
@@ -48,6 +73,7 @@ func _process(delta: float) -> void:
 	if route_active and waiting_for_rail and not route_paused:
 		if not endpoints_friendly(): pause_supply_route()
 		else:
+			fuel_tick(delta)
 			if not advance_supplies(delta):
 				state = "Route assigned · waiting for friendly rails"
 				_update_display()
