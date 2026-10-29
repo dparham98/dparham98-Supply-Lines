@@ -157,6 +157,20 @@ func _process(_delta: float) -> void:
 		commands.get_node("Hint").text = "Right-click moves the group. Commands apply where each unit supports them. Details show the first unit."
 	# Apply final visibility once. Hiding a pressed button cancels its GUI gesture.
 	for button in card.get_children(): button.visible = desired_buttons.has(str(button.name))
+	for panel in [card,supply]:
+		for button in panel.get_children():
+			if button is Button and button.visible: label_hotkey(button)
+# Show the bound key on the button. Shortcuts only fire for visible, enabled buttons.
+func label_hotkey(button: Button) -> void:
+	var key := hotkey_text(button)
+	if not key.is_empty() and not button.text.ends_with(" [%s]" % key): button.text += " [%s]" % key
+func hotkey_text(button: Button) -> String:
+	if button.shortcut == null or button.shortcut.events.is_empty() or not button.shortcut.events[0] is InputEventAction: return ""
+	var action: StringName = button.shortcut.events[0].action
+	if not InputMap.has_action(action): return ""
+	for event in InputMap.action_get_events(action):
+		if event is InputEventKey: return event.as_text_physical_keycode()
+	return ""
 func update_contents() -> void:
 	var node = selected_object()
 	if node != shown:

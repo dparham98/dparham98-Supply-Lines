@@ -32,7 +32,7 @@ The cloud baseline was verified on 2026-10-28 (see [PROJECT_HANDOFF.md](PROJECT_
 
 ## 3. Suggested usability follow-ons (not yet requested)
 
-- Additive selection and control groups.
+- Additive selection and control groups: implemented on `feature/hud-commands` with command card hotkeys (HUD_HOTKEYS.md), pending review and playtest.
 - Better mixed-group ability controls.
 - Transport traffic and passing.
 - Pending-plan editing, priority and save/load.
