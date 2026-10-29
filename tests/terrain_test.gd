@@ -1,5 +1,6 @@
 extends SceneTree
-const OUTPUT = "C:/Users/video/.codex/.chatgpt-projects/g-p-6ad16a23380c8191877dbcafdb316068/camera_work/"
+const TestOutput = preload("res://tests/test_output.gd")
+const OUTPUT = "camera_work/"
 
 func _initialize() -> void:
 	call_deferred("run_checks")
@@ -110,14 +111,14 @@ func run_checks() -> void:
 		for i in range(180): scene.get_node("CameraRig").advance_camera(1.0 / 60.0)
 		await process_frame
 		await RenderingServer.frame_post_draw
-		root.get_texture().get_image().save_png(OUTPUT + "terrain_overview.png")
+		TestOutput.save_png(self, root.get_texture().get_image(), OUTPUT + "terrain_overview.png")
 		scene.get_node("CameraRig").set_view(Vector3.ZERO, 140.0, 0, 50)
 		await process_frame
 		await process_frame
 		await process_frame
 		await RenderingServer.frame_post_draw
-		root.get_texture().get_image().save_png(OUTPUT + "terrain_closeup.png")
+		TestOutput.save_png(self, root.get_texture().get_image(), OUTPUT + "terrain_closeup.png")
 		results["screenshots_rendered"] = true
-	FileAccess.open(OUTPUT + "terrain_test_results.json", FileAccess.WRITE).store_string(JSON.stringify(results, "\t"))
+	if not TestOutput.write_text(self, OUTPUT + "terrain_test_results.json", JSON.stringify(results, "\t")): return
 	print("TERRAIN_CHECKS_PASSED")
-	quit(0)
+	quit(TestOutput.exit_code())

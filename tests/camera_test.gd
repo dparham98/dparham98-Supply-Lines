@@ -1,5 +1,6 @@
 extends SceneTree
-const OUTPUT = "C:/Users/video/.codex/.chatgpt-projects/g-p-6ad16a23380c8191877dbcafdb316068/camera_work/"
+const TestOutput = preload("res://tests/test_output.gd")
+const OUTPUT = "camera_work/"
 var rig: Node3D
 func _initialize() -> void: call_deferred("test_camera")
 func settle(frames: int = 180) -> void:
@@ -117,6 +118,6 @@ func test_camera() -> void:
 	settle()
 	assert(rig.global_position.length() < 0.02 and rig.camera.size > 95)
 	var result := {"cursor_anchor_error": cursor_error, "pan_30_vs_120_fps_target_error": frame_rate_error, "zoom_limits": true, "rotated_view_bounds": true, "camera_relative_pan": true, "rotation_release": true, "drag_and_focus_loss": true, "overview_fit_three_aspects_and_restore": true, "focus_hq_and_selection": true}
-	FileAccess.open(OUTPUT + "camera_results.json", FileAccess.WRITE).store_string(JSON.stringify(result, "\t"))
+	if not TestOutput.write_text(self, OUTPUT + "camera_results.json", JSON.stringify(result, "\t")): return
 	print("CAMERA_CHECKS_PASSED")
-	quit(0)
+	quit(TestOutput.exit_code())

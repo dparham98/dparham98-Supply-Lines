@@ -1,9 +1,20 @@
 extends SceneTree
-const OUTPUT = "C:/Users/video/.codex/.chatgpt-projects/g-p-6ad16a23380c8191877dbcafdb316068/camera_work/"
+const TestOutput = preload("res://tests/test_output.gd")
+const OUTPUT = "camera_work/"
+# rebuild_scenery() overwrites this tracked generated scene; the test restores its exact bytes.
+const LANDMARKS = "res://scenes/maps/terrain_landmarks.tscn"
 func _initialize() -> void: call_deferred("check_scenes")
 func clear_scripts(n: Node) -> void:
 	for child in n.get_children(): clear_scripts(child)
 	n.set_script(null)
+func restore_landmarks(original: PackedByteArray) -> bool:
+	var handle := FileAccess.open(LANDMARKS, FileAccess.WRITE)
+	if handle == null or not handle.store_buffer(original):
+		printerr("LANDMARKS_RESTORE_FAILED: cannot write " + LANDMARKS); quit(1); return false
+	handle.close()
+	if FileAccess.get_file_as_bytes(LANDMARKS) != original:
+		printerr("LANDMARKS_RESTORE_FAILED: contents differ after restore"); quit(1); return false
+	return true
 func check_scenes() -> void:
 	var world := load("res://scenes/maps/supply_lines_world.tscn").instantiate() as Node3D
 	# All visuals exist before adding the scene to the tree or running _ready().
@@ -47,10 +58,13 @@ func check_scenes() -> void:
 	overridden.free()
 	var terrain := load("res://scenes/maps/terrain.tscn").instantiate() as Node3D
 	assert(terrain.rebuild_action.is_valid())
+	var original_landmarks := FileAccess.get_file_as_bytes(LANDMARKS)
+	assert(not original_landmarks.is_empty())
 	terrain.rebuild_scenery()
 	assert(terrain.get_node("Landmarks").scene_file_path == "res://scenes/maps/terrain_landmarks.tscn")
 	assert(terrain.get_node("Landmarks/Forests/Trunk").multimesh.instance_count == 1646)
 	terrain.free()
+	if not restore_landmarks(original_landmarks): return
 	# Static render proves visibility does not depend on runtime generation.
 	clear_scripts(world)
 	root.add_child(world)
@@ -59,9 +73,9 @@ func check_scenes() -> void:
 	await process_frame
 	if DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
-		root.get_texture().get_image().save_png(OUTPUT + "static_scene_preview.png")
-	FileAccess.open(OUTPUT + "scene_setup_results.json", FileAccess.WRITE).store_string(JSON.stringify({"editor_visuals_persist_without_ready": true, "unit_model_slot_swapped": true, "terrain_prefab_slot_swapped": true, "rebuild_button_saved_and_reloaded": true, "static_rendered": DisplayServer.get_name() != "headless"}, "\t"))
+		TestOutput.save_png(self, root.get_texture().get_image(), OUTPUT + "static_scene_preview.png")
+	if not TestOutput.write_text(self, OUTPUT + "scene_setup_results.json", JSON.stringify({"editor_visuals_persist_without_ready": true, "unit_model_slot_swapped": true, "terrain_prefab_slot_swapped": true, "rebuild_button_saved_and_reloaded": true, "static_rendered": DisplayServer.get_name() != "headless"}, "\t")): return
 	world.queue_free()
 	await process_frame
 	print("SCENE_SETUP_CHECKS_PASSED")
-	quit(0)
+	quit(TestOutput.exit_code())

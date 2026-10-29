@@ -1,7 +1,8 @@
 extends SceneTree
 var game: Node3D
 var hud: CanvasLayer
-const OUTPUT = "C:/Users/video/.codex/.chatgpt-projects/g-p-6ad16a23380c8191877dbcafdb316068/"
+const TestOutput = preload("res://tests/test_output.gd")
+const OUTPUT = ""
 func _initialize() -> void: call_deferred("run")
 func check(value: bool, message: String) -> bool:
 	if value: return true
@@ -39,7 +40,7 @@ func shot(name: String) -> void:
 	for frame in range(8): await process_frame
 	if DisplayServer.get_name() == "headless": return
 	await RenderingServer.frame_post_draw
-	root.get_texture().get_image().save_png(OUTPUT+name+".png")
+	TestOutput.save_png(self, root.get_texture().get_image(), OUTPUT+name+".png")
 func focus(point: Vector3, zoom: float = 55) -> void:
 	var rig = game.get_node("CameraRig")
 	rig.focus_position(point,zoom)
@@ -112,4 +113,4 @@ func run() -> void:
 	if not check(depot.energy == old and other.energy == old_other+10 and other.wood == 0,"Generator assignment charged wrong stockpile"): return
 	await shot("generator_assigned_depot")
 	root.size = Vector2i(1440,960); await shot("generator_wide")
-	print("GENERATOR_RUNTIME_CHECKS_PASSED"); quit()
+	print("GENERATOR_RUNTIME_CHECKS_PASSED"); quit(TestOutput.exit_code())

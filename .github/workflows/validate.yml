@@ -1,0 +1,41 @@
+name: Headless validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  godot-headless:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+
+      - name: Cache Godot
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/godot
+          key: godot-${{ hashFiles('.godot-version', 'ci/install_godot.sh') }}
+
+      - name: Install pinned Godot
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends libfontconfig1
+          GODOT_BIN=$(bash ci/install_godot.sh | tail -1)
+          echo "GODOT=$GODOT_BIN" >> "$GITHUB_ENV"
+
+      - name: Import, start main scene, run headless suites
+        run: bash ci/run_headless_checks.sh ci-logs
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-headless-logs
+          path: ci-logs/

@@ -23,3 +23,6 @@ Thumbs.db
 desktop.ini
 .vscode/
 .vs/
+
+# Headless check logs
+/ci-logs/
