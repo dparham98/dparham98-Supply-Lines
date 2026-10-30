@@ -30,7 +30,7 @@ static func crate_at(tree: SceneTree, cell: Vector2i) -> bool:
 	return false
 ## The nearest open land tile at least `min_ring` (and under min_ring+rings) tiles from `center` with
 ## no crate on it, or null. Each ring tries the camera-facing (south) side first.
-static func free_cell(tree: SceneTree, center: Vector3, min_ring := 0, rings := 8) -> Variant:
+static func free_cell(tree: SceneTree, center: Vector3, min_ring := 0, rings := 8, max_distance := INF) -> Variant:
 	var ground = tree.get_first_node_in_group("terrain_grid")
 	var origin = ground.get_tile_at_position(center)
 	if origin == null: return null
@@ -39,6 +39,7 @@ static func free_cell(tree: SceneTree, center: Vector3, min_ring := 0, rings := 
 			for dx in range(-ring,ring+1):
 				if maxi(absi(dx),absi(dz)) != ring: continue
 				var cell: Vector2i = origin+Vector2i(dx,dz)
+				if ground.tile_to_world(cell).distance_to(center) > max_distance: continue
 				if ground.can_traverse(cell) and not crate_at(tree,cell): return cell
 	return null
 static func spawn(tree: SceneTree, cell: Vector2i, kind: StringName, amount: int, team: String) -> Node3D:
@@ -59,7 +60,7 @@ static func pack(node: Node3D, kind: StringName) -> Node3D:
 static func pack_empty(node: Node3D) -> Node3D:
 	return _place(node,&"",0)
 static func _place(node: Node3D, kind: StringName, amount: int) -> Node3D:
-	var cell = free_cell(node.get_tree(),node.global_position,node.footprint.x/2+2 if node.is_in_group("depots") else 2)
+	var cell = free_cell(node.get_tree(),node.global_position,node.footprint.x/2+2 if node.is_in_group("depots") else 2,8,beside_radius(node))
 	if cell == null: return null
 	if amount > 0: node.stockpile.withdraw(kind,amount)
 	return spawn(node.get_tree(),cell,kind,amount,node.team)

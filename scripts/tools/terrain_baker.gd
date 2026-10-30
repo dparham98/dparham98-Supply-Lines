@@ -31,9 +31,20 @@ func _scatter(root: Node3D, name_: String, scene: PackedScene, placements: Array
 		mm.use_colors = true
 		mm.mesh = part["mesh"]
 		mm.instance_count = placements.size()
+		# Keep the serialized data on the CPU too: the headless rendering backend does
+		# not retain buffers populated only through individual instance setters.
+		var buffer := PackedFloat32Array()
+		buffer.resize(placements.size()*16)
 		for i in range(placements.size()):
-			mm.set_instance_transform(i, placements[i] * part["transform"])
-			mm.set_instance_color(i, colors[i])
+			var transform: Transform3D = placements[i] * part["transform"]
+			var color: Color = colors[i]
+			var values := PackedFloat32Array([
+				transform.basis.x.x,transform.basis.y.x,transform.basis.z.x,transform.origin.x,
+				transform.basis.x.y,transform.basis.y.y,transform.basis.z.y,transform.origin.y,
+				transform.basis.x.z,transform.basis.y.z,transform.basis.z.z,transform.origin.z,
+				color.r,color.g,color.b,color.a])
+			for component in range(16): buffer[i*16+component] = values[component]
+		mm.buffer = buffer
 		var item := MultiMeshInstance3D.new()
 		item.name = part["name"]
 		item.multimesh = mm

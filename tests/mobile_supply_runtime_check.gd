@@ -132,7 +132,9 @@ func run() -> void:
 	if not check(forester.cargo == 0 and get_nodes_in_group("material_piles").size() == 1,"Drop materials GUI failed"): return
 	var pile = get_nodes_in_group("material_piles")[0]
 	await shot("mobile_supply_pile")
-	await click(hud.card.get_node("Gather")); await click_at(target(pile))
+	# Picking intersects the visible mesh, not the Label3D above it.
+	var pile_mesh: MeshInstance3D = pile.get_node("Visuals/Crate")
+	await click(hud.card.get_node("Gather")); await click_at(rig.camera.unproject_position(pile_mesh.global_transform*pile_mesh.get_aabb().get_center()))
 	for frame in range(3600):
 		forester._process(1.0/60)
 		if forest.wood == 30: break

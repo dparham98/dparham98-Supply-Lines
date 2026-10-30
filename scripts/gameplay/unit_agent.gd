@@ -220,6 +220,9 @@ func _order_process(delta: float) -> void:
 	_update_display()
 # Queue an order behind the current one, or start it now when idle.
 func queue_order(entry: Dictionary) -> void:
+	if entry.kind in ["load","unload"] and is_instance_valid(entry.get("target")):
+		entry = entry.duplicate()
+		entry["requires_target"] = not entry.target.is_in_group("supply_crates")
 	if order == "idle" and order_queue.is_empty() and not out_of_fuel: run_order(entry)
 	else: order_queue.append(entry)
 func run_order(entry: Dictionary) -> void:
@@ -233,7 +236,9 @@ func run_order(entry: Dictionary) -> void:
 		"attack_move": command_attack_move(entry.point)
 		"deploy": command_deploy_at(entry.point)
 		"load", "unload":
-			if has_method("command_"+entry.kind): call("command_"+entry.kind,entry.get("target"),entry.get("point"))
+			var target = entry.get("target")
+			if entry.get("requires_target",false) and not is_instance_valid(target): return
+			if has_method("command_"+entry.kind): call("command_"+entry.kind,target if is_instance_valid(target) else null,entry.get("point"))
 func _start_next_order() -> void:
 	# Skip entries whose target is gone or that the unit refuses, such as an unreachable attack.
 	while order == "idle" and not order_queue.is_empty():

@@ -24,6 +24,12 @@ func rebuild_scenery() -> void:
 	if output.get_child_count() == 0:
 		output.free()
 		return
+	# Never replace the saved scenery with incomplete backend-generated buffers.
+	for batch in output.find_children("*","MultiMeshInstance3D",true,false):
+		if batch.multimesh.buffer.size() != batch.multimesh.instance_count*16:
+			push_error("Terrain rebuild has incomplete instance data; saved scenery was not changed.")
+			output.free()
+			return
 	var packed := PackedScene.new()
 	if packed.pack(output) != OK: return
 	if ResourceSaver.save(packed, "res://scenes/maps/terrain_landmarks.tscn") != OK: return
