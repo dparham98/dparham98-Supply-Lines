@@ -54,21 +54,23 @@ func run() -> void:
 	rig.focus_hq()
 	for frame in range(180): rig.advance_camera(1.0/60)
 	if not check(first.rules.depot_energy_cost == 20 and first.rules.depot_iron_cost == 20,"Original Depot cost mismatch"): return
-	await click(hud.card.get_node("Build"))
-	if not check(hud.build_menu.visible,"Depot Build command failed through GUI"): return
+	await click(hud.get_node("Bottom/Body/Header/GlobalBuild"))
+	if not check(hud.build_menu.visible,"Build page failed through GUI"): return
 	var point := placement(Vector2i(6,6),first)
 	if not check(point != Vector3.ZERO,"No Barracks placement"): return
 	await click(hud.build_menu.get_node("Actions/Barracks"))
-	if not check(game.placing_structure == &"barracks","Barracks GUI placement command failed"): return
+	if not check(game.global_plan_kind == &"barracks","Barracks GUI plan command failed"): return
 	await click_at(rig.camera.unproject_position(point))
+	for plan in get_nodes_in_group("construction_plans"): plan.try_complete()
 	if not check(get_nodes_in_group("production_buildings").size() == 1,"Barracks world placement failed"): return
 	var barracks = get_nodes_in_group("production_buildings")[0]
 	barracks.set_process(false)
 	if not check(first.energy == 1900 and first.iron == 1955 and barracks.assigned_depot == first,"Barracks construction must pay exactly 100/45 locally"): return
 	point = placement(Vector2i(8,8),first)
 	await click(hud.build_menu.get_node("Actions/TankFactory"))
-	if not check(game.placing_structure == &"tank_factory","Tank Factory GUI placement command failed"): return
+	if not check(game.global_plan_kind == &"tank_factory","Tank Factory GUI plan command failed"): return
 	await click_at(rig.camera.unproject_position(point))
+	for plan in get_nodes_in_group("construction_plans"): plan.try_complete()
 	if not check(get_nodes_in_group("production_buildings").size() == 2,"Factory world placement failed"): return
 	var factory = get_nodes_in_group("production_buildings")[1]
 	factory.set_process(false)

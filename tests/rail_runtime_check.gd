@@ -65,20 +65,21 @@ func run() -> void:
 	await click(hud.card.get_node("PrintTrain"))
 	if not check(source.queue == 1 and source.pending[0] == "train" and source.energy == 350 and source.iron == 470,"Print Train GUI payment failed"): return
 	await shot("rail_depot_card")
-	await click(hud.card.get_node("Build"))
+	await click(hud.get_node("Bottom/Body/Header/GlobalBuild"))
 	await click(hud.build_menu.get_node("Actions/Rail"))
-	if not check(game.placing_rail,"Rail Build button failed"): return
+	if not check(game.global_plan_kind == &"rail","Rail Build button failed"): return
 	var cell = game.ground.get_tile_at_position(source.global_position+Vector3(0,0,10))
 	await click_at(rig.camera.unproject_position(game.ground.tile_to_world(cell)))
 	await click_at(rig.camera.unproject_position(game.ground.tile_to_world(cell+Vector2i(1,0))))
-	if not check(rails.segments.has(cell) and rails.segments.has(cell+Vector2i(1,0)) and source.iron == 466 and game.placing_rail,"Repeated world placement or payer debit failed"): return
+	for plan in get_nodes_in_group("construction_plans"): plan.try_complete()
+	if not check(rails.segments.has(cell) and rails.segments.has(cell+Vector2i(1,0)) and source.iron == 466 and game.global_plan_kind == &"rail","Repeated rail plans or payer debit failed"): return
 	await shot("rail_construction")
 	var escape := InputEventKey.new()
 	escape.keycode = KEY_ESCAPE; escape.pressed = true
 	root.push_input(escape,true)
 	for frame in range(3): await process_frame
-	if not check(not game.placing_rail,"Esc failed to finish rail placement"): return
-	await click(hud.build_menu.get_node("Actions/Back"))
+	if not check(game.global_plan_kind.is_empty(),"Esc failed to finish rail placement"): return
+	if hud.build_menu.visible: await click(hud.build_menu.get_node("Actions/Back"))
 	var train = game.get_node("Entities/Units/Train")
 	await click_at(rig.camera.unproject_position(train.selection_point()))
 	if not check(train.is_selected and hud.card.get_node("Load").visible and hud.object_name(train) == "Train","Train selection did not show crate tiles"): return
@@ -88,10 +89,14 @@ func run() -> void:
 	var energy: int = destination.energy
 	var iron: int = destination.iron
 	await click(hud.card.get_node("Load"))
-	hud.shipment_target.item_selected.emit(hud.shipment_stops.find(source)+1)
+	if not check(hud.pick.visible and not hud.card.visible,"Load did not show the map prompt"): return
+	await shot("rail_pick_prompt")
+	var map = hud.get_node("Bottom/Body/Row/MapColumn/Map")
+	await click_at(map.get_global_rect().position+map.world_to_map(source.global_position))
+	if not check(train.order == "load" and train.job_target == source,"Minimap stop click did not order Load"): return
 	await click(hud.card.get_node("Unload"))
 	shift(true)
-	hud.shipment_target.item_selected.emit(hud.shipment_stops.find(destination)+1)
+	hud.pick_stop(destination,Input.is_key_pressed(KEY_SHIFT))
 	shift(false)
 	game.pending_unit_command = ""
 	if not check(train.order == "load" and train.shipment_pair() == [source,destination],"Train Load/Unload GUI failed"): return

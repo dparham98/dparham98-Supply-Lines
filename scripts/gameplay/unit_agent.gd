@@ -496,7 +496,9 @@ func command_repair(target: Node3D, payer: Node3D = null) -> void:
 	_stop_route()
 	order_target = target
 	source = null
-	repair_payer = payer if is_instance_valid(payer) else (supply_payer if supply_payer_explicit else EngineeringWork.payer_for(target,team))
+	# Without an explicit payer, pay from the nearest stockpile covering this unit, as delivery does.
+	var nearest := SupplySource.candidates(get_tree(),global_position,team)
+	repair_payer = payer if is_instance_valid(payer) else (supply_payer if supply_payer_explicit else (nearest[0] if not nearest.is_empty() else EngineeringWork.payer_for(target,team)))
 	_work_timer = 0
 	order = "repair"
 	state = "Repair ordered"

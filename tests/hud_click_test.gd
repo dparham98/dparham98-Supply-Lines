@@ -56,10 +56,11 @@ func run() -> void:
 	var worker = game.get_node("Entities/Units/Infantry")
 	worker.set_selected(true)
 	for frame in range(4): await process_frame
-	await click(hud.card.get_node("Build"))
-	if not check(hud.build_open and hud.build_menu.visible,"Real GUI click failed: infantry Build menu"): return
+	if not check(not hud.card.has_node("Build"),"Infantry still has a build menu"): return
+	await click(hud.get_node("Bottom/Body/Header/GlobalBuild"))
+	if not check(hud.global_build_open and hud.build_menu.visible,"Real GUI click failed: Build page"): return
 	await click(hud.build_menu.get_node("Actions/Generator"))
-	if not check(game.placing_generator,"Real GUI click failed: Generator placement command"): return
+	if not check(game.global_plan_kind == &"generator","Real GUI click failed: Generator plan command"): return
 	var point := Vector3.ZERO
 	for x in range(-20,21,5):
 		for z in range(-20,21,5):
@@ -68,11 +69,12 @@ func run() -> void:
 			if network.can_place_size(candidate,first,network.supply_rules.generator_footprint) and screen.y < hud.get_node("Bottom").global_position.y-20: point = candidate
 	if not check(point != Vector3.ZERO,"No generator placement point for GUI check"): return
 	await click_at(rig.camera.unproject_position(point))
-	if not check(get_nodes_in_group("energy_generators").size() == 1 and first.energy >= 400 and first.iron == 480,"World click failed to construct generator"): return
+	for plan in get_nodes_in_group("construction_plans"): plan.try_complete()
+	if not check(get_nodes_in_group("energy_generators").size() == 1 and first.energy >= 400 and first.iron == 480,"World click failed to build the generator plan"): return
 	for generator in get_nodes_in_group("energy_generators"): generator.set_process(false)
 	var expected_depot_energy: int = first.energy-20
 	await click(hud.build_menu.get_node("Actions/Depot"))
-	if not check(game.placing_depot,"Real GUI click failed: Depot placement command"): return
+	if not check(game.global_plan_kind == &"depot","Real GUI click failed: Depot plan command"): return
 	point = Vector3.ZERO
 	for x in range(-24,25,8):
 		for z in range(-24,25,8):
@@ -81,9 +83,10 @@ func run() -> void:
 			if network.can_place(candidate,first) and screen.y < hud.get_node("Bottom").global_position.y-20: point = candidate
 	if not check(point != Vector3.ZERO,"No Depot placement point for GUI check"): return
 	await click_at(rig.camera.unproject_position(point))
-	if not check(get_nodes_in_group("depots").size() == 4 and first.energy == expected_depot_energy and first.iron == 460,"World click failed to construct Depot"): return
+	for plan in get_nodes_in_group("construction_plans"): plan.try_complete()
+	if not check(get_nodes_in_group("depots").size() == 4 and first.energy == expected_depot_energy and first.iron == 460,"World click failed to build the Depot plan"): return
 	await click(hud.build_menu.get_node("Actions/Back"))
-	if not check(not hud.build_open and hud.card.visible,"Real GUI click failed: Back from build menu"): return
+	if not check(not hud.global_build_open and hud.card.visible,"Real GUI click failed: Back from build menu"): return
 	await click(hud.card.get_node("Move"))
 	if not check(game.pending_unit_command == "move","Real GUI click failed: Move command"): return
 	game.pending_unit_command = ""
@@ -94,8 +97,9 @@ func run() -> void:
 	for frame in range(4): await process_frame
 	# Cargo tiles replaced the route panel: arm Load, cycle Trips, then Stop.
 	await click(hud.card.get_node("Load"))
-	if not check(game.pending_unit_command == "load","Real GUI click failed: Load tile"): return
-	game.pending_unit_command = ""
+	if not check(game.pending_unit_command == "load" and hud.pick.visible and not hud.card.visible,"Real GUI click failed: Load tile"): return
+	await click(hud.pick.get_node("Cancel"))
+	if not check(game.pending_unit_command.is_empty() and hud.card.visible,"Real GUI click failed: Cancel on the pick prompt"): return
 	await click(hud.card.get_node("Trips"))
 	if not check(vehicle.trips == "all","Real GUI click failed: Trips tile"): return
 	vehicle.command_load(game.depot)

@@ -83,7 +83,7 @@ func run() -> void:
 	select_only(null)
 	game.selected_building = game.depot; hud._process(0)
 	var depot_keys := visible_keys()
-	if not check(depot_keys.size() >= 4 and depot_keys.size() == depot_keys.filter(func(k): return depot_keys.count(k) == 1).size(),"Depot card keys missing or duplicated %s" % [depot_keys]): return
+	if not check(depot_keys == ["U","C","T"] and depot_keys.size() == depot_keys.filter(func(k): return depot_keys.count(k) == 1).size(),"Depot card keys (Depot truck, Cargo, Train; no Build) missing or duplicated %s" % [depot_keys]): return
 	game.selected_building = null
 	# Keys press visible buttons and show their letter.
 	select_only(worker)
@@ -109,7 +109,11 @@ func run() -> void:
 	press(KEY_T)
 	press(KEY_L)
 	if not check(game.pending_unit_command == "load","L did not arm Load"): return
-	game.pending_unit_command = ""
+	# The map prompt replaces the card while Load waits; Esc on its Cancel tile brings the card back.
+	hud._process(0)
+	press(KEY_ESCAPE)
+	hud._process(0)
+	if not check(game.pending_unit_command.is_empty() and hud.card.visible,"Esc did not cancel the Load prompt"): return
 	press(KEY_D)
 	if not check(not truck.supply_transition.is_empty() or truck.deployed,"D did not deploy the truck"): return
 	# Selection: Shift toggles and adds, double-click picks the same type, control groups recall.

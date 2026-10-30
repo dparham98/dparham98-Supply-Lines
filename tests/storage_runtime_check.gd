@@ -68,10 +68,10 @@ func run() -> void:
 	destination.stockpile.set_amount(&"energy",destination.stockpile.amount(&"energy")+destination.stockpile.space()-30)
 	var coal: int = destination.coal
 	await click(hud.card.get_node("Load"))
-	hud.shipment_target.item_selected.emit(hud.shipment_stops.find(game.depot)+1)
+	hud.pick_stop(game.depot,Input.is_key_pressed(KEY_SHIFT))
 	await click(hud.card.get_node("Unload"))
 	shift(true)
-	hud.shipment_target.item_selected.emit(hud.shipment_stops.find(destination)+1)
+	hud.pick_stop(destination,Input.is_key_pressed(KEY_SHIFT))
 	shift(false)
 	game.pending_unit_command = ""
 	for frame in range(3000):

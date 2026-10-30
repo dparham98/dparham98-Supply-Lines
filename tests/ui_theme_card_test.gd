@@ -36,7 +36,7 @@ func run() -> void:
 	var worker = game.get_node("Entities/Units/Infantry")
 	select(worker)
 	var names := visible_names()
-	if not check(names.slice(0,4) == ["Move","Stop","Attack","Gather"] and names.find("Build") > names.find("Capture"),"Infantry card order wrong: %s" % [names]): return
+	if not check(names.slice(0,4) == ["Move","Stop","Attack","Gather"] and not names.has("Build"),"Infantry card order wrong: %s" % [names]): return
 	if not check(hud.label_of(hud.card.get_node("Gather")) == "Gather" and hud.card.get_node("Gather").text.is_empty() and hud.card.get_node("Gather").tooltip_text.begins_with("Gather [G]\n"),"Tile label or tooltip wrong"): return
 	# Fixed slots: Move top-left, Stop beside it, Gather starts the second row.
 	if not check(hud.card.get_node("Move").position == Vector2.ZERO and hud.card.get_node("Stop").position == Vector2(50,0) and hud.card.get_node("Gather").position == Vector2(0,50) and hud.card.get_node("Move").size == Vector2(46,46),"Tiles not on their fixed slots"): return
