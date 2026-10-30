@@ -14,7 +14,7 @@ const PING_SECONDS := 0.6
 const HIGHLIGHT_SECONDS := 0.8
 const ORDER_COLORS := {"move": Color(0.498,0.827,0.902), "attack": Color(0.89,0.35,0.31), "attack_move": Color(0.89,0.35,0.31), "gather": Color(0.435,0.682,0.353), "return": Color(0.941,0.698,0.29), "repair": Color(0.941,0.698,0.29), "capture": Color(0.91,0.96,0.98), "load": Color(0.498,0.827,0.902), "unload": Color(0.941,0.698,0.29), "deploy": Color(0.941,0.698,0.29)}
 ## Icon shown beside the pointer while a command or placement is armed.
-const ARMED_ICONS := {"move": "move", "attack": "attack", "gather": "gather", "repair": "repair", "capture": "capture", "load": "load", "unload": "unload", "deploy": "deploy", "build": "build"}
+const ARMED_ICONS := {"move": "move", "attack": "attack", "gather": "gather", "repair": "repair", "capture": "capture", "load": "load", "unload": "unload", "deploy": "deploy", "build": "build", "pin": "depot"}
 var _armed_icons := {}
 ## Groups whose authored text labels this overlay replaces. Placement ghosts and waypoints keep theirs.
 const LABELLED_GROUPS := ["units","selectable_buildings","resources","material_piles","supply_crates","iron_deposits","construction_plans"]

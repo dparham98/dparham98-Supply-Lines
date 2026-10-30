@@ -149,6 +149,10 @@ events = [SubResource("key_build_rail")]
 action = &"build_back"
 [sub_resource type="Shortcut" id="shortcut_build_back"]
 events = [SubResource("key_build_back")]
+[sub_resource type="InputEventAction" id="key_build_pin"]
+action = &"build_pin"
+[sub_resource type="Shortcut" id="shortcut_build_pin"]
+events = [SubResource("key_build_pin")]
 [sub_resource type="InputEventAction" id="key_command_global_build"]
 action = &"command_global_build"
 [sub_resource type="Shortcut" id="shortcut_command_global_build"]
@@ -168,10 +172,6 @@ border_color = Color(0.2,0.85,1,0.9)
 action = &"command_attack"
 [sub_resource type="Shortcut" id="shortcut_command_attack"]
 events = [SubResource("key_command_attack")]
-[sub_resource type="InputEventAction" id="key_command_build"]
-action = &"command_build"
-[sub_resource type="Shortcut" id="shortcut_command_build"]
-events = [SubResource("key_command_build")]
 [sub_resource type="InputEventAction" id="key_command_cancel"]
 action = &"command_cancel"
 [sub_resource type="Shortcut" id="shortcut_command_cancel"]
@@ -352,7 +352,7 @@ shortcut = SubResource("shortcut_command_global_build")
 custom_minimum_size = Vector2(0,26)
 layout_mode = 2
 text = "Build…"
-tooltip_text = "Place unpaid construction plans anywhere on valid terrain."
+tooltip_text = "Place unpaid construction plans anywhere on valid terrain. Infantry and Depots no longer have their own build menus."
 [node name="Focus" type="Button" parent="Bottom/Body/Header"]
 shortcut = SubResource("shortcut_camera_focus_selection")
 custom_minimum_size = Vector2(0,26)
@@ -876,12 +876,6 @@ autowrap_mode = 2
 text = ""
 theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
 theme_override_font_sizes/font_size = 12
-[node name="Hint" type="Label" parent="Bottom/Body/Row/Context"]
-layout_mode = 2
-autowrap_mode = 2
-theme_override_colors/font_color = Color(0.561,0.651,0.686,1)
-theme_override_font_sizes/font_size = 12
-text = "Commands change with selection."
 [node name="Ornament" type="Control" parent="Bottom/Body/Row"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -897,31 +891,6 @@ text = "COMMAND CARD"
 autowrap_mode = 3
 theme_override_font_sizes/font_size = 12
 visible = false
-[node name="OptionRow" type="Control" parent="Bottom/Body/Row/Commands"]
-custom_minimum_size = Vector2(0,30)
-layout_mode = 2
-mouse_filter = 2
-[node name="ShipmentTarget" type="OptionButton" parent="Bottom/Body/Row/Commands/OptionRow"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-visible = false
-fit_to_longest_item = false
-clip_text = true
-tooltip_text = "Choose a distant stop for the armed Load or Unload."
-[node name="LocalSource" type="OptionButton" parent="Bottom/Body/Row/Commands/OptionRow"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-visible = false
-fit_to_longest_item = false
-clip_text = true
 [node name="Main" type="Control" parent="Bottom/Body/Row/Commands"]
 custom_minimum_size = Vector2(196,146)
 layout_mode = 2
@@ -1432,29 +1401,6 @@ horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
-[node name="Build" type="Button" parent="Bottom/Body/Row/Commands/Main"]
-tooltip_text = "Open the build menu for this unit or Depot."
-shortcut = SubResource("shortcut_command_build")
-layout_mode = 0
-custom_minimum_size = Vector2(46,46)
-text = ""
-icon = ExtResource("icon_build")
-icon_alignment = 1
-[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Build"]
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -22.0
-offset_top = 2.0
-offset_right = -5.0
-offset_bottom = 16.0
-grow_horizontal = 0
-mouse_filter = 2
-horizontal_alignment = 2
-theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
-theme_override_font_sizes/font_size = 11
-text = "?"
 [node name="DeployTruck" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 tooltip_text = "Deploy into a new Depot on an empty 8 × 8 footprint."
 shortcut = SubResource("shortcut_command_deploy")
@@ -1666,14 +1612,41 @@ horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
-[node name="Hover" type="Label" parent="Bottom/Body/Row/Commands"]
+[node name="Pick" type="VBoxContainer" parent="Bottom/Body/Row/Commands"]
+visible = false
+custom_minimum_size = Vector2(196,146)
 layout_mode = 2
-custom_minimum_size = Vector2(0,17)
-clip_text = true
-max_lines_visible = 1
-text_overrun_behavior = 3
-text = ""
+theme_override_constants/separation = 8
+[node name="Prompt" type="Label" parent="Bottom/Body/Row/Commands/Pick"]
+custom_minimum_size = Vector2(196,0)
+layout_mode = 2
+autowrap_mode = 3
 theme_override_font_sizes/font_size = 12
+text = "Left-click a Depot on the map or minimap."
+[node name="Cancel" type="Button" parent="Bottom/Body/Row/Commands/Pick"]
+shortcut = SubResource("shortcut_build_back")
+custom_minimum_size = Vector2(46,46)
+layout_mode = 2
+size_flags_horizontal = 0
+text = ""
+icon = ExtResource("icon_cancel")
+icon_alignment = 1
+tooltip_text = "Cancel this command. Right-click on the map also cancels."
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Pick/Cancel"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -34.0
+offset_top = 1.0
+offset_right = -4.0
+offset_bottom = 15.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="BuildMenu" type="VBoxContainer" parent="Bottom/Body/Row/Commands"]
 layout_mode = 2
 visible = false
@@ -1682,11 +1655,6 @@ layout_mode = 2
 autowrap_mode = 0
 text = "LOCAL CONSTRUCTION RESOURCES"
 theme_override_font_sizes/font_size = 12
-clip_text = true
-[node name="Payer" type="OptionButton" parent="Bottom/Body/Row/Commands/BuildMenu"]
-layout_mode = 2
-tooltip_text = "Choose one friendly Depot or deployed cargo stockpile covering this infantry. No resource pooling."
-fit_to_longest_item = false
 clip_text = true
 [node name="Actions" type="GridContainer" parent="Bottom/Body/Row/Commands/BuildMenu"]
 layout_mode = 2
@@ -1811,6 +1779,28 @@ custom_minimum_size = Vector2(46,46)
 icon = ExtResource("icon_rail")
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/Rail"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -34.0
+offset_top = 1.0
+offset_right = -4.0
+offset_bottom = 15.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="Pin" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
+shortcut = SubResource("shortcut_build_pin")
+layout_mode = 2
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("icon_depot")
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/Pin"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0

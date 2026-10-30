@@ -29,7 +29,7 @@ func run() -> void:
 	select_only(train)
 	var destination = game.get_node("Entities/Buildings/EastDepot")
 	hud.card.get_node("Load").pressed.emit(); hud._process(0)
-	hud.shipment_target.item_selected.emit(hud.shipment_stops.find(game.depot)+1)
+	hud.pick_stop(game.depot,Input.is_key_pressed(KEY_SHIFT))
 	game.give_order(train,{kind = "unload", target = destination},true)
 	train._process(1.0/60)
 	if not check(not train.fuel_warning.is_empty() and "Train fuel warning" in game.message,"HUD-ordered trip hid the Train fuel warning: %s" % game.message): return

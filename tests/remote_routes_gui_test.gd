@@ -33,19 +33,19 @@ func run() -> void:
 	rails.segments[gap].free()
 	await click_at(rig.camera.unproject_position(train.selection_point()))
 	if not check(hud.shown == train and hud.card.get_node("Load").visible and hud.card.get_node("Unload").visible,"Train selection did not show crate tiles"): return
-	# Crate shipments replaced the route panel: stops are chosen from the HUD's distant-stop list.
+	# Crate shipments replaced the route panel: stops are picked on the map or minimap.
 	source.energy = 100
 	CrateYard.pack(source,&"energy"); CrateYard.pack(source,&"energy")
 	var delivered: int = target.stockpile.amount(&"energy")
 	await click(hud.card.get_node("Load"))
-	if not check(game.pending_unit_command == "load" and hud.shipment_target.visible and hud.shipment_stops.has(source) and hud.shipment_stops.has(target),"Distant stops unavailable with cut rails"): return
-	hud.shipment_target.item_selected.emit(hud.shipment_stops.find(source)+1)
+	if not check(game.pending_unit_command == "load" and hud.pick.visible and hud.pick_stops().has(source) and hud.pick_stops().has(target),"Distant stops unavailable with cut rails"): return
+	hud.pick_stop(source,Input.is_key_pressed(KEY_SHIFT))
 	if not check(train.order == "load" and train.job_target == source and game.pending_unit_command.is_empty(),"Distant Load not ordered"): return
 	await click(hud.card.get_node("Unload"))
 	var shift := InputEventKey.new()
 	shift.keycode = KEY_SHIFT; shift.physical_keycode = KEY_SHIFT; shift.pressed = true
 	Input.parse_input_event(shift); Input.flush_buffered_events()
-	hud.shipment_target.item_selected.emit(hud.shipment_stops.find(target)+1)
+	hud.pick_stop(target,Input.is_key_pressed(KEY_SHIFT))
 	shift.pressed = false
 	Input.parse_input_event(shift); Input.flush_buffered_events()
 	if not check(train.order_queue.size() == 1 and train.order_queue[0].kind == "unload" and train.order_queue[0].target == target,"Shift distant Unload not queued"): return

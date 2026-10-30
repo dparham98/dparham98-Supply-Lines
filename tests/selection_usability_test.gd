@@ -53,13 +53,13 @@ func run() -> void:
 	var screen := camera.unproject_position(worker.selection_point())
 	mouse(screen,true); mouse(screen,false)
 	await process_frame
-	hud.build_open = true; hud.refresh_build_menu(); game.placing_generator = true
+	hud.open_global_build(); game.global_plan_kind = &"generator"
 	var energy: int = game.depot.energy
 	var edge := camera.unproject_position(game.depot.global_position+Vector3(3.8,0.4,3.8))
 	if not check(Bounds.hit_distance(game.depot,camera,edge) < INF,"Depot visible edge not pickable"): return
 	mouse(edge,true); mouse(edge,false)
 	await process_frame
-	if not check(game.selected_building == game.depot and not hud.build_open and not game.placing_generator,"Selection must replace armed Build menu"): return
+	if not check(game.selected_building == game.depot and not hud.global_build_open and game.global_plan_kind.is_empty(),"Selection must replace the armed Build page"): return
 	if not check(game.depot.energy == energy,"Selection spent construction funds"): return
 	mouse(screen,true); mouse(screen,false)
 	await process_frame

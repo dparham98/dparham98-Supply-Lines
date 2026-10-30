@@ -62,6 +62,11 @@ func choose(option: OptionButton, index: int) -> void:
 	if popup.visible: push_error("Popup did not close after item click")
 func step(vehicle: Node3D, seconds: float) -> void:
 	for i in range(ceili(seconds*60)): vehicle._process(1.0/60)
+# Pin a payer the way a player does: Pin on the Build page, then click it on the map.
+func pin(node: Node3D) -> void:
+	if hud.global_pinned: await click(hud.build_menu.get_node("Actions/Pin"))
+	await click(hud.build_menu.get_node("Actions/Pin"))
+	await click_at(game.get_viewport().get_camera_3d().unproject_position(node.selection_point() if node.has_method("selection_point") else node.global_position))
 func run() -> void:
 	root.size = Vector2i(1280,900)
 	game = load("res://scenes/maps/mobile_supply_exercise.tscn").instantiate()
@@ -82,20 +87,20 @@ func run() -> void:
 	if not check(truck.supplies_available(),"Cargo deployment failed"): return
 	await shot("mobile_supply_deployed")
 	await click_at(rig.camera.unproject_position(worker.selection_point()))
-	await click(hud.card.get_node("Build"))
-	var index: int = hud.build_depots.find(truck)
-	if not check(index >= 0,"Deployed cargo missing from build payer menu"): return
-	await choose(hud.build_menu.get_node("Payer"),index)
-	if not check(game.get_node("DepotNetwork").selected == truck,"Build source popup did not select cargo"): return
+	await click(hud.get_node("Bottom/Body/Header/GlobalBuild"))
+	if not check(hud.pick_stops().is_empty(),"Pick stops shown before Pin"): return
+	await pin(truck)
+	if not check(hud.global_pinned and hud.global_payer == truck and hud.build_menu.visible,"Map pick did not pin the deployed cargo"): return
 	await shot("mobile_supply_build")
 	await click(hud.build_menu.get_node("Actions/Mine"))
 	await click_at(rig.camera.unproject_position(Vector3(150,0,154)))
+	for plan in get_nodes_in_group("construction_plans"): plan.try_complete()
 	if not check(get_nodes_in_group("mines").size() == 2 and truck.stockpile.total() == 0 and game.depot.energy == 500 and game.depot.iron == 500,"Mobile Mine GUI payment failed"): return
 	await click(hud.build_menu.get_node("Actions/Back"))
 	truck.carried_energy = 10; truck.carried_iron = 10
 	var mine = get_nodes_in_group("mines")[-1]; mine.take_damage(20); mine.set_process(false)
 	await click(hud.card.get_node("Repair")); await click_at(target(mine))
-	if not check(worker.repair_payer == truck,"Repair ignored explicitly selected mobile source"): return
+	if not check(worker.repair_payer == truck,"Repair did not pay from the nearest covering stockpile"): return
 	for frame in range(2400):
 		worker._process(1.0/60)
 		if mine.health == mine.max_health: break
@@ -118,9 +123,8 @@ func run() -> void:
 	await click(hud.card.get_node("DeployCargo")); step(forest,2.1)
 	await click_at(rig.camera.unproject_position(forester.selection_point()))
 	if not check(forester.is_selected,"Remote Infantry selection failed"): return
-	# The picker only shows when there is a choice; with one source it is chosen automatically.
-	if hud.commands.get_node("OptionRow/LocalSource").visible: await choose(hud.commands.get_node("OptionRow/LocalSource"),hud.local_sources.find(forest))
-	if not check(forester.supply_payer == forest,"Infantry supply popup did not select truck"): return
+	# No picker: workers pay from and deliver to the nearest covering stockpile.
+	if not check(SupplySource.candidates(get_tree(),forester.global_position,"player")[0] == forest and forest.name in hud.info.get_node("Details").text,"Nearest stockpile is not the deployed truck"): return
 	await click(hud.card.get_node("Gather"))
 	await click_at(rig.camera.unproject_position(game.ground.tile_to_world(Vector2i(345,275))))
 	for frame in range(3600):
@@ -152,10 +156,9 @@ func run() -> void:
 	await click_at(rig.camera.unproject_position(train.selection_point()))
 	await click(hud.card.get_node("DeployCargo")); step(train,2.1)
 	await click_at(rig.camera.unproject_position(worker.selection_point()))
-	await click(hud.card.get_node("Build"))
-	index = hud.build_depots.find(train)
-	if not check(index >= 0,"Train missing from Infantry payer menu"): return
-	await choose(hud.build_menu.get_node("Payer"),index)
+	await click(hud.get_node("Bottom/Body/Header/GlobalBuild"))
+	await pin(train)
+	if not check(hud.global_payer == train,"Map pick did not pin the deployed Train"): return
 	var point := Vector3.ZERO
 	var network = game.get_node("DepotNetwork")
 	for x in range(-12,13,3):
@@ -164,6 +167,7 @@ func run() -> void:
 			if network.can_place_size(candidate,train,Vector2i(5,5)): point = candidate
 	await click(hud.build_menu.get_node("Actions/Barracks"))
 	await click_at(rig.camera.unproject_position(point))
+	for plan in get_nodes_in_group("construction_plans"): plan.try_complete()
 	if not check(get_nodes_in_group("production_buildings").size() == 1 and train.energy == 100 and train.iron == 45,"Train-funded Barracks GUI failed"): return
 	var building = get_nodes_in_group("production_buildings")[0]; building.set_process(false)
 	await click(hud.build_menu.get_node("Actions/Back"))

@@ -12,10 +12,25 @@ func world_to_map(point: Vector3) -> Vector2:
 func map_to_world(point: Vector2) -> Vector3:
 	var value := bounds.position+(point/size).clamp(Vector2.ZERO,Vector2.ONE)*bounds.size
 	return Vector3(value.x,0,value.y)
+const PICK_RADIUS := 9.0
 func _gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		game.get_node("CameraRig").focus_position(map_to_world(event.position))
+	if not event is InputEventMouseButton or not event.pressed: return
+	if event.button_index == MOUSE_BUTTON_RIGHT and game.armed():
+		game.cancel_armed(); game.notify("Command cancelled.")
 		accept_event()
+	elif event.button_index == MOUSE_BUTTON_LEFT:
+		# While Load, Unload or Pin waits for a stop, clicking a pulsing marker picks it; elsewhere pans.
+		var stop := stop_at(event.position)
+		if stop != null: game.hud.pick_stop(stop,event.shift_pressed)
+		else: game.get_node("CameraRig").focus_position(map_to_world(event.position))
+		accept_event()
+func stop_at(point: Vector2) -> Node3D:
+	var best: Node3D
+	var distance := PICK_RADIUS
+	for stop in game.hud.pick_stops():
+		var d := world_to_map(stop.global_position).distance_to(point)
+		if d <= distance: best = stop; distance = d
+	return best
 func _draw() -> void:
 	if not is_instance_valid(game): return
 	for cell in game.ground.cleared_forest:
@@ -40,6 +55,11 @@ func _draw() -> void:
 			if (group == "units" and node.is_selected) or node == game.selected_building: draw_arc(point,6,0,TAU,16,Color.WHITE,1.5)
 	# Recent alerts pulse where they happened.
 	var now := Time.get_ticks_msec()/1000.0
+	# Stops a waiting Load, Unload or Pin can pick: a steady ring with a pulse.
+	for stop in game.hud.pick_stops():
+		var at := world_to_map(stop.global_position)
+		draw_arc(at,7,0,TAU,20,Overlay.TEAM_COLORS["player"],2)
+		draw_arc(at,7+5*fmod(now*1.5,1.0),0,TAU,20,Color(Overlay.TEAM_COLORS["player"],1.0-fmod(now*1.5,1.0)),1.5)
 	for alert in game.alerts:
 		var age: float = now-alert.time
 		if age > ALERT_PULSE_SECONDS: continue
