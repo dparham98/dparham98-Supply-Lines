@@ -68,10 +68,13 @@ func _ready() -> void:
 	for panel in [card,build_menu.get_node("Actions"),pick]:
 		for button in panel.get_children():
 			if button is Button and button.has_node("Key"): button.get_node("Key").text = hotkey_text(button)
+			# Tooltips already name the key; Godot's own "(A - Physical)" line would repeat it.
+			if button is Button: button.shortcut_in_tooltip = false
 	# Header buttons are text buttons: their key goes in the label.
 	for id in ["GlobalBuild","Focus"]:
 		var header: Button = $Bottom/Body/Header.get_node(id)
 		if not hotkey_text(header).is_empty(): header.text += " · "+hotkey_text(header)
+		header.shortcut_in_tooltip = false
 	card.get_node("ToggleGenerator").pressed.connect(func():
 		if is_instance_valid(shown) and shown.is_in_group("energy_generators"): shown.enabled = not shown.enabled)
 	card.get_node("DeployCargo").pressed.connect(func():
@@ -682,8 +685,8 @@ func begin_global_placement(kind: StringName) -> void:
 	game.notify("Click valid terrain to place an unpaid %s plan. Esc cancels placement; existing plans remain." % network.plan_spec(kind).title)
 func refresh_global_menu() -> void:
 	var pin_name := str(global_payer.name) if global_pinned and SupplySource.available(global_payer,"player") else ""
-	if not global_pinned: build_menu.get_node("Bank").text = "PAYS: AUTO · NEAREST COVERING STOCK"
-	elif pin_name.is_empty(): build_menu.get_node("Bank").text = "PAYS: PINNED STOCK LOST · PLANS WAIT"
+	if not global_pinned: build_menu.get_node("Bank").text = "PAYS: AUTO (NEAREST)"
+	elif pin_name.is_empty(): build_menu.get_node("Bank").text = "PAYS: PIN LOST · PLANS WAIT"
 	else: build_menu.get_node("Bank").text = "PAYS: %s ONLY" % pin_name.to_upper()
 	build_menu.get_node("Bank").tooltip_text = "One covering Depot or deployed Cargo truck pays each plan's full cost when it completes. Rails pay from Depots only. No pooled resources."
 	set_tile(build_menu.get_node("Actions/Pin"),"Unpin payer (back to Auto)" if global_pinned else "Pin payer","New plans pay from the nearest covering stockpile that can pay." if global_pinned else "Pick one Depot or deployed Cargo truck on the map or minimap; new plans pay only from it.")

@@ -18,6 +18,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/icons/mine.svg" id="icon_mine"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/factory.svg" id="icon_factory"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/depot.svg" id="icon_depot"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/cost.svg" id="icon_cost"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/attack.svg" id="icon_attack"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/build.svg" id="icon_build"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/cancel.svg" id="icon_cancel"]
@@ -1798,7 +1799,7 @@ shortcut = SubResource("shortcut_build_pin")
 layout_mode = 2
 text = ""
 custom_minimum_size = Vector2(46,46)
-icon = ExtResource("icon_depot")
+icon = ExtResource("icon_cost")
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/Pin"]
 layout_mode = 1
