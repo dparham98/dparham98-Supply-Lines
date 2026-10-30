@@ -760,7 +760,7 @@ func unpack_pip(index: int, shift: bool) -> void:
 	if not is_instance_valid(crate) or crate.amount == 0: return
 	var kind: StringName = crate.resource_kind
 	if CrateYard.unpack_crate(owner_node,crate) == 0: game.notify("No storage space to unpack it."); return
-	if owner_node.stockpile.refill: owner_node.stockpile.set_target(kind,CrateYard.count_beside(owner_node,kind)-(1 if crate.is_queued_for_deletion() else 0))
+	if owner_node.stockpile.refill: owner_node.stockpile.set_target(kind,CrateYard.count_beside(owner_node,kind))
 
 # Distant stops for an armed Load or Unload: every friendly Depot, plus deployed trucks for trucks.
 func update_shipment_target(armed: bool) -> void:

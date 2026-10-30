@@ -166,6 +166,7 @@ var trips := "once"
 var crates: Array[Dictionary] = []
 ## The current stop: a crate, Depot or deployed vehicle (job_target), or a ground point.
 var job_target: Node3D
+var _job_requires_target := false
 var job_point := Vector3.ZERO
 var _trip_pickup := {}
 func crate_slots() -> int: return stockpile.capacity/ResourceStockpile.CRATE
@@ -204,6 +205,7 @@ func _start_job(kind: String, node: Node3D, point = null) -> void:
 	cancel_supply_route()
 	_stop_route()
 	job_target = node
+	_job_requires_target = shipment_endpoint(node)
 	job_point = node.global_position if is_instance_valid(node) else point
 	order_target = node
 	order = kind
@@ -284,9 +286,12 @@ func unload_crates(node: Node3D, point: Vector3) -> int:
 	return count
 func _crate_job(delta: float) -> void:
 	# A picked-up or emptied crate stop becomes its ground point; a lost Depot ends the job.
-	if job_target != null and not is_instance_valid(job_target): job_target = null
-	if job_target != null and not stop_valid(order,job_target,job_point):
-		order = "idle"; job_target = null; state = "Shipment stop lost · crates retained"; _update_display(); return
+	if not is_instance_valid(job_target): job_target = null
+	if not _job_requires_target and is_instance_valid(job_target) and job_target.is_queued_for_deletion(): job_target = null
+	if (_job_requires_target and not shipment_endpoint(job_target)) or (job_target != null and not stop_valid(order,job_target,job_point)):
+		_stop_route()
+		order = "idle"; job_target = null; order_target = null; transfer_timer = 0
+		state = "Shipment stop lost · crates retained"; _update_display(); return
 	_retry = maxf(0,_retry-delta)
 	if not _route.is_empty() or _moving_to.x >= 0:
 		_walk(delta); _update_display(); return
@@ -302,7 +307,7 @@ func _crate_job(delta: float) -> void:
 	state = "%s · %.1fs" % ["Loading" if order == "load" else "Unloading",maxf(0,supply_rules.transfer_seconds-transfer_timer)]
 	if transfer_timer < supply_rules.transfer_seconds: _update_display(); return
 	transfer_timer = 0
-	var stop := {target = job_target if shipment_endpoint(job_target) else null, point = job_point}
+	var stop := {target = job_target if shipment_endpoint(job_target) else null, point = job_point, requires_target = _job_requires_target}
 	var label := stop_name({target = job_target, point = job_point})
 	if order == "load":
 		var loaded := load_crates(job_target,job_point)
@@ -317,9 +322,11 @@ func _crate_job(delta: float) -> void:
 		order = "idle"; job_target = null
 		state = ("Unloaded %d crate%s" % [unloaded,"" if unloaded == 1 else "s"])+(" · %d retained, no space" % crates.size() if not crates.is_empty() else "")
 		# Trips: return to the last pickup while it has crates (all) or forever (repeat).
-		if trips != "once" and order_queue.is_empty() and not _trip_pickup.is_empty() and (trips == "repeat" or not pickup_crates(_trip_pickup.target,_trip_pickup.point).is_empty()):
-			order_queue.append({kind = "load", target = _trip_pickup.target, point = _trip_pickup.point})
-			order_queue.append({kind = "unload", target = stop.target, point = stop.point})
+		if trips != "once" and order_queue.is_empty() and not _trip_pickup.is_empty() and (not _trip_pickup.get("requires_target",false) or shipment_endpoint(_trip_pickup.target)):
+			var pickup_target: Node3D = _trip_pickup.target if is_instance_valid(_trip_pickup.target) else null
+			if trips == "repeat" or not pickup_crates(pickup_target,_trip_pickup.point).is_empty():
+				order_queue.append({kind = "load", target = pickup_target, point = _trip_pickup.point, requires_target = _trip_pickup.get("requires_target",false)})
+				order_queue.append({kind = "unload", target = stop.target, point = stop.point, requires_target = stop.requires_target})
 	_update_display()
 func command_return(target: Node3D = null) -> void:
 	# Right-click: Load a crate; at a Depot or deployed vehicle, unload when carrying crates, else load.

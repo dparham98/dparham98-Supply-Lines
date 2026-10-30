@@ -40,6 +40,11 @@ func check_scenes() -> void:
 	var custom: Node3D = baker.build(load("res://scenes/models/infantry_placeholder.tscn"), load("res://scenes/terrain/mountain.tscn"), load("res://scenes/terrain/ore_deposit.tscn"))
 	assert(custom.get_node("Forests/Body").multimesh.mesh is BoxMesh)
 	assert(custom.get_node("Forests/Body").multimesh.instance_count == 1646)
+	var baked_mesh: MultiMesh = custom.get_node("Forests/Body").multimesh
+	assert(baked_mesh.buffer.size() == baked_mesh.instance_count*16)
+	assert(baked_mesh.duplicate().buffer == baked_mesh.buffer)
+	assert(not is_zero_approx(baked_mesh.buffer[3]) or not is_zero_approx(baked_mesh.buffer[11]))
+	assert(baked_mesh.buffer[15] > 0)
 	custom.free()
 	var fixture := Node3D.new()
 	var mesh_node := MeshInstance3D.new()
@@ -63,8 +68,11 @@ func check_scenes() -> void:
 	terrain.rebuild_scenery()
 	assert(terrain.get_node("Landmarks").scene_file_path == "res://scenes/maps/terrain_landmarks.tscn")
 	assert(terrain.get_node("Landmarks/Forests/Trunk").multimesh.instance_count == 1646)
+	var rebuilt_mesh: MultiMesh = terrain.get_node("Landmarks/Forests/Trunk").multimesh
+	var rebuilt_buffers_valid: bool = rebuilt_mesh.buffer.size() == rebuilt_mesh.instance_count*16 and rebuilt_mesh.duplicate().buffer == rebuilt_mesh.buffer
 	terrain.free()
 	if not restore_landmarks(original_landmarks): return
+	assert(rebuilt_buffers_valid)
 	# Static render proves visibility does not depend on runtime generation.
 	clear_scripts(world)
 	root.add_child(world)
