@@ -124,7 +124,7 @@ func run() -> void:
 	await click_at(rig.camera.unproject_position(forester.selection_point()))
 	if not check(forester.is_selected,"Remote Infantry selection failed"): return
 	# No picker: workers pay from and deliver to the nearest covering stockpile.
-	if not check(SupplySource.candidates(get_tree(),forester.global_position,"player")[0] == forest and forest.name in hud.info.get_node("Details").text,"Nearest stockpile is not the deployed truck"): return
+	if not check(SupplySource.candidates(self,forester.global_position,"player")[0] == forest and forest.name in hud.info.get_node("Details").text,"Nearest stockpile is not the deployed truck"): return
 	await click(hud.card.get_node("Gather"))
 	await click_at(rig.camera.unproject_position(game.ground.tile_to_world(Vector2i(345,275))))
 	for frame in range(3600):
