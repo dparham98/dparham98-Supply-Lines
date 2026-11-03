@@ -219,8 +219,8 @@ func run() -> void:
 	for id in ["Move","Stop","DeployCargo","ToggleRefuel","Load","Unload","Trips"]:
 		if not check(hud.card.get_node(id).visible,"Cargo tile %s missing" % id): return
 	hud.card.get_node("Load").pressed.emit(); hud._process(0)
-	if not check(game.pending_unit_command == "load" and hud.shipment_target.visible and hud.shipment_stops.has(outpost),"Distant stop list missing"): return
-	hud.shipment_target.item_selected.emit(hud.shipment_stops.find(outpost)+1)
+	if not check(game.pending_unit_command == "load" and hud.pick.visible and hud.pick_stops().has(outpost),"Map stop prompt missing"): return
+	hud.pick_stop(outpost,Input.is_key_pressed(KEY_SHIFT))
 	if not check(truck.order == "load" and truck.job_target == outpost,"Distant stop did not order Load"): return
 	truck.set_selected(true); hud.stop_units(); truck.set_selected(false)
 	# Trains: Depots only, and the round-trip warning covers a Load/Unload pair.

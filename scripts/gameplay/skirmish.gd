@@ -119,7 +119,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not global_plan_kind.is_empty() and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var camera := get_viewport().get_camera_3d()
 		var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(event.position),camera.project_ray_normal(event.position))
-		if point != null and $DepotNetwork.queue_plan(point,global_plan_kind,hud.global_payer if is_instance_valid(hud.global_payer) else null,hud.global_pinned) != null:
+		# Rail stays armed so a line can be laid tile by tile; Esc or right-click finishes.
+		if point != null and $DepotNetwork.queue_plan(point,global_plan_kind,hud.global_payer if is_instance_valid(hud.global_payer) else null,hud.global_pinned) != null and global_plan_kind != &"rail":
 			global_plan_kind = &""
 		get_viewport().set_input_as_handled()
 		return
@@ -146,6 +147,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if not event is InputEventMouseButton or not event.pressed or event.button_index != MOUSE_BUTTON_RIGHT: return
+	# Right-click cancels an armed command or placement instead of giving an order.
+	if armed():
+		cancel_armed(); notify("Command cancelled.")
+		get_viewport().set_input_as_handled()
+		return
 	issue_order(event.position,event.shift_pressed)
 	get_viewport().set_input_as_handled()
 ## The friendly crate under the pointer, if any.
@@ -217,6 +223,14 @@ func show_shot(start: Vector3, end: Vector3, team: String) -> void:
 
 func issue_card_order(screen: Vector2, queued := false) -> void:
 	var target: Node3D
+	# Pin: the build page's paying stockpile.
+	if pending_unit_command == "pin":
+		target = pick_target(screen,"depots",50)
+		var stockpile := pick_target(screen,"mobile_supplies",34)
+		if is_instance_valid(stockpile) and SupplySource.available(stockpile,"player"): target = stockpile
+		if is_instance_valid(target): hud.pick_stop(target,queued)
+		else: notify("Click a friendly Depot or deployed Cargo truck to pin it.")
+		return
 	if pending_unit_command == "attack":
 		target = pick_target(screen,"enemies")
 		if target == null:

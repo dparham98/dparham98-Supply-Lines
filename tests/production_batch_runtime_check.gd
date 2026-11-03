@@ -24,7 +24,7 @@ func run() -> void:
 	game.depot.iron = 2000
 	var network = game.get_node("DepotNetwork")
 	hud._process(0)
-	hud.card.get_node("Build").pressed.emit()
+	hud.get_node("Bottom/Body/Header/GlobalBuild").pressed.emit()
 	await shot("production_depot_build")
 	for id in [&"barracks",&"tank_factory"]:
 		var point := Vector3.ZERO

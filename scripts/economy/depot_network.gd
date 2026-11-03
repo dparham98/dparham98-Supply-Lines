@@ -241,8 +241,9 @@ func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_paye
 	game.get_node("Entities/Buildings").add_child(plan,true)
 	game.notify("%s plan placed. No resources spent until one friendly covering Depot can pay." % spec.title)
 	return plan
+## Depots and deployed Cargo trucks pay plans in their range; rails need a Depot.
 func plan_source_valid(plan: Node3D, source) -> bool:
-	if not SupplySource.available(source,"player") or not source.is_in_group("depots"): return false
+	if not SupplySource.available(source,"player") or (plan.kind == &"rail" and not source.is_in_group("depots")): return false
 	if source.energy < plan.spec.energy or source.iron < plan.spec.iron: return false
 	if plan.kind == &"rail": return game.get_node("RailNetwork").can_build(plan.start,source)
 	return can_place_mine(plan.global_position,source) if plan.kind == &"iron_mine" else can_place_size(plan.global_position,source,plan.spec.size)
@@ -259,9 +260,9 @@ func complete_plan(plan: Node3D, payer: Node3D) -> Node3D:
 	if plan.kind == &"depot":
 		building.initial_energy = 0; building.initial_iron = 0
 		building.grant_construction_infantry = true
-	elif plan.kind == &"generator": building.rules = supply_rules; building.assigned_depot = payer
+	elif plan.kind == &"generator": building.rules = supply_rules; building.assigned_depot = payer if payer.is_in_group("depots") else null
 	elif plan.kind == &"iron_mine": building.rules = engineering_rules
-	else: building.assigned_depot = payer
+	else: building.assigned_depot = payer if payer.is_in_group("depots") else null
 	if not payer.spend_local(plan.spec.energy,plan.spec.iron): building.free(); return null
 	building.position = plan.global_position
 	if plan.kind == &"rail": game.add_child(building,true)

@@ -1,5 +1,5 @@
 extends SceneTree
-# UI phase F: compact fixed-slot command grid, build menu grid page, two-column info, hover line.
+# UI phase F: compact fixed-slot command grid, build menu grid page and two-column info. Tile text is in tooltips.
 var game: Node3D
 var hud: CanvasLayer
 func _initialize() -> void: call_deferred("run")
@@ -42,14 +42,12 @@ func run() -> void:
 	game.get_node("Entities/Units").add_child(tank); tank.set_process(false)
 	await select(tank)
 	if not check(hud.card.get_node("Move").position == Vector2.ZERO and hud.card.get_node("Stop").position == Vector2(50,0) and hud.card.get_node("ToggleRefuel").position == Vector2(150,0),"Tank tiles moved"): return
-	# The hover line names an armed command.
-	game.pending_unit_command = "attack"
-	hud.update_hover_line()
-	if not check(hud.hover_label.text.begins_with("Attack · click a target"),"Hover line missing the armed command"): return
-	game.pending_unit_command = ""
-	# Build opens a grid page of the same tiles, with Back last.
+	# Tile names and keys are in tooltips; no hover line takes HUD space.
+	if not check(not hud.has_node("Bottom/Body/Row/Commands/Hover") and hud.card.get_node("Attack").tooltip_text.begins_with("Attack [A]"),"Tile tooltip missing, or the hover line is back"): return
+	# The header Build page is a grid of the same tiles, with Back last; Infantry has no build tile.
 	await select(worker)
-	hud.card.get_node("Build").pressed.emit()
+	if not check(not hud.card.has_node("Build"),"Infantry still has a Build tile"): return
+	hud.get_node("Bottom/Body/Header/GlobalBuild").pressed.emit()
 	hud._process(0)
 	var actions: GridContainer = hud.build_menu.get_node("Actions")
 	if not check(hud.build_menu.visible and not hud.card.visible and actions.columns == 4,"Build page not shown as a grid"): return

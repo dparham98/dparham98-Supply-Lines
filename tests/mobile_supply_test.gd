@@ -47,15 +47,32 @@ func run() -> void:
 	near(worker,mine,Vector3(3,0,0)); mine.take_damage(30)
 	worker.command_repair(mine,truck); worker._repair(1)
 	if not check(mine.health == 980 and truck.energy == 8 and truck.iron == 9,"Mobile repair payment failed"): return
+	# Build plans: a deployed Cargo truck pays from its own stock; rails need a Depot.
+	truck.carried_energy = 40; truck.carried_iron = 40
+	var site := Vector3.ZERO
+	for x in range(-12,13,4):
+		for z in range(-12,13,4):
+			if site == Vector3.ZERO and network.can_place_size(truck.global_position+Vector3(x,0,z),truck,Vector2i(8,8)) and not network.plan_overlaps(network.footprint_start(truck.global_position+Vector3(x,0,z),Vector2i(8,8)),Vector2i(8,8)): site = truck.global_position+Vector3(x,0,z)
+	if not check(site != Vector3.ZERO,"No Depot plan site beside the truck"): return
+	var depots_before := get_nodes_in_group("depots").size()
+	var plan = network.queue_plan(site,&"depot",truck,true)
+	if not check(plan != null and plan.try_complete() != null and get_nodes_in_group("depots").size() == depots_before+1 and truck.energy == 20 and truck.iron == 20 and depot.energy == initial_e,"Deployed truck could not pay a Depot plan"): return
+	for node in get_nodes_in_group("depots"): node.set_process(false)
+	var rail_cell: Vector2i = game.ground.get_tile_at_position(truck.global_position+Vector3(3,0,3))
+	var rail_plan = network.queue_plan(game.ground.tile_to_world(rail_cell),&"rail",truck,true)
+	if rail_plan != null:
+		if not check(rail_plan.try_complete() == null and truck.energy == 20,"A Cargo truck paid for rail"): return
+		rail_plan.cancel()
+	truck.carried_energy = 8; truck.carried_iron = 9
 	var held: Vector3 = truck.global_position
 	truck.command_move(held+Vector3(0,0,4))
 	worker._repair(1); step(truck,1)
 	if not check(not truck.supplies_available() and truck.global_position == held and mine.health == 980 and truck.energy == 8,"Packing allowed movement or spending early"): return
-	var hud = game.get_node("Interface")
-	worker.supply_payer = truck; worker.supply_payer_explicit = true
-	hud.close_build(); hud.build_open = true; hud.refresh_build_menu()
-	if not check(network.selected == null,"Reopening Build silently replaced packed mobile payer"): return
-	hud.close_build()
+	# A packing truck can't pay a plan pinned to it.
+	var packed_plan = network.queue_plan(site+Vector3(0,0,30),&"rail",truck,true)
+	if packed_plan != null:
+		if not check(packed_plan.try_complete() == null,"Packing truck paid a plan"): return
+		packed_plan.cancel()
 	step(truck,1.1)
 	if not check(truck.supply_transition.is_empty() and not truck.deployed,"Packing did not finish"): return
 	step(truck,2)

@@ -1,5 +1,5 @@
 extends SceneTree
-# Rendered UI phase F check: real clicks on the compact grid and build page; pointer hover over a tile.
+# Rendered UI phase F check: real clicks on the compact grid and build page; pointer hover shows a tile's tooltip window.
 var game: Node3D
 var hud: CanvasLayer
 const TestOutput = preload("res://tests/test_output.gd")
@@ -54,13 +54,15 @@ func run() -> void:
 	await click_at(target(tank))
 	if not check(tank.is_selected,"Tank not selected"): return
 	await move_to(hud.card.get_node("Attack").get_global_rect().get_center())
-	if not check(hud.hover_label.text.begins_with("Attack [A]"),"Hover line did not name the tile: %s" % hud.hover_label.text): return
+	if not check(hud.card.get_node("Attack").tooltip_text.begins_with("Attack [A]"),"Tile tooltip lacks its name and key: %s" % hud.card.get_node("Attack").tooltip_text): return
+	# Let the tooltip window open before the screenshot.
+	for frame in range(30): await process_frame
 	await shot("tank_grid")
 	await click_at(target(worker))
 	# A click right after a screenshot capture can be dropped by the window; retry it once.
 	if not worker.is_selected: await click_at(target(worker))
 	if not check(worker.is_selected,"Worker not selected"): return
-	await click(hud.card.get_node("Build"))
+	await click(hud.get_node("Bottom/Body/Header/GlobalBuild"))
 	if not check(hud.build_menu.is_visible_in_tree(),"Build page not opened by a real click"): return
 	await move_to(hud.build_menu.get_node("Actions/Generator").get_global_rect().get_center())
 	await shot("build_page")

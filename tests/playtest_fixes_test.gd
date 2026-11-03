@@ -41,37 +41,38 @@ func run() -> void:
 	rig.focus_position(depot.global_position+Vector3(4,0,12),45)
 	for frame in range(180): rig.advance_camera(1.0/60)
 	var worker = game.get_node("Entities/Units/Infantry")
-	# 1. A long hover text stays on one clipped line and never changes the HUD height.
+	# 1. Hover text and hints are tooltip windows, so they can't change the HUD height.
 	select(worker)
 	for frame in 4: await process_frame
-	hud.hover_label.text = "Attack [A]\nClick a hostile unit or building. Shift queues, Esc cancels, and this line is long."
-	for frame in 4: await process_frame
-	if not check(is_equal_approx(hud.get_node("Bottom").size.y,260) and hud.hover_label.size.y <= 20,"Hover text moved the HUD (%.0f / %.0f)" % [hud.get_node("Bottom").size.y,hud.hover_label.size.y]): return
-	# 1a. The grid never moves: the option row above it is reserved, armed or not.
+	if not check(is_equal_approx(hud.get_node("Bottom").size.y,260) and not hud.has_node("Bottom/Body/Row/Commands/Hover") and not hud.info.tooltip_text.is_empty(),"HUD height or hint tooltip wrong"): return
+	# 1a. The grid never moves; while Load waits for a stop, the prompt takes the card's place.
 	var grid_y: float = hud.card.global_position.y
 	var cargo = spawn("res://scenes/gameplay/cargo_vehicle.tscn",Vector3(-14,0,10))
 	select(cargo)
 	game.pending_unit_command = "load"
 	hud._process(0)
 	for frame in 4: await process_frame
-	var armed_y: float = hud.card.global_position.y
+	var armed_y: float = hud.pick.global_position.y
+	var armed_height: float = hud.get_node("Bottom").size.y
 	game.pending_unit_command = ""
 	select(worker)
-	if not check(is_equal_approx(armed_y,grid_y) and is_equal_approx(hud.get_node("Bottom").size.y,260),"Arming Load moved the grid (%.0f to %.0f)" % [grid_y,armed_y]): return
+	if not check(hud.card.visible and is_equal_approx(armed_y,grid_y) and is_equal_approx(armed_height,260),"Arming Load moved the grid (%.0f to %.0f)" % [grid_y,armed_y]): return
 	cargo.free()
 	# 2. Every command tile, build tile and header action shows its hotkey.
 	var missing := []
-	for panel in [hud.card,hud.build_menu.get_node("Actions")]:
+	for panel in [hud.card,hud.build_menu.get_node("Actions"),hud.pick]:
 		for button in panel.get_children():
 			if button is Button and (button.shortcut == null or not button.has_node("Key") or button.get_node("Key").text.is_empty()): missing.append(button.name)
 	for id in ["GlobalBuild","Focus"]:
 		var header: Button = hud.get_node("Bottom/Body/Header/"+id)
 		if header.shortcut == null or not header.text.ends_with(" · "+hud.hotkey_text(header)): missing.append(id)
 	if not check(missing.is_empty(),"Actions without a shown hotkey: %s" % [missing]): return
-	if not check(hud.build_menu.get_node("Actions/Back/Key").text == "Escape" and hud.build_menu.get_node("Actions/Depot/Key").text == "D","Build tile keys wrong"): return
-	# 3a. The supply picker only appears with a choice, and the notes say what it is.
+	if not check(hud.build_menu.get_node("Actions/Back/Key").text == "Escape" and hud.build_menu.get_node("Actions/Depot/Key").text == "D" and hud.build_menu.get_node("Actions/Pin/Key").text == "P" and hud.pick.get_node("Cancel/Key").text == "Escape","Build tile keys wrong"): return
+	# The header Build key is B; on the build page B is Barracks, so the header button is disabled there.
+	if not check(hud.hotkey_text(hud.get_node("Bottom/Body/Header/GlobalBuild")) == "B" and hud.build_menu.get_node("Actions/Barracks/Key").text == "B","Build keys wrong"): return
+	# 3a. No supply picker: workers use the nearest stockpile, and the notes name it.
 	select(worker)
-	if not check(not hud.commands.get_node("OptionRow/LocalSource").visible and "Pays from and delivers to" in hud.info.get_node("Details").text,"Single-source picker shown or unexplained"): return
+	if not check(not hud.has_node("Bottom/Body/Row/Commands/OptionRow") and "Pays from and delivers to" in hud.info.get_node("Details").text,"Supply picker shown or nearest source unexplained"): return
 	# 3. Depot Truck: Deploy is a placement; only a valid footprint is accepted or queued.
 	var truck = spawn("res://scenes/gameplay/depot_truck.tscn",Vector3(-20,0,20))
 	select(truck)
