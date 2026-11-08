@@ -1,6 +1,6 @@
 extends SceneTree
 # Rendered check: the Tank's authored model (assets/models/units/tank.glb) sits on the ground,
-# faces -Z, keeps a one-tile-ish footprint, and is picked by selection bounds. Saves tank_model.
+# faces -Z, keeps a one-tile-ish footprint, is picked by selection bounds, and its turret aims. Saves tank_model and tank_turret.
 const TestOutput = preload("res://tests/test_output.gd")
 const Bounds = preload("res://scripts/units/selection_bounds.gd")
 var game: Node3D
@@ -41,4 +41,11 @@ func run() -> void:
 	var screen: Vector2 = rig.camera.unproject_position(tank.global_position+Vector3(0,0.6,0))
 	if not check(Bounds.hit_distance(tank,rig.camera,screen) < INF,"Tank model not pickable at its centre"): return
 	await shot("tank_model")
+	# The turret turns toward a target on the tank's right while the hull keeps facing -Z.
+	var aim: Vector3 = tank.global_position+Vector3(8,0,0)
+	for i in range(120):
+		model.aim_at(aim); model._process(1.0/60)
+	var muzzle: Vector3 = tank.global_transform.affine_inverse()*model.muzzle_position()
+	if not check(muzzle.x > 2.0 and absf(muzzle.z) < 0.3,"Turret did not aim right: muzzle at %s" % muzzle): return
+	await shot("tank_turret")
 	print("TANK_MODEL_RUNTIME_CHECK_PASSED"); quit(TestOutput.exit_code())
