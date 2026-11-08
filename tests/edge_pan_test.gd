@@ -44,6 +44,14 @@ func check_edges() -> void:
 	motion.position = Vector2(640,480); motion.global_position = motion.position
 	Input.parse_input_event(motion); Input.flush_buffered_events()
 	assert(rig.pointer_edge_pan() == Vector2.ZERO)
+	# The drag direction steers the pan inside a band: diagonal motion into the bottom pans diagonally,
+	# straight motion pans straight, and a still or sideways-sliding pointer keeps the last direction.
+	var diagonal := Vector2(1,1).normalized()
+	for pair in [[Vector2(600,905),Vector2.DOWN],[Vector2(640,945),diagonal],[Vector2(640,946),diagonal],[Vector2(640,955),Vector2.DOWN],[Vector2(700,955),Vector2.DOWN],[Vector2(640,480),Vector2.ZERO],[Vector2(1240,480),Vector2.RIGHT],[Vector2(1275,445),Vector2(1,-1).normalized()],[Vector2(1275,400),Vector2(1,-1).normalized()]]:
+		motion.position = pair[0]; motion.global_position = pair[0]
+		Input.parse_input_event(motion); Input.flush_buffered_events()
+		var pan: Vector2 = rig.pointer_edge_pan()
+		assert(pan.is_equal_approx(pair[1]))
 	var hud = load("res://scenes/ui/terrain_hud.tscn").instantiate()
 	assert(hud.get_node("Legend").get_meta("edge_pan_passthrough", false))
 	hud.free()
