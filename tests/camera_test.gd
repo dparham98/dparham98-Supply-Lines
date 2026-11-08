@@ -79,7 +79,7 @@ func test_camera() -> void:
 	rig.begin_drag(grab)
 	rig._notification(Node.NOTIFICATION_WM_WINDOW_FOCUS_OUT)
 	assert(not rig._dragging and not rig._zoom_anchor_active)
-	assert(rig.edge_pan_vector(Vector2(-2, 40), Vector2(1280, 960)) == Vector2.ZERO)
+	assert(rig.edge_pan_vector(Vector2(-2, 480), Vector2(1280, 960)) == Vector2.LEFT)
 	assert(rig.edge_pan_vector(Vector2(600, 480), Vector2(1280, 960)) == Vector2.ZERO)
 	assert(rig.edge_pan_vector(Vector2(2, 480), Vector2(1280, 960)).x < 0)
 	# Overview fits every map corner at multiple aspect ratios and restores the previous view.
