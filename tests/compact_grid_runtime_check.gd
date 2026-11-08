@@ -1,5 +1,5 @@
 extends SceneTree
-# Rendered UI phase F check: real clicks on the compact grid and build page; pointer hover shows a tile's tooltip window.
+# Rendered UI phase F check: real clicks on the compact grid and build page; pointer hover shows a tile's hint panel.
 var game: Node3D
 var hud: CanvasLayer
 const TestOutput = preload("res://tests/test_output.gd")
@@ -55,8 +55,9 @@ func run() -> void:
 	if not check(tank.is_selected,"Tank not selected"): return
 	await move_to(hud.card.get_node("Attack").get_global_rect().get_center())
 	if not check(hud.card.get_node("Attack").tooltip_text.begins_with("Attack [A]"),"Tile tooltip lacks its name and key: %s" % hud.card.get_node("Attack").tooltip_text): return
-	# Let the tooltip window open before the screenshot.
+	# Let the hint panel open before the screenshot.
 	for frame in range(30): await process_frame
+	if not check(hud.get_node("Tip").visible and hud.get_node("Tip/Text").text.begins_with("Attack [A]"),"Hint panel not shown over the hovered tile"): return
 	await shot("tank_grid")
 	await click_at(target(worker))
 	# A click right after a screenshot capture can be dropped by the window; retry it once.

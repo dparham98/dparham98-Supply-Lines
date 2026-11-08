@@ -34,7 +34,7 @@ project/assembly_name="Supply Lines Full"
 
 [gui]
 
-timers/tooltip_delay_sec=0.25
+timers/tooltip_delay_sec=100000.0
 
 [input]
 

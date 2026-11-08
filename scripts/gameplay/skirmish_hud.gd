@@ -15,6 +15,14 @@ extends CanvasLayer
 @onready var pick = $Bottom/Body/Row/Commands/Pick
 ## The selection's hint, shown as a tooltip over the Info and Context columns rather than taking HUD space.
 var hint_text := ""
+## Hints are drawn by $Tip inside this layer after TIP_DELAY over a control with tooltip text. Godot's own
+## tooltip is a popup window, and one opening between a press and its release swallows the click, so the
+## project's tooltip delay is set so high that it never opens.
+const TIP_DELAY := 0.25
+const TIP_WIDTH := 260.0
+var tip_delay := TIP_DELAY
+var _tip_control: Control
+var _tip_since := 0.0
 # Applied once per frame: hiding the panel mid-frame would cancel a press on its buttons.
 var shipment_wanted := false
 ## Fixed command slots, row-major in the 4 × 3 grid. Commands that never share a card may share a slot.
@@ -199,6 +207,7 @@ func _process(_delta: float) -> void:
 	# B opens the build page; there, B is Barracks.
 	$Bottom/Body/Header/GlobalBuild.disabled = global_build_open
 	place_tiles()
+	update_tip()
 	update_strip(units)
 	update_feed()
 # Fuel and cargo bars under health. Fuel turns amber when low and red when empty.
@@ -568,6 +577,38 @@ func place_tiles() -> void:
 			var slot: int = SLOTS[str(button.name)]
 			button.position = Vector2((slot%4)*(TILE+TILE_GAP),(slot/4)*(TILE+TILE_GAP))
 			button.size = Vector2(TILE,TILE)
+# The hint for the hovered control, once the pointer has rested on it. Hidden while a button is held,
+# so a hint can never appear in the middle of a click.
+func update_tip() -> void:
+	var tip: PanelContainer = $Tip
+	var hovered := get_viewport().gui_get_hovered_control()
+	var mouse := get_viewport().get_mouse_position()
+	var text := ""
+	var control := hovered
+	while control != null and text.is_empty():
+		text = control.get_tooltip(mouse-control.get_global_position()) if control.is_inside_tree() else ""
+		if text.is_empty(): control = control.get_parent_control()
+	var now := Time.get_ticks_msec()/1000.0
+	if control != _tip_control: _tip_control = control; _tip_since = now
+	var show := control != null and now-_tip_since >= tip_delay and Input.get_mouse_button_mask() == 0
+	if tip.visible != show: tip.visible = show
+	if not show: return
+	var label: Label = tip.get_node("Text")
+	if label.text != text:
+		label.text = text
+		# Wide enough for the longest line, up to TIP_WIDTH; longer lines wrap.
+		var widest := 0.0
+		for line in text.split("
+"): widest = maxf(widest,label.get_theme_font("font").get_string_size(line,HORIZONTAL_ALIGNMENT_LEFT,-1,label.get_theme_font_size("font_size")).x)
+		label.custom_minimum_size.x = minf(TIP_WIDTH,widest+2)
+		tip.size = Vector2.ZERO
+	var size := tip.get_combined_minimum_size()
+	tip.size = size
+	var viewport_size := get_viewport().get_visible_rect().size
+	var at := mouse+Vector2(14,18)
+	if at.x+size.x > viewport_size.x: at.x = mouse.x-size.x-6
+	if at.y+size.y > viewport_size.y: at.y = mouse.y-size.y-8
+	tip.position = at.max(Vector2.ZERO)
 # Set a label with its hotkey; unchanged text isn't reassigned, so buttons don't relayout each frame.
 # Unchanged text isn't reassigned, so buttons don't relayout every frame.
 func set_label(button: Button, text: String) -> void:

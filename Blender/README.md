@@ -4,7 +4,7 @@ This is the main location for Supply Lines Blender work. Open these for future e
 
 - Characters\Scout\Scout.blend: latest scout with angular helmet, reflective visor, blonde ponytail and refined armor. Static model; no rig.
 - Characters\Infantry\Infantry.blend: latest refined infantry working model.
-- Vehicles\Tank\Tank.blend: existing tank, copied unchanged; not newly validated or completed.
+- Vehicles\Tank\Tank.blend: the 2026-11-08 tank (hull, turret and barrel under Tank_Root in the Tank collection; baked PBR textures packed). Exported to assets\models\units\tank.glb. The earlier unvalidated tank is Backups\Tank\Tank_2025-09-13_unvalidated.blend.
 
 References holds recovered art. Previews\Scout holds current renders. Backups\Scout holds earlier revisions. Archive\Originals preserves the old Supply Lines art folder, including Blender backups, exports, animations and related assets.
 

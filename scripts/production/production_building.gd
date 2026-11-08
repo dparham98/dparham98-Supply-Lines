@@ -39,11 +39,15 @@ func _source_changed() -> void:
 	# Preserve the existing Depot policy: paid queue cancellation without refund on source capture.
 	pending.clear()
 	progress = 0
+## Stats are read once per unit scene: instantiating a unit (and its model) every frame is costly.
+static var _stats_cache := {}
 func unit_stats_for(scene: PackedScene) -> UnitStats:
-	var unit = scene.instantiate()
-	var resource: UnitStats = unit.unit_stats
-	unit.free()
-	return resource
+	var key := scene.resource_path
+	if not _stats_cache.has(key):
+		var unit = scene.instantiate()
+		_stats_cache[key] = unit.unit_stats
+		unit.free()
+	return _stats_cache[key]
 func request_unit(id: StringName) -> bool:
 	if not source_friendly(): game.notify("Assigned Depot is unavailable or no longer friendly."); return false
 	if queue >= stats.queue_limit: game.notify("Production queue is full."); return false
