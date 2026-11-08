@@ -596,10 +596,14 @@ func update_tip() -> void:
 	var label: Label = tip.get_node("Text")
 	if label.text != text:
 		label.text = text
-		label.custom_minimum_size.x = minf(TIP_WIDTH,label.get_theme_font("font").get_string_size(text.get_slice("
-",0),HORIZONTAL_ALIGNMENT_LEFT,-1,label.get_theme_font_size("font_size")).x+8)
-		tip.reset_size()
+		# Wide enough for the longest line, up to TIP_WIDTH; longer lines wrap.
+		var widest := 0.0
+		for line in text.split("
+"): widest = maxf(widest,label.get_theme_font("font").get_string_size(line,HORIZONTAL_ALIGNMENT_LEFT,-1,label.get_theme_font_size("font_size")).x)
+		label.custom_minimum_size.x = minf(TIP_WIDTH,widest+2)
+		tip.size = Vector2.ZERO
 	var size := tip.get_combined_minimum_size()
+	tip.size = size
 	var viewport_size := get_viewport().get_visible_rect().size
 	var at := mouse+Vector2(14,18)
 	if at.x+size.x > viewport_size.x: at.x = mouse.x-size.x-6
