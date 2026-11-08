@@ -428,12 +428,21 @@ func _nearest_opponent() -> Node3D:
 func _face(point: Vector3) -> void:
 	var offset := point-global_position
 	if offset.length_squared() > 0.001: $Visuals.rotation.y = atan2(-offset.x,-offset.z)
+## The model's turret component when the Visuals model has one (scripts/components/turret_aim.gd).
+func _turret() -> Node3D:
+	var model := $Visuals.get_node_or_null("Model")
+	return model if model != null and model.has_method("aim_at") else null
 func _shoot(target: Node3D) -> void:
-	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or _cooldown > 0 or not CombatResolver.can_hit(self,target) or global_position.distance_to(target.global_position) > attack_range: return
+	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or not CombatResolver.can_hit(self,target) or global_position.distance_to(target.global_position) > attack_range: return
+	# A turret tracks the target between shots; a unit without one turns its whole body as it fires.
+	var turret := _turret()
+	if turret: turret.aim_at(target.global_position)
+	if _cooldown > 0: return
 	_cooldown = CombatResolver.interval_for(self,target)
-	_face(target.global_position)
+	if turret == null: _face(target.global_position)
 	var target_height: Vector3 = target.get_node("Visuals").position if target.has_node("Visuals") else Vector3.ZERO
-	game.show_shot(global_position+Vector3.UP*1.7+$Visuals.position,target.global_position+Vector3.UP*1.7+target_height,team)
+	var muzzle: Vector3 = turret.muzzle_position() if turret else global_position+Vector3.UP*1.7+$Visuals.position
+	game.show_shot(muzzle,target.global_position+Vector3.UP*1.7+target_height,team)
 	CombatResolver.strike(self,target)
 	if is_instance_valid(target) and game.has_method("mark_attacked"): game.mark_attacked(target)
 	if is_instance_valid(target) and target.is_in_group("selectable_buildings") and target.get("team") == "player" and team != "player" and game.has_method("alert"):
