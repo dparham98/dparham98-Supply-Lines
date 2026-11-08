@@ -2,6 +2,7 @@ extends SceneTree
 func _initialize() -> void:
 	call_deferred("check_edges")
 func check_edges() -> void:
+	root.size = Vector2i(1280,960)
 	var rig = load("res://scenes/camera/rts_camera.tscn").instantiate()
 	root.add_child(rig)
 	await process_frame
@@ -25,12 +26,29 @@ func check_edges() -> void:
 				ends.append(rig.global_position)
 			assert(ends[0].distance_to(ends[1]) < 0.001)
 	assert(rig.edge_pan_vector(Vector2(640,480),size) == Vector2.ZERO)
-	assert(rig.edge_pan_vector(Vector2(1281,480),size) == Vector2.ZERO)
+	# Dragging past a side keeps panning that way (windowed play), diagonals included.
+	assert(rig.edge_pan_vector(Vector2(1281,480),size) == Vector2.RIGHT)
+	assert(rig.edge_pan_vector(Vector2(640,1200),size) == Vector2.DOWN)
+	assert(rig.edge_pan_vector(Vector2(-30,-30),size).is_equal_approx(Vector2(-1,-1).normalized()))
+	# Over the HUD only the outermost strip pans, so the bottom of the screen still works in fullscreen.
+	assert(rig.edge_pan_vector(Vector2(640,959),size,rig.ui_edge_margin) == Vector2.DOWN)
+	assert(rig.edge_pan_vector(Vector2(640,940),size,rig.ui_edge_margin) == Vector2.ZERO)
+	assert(rig.edge_pan_vector(Vector2(640,940),size) == Vector2.DOWN)
+	# The live pointer: a pointer that left the window pans from the edge it last touched.
+	var motion := InputEventMouseMotion.new()
+	motion.position = Vector2(640,955); motion.global_position = motion.position
+	Input.parse_input_event(motion); Input.flush_buffered_events()
+	rig._pointer_outside = true
+	assert(rig.pointer_edge_pan() == Vector2.DOWN)
+	rig._pointer_outside = false
+	motion.position = Vector2(640,480); motion.global_position = motion.position
+	Input.parse_input_event(motion); Input.flush_buffered_events()
+	assert(rig.pointer_edge_pan() == Vector2.ZERO)
 	var hud = load("res://scenes/ui/terrain_hud.tscn").instantiate()
 	assert(hud.get_node("Legend").get_meta("edge_pan_passthrough", false))
 	hud.free()
 	var selection_hud = load("res://scenes/ui/skirmish_hud.tscn").instantiate()
-	# Playtest feedback (2026-10-29): edge pan must not trigger while the pointer is over the bottom HUD.
+	# Playtest feedback (2026-10-29): the HUD blocks the wide band; only its outermost strip pans.
 	assert(not selection_hud.get_node("Bottom").get_meta("edge_pan_passthrough", false))
 	selection_hud.free()
 	rig.set_view(Vector3.ZERO,95,0,50)

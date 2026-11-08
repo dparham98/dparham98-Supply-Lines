@@ -16,6 +16,8 @@ enum StartupFocus { AUTHORED_POSITION, HEADQUARTERS, WHOLE_MAP }
 @export var edge_pan_enabled: bool = true
 ## Entering this band acts like holding the corresponding arrow key.
 @export_range(4, 120, 1) var edge_margin: float = 64.0
+## Over interactive UI only this outermost strip pans, so the screen edge still works across the HUD in fullscreen.
+@export_range(1, 32, 1) var ui_edge_margin: float = 6.0
 @export_category("Zoom And Orbit")
 @export_range(5, 80, 1) var min_zoom: float = 20.0
 @export_range(100, 900, 1) var max_zoom: float = 480.0
@@ -49,6 +51,8 @@ var _zoom_anchor_active := false
 var _zoom_anchor_world := Vector3.ZERO
 var _zoom_anchor_screen := Vector2.ZERO
 var _editor_signature := Vector4(-1, -1, -1, -1)
+## True after the pointer left the window: in windowed play, dragging past an edge keeps panning.
+var _pointer_outside := false
 
 func _ready() -> void:
 	if Engine.is_editor_hint():
@@ -69,8 +73,7 @@ func _process(delta: float) -> void:
 		var pan := Input.get_vector("camera_pan_left", "camera_pan_right", "camera_pan_forward", "camera_pan_back")
 		var keyboard_panning := pan != Vector2.ZERO
 		# Keyboard takes precedence so touching an edge never doubles its speed.
-		if not keyboard_panning and edge_pan_enabled and not _dragging and not _pointer_blocks_edge_pan():
-			pan = edge_pan_vector(get_viewport().get_mouse_position(), get_viewport().get_visible_rect().size)
+		if not keyboard_panning and edge_pan_enabled and not _dragging: pan = pointer_edge_pan()
 		if _dragging: pan = Vector2.ZERO
 		apply_navigation(pan.limit_length(), Input.get_axis("camera_rotate_left", "camera_rotate_right"), Input.is_action_pressed("camera_fast_pan"), delta)
 	else:
@@ -111,6 +114,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT: cancel_pointer_navigation()
+	elif what == NOTIFICATION_WM_MOUSE_EXIT: _pointer_outside = true
+	elif what == NOTIFICATION_WM_MOUSE_ENTER: _pointer_outside = false
 
 func _pointer_over_ui() -> bool:
 	return get_viewport().gui_get_hovered_control() != null
@@ -123,10 +128,33 @@ func _pointer_blocks_edge_pan() -> bool:
 		control = control.get_parent_control()
 	return _pointer_over_ui()
 
-func edge_pan_vector(mouse: Vector2, viewport_size: Vector2) -> Vector2:
-	if viewport_size.x <= 0 or viewport_size.y <= 0 or not Rect2(Vector2.ZERO, viewport_size).has_point(mouse): return Vector2.ZERO
+## The edge pan for the live pointer: the full band over the world, the outer strip over the HUD,
+## and any side the pointer has been dragged beyond while the window keeps focus.
+func pointer_edge_pan() -> Vector2:
+	var viewport_size := get_viewport().get_visible_rect().size
+	var mouse := get_viewport().get_mouse_position()
+	if _pointer_outside:
+		var beyond := pointer_beyond_window(viewport_size)
+		if beyond != Vector2.ZERO: return beyond
+		# Fallback for the first moments outside: the last position seen, at the edge it left by.
+		return edge_pan_vector(mouse, viewport_size)
+	return edge_pan_vector(mouse, viewport_size, ui_edge_margin if _pointer_blocks_edge_pan() else -1.0)
+
+## Where the pointer is outside the window, as a point past the viewport edges, or ZERO if unknown.
+func pointer_beyond_window(viewport_size: Vector2) -> Vector2:
+	if DisplayServer.get_name() == "headless": return Vector2.ZERO
+	var window := get_window()
+	if window.size.x <= 0 or window.size.y <= 0: return Vector2.ZERO
+	var local := Vector2(DisplayServer.mouse_get_position() - window.position) * viewport_size / Vector2(window.size)
+	if Rect2(Vector2.ZERO, viewport_size).has_point(local): return Vector2.ZERO
+	return edge_pan_vector(local, viewport_size)
+
+## Pan direction for a pointer position. Inside the band (`margin`, or Edge Margin) along a side
+## pans that way; a position past a side counts as being on that side.
+func edge_pan_vector(mouse: Vector2, viewport_size: Vector2, margin := -1.0) -> Vector2:
+	if viewport_size.x <= 0 or viewport_size.y <= 0: return Vector2.ZERO
 	var direction := Vector2.ZERO
-	var margin := maxf(1, minf(edge_margin, minf(viewport_size.x, viewport_size.y) * 0.25))
+	margin = maxf(1, minf(edge_margin if margin < 0 else margin, minf(viewport_size.x, viewport_size.y) * 0.25))
 	if mouse.x < margin: direction.x = -1
 	elif mouse.x > viewport_size.x - margin: direction.x = 1
 	if mouse.y < margin: direction.y = -1
