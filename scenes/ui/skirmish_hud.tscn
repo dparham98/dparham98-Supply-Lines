@@ -1958,4 +1958,18 @@ step = 0.0
 show_percentage = false
 theme_override_styles/background = SubResource("bar_background")
 theme_override_styles/fill = SubResource("progress_fill")
+[node name="Tip" type="PanelContainer" parent="."]
+visible = false
+offset_right = 160.0
+offset_bottom = 40.0
+mouse_filter = 2
+theme = ExtResource("ui_theme")
+theme_override_styles/panel = SubResource("hover_card")
+[node name="Text" type="Label" parent="Tip"]
+custom_minimum_size = Vector2(0,0)
+layout_mode = 2
+mouse_filter = 2
+autowrap_mode = 3
+text = ""
+theme_override_font_sizes/font_size = 12
 [node name="PlaytestPanel" parent="." instance=ExtResource("playtest")]

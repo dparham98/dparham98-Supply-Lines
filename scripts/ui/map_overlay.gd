@@ -127,9 +127,10 @@ func _on_delivered(target: Node3D, kind: StringName, amount: int) -> void:
 # One ping per order: a group order emits once per unit, so repeats at the same spot are merged.
 func _on_order(kind: String, point: Vector3, target: Node3D, queued: bool) -> void:
 	var msec := Time.get_ticks_msec()
+	var frame := Engine.get_process_frames()
 	for ping in pings:
-		if ping.msec == msec and ping.kind == kind and ping.queued == queued and ping.point.distance_to(point) < 0.5: return
-	pings.append({kind = kind, point = point, target = target, queued = queued, time = msec/1000.0, msec = msec})
+		if ping.frame == frame and ping.kind == kind and ping.queued == queued and ping.point.distance_to(point) < 0.5: return
+	pings.append({kind = kind, point = point, target = target, queued = queued, time = msec/1000.0, msec = msec, frame = frame})
 # Unfilled ellipse outline (CanvasItem.draw_ellipse with filled off).
 func draw_ring(center: Vector2, radius: Vector2, color: Color, width: float) -> void:
 	draw_ellipse(center,radius.x,radius.y,color,false,width,true)

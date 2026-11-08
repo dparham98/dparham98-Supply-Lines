@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ct2wbj8vb62s2"
-path="res://.godot/imported/tank_T_Tank_BaseColor.png-a944f6c5f341276fed0de89dc806ef9b.ctex"
+path.s3tc="res://.godot/imported/tank_T_Tank_BaseColor.png-a944f6c5f341276fed0de89dc806ef9b.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "22b7c55ec95bd96b9a79f463b1f9a740"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/units/tank_T_Tank_BaseColor.png"
-dest_files=["res://.godot/imported/tank_T_Tank_BaseColor.png-a944f6c5f341276fed0de89dc806ef9b.ctex"]
+dest_files=["res://.godot/imported/tank_T_Tank_BaseColor.png-a944f6c5f341276fed0de89dc806ef9b.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

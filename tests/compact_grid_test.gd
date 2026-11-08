@@ -44,6 +44,21 @@ func run() -> void:
 	if not check(hud.card.get_node("Move").position == Vector2.ZERO and hud.card.get_node("Stop").position == Vector2(50,0) and hud.card.get_node("ToggleRefuel").position == Vector2(150,0),"Tank tiles moved"): return
 	# Tile names and keys are in tooltips; no hover line takes HUD space.
 	if not check(not hud.has_node("Bottom/Body/Row/Commands/Hover") and hud.card.get_node("Attack").tooltip_text.begins_with("Attack [A]"),"Tile tooltip missing, or the hover line is back"): return
+	# The hint is drawn by the HUD's own Tip panel (never Godot's popup, which can swallow a click in progress).
+	var tip = hud.get_node("Tip")
+	var attack_center: Vector2 = hud.card.get_node("Attack").get_global_rect().get_center()
+	var motion := InputEventMouseMotion.new(); motion.position = attack_center; motion.global_position = attack_center
+	root.push_input(motion,true); Input.parse_input_event(motion); Input.flush_buffered_events()
+	hud.tip_delay = 0.0
+	hud._process(0)
+	if not check(tip.visible and tip.get_node("Text").text.begins_with("Attack [A]") and tip.mouse_filter == Control.MOUSE_FILTER_IGNORE,"Hover tip not shown for the Attack tile: %s" % tip.get_node("Text").text): return
+	var press := InputEventMouseButton.new(); press.position = attack_center; press.global_position = attack_center; press.button_index = MOUSE_BUTTON_LEFT; press.pressed = true
+	Input.parse_input_event(press); Input.flush_buffered_events()
+	hud._process(0)
+	if not check(not tip.visible,"Hover tip stayed up while the button was held"): return
+	press.pressed = false; Input.parse_input_event(press); Input.flush_buffered_events()
+	hud.tip_delay = hud.TIP_DELAY
+	if not check(ProjectSettings.get_setting("gui/timers/tooltip_delay_sec") >= 1000,"Godot's own tooltip popup is enabled again"): return
 	# The header Build page is a grid of the same tiles, with Back last; Infantry has no build tile.
 	await select(worker)
 	if not check(not hud.card.has_node("Build"),"Infantry still has a Build tile"): return

@@ -17,7 +17,7 @@ Quality-of-life changes requested after PR #17. They replace parts of [PLAYTEST_
 
 - The selection's hint no longer has a line in the Context column. It's the tooltip of the Info and Context columns.
 - The hover line under the grid is gone. Each tile's name, key and detail are in its tooltip.
-- Tooltips open after 0.25 s (`gui/timers/tooltip_delay_sec`).
+- Hints open after 0.25 s, drawn by the HUD's own `Tip` panel inside the HUD layer (`skirmish_hud.gd` `update_tip`). Godot's tooltip popup is effectively disabled (`gui/timers/tooltip_delay_sec` = 100000): a popup window opening between a press and its release swallowed the click, which made the real-click checks flaky once the Tank model lengthened frame timings. The tip hides while a mouse button is held.
 
 ## Picking a stop on the map
 
