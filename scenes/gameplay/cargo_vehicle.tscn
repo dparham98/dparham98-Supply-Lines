@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/economy/cargo_vehicle.gd" id="agent"]
 [ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
-[ext_resource type="PackedScene" path="res://scenes/models/cargo_placeholder.tscn" id="model"]
+[ext_resource type="PackedScene" path="res://scenes/models/cargo_truck_model.tscn" id="model"]
 
 [ext_resource type="Resource" path="res://assets/economy/supply_rules.tres" id="stats"]
 

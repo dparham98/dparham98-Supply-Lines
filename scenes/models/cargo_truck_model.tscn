@@ -1,0 +1,12 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/components/vehicle_rig.gd" id="rig"]
+[ext_resource type="PackedScene" path="res://assets/models/units/cargo_truck.glb" id="truck"]
+[node name="CargoTruckModel" type="Node3D"]
+script = ExtResource("rig")
+wheel_paths = Array[NodePath]([NodePath("Rig/truck_root/chassis/steer_FL/wheel_FL"), NodePath("Rig/truck_root/chassis/steer_FR/wheel_FR"), NodePath("Rig/truck_root/chassis/wheel_ML"), NodePath("Rig/truck_root/chassis/wheel_MR"), NodePath("Rig/truck_root/chassis/wheel_RL"), NodePath("Rig/truck_root/chassis/wheel_RR")])
+steer_paths = Array[NodePath]([NodePath("Rig/truck_root/chassis/steer_FL"), NodePath("Rig/truck_root/chassis/steer_FR")])
+lid_path = NodePath("Rig/truck_root/chassis/cargo_bed/cargo_lid")
+ramp_path = NodePath("Rig/truck_root/chassis/cargo_bed/rear_ramp")
+indicator_path = NodePath("Rig/truck_root/chassis/cargo_bed/cargo_lid/cargo_indicator")
+[node name="Rig" parent="." instance=ExtResource("truck")]
+transform = Transform3D(-0.4,0,0,0,0.4,0,0,0,-0.4,0,0,0)

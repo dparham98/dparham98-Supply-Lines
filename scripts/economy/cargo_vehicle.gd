@@ -335,6 +335,14 @@ func command_return(target: Node3D = null) -> void:
 	else: game.notify("Load a crate, or unload at a friendly Depot or on open ground.")
 func _process(delta: float) -> void:
 	if _dead: return
+	_vehicle_process(delta)
+	_animate(delta)
+## The lid and ramp stand open while supplies are deployed or deploying, and during a transfer at a stop.
+func _hatches_open() -> bool:
+	return deployed or supply_transition == "deploying" or ((order in ["load","unload"] or route_active) and transfer_timer > 0.0)
+func _load_fraction() -> float:
+	return float(stockpile.total()+stockpile.reserved)/maxi(1,stockpile.capacity)
+func _vehicle_process(delta: float) -> void:
 	fuel_tick(delta)
 	if advance_supplies(delta): return
 	$SupplyRadius.visible = supplies_available() and (is_selected or game.get_node("DepotNetwork").selected == self)
