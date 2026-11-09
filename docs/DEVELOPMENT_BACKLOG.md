@@ -45,6 +45,10 @@ The cloud baseline was verified on 2026-10-28 (see [PROJECT_HANDOFF.md](PROJECT_
 - Enemy AI and pressure.
 - Construction timers, cover and salvage. These are not confirmed historical requirements.
 
+## 4b. Site construction (2026-11-08)
+
+- Buildings are built from materials delivered onto the footprint by Cargo trucks or workers, with Infantry building them in and the covering stockpile paying energy in step (docs/SITE_CONSTRUCTION.md). The skirmish starts with a fuelled empty Cargo truck. Rails stay Depot-paid. Open: wood as a building material, construction animation on the footprint itself, auto-assigning idle workers, and whether trains should unload at sites. Not yet playtested.
+
 ## 5. Art pipeline
 
 - The Scout Blender model is static and unrigged and not exported.

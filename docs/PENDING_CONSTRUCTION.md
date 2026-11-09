@@ -1,5 +1,7 @@
 # Global pending construction
 
+> Superseded for buildings by [SITE_CONSTRUCTION.md](SITE_CONSTRUCTION.md): plans now need their iron delivered onto the footprint and Infantry to build them in, with the covering stockpile paying energy as they go. Rails still follow the instant Depot-paid rule below. The instant completion survives as `complete_from_stock()` for rails, tests and the playtest tools.
+
 Implemented October 16, 2026 as the next usability milestone after mixed-unit selection. Work remains in the authoritative C:/Dev/Supply-Lines project. No GitHub or archive updates.
 
 ## Player controls and behavior

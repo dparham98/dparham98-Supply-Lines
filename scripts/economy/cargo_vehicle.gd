@@ -185,10 +185,15 @@ func shipment_endpoint(node) -> bool:
 	return not is_in_group("rail_trains") and node.is_in_group("mobile_supplies") and node.get("deployed") == true and node.health > 0
 func _crate_stop(node) -> bool:
 	return is_instance_valid(node) and node.is_in_group("supply_crates") and not node.is_queued_for_deletion() and node.team == team
-## Whether this vehicle can stop there: trains need a Depot; trucks also take crates and open ground.
+## A queued build site (docs/SITE_CONSTRUCTION.md) that trucks can unload materials onto.
+func _site_stop(node) -> bool:
+	return is_instance_valid(node) and node.is_in_group("construction_plans") and not node.is_queued_for_deletion() and not node.finished and node.kind != &"rail" and team == "player"
+## Whether this vehicle can stop there: trains need a Depot; trucks also take crates, open ground
+## and, for unloading, build sites.
 func stop_valid(kind: String, node, point) -> bool:
 	if shipment_endpoint(node): return true
 	if is_in_group("rail_trains"): return false
+	if kind == "unload" and _site_stop(node): return true
 	if kind == "load": return _crate_stop(node) or (node == null and point != null)
 	# Ground drops need open land at or right next to the point.
 	return node == null and point != null and CrateYard.free_cell(get_tree(),point,0,2) != null
@@ -205,7 +210,7 @@ func _start_job(kind: String, node: Node3D, point = null) -> void:
 	cancel_supply_route()
 	_stop_route()
 	job_target = node
-	_job_requires_target = shipment_endpoint(node)
+	_job_requires_target = shipment_endpoint(node) or _site_stop(node)
 	job_point = node.global_position if is_instance_valid(node) else point
 	order_target = node
 	order = kind
@@ -214,11 +219,13 @@ func _start_job(kind: String, node: Node3D, point = null) -> void:
 func stop_name(stop: Dictionary) -> String:
 	var node = stop.get("target")
 	if _crate_stop(node): return "crates"
+	if _site_stop(node): return "at the %s site" % node.spec.title
 	if is_instance_valid(node): return "at "+str(node.name)
 	return "on ground"
 ## A short title for the HUD: the Depot's name, or a crate pickup or ground drop.
 func stop_title(stop: Dictionary, pickup: bool) -> String:
 	var node = stop.get("target")
+	if _site_stop(node): return "%s site" % node.spec.title
 	if is_instance_valid(node) and not _crate_stop(node): return str(node.name)
 	return "Crate pickup" if pickup else "Ground drop"
 ## Pickup and delivery stops of the current crate trip ({target, point}), from the current order,
@@ -267,6 +274,17 @@ func load_crates(node: Node3D, point: Vector3) -> int:
 ## sets crates down on free tiles around a ground point.
 func unload_crates(node: Node3D, point: Vector3) -> int:
 	var count := 0
+	if _site_stop(node):
+		# Loose cargo first, then crates; the site takes only what the build still lacks.
+		for kind in ResourceStockpile.KINDS:
+			var loose: int = stockpile.amount(kind)
+			if loose > 0: stockpile.withdraw(kind,node.receive(kind,loose))
+		for crate in crates.duplicate():
+			var accepted: int = node.receive(crate.kind,crate.amount) if crate.amount > 0 else 0
+			crate.amount -= accepted
+			if crate.amount == 0: crates.erase(crate); count += 1
+		_sync_reserved()
+		return count
 	if shipment_endpoint(node):
 		var moved := {}
 		for crate in crates.duplicate():
@@ -288,7 +306,7 @@ func _crate_job(delta: float) -> void:
 	# A picked-up or emptied crate stop becomes its ground point; a lost Depot ends the job.
 	if not is_instance_valid(job_target): job_target = null
 	if not _job_requires_target and is_instance_valid(job_target) and job_target.is_queued_for_deletion(): job_target = null
-	if (_job_requires_target and not shipment_endpoint(job_target)) or (job_target != null and not stop_valid(order,job_target,job_point)):
+	if (_job_requires_target and not (shipment_endpoint(job_target) or _site_stop(job_target))) or (job_target != null and not stop_valid(order,job_target,job_point)):
 		_stop_route()
 		order = "idle"; job_target = null; order_target = null; transfer_timer = 0
 		state = "Shipment stop lost · crates retained"; _update_display(); return
@@ -307,7 +325,7 @@ func _crate_job(delta: float) -> void:
 	state = "%s · %.1fs" % ["Loading" if order == "load" else "Unloading",maxf(0,supply_rules.transfer_seconds-transfer_timer)]
 	if transfer_timer < supply_rules.transfer_seconds: _update_display(); return
 	transfer_timer = 0
-	var stop := {target = job_target if shipment_endpoint(job_target) else null, point = job_point, requires_target = _job_requires_target}
+	var stop := {target = job_target if shipment_endpoint(job_target) or _site_stop(job_target) else null, point = job_point, requires_target = _job_requires_target}
 	var label := stop_name({target = job_target, point = job_point})
 	if order == "load":
 		var loaded := load_crates(job_target,job_point)
@@ -318,9 +336,11 @@ func _crate_job(delta: float) -> void:
 		order = "idle"; job_target = null
 		state = "Loaded %d crate%s %s" % [loaded,"" if loaded == 1 else "s",label]
 	else:
+		var site := _site_stop(job_target)
 		var unloaded := unload_crates(job_target,job_point)
 		order = "idle"; job_target = null
-		state = ("Unloaded %d crate%s" % [unloaded,"" if unloaded == 1 else "s"])+(" · %d retained, no space" % crates.size() if not crates.is_empty() else "")
+		if site: state = "Materials delivered to the build site"+(" · %d crate%s retained" % [crates.size(),"" if crates.size() == 1 else "s"] if not crates.is_empty() else "")
+		else: state = ("Unloaded %d crate%s" % [unloaded,"" if unloaded == 1 else "s"])+(" · %d retained, no space" % crates.size() if not crates.is_empty() else "")
 		# Trips: return to the last pickup while it has crates (all) or forever (repeat).
 		if trips != "once" and order_queue.is_empty() and not _trip_pickup.is_empty() and (not _trip_pickup.get("requires_target",false) or shipment_endpoint(_trip_pickup.target)):
 			var pickup_target: Node3D = _trip_pickup.target if is_instance_valid(_trip_pickup.target) else null
@@ -332,7 +352,10 @@ func command_return(target: Node3D = null) -> void:
 	# Right-click: Load a crate; at a Depot or deployed vehicle, unload when carrying crates, else load.
 	if _crate_stop(target) and not is_in_group("rail_trains"): _start_job("load",target)
 	elif shipment_endpoint(target): _start_job("unload" if not crates.is_empty() else "load",target)
-	else: game.notify("Load a crate, or unload at a friendly Depot or on open ground.")
+	elif _site_stop(target) and not is_in_group("rail_trains"):
+		if crates.is_empty() and stockpile.total() == 0: game.notify("Nothing aboard to deliver to the build site.")
+		else: _start_job("unload",target)
+	else: game.notify("Load a crate, or unload at a friendly Depot, a build site or on open ground.")
 func _process(delta: float) -> void:
 	if _dead: return
 	_vehicle_process(delta)

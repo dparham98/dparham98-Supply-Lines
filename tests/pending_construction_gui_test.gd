@@ -41,10 +41,19 @@ func run() -> void:
 	var worker = game.get_node("Entities/Units/Infantry")
 	await click_at(rig.camera.unproject_position(worker.selection_point()))
 	if not check(worker.is_selected and not hud.global_build_open,"Global menu blocked direct selection switching"): return
+	# Materials go onto the site and a worker builds them in; the Depot pays energy only.
 	game.depot.energy = spec.energy; game.depot.iron = spec.iron
 	plan._process(0.3)
 	for i in range(3): await process_frame
-	if not check(get_nodes_in_group("construction_plans").is_empty() and get_nodes_in_group("energy_generators").size() == 1 and game.depot.energy == 0 and game.depot.iron == 0,"Pending plan did not complete through process update"): return
+	if not check(get_nodes_in_group("construction_plans").size() == 1 and game.depot.iron == spec.iron,"Funded Depot completed a plan without site materials"): return
+	if not check(plan.receive(&"iron",spec.iron) == spec.iron and plan.materials_covered(),"Site did not take its materials"): return
+	worker.global_position = plan.global_position+Vector3(plan.dropoff_range,0,0)
+	worker.command_construct(plan)
+	for i in range(200):
+		worker._process(0.25)
+		if not get_nodes_in_group("construction_plans").has(plan): break
+	for i in range(3): await process_frame
+	if not check(get_nodes_in_group("construction_plans").is_empty() and get_nodes_in_group("energy_generators").size() == 1 and game.depot.energy == 0 and game.depot.iron == spec.iron,"Worker did not finish the plan from site materials"): return
 	if not check(worker.is_selected and hud.shown == worker,"Background completion stole current selection"): return
 	await click(hud.get_node("Bottom/Body/Header/GlobalBuild"))
 	await click(hud.build_menu.get_node("Actions/Barracks"))

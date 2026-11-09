@@ -69,7 +69,7 @@ func run() -> void:
 			if network.can_place_size(candidate,first,network.supply_rules.generator_footprint) and screen.y < hud.get_node("Bottom").global_position.y-20: point = candidate
 	if not check(point != Vector3.ZERO,"No generator placement point for GUI check"): return
 	await click_at(rig.camera.unproject_position(point))
-	for plan in get_nodes_in_group("construction_plans"): plan.try_complete()
+	for plan in get_nodes_in_group("construction_plans"): plan.complete_from_stock()
 	if not check(get_nodes_in_group("energy_generators").size() == 1 and first.energy >= 400 and first.iron == 480,"World click failed to build the generator plan"): return
 	for generator in get_nodes_in_group("energy_generators"): generator.set_process(false)
 	var expected_depot_energy: int = first.energy-20
@@ -83,7 +83,7 @@ func run() -> void:
 			if network.can_place(candidate,first) and screen.y < hud.get_node("Bottom").global_position.y-20: point = candidate
 	if not check(point != Vector3.ZERO,"No Depot placement point for GUI check"): return
 	await click_at(rig.camera.unproject_position(point))
-	for plan in get_nodes_in_group("construction_plans"): plan.try_complete()
+	for plan in get_nodes_in_group("construction_plans"): plan.complete_from_stock()
 	if not check(get_nodes_in_group("depots").size() == 4 and first.energy == expected_depot_energy and first.iron == 460,"World click failed to build the Depot plan"): return
 	await click(hud.build_menu.get_node("Actions/Back"))
 	if not check(not hud.global_build_open and hud.card.visible,"Real GUI click failed: Back from build menu"): return

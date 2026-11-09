@@ -64,7 +64,7 @@ func run() -> void:
 	await click(hud.build_menu.get_node("Actions/Mine"))
 	if not check(game.global_plan_kind == &"iron_mine","Mine build tile failed"): return
 	await click_at(rig.camera.unproject_position(Vector3(150,0,154)))
-	for plan in get_nodes_in_group("construction_plans"): plan.try_complete()
+	for plan in get_nodes_in_group("construction_plans"): plan.complete_from_stock()
 	if not check(get_nodes_in_group("mines").size() == 2 and payer.energy == 425 and payer.iron == 475,"Depot Mine world placement failed"): return
 	await shot("harvesting_depot_build")
 	await click(hud.build_menu.get_node("Actions/Back"))
@@ -74,7 +74,7 @@ func run() -> void:
 	await click(hud.get_node("Bottom/Body/Header/GlobalBuild"))
 	await click(hud.build_menu.get_node("Actions/Mine"))
 	await click_at(rig.camera.unproject_position(Vector3(148,0,154)))
-	for plan in get_nodes_in_group("construction_plans"): plan.try_complete()
+	for plan in get_nodes_in_group("construction_plans"): plan.complete_from_stock()
 	if not check(get_nodes_in_group("mines").size() == 3 and payer.energy == 350 and payer.iron == 450,"Infantry Mine construction/local payment failed"): return
 	await click(hud.build_menu.get_node("Actions/Back"))
 	var mine = get_nodes_in_group("mines")[-1]

@@ -94,7 +94,7 @@ func run() -> void:
 	await shot("mobile_supply_build")
 	await click(hud.build_menu.get_node("Actions/Mine"))
 	await click_at(rig.camera.unproject_position(Vector3(150,0,154)))
-	for plan in get_nodes_in_group("construction_plans"): plan.try_complete()
+	for plan in get_nodes_in_group("construction_plans"): plan.complete_from_stock()
 	if not check(get_nodes_in_group("mines").size() == 2 and truck.stockpile.total() == 0 and game.depot.energy == 500 and game.depot.iron == 500,"Mobile Mine GUI payment failed"): return
 	await click(hud.build_menu.get_node("Actions/Back"))
 	truck.carried_energy = 10; truck.carried_iron = 10
@@ -167,7 +167,7 @@ func run() -> void:
 			if network.can_place_size(candidate,train,Vector2i(5,5)): point = candidate
 	await click(hud.build_menu.get_node("Actions/Barracks"))
 	await click_at(rig.camera.unproject_position(point))
-	for plan in get_nodes_in_group("construction_plans"): plan.try_complete()
+	for plan in get_nodes_in_group("construction_plans"): plan.complete_from_stock()
 	if not check(get_nodes_in_group("production_buildings").size() == 1 and train.energy == 100 and train.iron == 45,"Train-funded Barracks GUI failed"): return
 	var building = get_nodes_in_group("production_buildings")[0]; building.set_process(false)
 	await click(hud.build_menu.get_node("Actions/Back"))

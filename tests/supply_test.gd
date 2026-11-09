@@ -154,7 +154,7 @@ func run() -> void:
 	var cargo_count := 0
 	for unit in get_nodes_in_group("units"):
 		if unit.is_cargo_vehicle: cargo_count += 1
-	assert(cargo_count == 3) # Includes the outpost cargo job replacing removed Depot Infantry.
+	assert(cargo_count == 4) # The starting Cargo truck, plus the outpost cargo job replacing removed Depot Infantry.
 	outpost.free()
 	step(1)
 	assert(vehicle.route_paused and vehicle.carried_energy == 9)

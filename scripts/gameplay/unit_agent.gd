@@ -184,7 +184,7 @@ func _animate(delta: float = 1.0/60) -> void:
 	var value := 0.0
 	if _animated_from != Vector3.INF and here != _animated_from: kind = &"run"; value = move_speed
 	elif _aimed_frame == Engine.get_process_frames(): kind = &"aim"
-	elif state == "Gathering": kind = &"work"; value = harvest_interval
+	elif state == "Gathering" or state.begins_with("Constructing"): kind = &"work"; value = harvest_interval
 	elif state.begins_with("Repairing"): kind = &"work"; value = engineering_rules.repair_interval if engineering_rules else 0.0
 	model.set_motion(kind,value)
 	if kind == &"work" and _work_timer == 0.0 and model.has_method("sync_work"): model.sync_work()
@@ -248,6 +248,7 @@ func _order_process(delta: float) -> void:
 		"attack": _attack_order()
 		"repair": _repair(delta)
 		"capture": _capture_order()
+		"construct": _construct(delta)
 		_:
 			state = "Idle"
 			# Hold ground and defend even when deselected; working units keep working.
@@ -269,6 +270,7 @@ func run_order(entry: Dictionary) -> void:
 		"return": command_return(entry.get("target"))
 		"repair": command_repair(entry.target)
 		"capture": command_capture(entry.target)
+		"construct": command_construct(entry.target)
 		"attack_move": command_attack_move(entry.point)
 		"deploy": command_deploy_at(entry.point)
 		"load", "unload":
@@ -279,7 +281,7 @@ func _start_next_order() -> void:
 	# Skip entries whose target is gone or that the unit refuses, such as an unreachable attack.
 	while order == "idle" and not order_queue.is_empty():
 		var entry: Dictionary = order_queue.pop_front()
-		if entry.kind in ["attack","gather","repair","capture","load","unload"] and not is_instance_valid(entry.get("target")) and not (entry.kind in ["load","unload"] and entry.get("point") != null): continue
+		if entry.kind in ["attack","gather","repair","capture","construct","load","unload"] and not is_instance_valid(entry.get("target")) and not (entry.kind in ["load","unload"] and entry.get("point") != null): continue
 		run_order(entry)
 func order_point(entry: Dictionary) -> Variant:
 	if entry.kind in ["move","attack_move","deploy"]: return entry.point
@@ -573,6 +575,40 @@ func _repair(delta: float) -> void:
 	if _work_timer >= engineering_rules.repair_interval:
 		_work_timer = 0
 		if not EngineeringWork.tick(self,order_target,repair_payer): state = "Repair paused · local funds unavailable"
+## Build at a queued site (docs/SITE_CONSTRUCTION.md): carried materials the site needs go onto its
+## pile first, then the worker builds them in at its work pace, 5 per two saw swings.
+func command_construct(plan: Node3D) -> void:
+	if not can_construct or is_depot_truck or is_cargo_vehicle or not is_instance_valid(plan) or not plan.is_in_group("construction_plans") or plan.finished or plan.kind == &"rail": return
+	_stop_route()
+	source = null
+	order = "construct"
+	order_target = plan
+	_work_timer = 0
+	state = "To build site"
+func _construct_reach() -> float:
+	return order_target.dropoff_range+2.0
+func _construct(delta: float) -> void:
+	if not is_instance_valid(order_target) or not order_target.is_in_group("construction_plans") or order_target.finished:
+		order = "idle"; state = "Construction complete" if is_instance_valid(order_target) and order_target.finished else "Build site lost"; return
+	if global_position.distance_to(order_target.global_position) > _construct_reach():
+		_work_timer = 0
+		if _retry <= 0:
+			state = "To build site"
+			if not _route_near(order_target,_construct_reach()): state = "Build site unreachable"
+		return
+	_face(order_target.global_position)
+	if cargo > 0 and order_target.shortfall(cargo_kind) > 0:
+		cargo -= order_target.receive(cargo_kind,cargo)
+		state = "Materials delivered to site"
+	_work_timer += delta
+	if _work_timer < harvest_interval:
+		if not state.begins_with("Constructing") and not state.begins_with("Waiting") and state != "Materials delivered to site": state = "Constructing"
+		return
+	_work_timer = 0
+	var waited: String = order_target.work(self,harvest_amount)
+	if waited == "Built" or order_target.finished: order = "idle"; state = "Construction complete"
+	elif waited.is_empty(): state = "Constructing"
+	else: state = waited
 func command_capture(target: Node3D) -> void:
 	if not can_capture_depots or is_depot_truck or is_cargo_vehicle or not is_instance_valid(target) or not target.is_in_group("capturable_buildings"): return
 	_stop_route()

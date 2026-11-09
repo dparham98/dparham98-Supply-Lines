@@ -239,7 +239,8 @@ func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_paye
 	plan.payer = payer; plan.pinned = pin_payer or payer != null
 	plan.position = game.ground.tile_to_world(start+spec.size/2)
 	game.get_node("Entities/Buildings").add_child(plan,true)
-	game.notify("%s plan placed. No resources spent until one friendly covering Depot can pay." % spec.title)
+	if kind == &"rail": game.notify("Rail plan placed. A covering Depot pays it when the tile is clear.")
+	else: game.notify("%s plan placed. Deliver %d iron to its footprint, then order Infantry to construct; a covering stockpile pays the energy as they build." % [spec.title,spec.iron])
 	return plan
 ## Depots and deployed Cargo trucks pay plans in their range; rails need a Depot.
 func plan_source_valid(plan: Node3D, source) -> bool:
@@ -278,6 +279,55 @@ func update_global_preview(point: Vector3) -> bool:
 	if preview_material == null:
 		preview_material = ghost.get_node("Footprint").mesh.material.duplicate()
 		ghost.get_node("Footprint").material_override = preview_material
-	preview_material.albedo_color = Color(1,0.75,0.1,0.5) if valid else Color(1,0.15,0.1,0.45)
-	ghost.get_node("Status").text = "%s · %s · %d E / %d I on completion" % ["PLAN" if valid else "BLOCKED",spec.title,spec.energy,spec.iron]
+	# A plan placed over piles adopts them: the preview says whether they already cover the build.
+	var on_site := materials_inside(Rect2i(start,spec.size))
+	var covered: bool = game.global_plan_kind != &"rail" and spec.iron > 0 and on_site.get(&"iron",0) >= spec.iron
+	preview_material.albedo_color = (Color(0.35,0.95,0.5,0.55) if covered else Color(1,0.75,0.1,0.5)) if valid else Color(1,0.15,0.1,0.45)
+	var site_line := "" if game.global_plan_kind == &"rail" else " · iron on site %d/%d%s" % [on_site.get(&"iron",0),spec.iron," · READY" if covered else ""]
+	ghost.get_node("Status").text = "%s · %s · %d E / %d I%s" % ["PLAN" if valid else "BLOCKED",spec.title,spec.energy,spec.iron,site_line]
 	return valid
+## Piles and crates inside a footprint that still hold something (docs/SITE_CONSTRUCTION.md).
+func stores_inside(rect: Rect2i) -> Array[Node3D]:
+	var result: Array[Node3D] = []
+	for group in ["material_piles","supply_crates"]:
+		for node in get_tree().get_nodes_in_group(group):
+			if not is_instance_valid(node) or node.is_queued_for_deletion() or node.remaining <= 0: continue
+			var cell = game.ground.get_tile_at_position(node.global_position)
+			if cell != null and rect.has_point(cell): result.append(node)
+	return result
+func materials_inside(rect: Rect2i) -> Dictionary:
+	var result := {}
+	for node in stores_inside(rect): result[node.resource_kind] = result.get(node.resource_kind,0)+node.remaining
+	return result
+## Whether a stockpile's range covers every corner of the plan's footprint.
+func source_covers_plan(source, plan: Node3D) -> bool:
+	if not SupplySource.available(source,"player"): return false
+	var size: Vector2i = plan.spec.size
+	for offset in [Vector2i.ZERO,Vector2i(size.x-1,0),Vector2i(0,size.y-1),size-Vector2i.ONE]:
+		if game.ground.tile_to_world(plan.start+offset).distance_to(source.global_position) > SupplySource.radius(source): return false
+	return true
+## Energy comes from one covering Depot or deployed Cargo vehicle; materials never do.
+func plan_energy_source_valid(plan: Node3D, source, due: int) -> bool:
+	return source_covers_plan(source,plan) and source.energy >= due
+## Stands the building up once a site's work is done. Nothing is spent here: the materials came off
+## the site and the energy was charged tick by tick.
+func finish_plan(plan: Node3D) -> Node3D:
+	if plan.finished or not plan_terrain_valid(plan.start,plan.spec.size,plan.kind): return null
+	var payer = plan.payer if is_instance_valid(plan.payer) and plan.payer.is_in_group("depots") else null
+	var building = plan.spec.scene.instantiate()
+	if plan.kind == &"depot":
+		building.initial_energy = 0; building.initial_iron = 0
+		building.grant_construction_infantry = true
+	elif plan.kind == &"generator": building.rules = supply_rules; building.assigned_depot = payer
+	elif plan.kind == &"iron_mine": building.rules = engineering_rules
+	else: building.assigned_depot = payer
+	building.position = plan.global_position
+	if plan.kind == &"rail": game.add_child(building,true)
+	else: game.get_node("Entities/Buildings").add_child(building,true)
+	return building
+## Moves leftover piles and crates off a finished footprint to the nearest free cells around it.
+func clear_site(plan: Node3D) -> void:
+	var ring: int = maxi(plan.spec.size.x,plan.spec.size.y)/2+1
+	for node in stores_inside(plan.footprint()):
+		var cell = CrateYard.free_cell(get_tree(),plan.global_position,ring,6)
+		if cell != null: node.global_position = game.ground.tile_to_world(cell)

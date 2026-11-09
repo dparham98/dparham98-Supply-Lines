@@ -71,7 +71,7 @@ func run() -> void:
 	var cell = game.ground.get_tile_at_position(source.global_position+Vector3(0,0,10))
 	await click_at(rig.camera.unproject_position(game.ground.tile_to_world(cell)))
 	await click_at(rig.camera.unproject_position(game.ground.tile_to_world(cell+Vector2i(1,0))))
-	for plan in get_nodes_in_group("construction_plans"): plan.try_complete()
+	for plan in get_nodes_in_group("construction_plans"): plan.complete_from_stock()
 	if not check(rails.segments.has(cell) and rails.segments.has(cell+Vector2i(1,0)) and source.iron == 466 and game.global_plan_kind == &"rail","Repeated rail plans or payer debit failed"): return
 	await shot("rail_construction")
 	var escape := InputEventKey.new()
