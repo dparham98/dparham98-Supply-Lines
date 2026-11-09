@@ -2,6 +2,10 @@ extends SceneTree
 const TestOutput = preload("res://tests/test_output.gd")
 const OUTPUT = "camera_work/"
 
+func forest_spots(forests: Node) -> int:
+	var total := 0
+	for batch in forests.get_children(): total += batch.multimesh.instance_count
+	return total
 func _initialize() -> void:
 	call_deferred("run_checks")
 
@@ -102,7 +106,7 @@ func run_checks() -> void:
 	assert(not infantry.is_moving)
 	assert(ground.get_tile_at_position(infantry.position) == target)
 	infantry.is_selected = previous_selection
-	var results := {"terrain_counts": counts, "hq_cell": [hq.grid_position.x, hq.grid_position.y], "terrain_rules_passed": true, "route_avoids_blocked_terrain": true, "unit_followed_route": true, "decorations": {"trees": scene.get_node("Terrain/Landmarks/Forests/Trunk").multimesh.instance_count}}
+	var results := {"terrain_counts": counts, "hq_cell": [hq.grid_position.x, hq.grid_position.y], "terrain_rules_passed": true, "route_avoids_blocked_terrain": true, "unit_followed_route": true, "decorations": {"trees": forest_spots(scene.get_node("Terrain/Landmarks/Forests"))}}
 	var camera = scene.get_node("CameraRig/YawPivot/PitchPivot/Camera")
 	scene.get_node("CameraRig").set_process(false)
 	if DisplayServer.get_name() != "headless":
