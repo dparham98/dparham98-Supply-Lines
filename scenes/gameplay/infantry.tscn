@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/gameplay/unit_agent.gd" id="agent"]
 [ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
-[ext_resource type="PackedScene" path="res://scenes/models/engineer_prototype.tscn" id="model"]
+[ext_resource type="PackedScene" path="res://scenes/models/infantry_model.tscn" id="model"]
 
 [ext_resource type="Resource" path="res://assets/units/infantry.tres" id="stats"]
 

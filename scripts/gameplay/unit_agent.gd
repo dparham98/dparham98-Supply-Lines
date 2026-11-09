@@ -42,7 +42,8 @@ var _attack_enabled := true
 @export var attack_damage := 16
 @export var shot_interval := 0.7
 @export var carry_capacity := 10
-@export var harvest_interval := 0.6
+## Two saw swings per extraction (docs/INFANTRY_MODEL.md).
+@export var harvest_interval := 1.2
 @export var harvest_amount := 5
 @export var interaction_range := 4.0
 var health := 100
@@ -153,6 +154,28 @@ func _process(delta: float) -> void:
 	if _dead: return
 	fuel_tick(delta)
 	_order_process(delta)
+	_animate()
+## The Visuals model when it carries a character animator (scripts/components/character_animator.gd).
+func _animator() -> Node3D:
+	var model := $Visuals.get_node_or_null("Model")
+	return model if model != null and model.has_method("set_motion") else null
+var _animated_from := Vector3.INF
+var _aimed_frame := -2
+## Tell the model what this frame looked like: a step is a run, a target in range keeps the gun up,
+## work at a source or building is work with its cycle period.
+func _animate() -> void:
+	var model := _animator()
+	var here := global_position
+	if model == null: _animated_from = here; return
+	var kind: StringName = &"idle"
+	var value := 0.0
+	if _animated_from != Vector3.INF and here != _animated_from: kind = &"run"; value = move_speed
+	elif _aimed_frame == Engine.get_process_frames(): kind = &"aim"
+	elif state == "Gathering": kind = &"work"; value = harvest_interval
+	elif state.begins_with("Repairing"): kind = &"work"; value = engineering_rules.repair_interval if engineering_rules else 0.0
+	model.set_motion(kind,value)
+	if kind == &"work" and _work_timer == 0.0 and model.has_method("sync_work"): model.sync_work()
+	_animated_from = here
 # Orders, movement and combat for one frame. Callers tick fuel first.
 func _order_process(delta: float) -> void:
 	if order == "idle" and not order_queue.is_empty() and not out_of_fuel: _start_next_order()
@@ -437,11 +460,18 @@ func _shoot(target: Node3D) -> void:
 	# A turret tracks the target between shots; a unit without one turns its whole body as it fires.
 	var turret := _turret()
 	if turret: turret.aim_at(target.global_position)
+	_aimed_frame = Engine.get_process_frames()
 	if _cooldown > 0: return
 	_cooldown = CombatResolver.interval_for(self,target)
-	if turret == null: _face(target.global_position)
+	var animator := _animator()
+	if animator: animator.play_action(&"shoot")
+	# Turn so the gun line runs through the target when the model knows where its gun points; otherwise face it.
+	if turret == null:
+		if animator and animator.has_method("aim_yaw"): $Visuals.rotation.y = animator.aim_yaw(to_local(target.global_position))
+		else: _face(target.global_position)
 	var target_height: Vector3 = target.get_node("Visuals").position if target.has_node("Visuals") else Vector3.ZERO
-	var muzzle: Vector3 = turret.muzzle_position() if turret else global_position+Vector3.UP*1.7+$Visuals.position
+	var model := $Visuals.get_node_or_null("Model")
+	var muzzle: Vector3 = model.muzzle_position() if model != null and model.has_method("muzzle_position") else global_position+Vector3.UP*1.7+$Visuals.position
 	game.show_shot(muzzle,target.global_position+Vector3.UP*1.7+target_height,team)
 	CombatResolver.strike(self,target)
 	if is_instance_valid(target) and game.has_method("mark_attacked"): game.mark_attacked(target)

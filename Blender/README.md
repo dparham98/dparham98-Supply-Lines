@@ -3,7 +3,7 @@
 This is the main location for Supply Lines Blender work. Open these for future edits:
 
 - Characters\Scout\Scout.blend: latest scout with angular helmet, reflective visor, blonde ponytail and refined armor. Static model; no rig.
-- Characters\Infantry\Infantry.blend: latest refined infantry working model.
+- Characters\Infantry\Infantry.blend: the 2026-11-08 rigged cyborg infantry (armature `infantry_rig2`, 21 bones, actions Rest/Run/Hack/Shoot on NLA tracks; the `rig_artpose` collection is what ships, `rigprep_Apose` and `infantry_hunyuan_raw` are working references). Exported to assets\models\units\infantry.glb: select the `rig_artpose` objects, glTF Binary, +Y up, apply modifiers, animations as NLA tracks. The game plays the clips by name and fires from the `pistol` bone; `chainsaw_teeth_rig` must stay a separate mesh under the `chainsaw` bone for the teeth shader. The earlier static infantry is Backups\Infantry\Infantry_2026-10-15_static.blend.
 - Vehicles\Tank\Tank.blend: the 2026-11-08 tank (hull, turret and barrel under Tank_Root in the Tank collection; baked PBR textures packed). Exported to assets\models\units\tank.glb. The game turns `Tank_Turret` about its own origin (keep it on the ring centre) and fires from `Barrel_Muzzle_Brake`; keep those object names and the barrel parented under the turret. The earlier unvalidated tank is Backups\Tank\Tank_2025-09-13_unvalidated.blend.
 
 References holds recovered art. Previews\Scout holds current renders. Backups\Scout holds earlier revisions. Archive\Originals preserves the old Supply Lines art folder, including Blender backups, exports, animations and related assets.

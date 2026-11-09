@@ -47,5 +47,6 @@ The cloud baseline was verified on 2026-10-28 (see [PROJECT_HANDOFF.md](PROJECT_
 
 ## 5. Art pipeline
 
-- Scout and Infantry Blender models are static and unrigged. Nothing has been exported into `assets/models` yet.
+- The Scout Blender model is static and unrigged and not exported.
+- Infantry: `Blender/Characters/Infantry/Infantry.blend` (2026-11-08 rigged cyborg) is exported to `assets/models/units/infantry.glb` and used by `scenes/models/infantry_model.tscn` (turned to face -Z). `character_animator.gd` plays Run while walking, Hack with running saw teeth while gathering or repairing, Shoot on each shot and Rest otherwise (docs/INFANTRY_MODEL.md). `infantry_model_test` and `infantry_model_runtime_check` cover it. Not yet accepted in play.
 - Tank: `Blender/Vehicles/Tank/Tank.blend` (2026-11-08) is exported to `assets/models/units/tank.glb` and used by `scenes/models/tank_model.tscn` (scale 0.4, turned to face -Z). Re-export after edits: select the Tank collection, glTF Binary, +Y up, apply modifiers. `tank_model_runtime_check` renders it. The turret aims at the tank's target and sways when idle (docs/TURRET_AIM.md); `turret_aim_test` and the `tank_turret` screenshot cover it. Not yet accepted in play.
