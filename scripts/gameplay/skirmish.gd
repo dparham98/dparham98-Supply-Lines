@@ -120,22 +120,26 @@ func rail_kind() -> String:
 func rail_join() -> int:
 	if rail_piece.begins_with("fork"): return rail_fork_join
 	return 1 if rail_piece == "right" else 0
-func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE: cancel_armed()
-	if placing_rail and event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_R:
-			rail_piece = {"straight":"left","left":"right","right":"fork_left","fork_left":"fork_right","fork_right":"straight"}[rail_piece]
-			rail_fork_join = 0
-			notify("Laying %s track, %d iron. R switches piece; F turns a free piece; G changes which end of a fork joins; Esc finishes." % [rail_piece.replace("_"," "),$RailNetwork.cost(rail_kind())])
-			get_viewport().set_input_as_handled(); return
-		if event.keycode == KEY_F:
-			rail_heading = Vector3(-rail_heading.z,0,rail_heading.x)
-			notify("Free piece heading turned. Snapped pieces follow the track they join.")
-			get_viewport().set_input_as_handled(); return
-	if placing_rail and event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_G and rail_piece.begins_with("fork"):
+## R, F and G belong to track laying while it is armed. Button shortcuts run before _unhandled_input and the
+## Build page stays open while laying, so its tiles with the same letters would otherwise answer first.
+func _input(event: InputEvent) -> void:
+	if not placing_rail or not event is InputEventKey or not event.pressed: return
+	if not event.physical_keycode in [KEY_R,KEY_F,KEY_G]: return
+	get_viewport().set_input_as_handled()
+	if not event.echo: _rail_key(event.physical_keycode)
+func _rail_key(key: int) -> void:
+	if key == KEY_R:
+		rail_piece = {"straight":"left","left":"right","right":"fork_left","fork_left":"fork_right","fork_right":"straight"}[rail_piece]
+		rail_fork_join = 0
+		notify("Laying %s track, %d iron. R switches piece; F turns a free piece; G changes which end of a fork joins; Esc finishes." % [rail_piece.replace("_"," "),$RailNetwork.cost(rail_kind())])
+	elif key == KEY_F:
+		rail_heading = Vector3(-rail_heading.z,0,rail_heading.x)
+		notify("Free piece heading turned. Snapped pieces follow the track they join.")
+	elif rail_piece.begins_with("fork"):
 		rail_fork_join = (rail_fork_join+1)%3
 		notify("Fork joins the track by its %s." % ["entry","straight exit","branch exit"][rail_fork_join])
-		get_viewport().set_input_as_handled(); return
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE: cancel_armed()
 	# Actor selection takes precedence over armed world actions.
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		if (not global_plan_kind.is_empty() or placing_rail or placing_depot or placing_generator or not placing_structure.is_empty() or pending_unit_command == "move") and get_node("/root/SelectionManager").switch_at(event.position):
