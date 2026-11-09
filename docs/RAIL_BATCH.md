@@ -2,6 +2,8 @@
 
 # Rails and trains
 
+> Superseded for track geometry by [MAGLEV_TRACKS.md](MAGLEV_TRACKS.md): rails are authored maglev pieces laid end to end, not one-tile squares, and trains are an engine with three cars following the joined centre lines. Routes, loading areas and Depot ownership below still apply.
+
 Depots can now build rails and produce trains. Trains transport independent energy/iron/wood inventories only through explicitly assigned routes on connected friendly rails. Ordinary Cargo Vehicles retain their existing ground routes.
 
 ## Approved prototype settings

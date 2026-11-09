@@ -17,14 +17,16 @@ var coal: int:
 	get: return stockpile.amount(&"coal")
 var dropoff_range: float:
 	get: return mobile_rules.dropoff_radius()
+## Trains override this with their track position.
+func on_friendly_track() -> bool: return true
 func supplies_available() -> bool:
-	if is_in_group("rail_trains") and not get_tree().get_first_node_in_group("rail_network").friendly(grid_position,team): return false
+	if is_in_group("rail_trains") and not on_friendly_track(): return false
 	return deployed and supply_transition.is_empty() and health > 0 and not _dead and (not route_active or route_paused) and _route.is_empty() and _moving_to.x < 0
 func spend_local(energy_cost: int, iron_cost: int) -> bool:
 	return supplies_available() and stockpile.spend({&"energy":energy_cost,&"iron":iron_cost})
 func deploy_supplies() -> bool:
 	if _dead or health <= 0 or deployed or not supply_transition.is_empty(): return false
-	if is_in_group("rail_trains") and not get_tree().get_first_node_in_group("rail_network").friendly(grid_position,team): return false
+	if is_in_group("rail_trains") and not on_friendly_track(): return false
 	if route_active: pause_supply_route()
 	else: _stop_route()
 	order = "idle"

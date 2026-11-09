@@ -28,9 +28,10 @@ func run() -> void:
 	rig.focus_position(train.global_position)
 	for i in range(180): rig.advance_camera(1.0/60)
 	var rails = game.get_node("RailNetwork")
-	var gap := Vector2i(435,406)
-	var payer = rails.segments[gap].assigned_depot
-	rails.segments[gap].free()
+	var gap = game.get_node("Entities/Rails/Track3")
+	var gap_transform: Transform3D = gap.global_transform
+	var payer = gap.assigned_depot
+	gap.free()
 	await click_at(rig.camera.unproject_position(train.selection_point()))
 	if not check(hud.shown == train and hud.card.get_node("Load").visible and hud.card.get_node("Unload").visible,"Train selection did not show crate tiles"): return
 	# Crate shipments replaced the route panel: stops are picked on the map or minimap.
@@ -57,9 +58,9 @@ func run() -> void:
 	if not check(train.order == "unload" and train.crate_units(&"energy") == 50 and CrateYard.beside(source).is_empty(),"Train did not load the crates"): return
 	for i in range(60*5): train._process(1.0/60)
 	if not check(train.state.contains("blocked") and train.crates.size() == 2 and target.stockpile.amount(&"energy") == delivered,"Cut rails did not hold the delivery"): return
-	var replacement = rails.segment_scene.instantiate()
-	replacement.assigned_depot = payer; replacement.position = game.ground.tile_to_world(gap)
-	game.add_child(replacement)
+	var replacement = rails.straight_scene.instantiate()
+	replacement.assigned_depot = payer; replacement.transform = gap_transform
+	game.get_node("Entities/Rails").add_child(replacement)
 	for i in range(60*60):
 		train._process(1.0/60)
 		if train.order == "idle": break

@@ -212,8 +212,9 @@ func plan_spec(kind: StringName) -> Dictionary:
 	if kind == &"generator": return {"title":"Generator","size":supply_rules.generator_footprint,"energy":supply_rules.generator_energy_cost,"iron":supply_rules.generator_iron_cost,"scene":generator_scene}
 	if kind == &"iron_mine": return {"title":"Iron Mine","size":engineering_rules.mine_footprint,"energy":engineering_rules.mine_energy_cost,"iron":engineering_rules.mine_iron_cost,"scene":mine_scene}
 	if kind == &"rail":
+		# Maglev pieces are laid directly by RailNetwork.place, not queued as plans.
 		var rails = game.get_node("RailNetwork")
-		return {"title":"Rail","size":Vector2i.ONE,"energy":rails.rules.rail_energy_cost,"iron":rails.rules.rail_iron_cost,"scene":rails.segment_scene}
+		return {"title":"Maglev track","size":Vector2i.ONE,"energy":rails.rules.rail_energy_cost,"iron":rails.cost("straight"),"scene":rails.straight_scene}
 	var scene := production_scene(kind)
 	if scene == null: return {}
 	var preview = scene.instantiate()
@@ -230,6 +231,7 @@ func plan_overlaps(start: Vector2i, size: Vector2i) -> bool:
 func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_payer := false) -> Node3D:
 	var spec := plan_spec(kind)
 	if spec.is_empty(): return null
+	if kind == &"rail": game.notify("Maglev track is laid piece by piece from the Build page, not planned."); return null
 	var start := footprint_start(point,spec.size)
 	if not plan_terrain_valid(start,spec.size,kind) or plan_overlaps(start,spec.size):
 		game.notify("Plan needs valid empty terrain and cannot overlap another plan. Mines require iron deposits.")

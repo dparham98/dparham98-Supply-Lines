@@ -727,6 +727,14 @@ func open_global_build() -> void:
 func begin_global_placement(kind: StringName) -> void:
 	game.pending_unit_command = ""
 	game.placing_rail = false; game.placing_depot = false; game.placing_generator = false; game.placing_structure = &""
+	game.global_plan_kind = &""
+	if kind == &"rail":
+		# Maglev pieces are laid directly, Depot-paid, snapping to the free end of existing track.
+		game.placing_rail = true
+		game.rail_piece = "straight"
+		var rails = game.get_node("RailNetwork")
+		game.notify("Click to lay a straight (%d iron) from the nearest free track end, or on open land. R switches straight, left and right curves (%d iron); F turns a free piece; Esc finishes." % [rails.cost("straight"),rails.cost("curve")])
+		return
 	game.global_plan_kind = kind
 	game.notify("Click valid terrain to place an unpaid %s plan. Esc cancels placement; existing plans remain." % network.plan_spec(kind).title)
 func refresh_global_menu() -> void:
@@ -740,7 +748,10 @@ func refresh_global_menu() -> void:
 		var spec: Dictionary = network.plan_spec(pair[0])
 		var button: Button = build_menu.get_node("Actions/"+pair[1])
 		button.disabled = false
-		set_tile(button,spec.title,("%d E · %d I · paid by a Depot when the tile is clear" if pair[0] == &"rail" else "%d E · %d I · iron delivered to the site, energy as built") % [spec.energy,spec.iron])
+		if pair[0] == &"rail":
+			var rails = game.get_node("RailNetwork")
+			set_tile(button,"Maglev track","%d I straight · %d I curve · laid end to end, Depot-paid" % [rails.cost("straight"),rails.cost("curve")])
+		else: set_tile(button,spec.title,"%d E · %d I · iron delivered to the site, energy as built" % [spec.energy,spec.iron])
 func toggle_pin() -> void:
 	if not global_pinned:
 		game.global_plan_kind = &""

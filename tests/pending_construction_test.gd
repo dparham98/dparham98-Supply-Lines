@@ -89,13 +89,13 @@ func run() -> void:
 	if not check(split.complete_from_stock() == null,"Construction pooled insufficient stockpiles"): return
 	split.cancel()
 	# Creation validity for every menu kind and no reservation or payment on cancellation.
-	for kind in [&"depot",&"barracks",&"tank_factory",&"rail"]:
+	for kind in [&"depot",&"barracks",&"tank_factory"]:
 		var point := site(kind,depot.global_position)
 		var queued = network.queue_plan(point,kind)
 		if not check(queued != null,"Failed to create plan for "+str(kind)): return
 		queued.cancel()
 	# Complete each building factory through the same paid background path.
-	for kind in [&"depot",&"barracks",&"tank_factory",&"rail"]:
+	for kind in [&"depot",&"barracks",&"tank_factory"]:
 		depot.energy = 1000; depot.iron = 500
 		var point := site(kind,depot.global_position)
 		var queued = network.queue_plan(point,kind,depot)

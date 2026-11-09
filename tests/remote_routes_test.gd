@@ -84,9 +84,10 @@ func run() -> void:
 	if not check(isolated.waiting_for_rail and isolated.global_position == isolated_point and isolated.stockpile.total() == 0,"Isolated train escaped rails or loaded remotely"): return
 	isolated.cancel_supply_route()
 	isolated.free()
-	var gap := Vector2i(435,406)
-	var payer = rails.segments[gap].assigned_depot
-	rails.segments[gap].free()
+	var gap = game.get_node("Entities/Rails/Track3")
+	var gap_transform: Transform3D = gap.global_transform
+	var payer = gap.assigned_depot
+	gap.free()
 	var source_energy: int = source.energy
 	var train_start: Vector3 = train.global_position
 	if not check(train.start_supply_route(source,destination,12,8,false),"Disconnected train assignment rejected"): return
@@ -94,32 +95,32 @@ func run() -> void:
 	if not check(train.route_active and train.waiting_for_rail and not train.route_paused and train.global_position == train_start and source.energy == source_energy and train.stockpile.total() == 0,"Waiting train moved, loaded, or lost assignment"): return
 	# Manual pause remains latched after track is connected.
 	train.pause_supply_route()
-	var replacement = rails.segment_scene.instantiate()
-	replacement.assigned_depot = payer; replacement.position = game.ground.tile_to_world(gap)
-	game.add_child(replacement)
+	var replacement = rails.straight_scene.instantiate()
+	replacement.assigned_depot = payer; replacement.transform = gap_transform
+	game.get_node("Entities/Rails").add_child(replacement)
 	step(train,3)
 	if not check(train.route_paused and source.energy == source_energy,"Repair auto-resumed manually paused pending route"): return
 	if not check(train.resume_supply_route(),"Connected pending route could not resume"): return
 	step(train,20)
 	if not check(not train.route_active and destination.energy == 12 and destination.iron == 8,"Queued train route failed after explicit resume"): return
 	# A fresh waiting assignment starts automatically on initial connection.
-	rails.segments[gap].free()
+	replacement.free()
 	train.carried_coal = 3
 	if not check(train.start_supply_route(source,destination,1,0,false),"Waiting assignment with held cargo rejected"): return
 	step(train,3)
 	if not check(train.waiting_for_rail and train.carried_coal == 3,"Waiting assignment lost held cargo"): return
-	replacement = rails.segment_scene.instantiate()
-	replacement.assigned_depot = payer; replacement.position = game.ground.tile_to_world(gap)
-	game.add_child(replacement)
+	replacement = rails.straight_scene.instantiate()
+	replacement.assigned_depot = payer; replacement.transform = gap_transform
+	game.get_node("Entities/Rails").add_child(replacement)
 	step(train,20)
 	if not check(not train.waiting_for_rail and not train.route_active and destination.coal == 3,"Initial rail connection did not auto-start held-cargo delivery"): return
 	# An interrupted executing route still requires explicit repair/resume.
 	if not check(train.start_supply_route(source,destination,5,0,true),"Connected repeat assignment rejected"): return
-	rails.segments[gap].free()
+	replacement.free()
 	if not check(train.route_paused and not train.waiting_for_rail and not train.resume_supply_route(),"Active rail cut converted to auto-start wait"): return
-	replacement = rails.segment_scene.instantiate()
-	replacement.assigned_depot = payer; replacement.position = game.ground.tile_to_world(gap)
-	game.add_child(replacement)
+	replacement = rails.straight_scene.instantiate()
+	replacement.assigned_depot = payer; replacement.transform = gap_transform
+	game.get_node("Entities/Rails").add_child(replacement)
 	step(train,2)
 	if not check(train.route_paused and train.resume_supply_route(),"Repaired active route resumed implicitly or refused Resume"): return
 	train.cancel_supply_route()
@@ -127,7 +128,7 @@ func run() -> void:
 	await fixture("res://scenes/maps/remote_routes_exercise.tscn")
 	var exercise_train = game.get_node("Entities/Units/Train")
 	var distant = game.get_node("Entities/Buildings/RemoteDepot")
-	if not check(game.get_node("RailNetwork").segments.size() == 30 and not game.get_node("RailNetwork").segments.has(gap),"Remote route exercise gap is not open"): return
+	if not check(game.get_node("RailNetwork").pieces.size() == 6 and game.get_node("Entities/Rails/Track3").get_script() == null,"Remote route exercise gap is not open"): return
 	if not check(distant.global_position.distance_to(exercise_train.global_position) > distant.rules.construction_radius and exercise_train.start_supply_route(game.depot,distant,1,0,false) and exercise_train.waiting_for_rail,"Remote exercise did not support distant Depot assignment"): return
 	print("REMOTE_ROUTES_CHECKS_PASSED")
 	quit()

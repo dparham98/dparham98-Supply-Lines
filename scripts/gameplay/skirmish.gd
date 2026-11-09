@@ -27,6 +27,9 @@ var global_plan_kind: StringName = &""
 var selected_building: Node3D
 var pending_unit_command := ""
 var placing_rail := false
+## Maglev piece being laid (docs/MAGLEV_TRACKS.md): straight, left or right curve, and the free-placement heading.
+var rail_piece := "straight"
+var rail_heading := Vector3.RIGHT
 var placing_depot := false
 var placing_generator := false
 var placing_structure: StringName = &""
@@ -111,6 +114,15 @@ func _process(_delta: float) -> void:
 	if players == 0 and not recovery: outcome = "DEFEAT — no units or local production funds remaining."
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE: cancel_armed()
+	if placing_rail and event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_R:
+			rail_piece = {"straight":"left","left":"right","right":"straight"}[rail_piece]
+			notify("Laying %s track. R switches straight, left and right; F turns a free piece; Esc finishes." % rail_piece)
+			get_viewport().set_input_as_handled(); return
+		if event.keycode == KEY_F:
+			rail_heading = Vector3(-rail_heading.z,0,rail_heading.x)
+			notify("Free piece heading turned. Snapped pieces follow the track they join.")
+			get_viewport().set_input_as_handled(); return
 	# Actor selection takes precedence over armed world actions.
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		if (not global_plan_kind.is_empty() or placing_rail or placing_depot or placing_generator or not placing_structure.is_empty() or pending_unit_command == "move") and get_node("/root/SelectionManager").switch_at(event.position):
@@ -127,7 +139,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if placing_rail and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var camera := get_viewport().get_camera_3d()
 		var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(event.position),camera.project_ray_normal(event.position))
-		if point != null: $RailNetwork.build(point)
+		if point != null:
+			var kind := "straight" if rail_piece == "straight" else "curve"
+			$RailNetwork.place(kind,point,rail_heading,rail_piece == "right",hud.global_payer if hud.global_pinned and is_instance_valid(hud.global_payer) else null)
 		get_viewport().set_input_as_handled()
 		return
 	if (placing_depot or placing_generator or not placing_structure.is_empty()) and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
