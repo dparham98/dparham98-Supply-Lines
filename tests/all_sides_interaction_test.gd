@@ -135,10 +135,13 @@ func run() -> void:
 	if not check(depot.wood == 50,"Concurrent deliveries lost cargo"): return
 	clear_workers()
 	# Only a non-cardinal, formerly untested entrance remains open.
-	var goal := center+Vector2i(-5,4)
+	var goal := center+Vector2i(-7,4)
 	for cell in Approach.candidates(ground,depot,depot.dropoff_range,0,""):
 		if cell != goal: block(cell)
-	var worker := worker_at(center+Vector2i(-11,4))
+	# The Depot centre is a tile corner, so these cardinal cells fall just outside its reach.
+	for offset in [Vector2i(8,0),Vector2i(0,8)]:
+		if ground.can_traverse(center+offset): block(center+offset)
+	var worker := worker_at(center+Vector2i(-13,4))
 	worker.cargo = 5; worker.cargo_kind = &"wood"
 	worker.command_return(depot)
 	if not check(not worker._route_near(depot,depot.dropoff_range),"Narrow entrance does not reproduce old direction failure"): return

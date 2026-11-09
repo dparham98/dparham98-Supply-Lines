@@ -5,8 +5,14 @@ static func meshes(actor: Node3D) -> Array[MeshInstance3D]:
 	var visuals = actor.get_node_or_null("Visuals")
 	if visuals != null:
 		for node in visuals.find_children("*", "MeshInstance3D", true, false):
-			if node.mesh != null and node.is_visible_in_tree(): result.append(node)
+			if node.mesh != null and node.is_visible_in_tree() and selectable(node,visuals): result.append(node)
 	return result
+## Parts tagged not_selectable, and everything under them, take no part in picking or outlines.
+static func selectable(node: Node, visuals: Node) -> bool:
+	while node != null and node != visuals:
+		if node.has_meta(&"not_selectable"): return false
+		node = node.get_parent()
+	return true
 static func hit_distance(actor: Node3D, camera: Camera3D, screen: Vector2) -> float:
 	var origin := camera.project_ray_origin(screen)
 	var direction := camera.project_ray_normal(screen)

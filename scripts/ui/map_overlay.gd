@@ -259,7 +259,7 @@ func draw_armed(camera: Camera3D, font: Font) -> void:
 		var truck := selected_truck()
 		if point != null and truck != null:
 			var network = game.get_node("DepotNetwork")
-			var size: Vector2i = Vector2i(8,8)
+			var size: Vector2i = game.depot.footprint
 			var start: Vector2i = network.footprint_start(point,size)
 			var a: Vector3 = game.ground.tile_to_world(start)-Vector3(0.5,0,0.5)
 			var b: Vector3 = game.ground.tile_to_world(start+size-Vector2i.ONE)+Vector3(0.5,0,0.5)

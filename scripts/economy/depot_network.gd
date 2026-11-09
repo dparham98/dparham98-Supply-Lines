@@ -63,7 +63,7 @@ func deploy_selected_truck() -> bool:
 		return deploy_truck(unit,unit.global_position)
 	game.notify("Select a Depot Truck to deploy.")
 	return false
-## Valid deploy site for this truck: an empty 8 × 8 footprint, ignoring the truck's own cells.
+## Valid deploy site for this truck: an empty Depot footprint, ignoring the truck's own cells.
 func can_deploy_at(unit: Node3D, point: Vector3) -> bool:
 	var claimed: Array = unit._claimed.duplicate()
 	for cell in claimed: unit._release(cell)
@@ -75,7 +75,7 @@ func deploy_truck(unit: Node3D, point: Vector3) -> bool:
 	for cell in unit._claimed.duplicate(): unit._release(cell)
 	if not can_place(point,null,true):
 		unit._claim(unit.grid_position)
-		game.notify("Truck needs an empty 8 × 8 footprint on buildable land."); return false
+		game.notify("Truck needs an empty Depot footprint on buildable land."); return false
 	var rules = unit.deployment_rules
 	unit.remove_from_group("units")
 	unit.queue_free()

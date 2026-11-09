@@ -1,0 +1,9 @@
+[gd_scene format=3]
+[ext_resource type="PackedScene" path="res://assets/models/buildings/depot.glb" id="depot"]
+[node name="DepotModel" type="Node3D"]
+[node name="Warehouse" parent="." instance=ExtResource("depot")]
+transform = Transform3D(0,0,0.6,0,0.6,0,-0.6,0,0,0,0,0)
+[node name="warehouse_power_unit" parent="Warehouse/warehouse_root"]
+metadata/not_selectable = true
+[node name="warehouse_ramp" parent="Warehouse/warehouse_root/warehouse_deck"]
+metadata/not_selectable = true
