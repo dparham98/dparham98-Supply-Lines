@@ -141,7 +141,7 @@ func _ready() -> void:
 	for pair in [["Depot",&"depot"],["Generator",&"generator"],["Barracks",&"barracks"],["TankFactory",&"tank_factory"],["Mine",&"iron_mine"],["Rail",&"rail"]]:
 		build_menu.get_node("Actions/"+pair[0]).pressed.connect(begin_global_placement.bind(pair[1]))
 	build_menu.get_node("Actions/Pin").pressed.connect(toggle_pin)
-	card.get_node("DeployTruck").pressed.connect(func(): game.pending_unit_command = "deploy"; game.notify("Click a site for the Depot. Only an empty 8 × 8 footprint is accepted; Shift queues."))
+	card.get_node("DeployTruck").pressed.connect(func(): game.pending_unit_command = "deploy"; game.notify("Click a site for the Depot. Only an empty Depot footprint is accepted; Shift queues."))
 	card.get_node("FocusAssigned").pressed.connect(func():
 		if is_instance_valid(shown) and is_instance_valid(shown.assigned_depot): game.get_node("CameraRig").focus_position(shown.assigned_depot.global_position))
 	build_menu.get_node("Actions/Back").pressed.connect(func(): game.cancel_armed(); close_build())
@@ -551,7 +551,7 @@ func update_contents() -> void:
 			hint_text = "Right-click a crate to load it. Unload at a Depot to unpack, or on open ground to set crates down. Shift queues stops. Trips: %s." % TRIP_LABELS[node.trips]
 		elif node.is_depot_truck:
 			show_button("DeployTruck","Deploy")
-			hint_text = "Deploy on an empty 8 × 8 footprint. This vehicle does not carry transferable cargo."
+			hint_text = "Deploy on an empty Depot footprint. This vehicle does not carry transferable cargo."
 		else:
 			if node._attack_enabled: show_button("Attack","Attack")
 			if node.can_gather:

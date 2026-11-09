@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/gameplay/depot.gd" id="depot"]
 [ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
-[ext_resource type="PackedScene" path="res://scenes/models/depot_prototype.tscn" id="model"]
+[ext_resource type="PackedScene" path="res://scenes/models/depot_model.tscn" id="model"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/infantry.tscn" id="infantry"]
 
 [ext_resource type="Resource" path="res://assets/economy/depot_rules.tres" id="rules"]
@@ -33,7 +33,7 @@ model_scene = ExtResource("model")
 [node name="Model" parent="Visuals" instance=ExtResource("model")]
 
 [node name="Progress" type="Label3D" parent="."]
-position = Vector3(0,6.5,0)
+position = Vector3(0,7.5,0)
 billboard = 1
 no_depth_test = true
 font_size = 40

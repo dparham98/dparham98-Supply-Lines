@@ -1,0 +1,5 @@
+[gd_scene format=3]
+[ext_resource type="PackedScene" path="res://assets/models/buildings/depot.glb" id="depot"]
+[node name="DepotModel" type="Node3D"]
+[node name="Warehouse" parent="." instance=ExtResource("depot")]
+transform = Transform3D(0,0,0.6,0,0.6,0,-0.6,0,0,-1.305,0,0)
