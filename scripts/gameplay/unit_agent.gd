@@ -154,19 +154,32 @@ func _process(delta: float) -> void:
 	if _dead: return
 	fuel_tick(delta)
 	_order_process(delta)
-	_animate()
+	_animate(delta)
 ## The Visuals model when it carries a character animator (scripts/components/character_animator.gd).
 func _animator() -> Node3D:
 	var model := $Visuals.get_node_or_null("Model")
 	return model if model != null and model.has_method("set_motion") else null
 var _animated_from := Vector3.INF
+var _animated_yaw := 0.0
 var _aimed_frame := -2
-## Tell the model what this frame looked like: a step is a run, a target in range keeps the gun up,
-## work at a source or building is work with its cycle period.
-func _animate() -> void:
-	var model := _animator()
+## Vehicle rigs (scripts/components/vehicle_rig.gd) open their hatches and show their load; vehicles override.
+func _hatches_open() -> bool: return false
+func _load_fraction() -> float: return 0.0
+## Tell the model what this frame looked like. A vehicle rig gets its travel (speed and heading
+## change), hatches and load; a character gets run, aim, work with its cycle period, or idle.
+func _animate(delta: float = 1.0/60) -> void:
 	var here := global_position
-	if model == null: _animated_from = here; return
+	var yaw: float = $Visuals.rotation.y
+	var rig := $Visuals.get_node_or_null("Model")
+	if rig != null and rig.has_method("set_drive"):
+		var moved: bool = _animated_from != Vector3.INF
+		rig.set_drive(here.distance_to(_animated_from)/delta if moved and delta > 0.0 else 0.0,angle_difference(_animated_yaw,yaw) if moved else 0.0,delta)
+		rig.set_hatches(_hatches_open())
+		rig.set_load(_load_fraction())
+		_animated_from = here; _animated_yaw = yaw
+		return
+	var model := _animator()
+	if model == null: _animated_from = here; _animated_yaw = yaw; return
 	var kind: StringName = &"idle"
 	var value := 0.0
 	if _animated_from != Vector3.INF and here != _animated_from: kind = &"run"; value = move_speed
@@ -175,7 +188,7 @@ func _animate() -> void:
 	elif state.begins_with("Repairing"): kind = &"work"; value = engineering_rules.repair_interval if engineering_rules else 0.0
 	model.set_motion(kind,value)
 	if kind == &"work" and _work_timer == 0.0 and model.has_method("sync_work"): model.sync_work()
-	_animated_from = here
+	_animated_from = here; _animated_yaw = yaw
 # Orders, movement and combat for one frame. Callers tick fuel first.
 func _order_process(delta: float) -> void:
 	if order == "idle" and not order_queue.is_empty() and not out_of_fuel: _start_next_order()
