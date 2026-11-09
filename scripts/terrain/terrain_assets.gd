@@ -14,6 +14,8 @@ func _ready() -> void:
 @export var ore_scene: PackedScene
 ## When set, forests use these patches of trees instead of tree_scene.
 @export var forest_tile_scenes: Array[PackedScene] = []
+## When set, this sculpted mesh replaces the scattered mountain_scene props.
+@export var mountain_mesh: Mesh
 @export var scatter_seed: int = 2817
 @export_tool_button("Rebuild terrain scenery", "Reload") var rebuild_action: Callable = rebuild_scenery
 
@@ -22,7 +24,7 @@ func rebuild_scenery() -> void:
 		push_warning("Assign all three terrain asset scenes before rebuilding.")
 		return
 	var baker = load("res://scripts/tools/terrain_baker.gd").new()
-	var output: Node3D = baker.build(tree_scene, mountain_scene, ore_scene, scatter_seed, forest_tile_scenes)
+	var output: Node3D = baker.build(tree_scene, mountain_scene, ore_scene, scatter_seed, forest_tile_scenes, mountain_mesh)
 	if output.get_child_count() == 0:
 		output.free()
 		return

@@ -6,7 +6,7 @@ Grass, desert, water and forests are drawn with the tiles from `Blender/Terrain/
 
 - `scripts/tools/build_ground_tile_arrays.gd` packs the sources into `assets/textures/terrain/ground_tiles_albedo.png` and `_normal.png`, imported as twelve-layer texture arrays (layers 0-3 grass, 4-7 desert, 8-11 water). Run it after editing a tile.
 - `assets/shaders/terrain_surface.gdshader` picks a variant for each tile position from a fixed hash, so the pattern is the same every match. All tiles of a set share identical borders, so any variant can sit beside any other. Tiles are not rotated, because that would break those borders.
-- Forest floor uses the grass tiles. Water keeps its animated ripple on top of the tiles. Mountain ground, ore and cleared forest draw as before.
+- Forest floor uses the grass tiles. Water keeps its animated ripple on top of the tiles. Ground around the mountains uses the desert tiles darkened to stony earth (see [MOUNTAINS.md](MOUNTAINS.md)). Ore and cleared forest draw as before.
 
 ## Settings (`assets/shaders/terrain_surface.gdshader`, overridable on the material)
 
