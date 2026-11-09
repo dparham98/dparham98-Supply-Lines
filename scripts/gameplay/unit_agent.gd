@@ -476,14 +476,17 @@ func _shoot(target: Node3D) -> void:
 	var turret := _turret()
 	if turret: turret.aim_at(target.global_position)
 	_aimed_frame = Engine.get_process_frames()
-	if _cooldown > 0: return
-	_cooldown = CombatResolver.interval_for(self,target)
 	var animator := _animator()
-	if animator: animator.play_action(&"shoot")
-	# Turn so the gun line runs through the target when the model knows where its gun points; otherwise face it.
-	if turret == null:
-		if animator and animator.has_method("aim_yaw"): $Visuals.rotation.y = animator.aim_yaw(to_local(target.global_position))
-		else: _face(target.global_position)
+	# A clip whose shot lands partway through starts early, so its flash meets the shot.
+	var lead: float = animator.shot_lead() if animator and animator.has_method("shot_lead") else 0.0
+	if _cooldown > 0:
+		if lead > 0.0 and _cooldown <= lead and not animator.acting():
+			animator.play_action(&"shoot",lead-_cooldown)
+			_aim_body(target,turret,animator)
+		return
+	_cooldown = CombatResolver.interval_for(self,target)
+	if animator and (lead <= 0.0 or not animator.acting()): animator.play_action(&"shoot",lead)
+	_aim_body(target,turret,animator)
 	var target_height: Vector3 = target.get_node("Visuals").position if target.has_node("Visuals") else Vector3.ZERO
 	var model := $Visuals.get_node_or_null("Model")
 	var muzzle: Vector3 = model.muzzle_position() if model != null and model.has_method("muzzle_position") else global_position+Vector3.UP*1.7+$Visuals.position
@@ -492,6 +495,11 @@ func _shoot(target: Node3D) -> void:
 	if is_instance_valid(target) and game.has_method("mark_attacked"): game.mark_attacked(target)
 	if is_instance_valid(target) and target.is_in_group("selectable_buildings") and target.get("team") == "player" and team != "player" and game.has_method("alert"):
 		game.alert("%s under attack" % target.name,target.global_position,"attack:%d" % target.get_instance_id(),"attack")
+# Turn so the gun line runs through the target when the model knows where its gun points; otherwise face it.
+func _aim_body(target: Node3D, turret: Node3D, animator: Node) -> void:
+	if turret != null: return
+	if animator and animator.has_method("aim_yaw"): $Visuals.rotation.y = animator.aim_yaw(to_local(target.global_position))
+	else: _face(target.global_position)
 func _fire_during_movement() -> void:
 	if unit_stats == null or not unit_stats.fire_while_moving or not _attack_enabled: return
 	# Keep navigation/facing under the movement order; firing does not redirect the route.

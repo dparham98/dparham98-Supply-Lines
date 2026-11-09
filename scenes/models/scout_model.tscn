@@ -1,0 +1,31 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/components/character_animator.gd" id="animator"]
+[ext_resource type="PackedScene" path="res://assets/models/units/scout.glb" id="rig"]
+[sub_resource type="StandardMaterial3D" id="flash_hot"]
+shading_mode = 0
+albedo_color = Color(1,0.8,0.4,1)
+[node name="ScoutModel" type="Node3D"]
+script = ExtResource("animator")
+player_path = NodePath("Rig/AnimationPlayer")
+idle_clip = &"idle"
+run_clip = &"run"
+shoot_clip = &"shoot"
+run_reference_speed = 4.0
+muzzle_bone = &"flash"
+gun_bone = &"gun"
+gun_rest_axis = Vector3(0.332,-0.26,0.907)
+gun_sample_time = 0.33
+shot_lead_time = 0.375
+flash_bone = &"flash"
+flash_light_path = NodePath("Rig/Skater rig/Skeleton3D/gun/Muzzle light")
+flash_light_energy = 2.0
+[node name="Rig" parent="." instance=ExtResource("rig")]
+transform = Transform3D(-1,0,0,0,1,0,0,0,-1,0,0,0)
+[node name="Muzzle light" parent="Rig/Skater rig/Skeleton3D/gun" index="0"]
+visible = false
+omni_range = 3.0
+omni_attenuation = 1.0
+[node name="Muzzle flash" parent="Rig/Skater rig/Skeleton3D/flash" index="0"]
+material_override = SubResource("flash_hot")
+cast_shadow = 0
+[editable path="Rig"]
