@@ -1,13 +1,9 @@
 [gd_scene format=3]
 [ext_resource type="Script" path="res://scripts/economy/supply_crate.gd" id="script"]
-[sub_resource type="StandardMaterial3D" id="wood_mat"]
-albedo_color = Color(0.56,0.4,0.22,1)
-roughness = 0.9
-[sub_resource type="BoxMesh" id="box"]
-size = Vector3(0.9,0.7,0.9)
-material = SubResource("wood_mat")
+[ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
+[ext_resource type="PackedScene" path="res://scenes/models/supply_crate_model.tscn" id="model"]
 [sub_resource type="BoxMesh" id="band"]
-size = Vector3(0.94,0.14,0.94)
+size = Vector3(0.9,0.09,0.9)
 [sub_resource type="StandardMaterial3D" id="energy_mat"]
 albedo_color = Color(0.498,0.827,0.902,1)
 emission_enabled = true
@@ -31,28 +27,28 @@ emission_energy_multiplier = 0.4
 [node name="SupplyCrate" type="Node3D"]
 script = ExtResource("script")
 [node name="Visuals" type="Node3D" parent="."]
-[node name="Box" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0,0.35,0)
-mesh = SubResource("box")
+script = ExtResource("slot")
+model_scene = ExtResource("model")
+[node name="Model" parent="Visuals" instance=ExtResource("model")]
 [node name="Bands" type="Node3D" parent="Visuals"]
 [node name="Energy" type="MeshInstance3D" parent="Visuals/Bands"]
 visible = false
-position = Vector3(0,0.6,0)
+position = Vector3(0,0.37,0)
 mesh = SubResource("band")
 material_override = SubResource("energy_mat")
 [node name="Iron" type="MeshInstance3D" parent="Visuals/Bands"]
 visible = false
-position = Vector3(0,0.6,0)
+position = Vector3(0,0.37,0)
 mesh = SubResource("band")
 material_override = SubResource("iron_mat")
 [node name="Wood" type="MeshInstance3D" parent="Visuals/Bands"]
 visible = false
-position = Vector3(0,0.6,0)
+position = Vector3(0,0.37,0)
 mesh = SubResource("band")
 material_override = SubResource("wood_mat")
 [node name="Coal" type="MeshInstance3D" parent="Visuals/Bands"]
 visible = false
-position = Vector3(0,0.6,0)
+position = Vector3(0,0.37,0)
 mesh = SubResource("band")
 material_override = SubResource("coal_mat")
 [node name="Label" type="Label3D" parent="."]
