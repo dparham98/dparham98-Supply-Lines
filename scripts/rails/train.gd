@@ -75,7 +75,10 @@ func check_round_trip_fuel() -> void:
 	if not fuel_warning.is_empty(): game.notify("Train fuel warning: "+fuel_warning)
 func _rail_changed() -> void:
 	_checked_revision = rail_network.revision
-	if not is_instance_valid(piece) and game.is_node_ready(): snap_to_track()
+	# The piece under the train may be leaving the tree right now; it stops counting as soon as it unregisters.
+	if (not is_instance_valid(piece) or not rail_network.pieces.has(piece)) and game.is_node_ready():
+		_stop_route()
+		snap_to_track()
 	if not route_active or route_paused: return
 	var connected := route_connected()
 	if waiting_for_rail:
