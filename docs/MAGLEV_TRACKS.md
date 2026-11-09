@@ -18,9 +18,8 @@ Rails are no longer one-tile squares. The network is built from the authored mag
 
 ## Laying track
 
-- Build page, Rail tile: track is laid directly and Depot-paid, not queued as a site plan. The ghost piece follows the cursor; it snaps onto the nearest free end of friendly track within 4 m, otherwise it starts on the tile under the cursor heading the free-placement direction. **R** switches straight, left curve and right curve; **F** turns a free piece a quarter turn; **Esc** or right-click finishes.
+- Build page, Rail tile: track is laid directly and Depot-paid, not queued as a site plan. The ghost piece follows the cursor; it snaps onto the nearest free end of friendly track within 4 m, otherwise it starts on the tile under the cursor heading the free-placement direction. **R** cycles straight, left curve, right curve, left fork and right fork; **F** turns a free piece a quarter turn; **G** changes which end of a fork joins the track, so forks can also merge; **Esc** or right-click finishes. While track is being laid these three keys go to track laying, ahead of the Build page tiles that share R and G (`_input` in `skirmish.gd`).
 - The payer is the pinned stockpile when Pin is set, else the nearest Depot whose territory covers every tile under the piece and that has the iron. Open land only, clear of other track. The first piece must lie in a Depot's loading range; every later piece must join connected track, so there is no floating track.
-- R cycles straight, left curve, right curve, left fork and right fork. G changes which end of a fork joins the track, so forks can also merge. F turns a free piece.
 - `RailNetwork.place(kind, point, heading, join, pinned)` is the single entry point (`join` is the end that meets the track; `true` lays a curve from its far end); `placement()` gives the transform and snap for previews.
 
 ## Trains
@@ -42,5 +41,6 @@ Rails are no longer one-tile squares. The network is built from the authored mag
 
 - `tests/rail_batch_test.gd`: geometry and costs, head-on joins and free ends, tile marking, snapped laying and payment, refusals, left and mirrored curve exits, train print at a stop, cutting and restoring the centre piece, running the train to EastDepot with its consist on the line, ownership loss.
 - `tests/rail_fork_power_test.gd`: fork geometry and price, the laying rule, lane choice, no exit-to-exit, blades, energy by the metre, No power and resume, nearest paying Depot, cut line resume.
+- `tests/rail_keys_test.gd`: R, F and G by real key presses with the Build page open, a curve and a fork laid by key and click, and the Build page keys back afterwards.
 - `rail_runtime_check` lays two straights by real clicks (`rail_construction`), and the route and crate suites run on the new fixture.
 - Not playtested: the feel of laying curves, train speed over the longer pieces and how the set reads next to the 0.6 vehicles need your eye.
