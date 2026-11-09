@@ -1,0 +1,8 @@
+[gd_scene format=3]
+[ext_resource type="Mesh" path="res://assets/models/terrain/forest_tile_02.obj" id="mesh"]
+[ext_resource type="Material" path="res://assets/materials/terrain/forest_tile.tres" id="material"]
+[node name="ForestTile02" type="Node3D"]
+[node name="Trees" type="MeshInstance3D" parent="."]
+transform = Transform3D(4,0,0,0,4,0,0,0,4,0,0,0)
+material_override = ExtResource("material")
+mesh = ExtResource("mesh")

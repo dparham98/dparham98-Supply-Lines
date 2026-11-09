@@ -9,6 +9,10 @@
 [ext_resource type="PackedScene" path="res://scenes/maps/terrain_landmarks.tscn" id="7_6asp1"]
 
 [ext_resource type="Resource" path="res://assets/economy/harvesting_rules.tres" id="harvesting"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/forest_tile_01.tscn" id="forest_tile_1"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/forest_tile_02.tscn" id="forest_tile_2"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/forest_tile_03.tscn" id="forest_tile_3"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/forest_tile_04.tscn" id="forest_tile_4"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_g5c3x"]
 size = Vector2(500, 500)
@@ -22,6 +26,7 @@ script = ExtResource("1_p0v8l")
 tree_scene = ExtResource("2_i74y5")
 mountain_scene = ExtResource("3_13jwb")
 ore_scene = ExtResource("4_ylg51")
+forest_tile_scenes = Array[PackedScene]([ExtResource("forest_tile_1"), ExtResource("forest_tile_2"), ExtResource("forest_tile_3"), ExtResource("forest_tile_4")])
 
 [node name="Ground" type="MeshInstance3D" parent="." unique_id=397966350 groups=["terrain_grid"]]
 material_override = ExtResource("5_0hond")

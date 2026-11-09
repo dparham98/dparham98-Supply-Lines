@@ -3,6 +3,10 @@ const TestOutput = preload("res://tests/test_output.gd")
 const OUTPUT = "camera_work/"
 # rebuild_scenery() overwrites this tracked generated scene; the test restores its exact bytes.
 const LANDMARKS = "res://scenes/maps/terrain_landmarks.tscn"
+func forest_spots(forests: Node) -> int:
+	var total := 0
+	for batch in forests.get_children(): total += batch.multimesh.instance_count
+	return total
 func _initialize() -> void: call_deferred("check_scenes")
 func clear_scripts(n: Node) -> void:
 	for child in n.get_children(): clear_scripts(child)
@@ -21,7 +25,7 @@ func check_scenes() -> void:
 	assert(world.get_node("Terrain/Ground").tiles.is_empty())
 	assert(world.get_node("Terrain/Ground").mesh != null)
 	assert(world.get_node("Terrain/Ground").material_override != null)
-	assert(world.get_node("Terrain/Landmarks/Forests/Trunk").multimesh.instance_count == 1646)
+	assert(forest_spots(world.get_node("Terrain/Landmarks/Forests")) == 1646)
 	assert(world.get_node("Terrain/Landmarks/Mountains/Rock").multimesh.instance_count == 1300)
 	assert(world.get_node("Terrain/Landmarks/OreDeposits/OreRock").multimesh.instance_count == 867)
 	assert(world.has_node("Lighting/Sun"))
@@ -67,8 +71,8 @@ func check_scenes() -> void:
 	assert(not original_landmarks.is_empty())
 	terrain.rebuild_scenery()
 	assert(terrain.get_node("Landmarks").scene_file_path == "res://scenes/maps/terrain_landmarks.tscn")
-	assert(terrain.get_node("Landmarks/Forests/Trunk").multimesh.instance_count == 1646)
-	var rebuilt_mesh: MultiMesh = terrain.get_node("Landmarks/Forests/Trunk").multimesh
+	assert(forest_spots(terrain.get_node("Landmarks/Forests")) == 1646)
+	var rebuilt_mesh: MultiMesh = terrain.get_node("Landmarks/Forests/Trees01").multimesh
 	var rebuilt_buffers_valid: bool = rebuilt_mesh.buffer.size() == rebuilt_mesh.instance_count*16 and rebuilt_mesh.duplicate().buffer == rebuilt_mesh.buffer
 	terrain.free()
 	if not restore_landmarks(original_landmarks): return
