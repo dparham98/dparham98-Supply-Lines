@@ -1,15 +1,16 @@
 extends SceneTree
-# Packs the eight ground tiles in Blender/Terrain/ground_tiles/textures into the two vertical strips the
-# terrain shader reads as texture arrays. Layers 0-3 are grass 01-04 and 4-7 are desert 01-04.
+# Packs the twelve ground tiles in Blender/Terrain/ground_tiles/textures into the two vertical strips the
+# terrain shader reads as texture arrays. Layers 0-3 are grass 01-04, 4-7 desert 01-04 and 8-11 water 01-04.
 # Run after editing the tiles: godot --headless --path . --script res://scripts/tools/build_ground_tile_arrays.gd
 const SOURCE := "res://Blender/Terrain/ground_tiles/textures/"
 const OUTPUT := "res://assets/textures/terrain/ground_tiles_%s.png"
 const TILE_SIZE := 512
+const LAYERS := 12
 func _initialize() -> void:
 	for map in ["albedo","normal"]:
-		var strip := Image.create(TILE_SIZE,TILE_SIZE*8,false,Image.FORMAT_RGB8)
+		var strip := Image.create(TILE_SIZE,TILE_SIZE*LAYERS,false,Image.FORMAT_RGB8)
 		var layer := 0
-		for kind in ["grass","desert"]:
+		for kind in ["grass","desert","water"]:
 			for index in range(1,5):
 				var path := ProjectSettings.globalize_path(SOURCE+"tile_%s_%02d_%s.png" % [kind,index,map])
 				var tile := Image.load_from_file(path)

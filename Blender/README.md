@@ -16,4 +16,4 @@ Keep editing the same named working file per unit. Use Backups for revisions. Do
 
 Copy provenance and SHA256 verification are in migration_manifest.json. Scout reference images are packed. Older projects may retain external image paths; use References or Archive copies for relinking if needed.
 - Depot: `Blender/Buildings/Depot/Depot.blend` (the `depot_warehouse` collection) exports to `assets/models/buildings/depot.glb`. `Depot_tractor_exit.blend` and `Depot_truck_assemble.blend` are its production clips; see `docs/DEPOT_MODEL.md`.
-- Terrain: `Blender/Terrain/GroundTiles.blend` (the `ground_tiles` collection) holds four grass and four desert tiles; its textures are in `Blender/Terrain/ground_tiles/textures`. See `docs/GROUND_TILES.md` for rebuilding the texture arrays used in game.
+- Terrain: `Blender/Terrain/GroundTiles.blend` (the `ground_tiles` collection) holds four tiles each of grass, desert, water, forest and mountain (the game does not use the mountains); its textures are in `Blender/Terrain/ground_tiles/textures`. See `docs/GROUND_TILES.md` for rebuilding the texture arrays used in game.

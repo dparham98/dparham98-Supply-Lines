@@ -14,6 +14,14 @@ func _collect(node: Node, parent_transform: Transform3D, parts: Array) -> void:
 	for child in node.get_children(): _collect(child, local, parts)
 
 func _scatter(root: Node3D, name_: String, scene: PackedScene, placements: Array[Transform3D], colors: Array[Color]) -> void:
+	var group := Node3D.new()
+	group.name = name_
+	root.add_child(group)
+	group.owner = root
+	_batches(root, group, scene, placements, colors, "")
+
+# One batch per mesh of the scene, named after the mesh plus a suffix when a group holds several scenes.
+func _batches(root: Node3D, group: Node3D, scene: PackedScene, placements: Array[Transform3D], colors: Array[Color], suffix: String) -> void:
 	var prototype := scene.instantiate()
 	var parts: Array = []
 	_collect(prototype, Transform3D.IDENTITY, parts)
@@ -21,10 +29,6 @@ func _scatter(root: Node3D, name_: String, scene: PackedScene, placements: Array
 	if parts.is_empty():
 		push_error("Terrain asset needs at least one MeshInstance3D: " + scene.resource_path)
 		return
-	var group := Node3D.new()
-	group.name = name_
-	root.add_child(group)
-	group.owner = root
 	for part in parts:
 		var mm := MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_3D
@@ -46,17 +50,26 @@ func _scatter(root: Node3D, name_: String, scene: PackedScene, placements: Array
 			for component in range(16): buffer[i*16+component] = values[component]
 		mm.buffer = buffer
 		var item := MultiMeshInstance3D.new()
-		item.name = part["name"]
+		item.name = str(part["name"]) + suffix
 		item.multimesh = mm
 		item.material_override = part["material"]
 		group.add_child(item)
 		item.owner = root
 
-func build(tree_scene: PackedScene, mountain_scene: PackedScene, ore_scene: PackedScene, seed_: int = 2817) -> Node3D:
+## With forest_tiles, each forest spot takes one of those scenes in place of tree_scene.
+func build(tree_scene: PackedScene, mountain_scene: PackedScene, ore_scene: PackedScene, seed_: int = 2817, forest_tiles: Array = []) -> Node3D:
 	var cells := FileAccess.get_file_as_bytes("res://assets/maps/terrain_cells.bin")
 	assert(cells.size() == 250000)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_
+	# Separate generator, so rocks and ore keep their places whichever forest is used.
+	var tile_rng := RandomNumberGenerator.new()
+	tile_rng.seed = seed_+1
+	var tile_trees: Array = []
+	var tile_colors: Array = []
+	for i in range(forest_tiles.size()):
+		tile_trees.append([] as Array[Transform3D])
+		tile_colors.append([] as Array[Color])
 	var trees: Array[Transform3D] = []
 	var tree_colors: Array[Color] = []
 	var rocks: Array[Transform3D] = []
@@ -72,8 +85,14 @@ func build(tree_scene: PackedScene, mountain_scene: PackedScene, ore_scene: Pack
 			if t == 3:
 				p.x += rng.randf_range(-0.3, 0.3)
 				p.z += rng.randf_range(-0.3, 0.3)
-				trees.append(Transform3D(b, p))
-				tree_colors.append(Color.WHITE * rng.randf_range(0.8, 1.18))
+				var tint: Color = Color.WHITE * rng.randf_range(0.8, 1.18)
+				if forest_tiles.is_empty():
+					trees.append(Transform3D(b, p))
+					tree_colors.append(tint)
+				else:
+					var tile := tile_rng.randi_range(0, forest_tiles.size()-1)
+					tile_trees[tile].append(Transform3D(b, p))
+					tile_colors[tile].append(tint)
 			elif t == 4 and x % 4 == 1 and z % 4 == 1:
 				var h := rng.randf_range(3, 7.5)
 				rocks.append(Transform3D(b.scaled(Vector3(1, h / 5, 1)), p))
@@ -85,7 +104,17 @@ func build(tree_scene: PackedScene, mountain_scene: PackedScene, ore_scene: Pack
 					ore_colors.append(Color(1, rng.randf_range(0.65, 1), rng.randf_range(0.65, 1)))
 	var root := Node3D.new()
 	root.name = "Landmarks"
-	_scatter(root, "Forests", tree_scene, trees, tree_colors)
+	if forest_tiles.is_empty():
+		_scatter(root, "Forests", tree_scene, trees, tree_colors)
+	else:
+		var forests := Node3D.new()
+		forests.name = "Forests"
+		root.add_child(forests)
+		forests.owner = root
+		for i in range(forest_tiles.size()):
+			var typed_trees: Array[Transform3D] = tile_trees[i]
+			var typed_colors: Array[Color] = tile_colors[i]
+			_batches(root, forests, forest_tiles[i], typed_trees, typed_colors, "%02d" % (i+1))
 	_scatter(root, "Mountains", mountain_scene, rocks, rock_colors)
 	_scatter(root, "OreDeposits", ore_scene, ores, ore_colors)
 	return root
