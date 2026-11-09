@@ -1,9 +1,42 @@
 [gd_scene format=3]
-[ext_resource type="Script" path="res://scripts/components/turret_aim.gd" id="turret"]
+[ext_resource type="Script" path="res://scripts/components/tank_rig.gd" id="turret"]
 [ext_resource type="PackedScene" path="res://assets/models/units/tank.glb" id="tank"]
+[ext_resource type="Shader" path="res://assets/shaders/tank_running_gear.gdshader" id="gear"]
+[ext_resource type="Texture2D" path="res://assets/models/units/tank_T_Tank_BaseColor.png" id="base"]
+[ext_resource type="Texture2D" path="res://assets/models/units/tank_T_Tank_Metallic-T_Tank_Roughness.png" id="mr"]
+[ext_resource type="Texture2D" path="res://assets/models/units/tank_T_Tank_Emission.png" id="glow"]
+[sub_resource type="ShaderMaterial" id="links"]
+shader = ExtResource("gear")
+shader_parameter/albedo_texture = ExtResource("base")
+shader_parameter/metal_rough_texture = ExtResource("mr")
+shader_parameter/emission_texture = ExtResource("glow")
+[sub_resource type="ShaderMaterial" id="road"]
+shader = ExtResource("gear")
+shader_parameter/albedo_texture = ExtResource("base")
+shader_parameter/metal_rough_texture = ExtResource("mr")
+shader_parameter/emission_texture = ExtResource("glow")
+shader_parameter/wheel_spacing = 1.1
+[sub_resource type="ShaderMaterial" id="rollers"]
+shader = ExtResource("gear")
+shader_parameter/albedo_texture = ExtResource("base")
+shader_parameter/metal_rough_texture = ExtResource("mr")
+shader_parameter/emission_texture = ExtResource("glow")
+shader_parameter/wheel_spacing = 2.0
 [node name="TankModel" type="Node3D"]
 script = ExtResource("turret")
 turret_path = NodePath("Tank/Tank_Root/Tank_Hull/Tank_Turret")
 muzzle_path = NodePath("Tank/Tank_Root/Tank_Hull/Tank_Turret/Barrel_Mount/Tank_Barrel/Barrel_Muzzle_Brake")
 [node name="Tank" parent="." instance=ExtResource("tank")]
 transform = Transform3D(-0.6,0,0,0,0.6,0,0,0,-0.6,0,0,0)
+[node name="Return_Rollers_L" parent="Tank/Tank_Root/Tank_Hull" index="26"]
+material_override = SubResource("rollers")
+[node name="Return_Rollers_R" parent="Tank/Tank_Root/Tank_Hull" index="27"]
+material_override = SubResource("rollers")
+[node name="Road_Wheels_L" parent="Tank/Tank_Root/Tank_Hull" index="28"]
+material_override = SubResource("road")
+[node name="Road_Wheels_R" parent="Tank/Tank_Root/Tank_Hull" index="29"]
+material_override = SubResource("road")
+[node name="Track_Links_L" parent="Tank/Tank_Root/Tank_Hull" index="31"]
+material_override = SubResource("links")
+[node name="Track_Links_R" parent="Tank/Tank_Root/Tank_Hull" index="32"]
+material_override = SubResource("links")

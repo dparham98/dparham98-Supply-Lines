@@ -48,4 +48,37 @@ func run() -> void:
 	var muzzle: Vector3 = tank.global_transform.affine_inverse()*model.muzzle_position()
 	if not check(muzzle.x > 3.0 and absf(muzzle.z) < 0.4,"Turret did not aim right: muzzle at %s" % muzzle): return
 	await shot("tank_turret")
+	# Rolling tracks: the shader indexes links by vertex order, so the import must have kept it.
+	var links: PackedVector3Array = model.get_node("Tank/Tank_Root/Tank_Hull/Track_Links_L").mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	if not check(links.size() == 888,"Track mesh vertex count changed: %d" % links.size()): return
+	for link in range(37):
+		for i in range(1,24):
+			if not check(links[link*24].distance_to(links[link*24+i]) < 1.1,"Track link %d vertices are not contiguous" % link): return
+	# From a low side camera, half a link pitch of travel moves the links; the turret is held still.
+	model.sway_degrees = 0.0
+	for frame in range(10): await process_frame
+	for i in range(360): model._process(1.0/60)
+	# Only the explicit step below may roll the tracks.
+	model.set_process(false)
+	var side := Camera3D.new()
+	game.add_child(side)
+	side.global_position = tank.global_position+Vector3(-7,1.0,0)
+	side.look_at(tank.global_position+Vector3(0,-0.9,0))
+	side.fov = 40
+	side.make_current()
+	await shot("tank_tracks_rest")
+	var before: Image = root.get_texture().get_image()
+	var seconds: float = (model.link_pitch*0.5)*0.6/3.0
+	model.set_drive(3.0,0.0,seconds); model._process(seconds)
+	await shot("tank_tracks_half_pitch")
+	var after: Image = root.get_texture().get_image()
+	# Only the part of the frame above the HUD can show the tank.
+	var changed := 0
+	for y in range(0,620,2):
+		for x in range(0,before.get_width(),2):
+			var a0: Color = before.get_pixel(x,y)
+			var a1: Color = after.get_pixel(x,y)
+			if absf(a0.r-a1.r)+absf(a0.g-a1.g)+absf(a0.b-a1.b) > 0.08: changed += 1
+	print("TRACK_PIXELS_CHANGED ",changed)
+	if not check(changed > 150,"Track links did not move on screen: %d" % changed): return
 	print("TANK_MODEL_RUNTIME_CHECK_PASSED"); quit(TestOutput.exit_code())
