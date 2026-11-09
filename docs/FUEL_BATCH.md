@@ -33,7 +33,7 @@ All types also share `refuel_coal_per_second = 5` and `low_fuel_fraction = 0.25`
 - **Source selection (D4):** a source pinned with `set_fuel_source()` is used exclusively, with no fallback. Otherwise the nearest covering source with coal is used. Each unit of coal comes from exactly one source, so there is no pooling.
 - **Stranded recovery:** deploy a Cargo Truck or Train within 17.5 units of a stranded vehicle. The vehicle refuels without moving.
 - **Separation:** construction and repair spend stockpile resources only, so tank fuel can never be spent. Captured or enemy sources are ineligible.
-- **New and authored vehicles (D7):** Depot- and production-building spawns set `start_fuelled = false`, so new vehicles start empty and fill up at their Depot when coal is available. Vehicles placed in a fuel-enabled scene start full.
+- **New and authored vehicles (D7):** Depot- and production-building spawns set `start_fuelled = false`, so new vehicles start empty and fill up at their Depot when coal is available. Vehicles placed in a fuel-enabled scene start full. While testing, `FuelRules.testing_full_tanks` (on) makes new vehicles start full instead; set it false to restore this rule.
 - **Train round-trip check (D6):** when a route is assigned, `estimated_round_trip_fuel()` sums current position → loading Depot → unloading Depot → loading Depot over friendly rails. If the tank can't cover that, the player is warned but the route is still accepted. The estimate ignores refuelling at the endpoints.
 
 ## Testing coal grant (D2)

@@ -8,3 +8,5 @@ extends Resource
 @export_range(0,10,0.01) var coal_per_movement_unit := 0.10
 @export_range(0,100,0.5) var refuel_coal_per_second := 5.0
 @export_range(0,1,0.01) var low_fuel_fraction := 0.25
+## Testing switch: vehicles built at Depots and factories start with a full tank instead of empty.
+static var testing_full_tanks := true

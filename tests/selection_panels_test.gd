@@ -89,17 +89,11 @@ func run() -> void:
 	if mine != null:
 		select(null,mine)
 		if not check(shown("Production") and hud.context.get_node("Production/Head/Label").text == "Iron reserves","Mine reserves missing"): return
-	# Train: round-trip tick on the fuel bar and an amber warning line.
+	# Train: no fuel bar, it runs on Depot energy.
 	await fixture("res://scenes/maps/rail_exercise.tscn")
 	game.vehicle_fuel_required = true
 	var train = game.get_node("Entities/Units/Train")
-	train.fuel = 0
-	if not check(train.start_supply_route(game.depot,game.get_node("Entities/Buildings/EastDepot"),1,0,false),"Train route failed"): return
 	select(train)
-	var needed: float = train.estimated_round_trip_fuel()
-	if needed > 0:
-		var tick: ColorRect = hud.bars.get_node("Fuel/Need")
-		if not check(tick.visible and is_equal_approx(tick.anchor_left,clampf(needed/train.fuel_rules.reserve_capacity,0,1)) and "Round trip needs about" in hud.info.get_node("Details").text,"Round-trip tick or note missing"): return
-	if not check(hud.info.get_node("Warning").visible and hud.info.get_node("Warning").text == train.fuel_warning,"Train warning line missing"): return
+	if not check(not hud.bars.get_node("Fuel").visible and not hud.info.get_node("Warning").visible,"Train should show no fuel bar or fuel warning"): return
 	print("SELECTION_PANELS_TEST_PASSED")
 	quit(0)

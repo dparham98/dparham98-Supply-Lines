@@ -23,7 +23,9 @@ func run() -> void:
 	var destination = game.get_node("Entities/Buildings/EastDepot")
 	var train = game.get_node("Entities/Units/Train")
 	if not check(source.coal == 100 and source.storage_capacity == 2000 and destination.stockpile.total() == 590 and destination.storage_capacity == 600,"Authored stock/capacity wrong"): return
-	if not check(train.fuel == 0 and train.fuel_rules.reserve_capacity == 90,"Train fuel reserve missing"): return
+	if not check(train.fuel == 0 and train.fuel_rules == null,"Train should have no fuel reserve"): return
+	# Trains draw Depot energy; hold it level so the storage arithmetic stays exact.
+	game.get_node("RailNetwork").rules.train_energy_per_metre = 0.0
 	if not check(train.start_supply_route(source,destination,0,0,false,0,20),"Coal rail route rejected"): return
 	for i in range(1200): train._process(1.0/60)
 	if not check(source.coal == 80 and destination.coal == 10 and train.carried_coal == 10 and train.route_active and train.stage == "unloading","Full destination lost or overflowed coal"): return

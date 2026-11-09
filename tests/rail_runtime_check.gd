@@ -71,19 +71,34 @@ func run() -> void:
 	# A free straight north of the Depot, then a second one snapped onto its free end; the Depot pays by length.
 	var iron_before: int = source.iron
 	var pieces_before: int = rails.pieces.size()
-	var free_point: Vector3 = source.global_position+Vector3(-6,0,-12)
+	var free_point: Vector3 = source.global_position+Vector3(-6,0,-7)
 	await click_at(rig.camera.unproject_position(free_point))
 	if not check(rails.pieces.size() == pieces_before+1 and source.iron == iron_before-rails.cost("straight"),"First straight not laid or not paid"): return
 	var laid = rails.pieces[rails.pieces.size()-1]
-	var free_end: Vector3 = laid.ends()[1].position
-	await click_at(rig.camera.unproject_position(free_end+Vector3(1.0,0,0.5)))
-	if not check(rails.pieces.size() == pieces_before+2 and not rails.connection(laid,1).is_empty() and source.iron == iron_before-2*rails.cost("straight") and game.placing_rail,"Snapped straight or payer debit failed"): return
+	# Its west end, where the Depot does not hide the ground from the click.
+	var free_end: Vector3 = laid.ends()[0].position
+	await click_at(rig.camera.unproject_position(free_end+Vector3(-1.0,0,0.5)))
+	if not check(rails.pieces.size() == pieces_before+2 and not rails.connection(laid,0).is_empty() and source.iron == iron_before-2*rails.cost("straight") and game.placing_rail,"Snapped straight or payer debit failed"): return
 	await shot("rail_construction")
 	# A curve from the free end, shown for art review; its cost is refunded so later payment checks hold.
-	var curve = rails.place("curve",rails.connection(laid,1).piece.ends()[1].position+Vector3(1.0,0,0),Vector3.RIGHT,false,source)
+	var curve_end: Vector3 = laid.ends()[1].position+Vector3(1.0,0,0)
+	var curve = rails.place("curve",curve_end,Vector3.RIGHT,false,source)
 	if not check(curve != null and curve.kind == "curve","Curve not laid from the free end"): return
 	source.iron += rails.cost("curve")
 	await shot("rail_curve")
+	# A fork on the fixture's west end, for art review.
+	var west := {}
+	for end in rails.free_ends("player"):
+		if end.piece == game.get_node("Entities/Rails/Track0") and end.end == 0: west = end
+	var fork = rails.fork_left_scene.instantiate()
+	fork.assigned_depot = source; fork.transform = rails.transform_for("fork_left",west.position,west.out)
+	game.get_node("Entities/Rails").add_child(fork)
+	if not check(rails.pieces.has(fork) and fork.end_count() == 3 and not rails.connection(fork,0).is_empty(),"Fork not laid on the fixture's west end"): return
+	rig.focus_position(fork.global_position,45)
+	for frame in range(180): rig.advance_camera(1.0/60)
+	await shot("rail_fork")
+	rig.focus_position(Vector3(185,0,150),55)
+	for frame in range(180): rig.advance_camera(1.0/60)
 	var escape := InputEventKey.new()
 	escape.keycode = KEY_ESCAPE; escape.pressed = true
 	root.push_input(escape,true)

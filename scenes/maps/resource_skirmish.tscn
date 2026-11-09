@@ -8,6 +8,8 @@
 [ext_resource type="PackedScene" path="res://scenes/gameplay/cargo_vehicle.tscn" id="cargo_start"]
 [ext_resource type="PackedScene" path="res://assets/models/rails/maglev_track_straight.glb" id="ghost_straight"]
 [ext_resource type="PackedScene" path="res://assets/models/rails/maglev_track_curve.glb" id="ghost_curve"]
+[ext_resource type="PackedScene" path="res://assets/models/rails/maglev_track_fork_left.glb" id="ghost_fork_left"]
+[ext_resource type="PackedScene" path="res://assets/models/rails/maglev_track_fork_right.glb" id="ghost_fork_right"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/hostile.tscn" id="enemy"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/ore_deposit.tscn" id="ore"]
 [ext_resource type="PackedScene" path="res://scenes/ui/skirmish_hud.tscn" id="hud"]
@@ -81,6 +83,10 @@ visible = false
 [node name="Straight" parent="RailPreview" instance=ExtResource("ghost_straight")]
 transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
 [node name="Curve" parent="RailPreview" instance=ExtResource("ghost_curve")]
+transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
+[node name="ForkLeft" parent="RailPreview" instance=ExtResource("ghost_fork_left")]
+transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
+[node name="ForkRight" parent="RailPreview" instance=ExtResource("ghost_fork_right")]
 transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
 [node name="Status" type="Label3D" parent="RailPreview"]
 billboard = 1

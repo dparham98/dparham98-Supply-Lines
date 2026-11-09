@@ -237,6 +237,6 @@ func run() -> void:
 	game.give_order(train,{kind = "load", target = game.depot, point = game.depot.global_position},false)
 	game.give_order(train,{kind = "unload", target = east, point = east.global_position},true)
 	train._process(1.0/60)
-	if not check(train.trip_endpoints() == [game.depot,east] and not train.fuel_warning.is_empty(),"Train round-trip warning missing for a crate trip"): return
+	if not check(train.trip_endpoints() == [game.depot,east],"Train crate trip endpoints missing"): return
 	print("CRATE_CONTAINERS_TEST_PASSED")
 	quit(0)

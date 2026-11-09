@@ -126,6 +126,6 @@ func run() -> void:
 	# Rails keep the Depot-paid instant rule, now as maglev pieces laid from the Build page.
 	var rails = game.get_node("RailNetwork")
 	var rail_iron: int = depot.iron
-	var piece = rails.place("straight",depot.global_position+Vector3(0,0,-14),Vector3.RIGHT,false,depot)
+	var piece = rails.place("straight",depot.global_position+Vector3(0,0,-7),Vector3.RIGHT,false,depot)
 	if not check(piece != null and depot.iron == rail_iron-rails.cost("straight"),"Track piece not laid from Depot stock"): return
 	print("SITE_CONSTRUCTION_TEST_PASSED"); quit()

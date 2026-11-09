@@ -28,6 +28,7 @@ func place(unit: Node3D, point: Vector3) -> void:
 	unit.global_position = game.ground.tile_to_world(unit.grid_position)
 	unit._claim(unit.grid_position)
 func run() -> void:
+	FuelRules.testing_full_tanks = false
 	await fixture("res://scenes/maps/resource_skirmish.tscn")
 	var depot = game.depot
 	depot.coal = 0
@@ -150,15 +151,9 @@ func run() -> void:
 	await fixture("res://scenes/maps/rail_exercise.tscn")
 	var train = game.get_node("Entities/Units/Train")
 	if not check(not game.vehicle_fuel_required and not train.fuel_active() and train.fuel == 0,"Earlier exercise scene requires fuel"): return
-	# Train round-trip check warns but allows the route.
+	# Trains burn no fuel even where vehicles do; a route needs only connected track.
 	game.vehicle_fuel_required = true
-	train.fuel = 0
 	var destination = game.get_node("Entities/Buildings/EastDepot")
-	if not check(train.start_supply_route(game.depot,destination,1,0,true) and train.route_active,"Low-fuel train route was refused"): return
-	var needed: float = train.estimated_round_trip_fuel()
-	if not check(needed > 0 and "Round trip needs" in train.fuel_warning and "Train fuel warning" in game.message,"Round-trip fuel warning missing"): return
-	train.fuel = train.fuel_rules.reserve_capacity
-	train.check_round_trip_fuel()
-	if not check(needed > train.fuel or train.fuel_warning.is_empty(),"Warning shown for a sufficient tank"): return
+	if not check(not train.fuel_active() and train.start_supply_route(game.depot,destination,1,0,true) and train.route_active,"Train should run without fuel"): return
 	print("VEHICLE_FUEL_TEST_PASSED")
 	quit(0)

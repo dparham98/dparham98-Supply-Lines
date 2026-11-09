@@ -39,17 +39,14 @@ func run() -> void:
 	# A piece over existing track or outside every Depot territory is refused for free.
 	var before: int = destination.iron
 	if not check(rails.place("straight",game.get_node("Entities/Rails/Track3").point_at(2.4),Vector3.FORWARD,false) == null and rails.place("straight",Vector3(60,0,60),Vector3.RIGHT,false) == null and destination.iron == before and rails.pieces.size() == 8,"Invalid track was laid or charged"): return
-	# Curves on open land near the Depot: a left curve exits a quarter turn to the travel's left,
+	# Curves from a free end: a left curve exits a quarter turn to the travel's left,
 	# the mirrored curve to its right, both 12 m along and 12 m across.
 	var entry := Vector3.INF
 	var heading := Vector3.RIGHT
-	for offset in [Vector3(-30,0,-30),Vector3(30,0,-30),Vector3(-30,0,30),Vector3(30,0,30),Vector3(0,0,-30),Vector3(0,0,30)]:
-		for h in [Vector3.RIGHT,Vector3.FORWARD,Vector3.LEFT,Vector3.BACK]:
-			var candidate: Vector3 = source.global_position+offset
-			if rails.can_place("curve",rails.transform_for("curve",candidate,h,false),source,false) and rails.can_place("curve",rails.transform_for("curve",candidate,h,true),source,false):
-				entry = candidate; heading = h
-			if entry != Vector3.INF: break
-		if entry != Vector3.INF: break
+	for end in rails.free_ends("player"):
+		for payer in [source,destination]:
+			if rails.can_place("curve",rails.transform_for("curve",end.position,end.out,false),payer,false) and rails.can_place("curve",rails.transform_for("curve",end.position,end.out,true),payer,false):
+				entry = end.position; heading = end.out
 	if not check(entry != Vector3.INF,"No open land for a curve test near the Depot"): return
 	var left_side: Vector3 = Vector3.UP.cross(heading)
 	var curve = rails.place("curve",entry,heading,false)
@@ -88,7 +85,7 @@ func run() -> void:
 	if not check(rails.pieces.has(restored) and not rails.line_to_depot(train.piece,train.along,destination,"player").is_empty(),"Restored piece did not rejoin the line"): return
 	# Movement: the train follows the line to the EastDepot stop and its consist rides the track.
 	var model = train.get_node("Visuals/Model")
-	if not check(model.has_method("place") and model.cars().size() == 4,"Train consist missing"): return
+	if not check(model.has_method("place") and model.cars().size() == 1 and model.get_node_or_null("Engine") == null,"Train consist missing"): return
 	if not check(train._route_near(destination,destination.dropoff_range),"Train could not route to EastDepot"): return
 	var start: Vector3 = train.global_position
 	var travelled := false
@@ -98,11 +95,13 @@ func run() -> void:
 		if train._route.is_empty(): break
 	if not check(travelled and train._route.is_empty() and train.global_position.distance_to(destination.global_position) <= destination.dropoff_range+0.05,"Train did not arrive at the EastDepot stop: %s" % train.global_position): return
 	if not check(train.on_friendly_track() and absf(train.global_position.z-156.5) < 0.05,"Train left the track: %s" % train.global_position): return
-	var engine: Node3D = model.cars()[0].node
-	var tail: Node3D = model.cars()[3].node
-	if not check(engine.global_position.x > tail.global_position.x+10.0 and absf(tail.global_position.z-156.5) < 0.3 and absf(engine.global_position.y) < 0.01,"Consist is not laid out along the track: %s / %s" % [engine.global_position,tail.global_position]): return
-	# Enemy ownership of the paying Depot makes its pieces unusable.
+	var car: Node3D = model.cars()[0].node
+	if not check(absf(car.global_position.z-156.5) < 0.3 and absf(car.global_position.y) < 0.01,"Car is not on the track: %s" % car.global_position): return
+	# Losing one Depot leaves the line usable through the other; both enemies have a Depot on it then.
 	destination.team = "enemy"; destination.ownership_changed.emit()
-	if not check(not rails.friendly_piece(last,"player") and rails.friendly_piece(first,"player"),"Captured Depot kept friendly track"): return
+	if not check(rails.friendly_piece(last,"player") and rails.friendly_piece(last,"enemy"),"A line belongs to every team with a connected Depot"): return
+	source.team = "enemy"; source.ownership_changed.emit()
+	if not check(not rails.friendly_piece(last,"player"),"A line with no friendly Depot stayed friendly"): return
+	source.team = "player"; source.ownership_changed.emit()
 	destination.team = "player"; destination.ownership_changed.emit()
 	print("RAIL_BATCH_CHECKS_PASSED"); quit()
