@@ -31,6 +31,7 @@ func snap_to_track() -> void:
 	global_position = piece.point_at(along)
 	_rest_line = rail_network.line([{piece = piece, enter = -1}],along,-1.0,consist_length()+2.0)
 	_s = _rest_line.get("start",0.0)
+	_place_consist()
 func on_friendly_track() -> bool:
 	return is_instance_valid(piece) and rail_network.friendly_piece(piece,team)
 func consist_length() -> float:

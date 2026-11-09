@@ -102,7 +102,7 @@ func construct_generator(point: Vector3) -> bool:
 func _process(_delta: float) -> void:
 	var ghost = game.get_node_or_null("ConstructionPreview")
 	if ghost == null: return
-	ghost.visible = not game.global_plan_kind.is_empty() or game.placing_rail or game.placing_depot or game.placing_generator or not game.placing_structure.is_empty()
+	ghost.visible = not game.global_plan_kind.is_empty() or game.placing_depot or game.placing_generator or not game.placing_structure.is_empty()
 	if not ghost.visible: return
 	var camera := game.get_viewport().get_camera_3d()
 	var mouse := game.get_viewport().get_mouse_position()
@@ -115,7 +115,7 @@ func update_preview(point: Vector3, generator: bool) -> bool:
 	var size: Vector2i = supply_rules.generator_footprint
 	var energy_cost: int = supply_rules.generator_energy_cost
 	var iron_cost: int = supply_rules.generator_iron_cost
-	if not generator and not game.placing_rail:
+	if not generator:
 		var instance = depot_scene.instantiate()
 		size = instance.footprint
 		instance.free()
@@ -132,15 +132,10 @@ func update_preview(point: Vector3, generator: bool) -> bool:
 		energy_cost = instance.stats.energy_cost
 		iron_cost = instance.stats.iron_cost
 		instance.free()
-	if game.placing_rail:
-		size = Vector2i.ONE
-		energy_cost = game.get_node("RailNetwork").rules.rail_energy_cost
-		iron_cost = game.get_node("RailNetwork").rules.rail_iron_cost
 	var start := footprint_start(point,size)
 	ghost.position = game.ground.tile_to_world(start)+Vector3(size.x*0.5-0.5,0.2,size.y*0.5-0.5)
 	ghost.get_node("Footprint").scale = Vector3(size.x,1,size.y)
 	var valid: bool = builder_valid() and owned_selected() and can_place_size(point,selected,size) and selected.energy >= energy_cost and selected.iron >= iron_cost
-	if game.placing_rail: valid = builder_valid() and game.get_node("RailNetwork").can_build(start,selected) and selected.energy >= energy_cost and selected.iron >= iron_cost
 	if game.placing_structure == &"iron_mine": valid = builder_valid() and can_place_mine(point,selected) and selected.energy >= energy_cost and selected.iron >= iron_cost
 	if preview_material == null:
 		preview_material = ghost.get_node("Footprint").mesh.material.duplicate()
@@ -246,9 +241,8 @@ func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_paye
 	return plan
 ## Depots and deployed Cargo trucks pay plans in their range; rails need a Depot.
 func plan_source_valid(plan: Node3D, source) -> bool:
-	if not SupplySource.available(source,"player") or (plan.kind == &"rail" and not source.is_in_group("depots")): return false
+	if not SupplySource.available(source,"player"): return false
 	if source.energy < plan.spec.energy or source.iron < plan.spec.iron: return false
-	if plan.kind == &"rail": return game.get_node("RailNetwork").can_build(plan.start,source)
 	return can_place_mine(plan.global_position,source) if plan.kind == &"iron_mine" else can_place_size(plan.global_position,source,plan.spec.size)
 func plan_payer(plan: Node3D) -> Node3D:
 	if plan.pinned: return plan.payer if plan_source_valid(plan,plan.payer) else null

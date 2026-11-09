@@ -79,6 +79,11 @@ func run() -> void:
 	await click_at(rig.camera.unproject_position(free_end+Vector3(1.0,0,0.5)))
 	if not check(rails.pieces.size() == pieces_before+2 and not rails.connection(laid,1).is_empty() and source.iron == iron_before-2*rails.cost("straight") and game.placing_rail,"Snapped straight or payer debit failed"): return
 	await shot("rail_construction")
+	# A curve from the free end, shown for art review; its cost is refunded so later payment checks hold.
+	var curve = rails.place("curve",rails.connection(laid,1).piece.ends()[1].position+Vector3(1.0,0,0),Vector3.RIGHT,false,source)
+	if not check(curve != null and curve.kind == "curve","Curve not laid from the free end"): return
+	source.iron += rails.cost("curve")
+	await shot("rail_curve")
 	var escape := InputEventKey.new()
 	escape.keycode = KEY_ESCAPE; escape.pressed = true
 	root.push_input(escape,true)
