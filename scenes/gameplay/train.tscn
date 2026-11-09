@@ -6,7 +6,6 @@
 
 [ext_resource type="Resource" path="res://assets/economy/rail_rules.tres" id="stats"]
 
-[ext_resource type="Resource" path="res://assets/economy/fuel_train.tres" id="fuel"]
 
 [ext_resource type="Resource" path="res://assets/economy/mobile_supply_rules.tres" id="mobile"]
 
@@ -31,7 +30,6 @@ material = SubResource("r1")
 
 [node name="Train" type="Node3D"]
 script = ExtResource("agent")
-fuel_rules = ExtResource("fuel")
 supply_rules = ExtResource("stats")
 mobile_rules = ExtResource("mobile")
 max_health = 80

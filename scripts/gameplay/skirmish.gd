@@ -30,6 +30,8 @@ var placing_rail := false
 ## Maglev piece being laid (docs/MAGLEV_TRACKS.md): straight, left or right curve, and the free-placement heading.
 var rail_piece := "straight"
 var rail_heading := Vector3.RIGHT
+## Which end of a fork joins the track: entry, straight exit or branch exit.
+var rail_fork_join := 0
 var placing_depot := false
 var placing_generator := false
 var placing_structure: StringName = &""
@@ -112,17 +114,28 @@ func _process(_delta: float) -> void:
 			var stats = building.unit_stats_for(scene)
 			if (building.assigned_depot.energy >= stats.energy_cost or building.assigned_depot.generation_rate() > 0) and building.assigned_depot.iron >= stats.iron_cost: recovery = true
 	if players == 0 and not recovery: outcome = "DEFEAT — no units or local production funds remaining."
+## The track piece type being laid, and which of its ends joins the track.
+func rail_kind() -> String:
+	return "curve" if rail_piece in ["left","right"] else rail_piece
+func rail_join() -> int:
+	if rail_piece.begins_with("fork"): return rail_fork_join
+	return 1 if rail_piece == "right" else 0
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE: cancel_armed()
 	if placing_rail and event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_R:
-			rail_piece = {"straight":"left","left":"right","right":"straight"}[rail_piece]
-			notify("Laying %s track. R switches straight, left and right; F turns a free piece; Esc finishes." % rail_piece)
+			rail_piece = {"straight":"left","left":"right","right":"fork_left","fork_left":"fork_right","fork_right":"straight"}[rail_piece]
+			rail_fork_join = 0
+			notify("Laying %s track, %d iron. R switches piece; F turns a free piece; G changes which end of a fork joins; Esc finishes." % [rail_piece.replace("_"," "),$RailNetwork.cost(rail_kind())])
 			get_viewport().set_input_as_handled(); return
 		if event.keycode == KEY_F:
 			rail_heading = Vector3(-rail_heading.z,0,rail_heading.x)
 			notify("Free piece heading turned. Snapped pieces follow the track they join.")
 			get_viewport().set_input_as_handled(); return
+	if placing_rail and event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_G and rail_piece.begins_with("fork"):
+		rail_fork_join = (rail_fork_join+1)%3
+		notify("Fork joins the track by its %s." % ["entry","straight exit","branch exit"][rail_fork_join])
+		get_viewport().set_input_as_handled(); return
 	# Actor selection takes precedence over armed world actions.
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		if (not global_plan_kind.is_empty() or placing_rail or placing_depot or placing_generator or not placing_structure.is_empty() or pending_unit_command == "move") and get_node("/root/SelectionManager").switch_at(event.position):
@@ -140,8 +153,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		var camera := get_viewport().get_camera_3d()
 		var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(event.position),camera.project_ray_normal(event.position))
 		if point != null:
-			var kind := "straight" if rail_piece == "straight" else "curve"
-			$RailNetwork.place(kind,point,rail_heading,rail_piece == "right",hud.global_payer if hud.global_pinned and is_instance_valid(hud.global_payer) else null)
+			$RailNetwork.place(rail_kind(),point,rail_heading,rail_join(),hud.global_payer if hud.global_pinned and is_instance_valid(hud.global_payer) else null)
 		get_viewport().set_input_as_handled()
 		return
 	if (placing_depot or placing_generator or not placing_structure.is_empty()) and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:

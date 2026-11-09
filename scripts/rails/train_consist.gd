@@ -1,24 +1,18 @@
 extends Node3D
-## Places a maglev consist on a track line (docs/MAGLEV_TRACKS.md): the engine and cargo cars from
-## the authored set, each riding on two sleds that follow the centre line, so bodies bridge curves
-## the way the authored couplers intend. The owner calls place() every frame with its track line and
-## the distance of the engine's front sled along it.
+## Places a maglev consist on a track line (docs/MAGLEV_TRACKS.md): cargo cars from the authored set,
+## each riding on two sleds that follow the centre line, so bodies bridge curves. The owner calls
+## place() every frame with its track line and the distance of the first car's front sled along it.
 ## World scale of the authored set.
 @export var world_scale := 0.6
 ## Authored metres: sled offset from each car's root, and pivot-to-pivot gaps between cars.
-@export var engine_sled_span := 3.5
 @export var cargo_sled_span := 3.0
-@export var engine_to_car_gap := 5.5
 @export var car_to_car_gap := 5.0
 @export var sled_height := 1.0
 @export var indicator_raise := 0.32
-@export var engine_path: NodePath = NodePath("Engine")
-@export var car_paths: Array[NodePath] = [NodePath("Car1"),NodePath("Car2"),NodePath("Car3")]
+@export var car_paths: Array[NodePath] = [NodePath("Car1")]
 var _cars: Array[Dictionary] = []
 var _indicator_rest := {}
 func _ready() -> void:
-	var engine := get_node_or_null(engine_path)
-	if engine: _cars.append({node = engine, span = engine_sled_span, front = "sled_engine_front", rear = "sled_engine_rear", gap = engine_to_car_gap})
 	for path in car_paths:
 		var car := get_node_or_null(path)
 		if car: _cars.append({node = car, span = cargo_sled_span, front = "sled_cargo_front", rear = "sled_cargo_rear", gap = car_to_car_gap})
@@ -26,7 +20,7 @@ func _ready() -> void:
 		var indicator: Node3D = car.node.find_child("cargo_car_indicator",true,false)
 		if indicator: _indicator_rest[car.node.get_instance_id()] = indicator.position
 func cars() -> Array[Dictionary]: return _cars
-## Length from the engine's front sled to the last car's rear sled, in world metres.
+## Length from the first car's front sled to the last car's rear sled, in world metres.
 func length() -> float:
 	var total := 0.0
 	for i in range(_cars.size()):
@@ -43,13 +37,13 @@ static func chord_back(track: Dictionary, s: float, chord: float) -> float:
 		if RailLine.point(track,mid)[0].distance_to(p0) > chord: lo = mid
 		else: hi = mid
 	return (lo+hi)*0.5
-## Sets every car on `track` with the engine's front sled at `s_front`; `load` (0-1) lights the
+## Sets every car on `track` with the first car's front sled at `s_front`; `load` (0-1) lights the
 ## cargo indicators car by car from the front.
 func place(track: Dictionary, s_front: float, load := 0.0) -> void:
 	if track.is_empty() or _cars.is_empty(): return
 	var s := s_front
 	var cargo_index := 0
-	var cargo_total := maxi(1,_cars.size()-1)
+	var cargo_total := maxi(1,_cars.size())
 	for car in _cars:
 		var span: float = car.span*world_scale
 		var s_rear := chord_back(track,s,span*2.0)

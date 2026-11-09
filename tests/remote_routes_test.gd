@@ -117,12 +117,12 @@ func run() -> void:
 	# An interrupted executing route still requires explicit repair/resume.
 	if not check(train.start_supply_route(source,destination,5,0,true),"Connected repeat assignment rejected"): return
 	replacement.free()
-	if not check(train.route_paused and not train.waiting_for_rail and not train.resume_supply_route(),"Active rail cut converted to auto-start wait"): return
+	if not check(train.route_active and train.waiting_for_rail and not train.route_paused and train.state.begins_with("No power"),"Active rail cut should hold the route as No power: %s" % train.state): return
 	replacement = rails.straight_scene.instantiate()
 	replacement.assigned_depot = payer; replacement.transform = gap_transform
 	game.get_node("Entities/Rails").add_child(replacement)
 	step(train,2)
-	if not check(train.route_paused and train.resume_supply_route(),"Repaired active route resumed implicitly or refused Resume"): return
+	if not check(not train.waiting_for_rail and train.route_active and not train.route_paused,"Repaired active route did not carry on by itself"): return
 	train.cancel_supply_route()
 	if not check(not train.waiting_for_rail and not train.route_active,"Cancel kept queued train state"): return
 	await fixture("res://scenes/maps/remote_routes_exercise.tscn")

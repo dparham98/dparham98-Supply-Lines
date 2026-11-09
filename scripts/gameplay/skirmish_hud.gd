@@ -356,19 +356,6 @@ func update_unit_sections(node: Node3D) -> void:
 			route.get_node("Bar").max_value = 1.0
 			route.get_node("Bar").step = 0.0
 			route.get_node("Bar").value = to_origin/maxf(0.001,to_origin+to_destination)
-	if node.is_in_group("rail_trains") and node.fuel_active():
-		var needed: float = node.estimated_round_trip_fuel()
-		if needed > 0:
-			var tick: ColorRect = bars.get_node("Fuel/Need")
-			tick.visible = true
-			var ratio := clampf(needed/node.fuel_rules.reserve_capacity,0,1)
-			tick.anchor_left = ratio; tick.anchor_right = ratio
-			tick.offset_left = -1; tick.offset_right = 1
-			info.get_node("Details").text += "
-Round trip needs about %.0f coal" % needed
-		if not node.fuel_warning.is_empty():
-			info.get_node("Warning").text = node.fuel_warning
-			info.get_node("Warning").visible = true
 # One button per unit type in a mixed selection.
 func update_strip(units: Array[Node3D]) -> void:
 	var counts := {}
@@ -735,7 +722,7 @@ func begin_global_placement(kind: StringName) -> void:
 		game.placing_rail = true
 		game.rail_piece = "straight"
 		var rails = game.get_node("RailNetwork")
-		game.notify("Click to lay a straight (%d iron) from the nearest free track end, or on open land. R switches straight, left and right curves (%d iron); F turns a free piece; Esc finishes." % [rails.cost("straight"),rails.cost("curve")])
+		game.notify("Click to lay a straight (%d iron) from a free track end or in a Depot's loading range. R switches straight, curves (%d iron) and forks; F turns a free piece; Esc finishes." % [rails.cost("straight"),rails.cost("curve")])
 		return
 	game.global_plan_kind = kind
 	game.notify("Click valid terrain to place an unpaid %s plan. Esc cancels placement; existing plans remain." % network.plan_spec(kind).title)

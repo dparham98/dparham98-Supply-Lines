@@ -23,16 +23,14 @@ func run() -> void:
 	root.size = Vector2i(1280,900)
 	# 1. A Train trip ordered from the HUD keeps the round-trip fuel warning in the header.
 	await fixture("res://scenes/maps/rail_exercise.tscn")
-	game.vehicle_fuel_required = true
 	var train = game.get_node("Entities/Units/Train")
-	train.fuel = 0
 	select_only(train)
 	var destination = game.get_node("Entities/Buildings/EastDepot")
 	hud.card.get_node("Load").pressed.emit(); hud._process(0)
 	hud.pick_stop(game.depot,Input.is_key_pressed(KEY_SHIFT))
 	game.give_order(train,{kind = "unload", target = destination},true)
 	train._process(1.0/60)
-	if not check(not train.fuel_warning.is_empty() and "Train fuel warning" in game.message,"HUD-ordered trip hid the Train fuel warning: %s" % game.message): return
+	if not check(train.trip_endpoints() == [game.depot,destination],"HUD-ordered trip did not set the Train's stops"): return
 	await fixture("res://scenes/maps/resource_skirmish.tscn")
 	var worker = game.get_node("Entities/Units/Infantry")
 	# 2. Drop materials ends the queue as well as the current order.

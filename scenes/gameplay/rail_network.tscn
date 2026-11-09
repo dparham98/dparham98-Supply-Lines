@@ -3,10 +3,14 @@
 [ext_resource type="Resource" path="res://assets/economy/rail_rules.tres" id="rules"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/track_straight.tscn" id="straight"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/track_curve.tscn" id="curve"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/track_fork_left.tscn" id="fork_left"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/track_fork_right.tscn" id="fork_right"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/train.tscn" id="train"]
 [node name="RailNetwork" type="Node"]
 script = ExtResource("script")
 rules = ExtResource("rules")
 straight_scene = ExtResource("straight")
 curve_scene = ExtResource("curve")
+fork_left_scene = ExtResource("fork_left")
+fork_right_scene = ExtResource("fork_right")
 train_scene = ExtResource("train")
