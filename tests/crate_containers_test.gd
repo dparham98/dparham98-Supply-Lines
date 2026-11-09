@@ -112,7 +112,7 @@ func run() -> void:
 	depot.iron = 25
 	depot._process(0.01)
 	if not check(crates_of(&"iron") == 7 and depot.iron == 25,"Leave empty still repacked"): return
-	if not check(is_equal_approx(hud.get_node("Bottom").size.y,260),"Crate panel broke the fixed HUD height"): return
+	if not check(is_equal_approx(hud.get_node("Bottom").size.y,272),"Crate panel broke the fixed HUD height"): return
 	clear_crates()
 	# Workers deliver into a crate and, when it fills, into the next crate beside it.
 	var field := ground.get_tile_at_position(depot.global_position+Vector3(-16,0,14)) as Vector2i
@@ -215,7 +215,7 @@ func run() -> void:
 	var marker = CrateYard.spawn(self,field+Vector2i(0,3),&"wood",10,"player")
 	var status: Dictionary = overlay.status_for(marker)
 	if not check(is_equal_approx(status.crate.ratio,0.4) and overlay.hud_name(marker) == "Wood crate","Crate overlay wrong"): return
-	if not check(is_equal_approx(hud.get_node("Bottom").size.y,260),"Cargo HUD broke the fixed height"): return
+	if not check(is_equal_approx(hud.get_node("Bottom").size.y,272),"Cargo HUD broke the fixed height"): return
 	for id in ["Move","Stop","DeployCargo","ToggleRefuel","Load","Unload","Trips"]:
 		if not check(hud.card.get_node(id).visible,"Cargo tile %s missing" % id): return
 	hud.card.get_node("Load").pressed.emit(); hud._process(0)

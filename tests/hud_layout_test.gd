@@ -42,7 +42,10 @@ func run() -> void:
 	# Compact bar: shorter than the former fixed 300 px for ordinary selections.
 	await select([])
 	# The HUD has one fixed height for every selection.
-	if not check(is_equal_approx(bottom.size.y,260),"Empty HUD %.0f px tall" % bottom.size.y): return
+	if not check(is_equal_approx(bottom.size.y,272),"Empty HUD %.0f px tall" % bottom.size.y): return
+	# The bronze frame sits over the panel, ignores the mouse and only stretches its plain rails.
+	var frame_left: NinePatchRect = hud.get_node("HudFrame/Left")
+	if not check(hud.get_node("HudFrame").mouse_filter == Control.MOUSE_FILTER_IGNORE and frame_left.mouse_filter == Control.MOUSE_FILTER_IGNORE and frame_left.texture != null and hud.get_node("HudFrame").get_index() > bottom.get_index(),"HUD frame missing, or catching clicks"): return
 	await select([worker])
 	if not check(bottom.size.y < 300 and hud.info.get_node("Details").get_global_rect().end.y <= root.size.y,"Infantry HUD %.0f px tall or overflowing" % bottom.size.y): return
 	# Status bars: Infantry shows cargo only; a Tank shows fuel coloured by level.

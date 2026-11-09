@@ -26,7 +26,7 @@ func click_at(point: Vector2) -> void:
 		for frame in range(4): await process_frame
 func shot(name: String) -> void:
 	for frame in range(8): await process_frame
-	if not check(is_equal_approx(hud.get_node("Bottom").size.y,260),"%s HUD height changed" % name): return
+	if not check(is_equal_approx(hud.get_node("Bottom").size.y,272),"%s HUD height changed" % name): return
 	if DisplayServer.get_name() == "headless": return
 	await RenderingServer.frame_post_draw
 	TestOutput.save_png(self, root.get_texture().get_image(), OUTPUT+name+".png")
