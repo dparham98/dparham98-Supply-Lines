@@ -123,14 +123,9 @@ func run() -> void:
 	# Cancelling leaves the pile.
 	plan2.cancel()
 	if not check(is_instance_valid(pile) and pile.remaining == spec2.iron,"Cancel should leave the pile"): return
-	# Rails keep the Depot-paid instant rule.
-	var rail_cell: Vector2i = network.footprint_start(depot.global_position+Vector3(0,0,-14),Vector2i.ONE)
+	# Rails keep the Depot-paid instant rule, now as maglev pieces laid from the Build page.
 	var rails = game.get_node("RailNetwork")
-	if rails.can_build(rail_cell,depot):
-		var rail_plan = network.queue_plan(game.ground.tile_to_world(rail_cell),&"rail")
-		if not check(rail_plan != null,"Rail plan not placed"): return
-		rail_plan.set_process(false)
-		var rail_iron: int = depot.iron
-		rail_plan.elapsed = 1.0; rail_plan._process(0.0)
-		if not check(not get_nodes_in_group("construction_plans").has(rail_plan) and depot.iron == rail_iron-network.plan_spec(&"rail").iron,"Rail should still complete from Depot stock"): return
+	var rail_iron: int = depot.iron
+	var piece = rails.place("straight",depot.global_position+Vector3(0,0,-14),Vector3.RIGHT,false,depot)
+	if not check(piece != null and depot.iron == rail_iron-rails.cost("straight"),"Track piece not laid from Depot stock"): return
 	print("SITE_CONSTRUCTION_TEST_PASSED"); quit()

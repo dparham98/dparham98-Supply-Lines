@@ -37,7 +37,12 @@ func _draw() -> void:
 		var top_left := world_to_map(game.ground.tile_to_world(cell))-size/500.0*0.5
 		draw_rect(Rect2(top_left,size/500.0),Color(0.45,0.35,0.18))
 	for rail in get_tree().get_nodes_in_group("rails"):
-		draw_rect(Rect2(world_to_map(rail.global_position)-Vector2.ONE,Vector2(2,2)),Color(0.4,0.8,0.85) if game.get_node("RailNetwork").friendly(rail.cell,"player") else Color(0.85,0.3,0.25))
+		var colour := Color(0.4,0.8,0.85) if game.get_node("RailNetwork").friendly_piece(rail,"player") else Color(0.85,0.3,0.25)
+		var total: float = rail.length()
+		var steps := maxi(2,int(total/2.0))
+		var line := PackedVector2Array()
+		for i in range(steps+1): line.append(world_to_map(rail.point_at(total*i/steps)))
+		draw_polyline(line,colour,1.5)
 	# Markers share the map overlay's team colours, with a dark edge so they read on any terrain.
 	for group in ["resources","selectable_buildings","units"]:
 		for node in get_tree().get_nodes_in_group(group):

@@ -6,6 +6,8 @@
 [ext_resource type="PackedScene" path="res://scenes/gameplay/depot.tscn" id="depot"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/infantry.tscn" id="infantry"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/cargo_vehicle.tscn" id="cargo_start"]
+[ext_resource type="PackedScene" path="res://assets/models/rails/maglev_track_straight.glb" id="ghost_straight"]
+[ext_resource type="PackedScene" path="res://assets/models/rails/maglev_track_curve.glb" id="ghost_curve"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/hostile.tscn" id="enemy"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/ore_deposit.tscn" id="ore"]
 [ext_resource type="PackedScene" path="res://scenes/ui/skirmish_hud.tscn" id="hud"]
@@ -74,6 +76,19 @@ position = Vector3(164.5,0,159.5)
 position = Vector3(160.5,0,151.5)
 [node name="Hostile" parent="Entities/Units" instance=ExtResource("enemy")]
 position = Vector3(184.5,0,120.5)
+[node name="RailPreview" type="Node3D" parent="."]
+visible = false
+[node name="Straight" parent="RailPreview" instance=ExtResource("ghost_straight")]
+transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
+[node name="Curve" parent="RailPreview" instance=ExtResource("ghost_curve")]
+transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
+[node name="Status" type="Label3D" parent="RailPreview"]
+billboard = 1
+font_size = 30
+pixel_size = 0.03
+no_depth_test = true
+modulate = Color(0.75,1,0.85,1)
+text = "RAIL"
 [node name="WaypointMarkers" type="Node3D" parent="."]
 script = ExtResource("waypoints")
 marker_scene = ExtResource("waypoint")

@@ -2,8 +2,8 @@
 [ext_resource type="PackedScene" path="res://scenes/maps/rail_exercise.tscn" id="base"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/depot.tscn" id="depot"]
 [node name="RemoteRoutesExercise" instance=ExtResource("base")]
-message = "Assign Train to any friendly Depots. Depot to EastDepot waits for the central rail gap; fill it with Build > Rail. RemoteDepot needs a branch line."
-[node name="Rail435" parent="Entities/Rails" index="15"]
+message = "Assign Train to any friendly Depots. Depot to EastDepot waits for the missing centre piece; lay it with Build > Rail. RemoteDepot needs a branch line."
+[node name="Track3" parent="Entities/Rails" index="3"]
 visible = false
 script = null
 [node name="RemoteDepot" parent="Entities/Buildings" instance=ExtResource("depot")]

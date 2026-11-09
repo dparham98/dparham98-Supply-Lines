@@ -96,9 +96,10 @@ func _process(delta: float) -> void:
 				if ground.is_tile_valid(center+offset): spawn = center+offset; break
 			if spawn.x >= 0: break
 		if pending[0] != "train" and spawn.x < 0: $Progress.text = "Exit blocked · waiting"; return
+		var train_stop := {}
 		if pending[0] == "train":
-			spawn = game.get_node("RailNetwork").spawn_cell(self)
-			if spawn.x < 0: $Progress.text = "Train needs an empty friendly rail tile near Depot"; return
+			train_stop = game.get_node("RailNetwork").spawn_stop(self)
+			if train_stop.is_empty(): $Progress.text = "Train needs friendly track in the Depot loading area"; return
 		var kind: String = pending.pop_front()
 		var scene: PackedScene = infantry_scene
 		if kind == "truck": scene = game.get_node("DepotNetwork").truck_scene
@@ -106,7 +107,7 @@ func _process(delta: float) -> void:
 		elif kind == "train": scene = game.get_node("RailNetwork").train_scene
 		var unit = scene.instantiate()
 		if "start_fuelled" in unit: unit.start_fuelled = false # New vehicles start empty.
-		unit.position = ground.tile_to_world(spawn)
+		unit.position = train_stop.position if not train_stop.is_empty() else ground.tile_to_world(spawn)
 		game.get_node("Entities/Units").add_child(unit,true)
 		queue -= 1
 		progress = 0

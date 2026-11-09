@@ -67,18 +67,28 @@ func run() -> void:
 	await shot("rail_depot_card")
 	await click(hud.get_node("Bottom/Body/Header/GlobalBuild"))
 	await click(hud.build_menu.get_node("Actions/Rail"))
-	if not check(game.global_plan_kind == &"rail","Rail Build button failed"): return
-	var cell = game.ground.get_tile_at_position(source.global_position+Vector3(0,0,10))
-	await click_at(rig.camera.unproject_position(game.ground.tile_to_world(cell)))
-	await click_at(rig.camera.unproject_position(game.ground.tile_to_world(cell+Vector2i(1,0))))
-	for plan in get_nodes_in_group("construction_plans"): plan.complete_from_stock()
-	if not check(rails.segments.has(cell) and rails.segments.has(cell+Vector2i(1,0)) and source.iron == 466 and game.global_plan_kind == &"rail","Repeated rail plans or payer debit failed"): return
+	if not check(game.placing_rail and game.rail_piece == "straight","Rail Build button did not start laying track"): return
+	# A free straight north of the Depot, then a second one snapped onto its free end; the Depot pays by length.
+	var iron_before: int = source.iron
+	var pieces_before: int = rails.pieces.size()
+	var free_point: Vector3 = source.global_position+Vector3(-6,0,-12)
+	await click_at(rig.camera.unproject_position(free_point))
+	if not check(rails.pieces.size() == pieces_before+1 and source.iron == iron_before-rails.cost("straight"),"First straight not laid or not paid"): return
+	var laid = rails.pieces[rails.pieces.size()-1]
+	var free_end: Vector3 = laid.ends()[1].position
+	await click_at(rig.camera.unproject_position(free_end+Vector3(1.0,0,0.5)))
+	if not check(rails.pieces.size() == pieces_before+2 and not rails.connection(laid,1).is_empty() and source.iron == iron_before-2*rails.cost("straight") and game.placing_rail,"Snapped straight or payer debit failed"): return
 	await shot("rail_construction")
+	# A curve from the free end, shown for art review; its cost is refunded so later payment checks hold.
+	var curve = rails.place("curve",rails.connection(laid,1).piece.ends()[1].position+Vector3(1.0,0,0),Vector3.RIGHT,false,source)
+	if not check(curve != null and curve.kind == "curve","Curve not laid from the free end"): return
+	source.iron += rails.cost("curve")
+	await shot("rail_curve")
 	var escape := InputEventKey.new()
 	escape.keycode = KEY_ESCAPE; escape.pressed = true
 	root.push_input(escape,true)
 	for frame in range(3): await process_frame
-	if not check(game.global_plan_kind.is_empty(),"Esc failed to finish rail placement"): return
+	if not check(not game.placing_rail,"Esc failed to finish rail placement"): return
 	if hud.build_menu.visible: await click(hud.build_menu.get_node("Actions/Back"))
 	var train = game.get_node("Entities/Units/Train")
 	await click_at(rig.camera.unproject_position(train.selection_point()))

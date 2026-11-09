@@ -1,0 +1,20 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/rails/track_piece.gd" id="piece"]
+[ext_resource type="PackedScene" path="res://assets/models/rails/maglev_track_curve.glb" id="model"]
+[sub_resource type="StandardMaterial3D" id="owner_mat"]
+albedo_color = Color(0.3,0.9,1,1)
+emission_enabled = true
+emission = Color(0.3,0.9,1,1)
+emission_energy_multiplier = 1.2
+[sub_resource type="BoxMesh" id="owner_mesh"]
+size = Vector3(0.6,0.08,0.6)
+material = SubResource("owner_mat")
+[node name="TrackCurve" type="Node3D"]
+script = ExtResource("piece")
+kind = "curve"
+[node name="Visuals" type="Node3D" parent="."]
+[node name="Model" parent="Visuals" instance=ExtResource("model")]
+transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
+[node name="Owner" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(3.515,0.7,8.485)
+mesh = SubResource("owner_mesh")

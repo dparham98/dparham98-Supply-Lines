@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/rails/train.gd" id="agent"]
 [ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
-[ext_resource type="PackedScene" path="res://scenes/models/train_placeholder.tscn" id="model"]
+[ext_resource type="PackedScene" path="res://scenes/models/train_model.tscn" id="model"]
 
 [ext_resource type="Resource" path="res://assets/economy/rail_rules.tres" id="stats"]
 
