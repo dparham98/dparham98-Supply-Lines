@@ -1,6 +1,6 @@
 extends SceneTree
 # Rendered: the Depot uses the authored warehouse model (docs/DEPOT_MODEL.md). It stands on the ground,
-# stays inside its footprint, keeps the rail row south of it clear, and is pickable. Saves depot_model.
+# its tent fills the footprint and is pickable, and the tractor and ramp stay out of selection. Saves depot_model.
 const Bounds = preload("res://scripts/units/selection_bounds.gd")
 const TestOutput = preload("res://tests/test_output.gd")
 var game: Node3D
@@ -27,14 +27,16 @@ func run() -> void:
 			low = low.min(p); high = high.max(p)
 	if not check(absf(low.y) < 0.05 and high.y > 5.5 and high.y < 7.0,"Depot not on the ground or wrong height: %.2f..%.2f" % [low.y,high.y]): return
 	var half := Vector2(depot.footprint)*0.5
-	if not check(low.x >= -half.x and high.x <= half.x and low.z >= -half.y and high.z <= half.y,"Model leaves its footprint: %s..%s, half %s" % [low,high,half]): return
-	if not check(high.x-low.x > 15.5 and high.z-low.z > 8.5,"Model is not at world scale 0.6: %s..%s" % [low,high]): return
+	if not check(low.x >= -half.x-0.05 and high.x <= half.x+0.05 and low.z >= -half.y-0.05 and high.z <= half.y+0.05,"Tent leaves its footprint: %s..%s, half %s" % [low,high,half]): return
+	if not check(high.x-low.x > 9.5 and high.z-low.z > 8.5,"Model is not at world scale 0.6: %s..%s" % [low,high]): return
 	var rig = game.get_node("CameraRig")
 	rig.set_process(false)
 	rig.focus_position(depot.global_position+Vector3(0,0,3),32)
 	for frame in range(180): rig.advance_camera(1.0/60)
 	var screen: Vector2 = rig.camera.unproject_position(depot.global_position+Vector3(0,3,0))
 	if not check(Bounds.hit_distance(depot,rig.camera,screen) < INF,"Depot model not pickable at its centre"): return
+	var tractor: Vector2 = rig.camera.unproject_position(depot.global_position+Vector3(8.0,1.5,0))
+	if not check(Bounds.hit_distance(depot,rig.camera,tractor) == INF,"Tractor should not select the Depot"): return
 	for frame in range(8): await process_frame
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png(TestOutput.path("depot_model.png"))

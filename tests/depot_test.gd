@@ -87,8 +87,8 @@ func run() -> void:
 	assert(second.iron == 10 and first.iron == 30 and worker.cargo == 0)
 	# Deploy a truck outside all territory on a valid footprint.
 	var truck = network.truck_scene.instantiate()
-	var start = game.ground.find_buildable_footprint(Vector2i(220,170),Vector2i(17,10))
-	truck.position = game.ground.tile_to_world(start+Vector2i(8,5))
+	var start = game.ground.find_buildable_footprint(Vector2i(220,170),Vector2i(10,10))
+	truck.position = game.ground.tile_to_world(start+Vector2i(5,5))
 	game.get_node("Entities/Units").add_child(truck)
 	truck.set_process(false)
 	truck.set_selected(true)
