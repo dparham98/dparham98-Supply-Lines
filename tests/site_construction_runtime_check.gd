@@ -31,7 +31,7 @@ func run() -> void:
 	for frame in range(3): await process_frame
 	if not check(not plan.materials_covered() and plan.get_node("Visuals/Grid").material_override.get_shader_parameter("tint").r > 0.9,"Plan should wait amber"): return
 	await shot("site_waiting")
-	var truck = game.get_node("Entities/Units/CargoTruck")
+	var truck = game.get_node("Entities/Units/StarterTruck")
 	for crate in [{kind = &"iron", amount = 25},{kind = &"iron", amount = 25}]: truck.crates.append(crate)
 	truck._sync_reserved()
 	for cell in truck._claimed.duplicate(): truck._release(cell)

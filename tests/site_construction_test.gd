@@ -35,7 +35,7 @@ func run() -> void:
 	for depot in get_nodes_in_group("depots"): depot.set_process(false)
 	var depot = game.depot
 	# The player starts with an Infantry and a fuelled, empty Cargo truck.
-	var start_truck = game.get_node_or_null("Entities/Units/CargoTruck")
+	var start_truck = game.get_node_or_null("Entities/Units/StarterTruck")
 	if not check(start_truck != null and start_truck.is_cargo_vehicle and start_truck.team == "player","No starting Cargo truck"): return
 	if not check(start_truck.fuel_rules != null and is_equal_approx(start_truck.fuel,start_truck.fuel_rules.reserve_capacity),"Starting truck should have a full tank: %.1f" % start_truck.fuel): return
 	if not check(start_truck.crates.is_empty() and start_truck.stockpile.total() == 0,"Starting truck should be empty"): return

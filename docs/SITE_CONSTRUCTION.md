@@ -24,7 +24,7 @@ Buildings are no longer bought out of a Depot's stock. A queued plan needs its m
 - `scripts/economy/cargo_vehicle.gd`: `_site_stop()`, Unload at a plan, right-click delivery, trip stops that are sites.
 - `scripts/gameplay/skirmish.gd` and `skirmish_hud.gd`: right-click routing to sites, the Unload pick including plans (they pulse on the minimap), the plan panel and build-page copy.
 - `scripts/economy/material_pile.gd`: `add()` so a site tops up one pile instead of scattering several.
-- `scenes/maps/resource_skirmish.tscn`: the starting `CargoTruck`.
+- `scenes/maps/resource_skirmish.tscn`: the starting `StarterTruck` (named so exercise scenes that add their own `CargoTruck` keep working).
 
 ## Validation
 
