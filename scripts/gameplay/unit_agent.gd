@@ -455,9 +455,12 @@ func _shoot(target: Node3D) -> void:
 	if turret: turret.aim_at(target.global_position)
 	if _cooldown > 0: return
 	_cooldown = CombatResolver.interval_for(self,target)
-	if turret == null: _face(target.global_position)
 	var animator := _animator()
 	if animator: animator.play_action(&"shoot")
+	# Turn so the gun line runs through the target when the model knows where its gun points; otherwise face it.
+	if turret == null:
+		if animator and animator.has_method("aim_yaw"): $Visuals.rotation.y = animator.aim_yaw(to_local(target.global_position))
+		else: _face(target.global_position)
 	var target_height: Vector3 = target.get_node("Visuals").position if target.has_node("Visuals") else Vector3.ZERO
 	var model := $Visuals.get_node_or_null("Model")
 	var muzzle: Vector3 = model.muzzle_position() if model != null and model.has_method("muzzle_position") else global_position+Vector3.UP*1.7+$Visuals.position

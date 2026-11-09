@@ -4,6 +4,12 @@
 [ext_resource type="Shader" path="res://assets/shaders/chainsaw_teeth.gdshader" id="teeth_shader"]
 [sub_resource type="ShaderMaterial" id="teeth_material"]
 shader = ExtResource("teeth_shader")
+shader_parameter/albedo = Vector3(0.62, 0.64, 0.66)
+[sub_resource type="StandardMaterial3D" id="saw_steel"]
+albedo_color = Color(0.72, 0.74, 0.78, 1)
+metallic = 0.9
+metallic_specular = 0.6
+roughness = 0.35
 [node name="InfantryModel" type="Node3D"]
 script = ExtResource("animator")
 player_path = NodePath("Rig/AnimationPlayer")
@@ -11,6 +17,8 @@ work_clip = &"Hack"
 teeth_path = NodePath("Rig/infantry_rig2/Skeleton3D/chainsaw/chainsaw_teeth_rig")
 [node name="Rig" parent="." instance=ExtResource("rig")]
 transform = Transform3D(-1,0,0,0,1,0,0,0,-1,0,0,0)
+[node name="chainsaw_rig" parent="Rig/infantry_rig2/Skeleton3D" index="1"]
+material_override = SubResource("saw_steel")
 [node name="chainsaw_teeth_rig" parent="Rig/infantry_rig2/Skeleton3D/chainsaw" index="0"]
 material_override = SubResource("teeth_material")
 [editable path="Rig"]

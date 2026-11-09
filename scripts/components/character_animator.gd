@@ -13,6 +13,10 @@ extends Node3D
 @export_range(0,0.5,0.01) var blend_time := 0.12
 ## Bone the shot leaves from; falls back to this node when missing.
 @export var muzzle_bone: StringName = &"pistol"
+## The barrel's direction in skeleton space while the rig rests (the pistol mesh's long axis).
+@export var gun_rest_axis := Vector3(0,0,1)
+## Time into the shoot clip at which the arm is extended; the gun line is measured there.
+@export_range(0,2,0.01) var gun_sample_time := 0.1
 ## A mesh carrying assets/shaders/chainsaw_teeth.gdshader: its `speed` instance uniform runs while working.
 @export var teeth_path: NodePath
 @export_range(0,30,0.5) var teeth_speed := 10.0
@@ -21,12 +25,50 @@ var _speed := 0.0
 var _motion_frame := -2
 var _action_left := 0.0
 var _teeth_running := false
+var _gun_axis := Vector3.ZERO
+var _gun_origin := Vector3.ZERO
+var _gun_dir := Vector3.ZERO
 @onready var player: AnimationPlayer = get_node_or_null(player_path)
 @onready var teeth: GeometryInstance3D = get_node_or_null(teeth_path)
 @onready var skeleton: Skeleton3D = _find_skeleton()
 func _find_skeleton() -> Skeleton3D:
 	var found := find_children("*","Skeleton3D",true,false)
 	return found[0] if not found.is_empty() else null
+func _ready() -> void:
+	_measure_gun()
+## Where the gun sits and points in this node's frame while shooting, read once from the clips.
+func _measure_gun() -> void:
+	if player == null or skeleton == null or not player.has_animation(shoot_clip): return
+	var bone := skeleton.find_bone(muzzle_bone)
+	if bone < 0: return
+	if player.has_animation(idle_clip):
+		player.play(idle_clip); player.seek(0.0,true); skeleton.force_update_all_bone_transforms()
+	_gun_axis = (skeleton.get_bone_global_pose(bone).basis.inverse()*gun_rest_axis).normalized()
+	player.play(shoot_clip); player.seek(gun_sample_time,true); skeleton.force_update_all_bone_transforms()
+	var pose := skeleton.get_bone_global_pose(bone)
+	var world := skeleton.global_transform*pose
+	_gun_origin = to_local(world.origin)
+	_gun_dir = (global_transform.basis.inverse()*(world.basis*_gun_axis)).normalized()
+	if player.has_animation(idle_clip): player.play(idle_clip); player.seek(0.0,true)
+func has_gun_line() -> bool:
+	return _gun_dir != Vector3.ZERO
+## The barrel's direction in world space right now.
+func gun_direction() -> Vector3:
+	if skeleton == null or _gun_axis == Vector3.ZERO: return -global_transform.basis.z
+	var bone := skeleton.find_bone(muzzle_bone)
+	return (skeleton.global_transform.basis*(skeleton.get_bone_global_pose(bone).basis*_gun_axis)).normalized()
+## Yaw for this node's parent so the gun line, not the face, runs through `target` (given in that parent's frame).
+func aim_yaw(target: Vector3) -> float:
+	var flat := Vector3(target.x,0,target.z)
+	var yaw := atan2(-flat.x,-flat.z)
+	if not has_gun_line() or flat.length_squared() < 0.01: return yaw
+	for i in range(3):
+		var turned := Basis(Vector3.UP,yaw)
+		var dir := turned*_gun_dir; dir.y = 0
+		var want := flat-turned*_gun_origin; want.y = 0
+		if dir.length_squared() < 0.0001 or want.length_squared() < 0.0001: break
+		yaw += dir.signed_angle_to(want,Vector3.UP)
+	return yaw
 ## Report this frame's motion: &"run" with the ground speed, &"work", or &"idle". Lapses after a frame.
 func set_motion(kind: StringName, speed := 0.0) -> void:
 	_motion = kind

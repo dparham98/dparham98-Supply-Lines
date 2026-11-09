@@ -38,6 +38,9 @@ func run() -> void:
 		if not check(player.get_animation(looping).loop_mode == Animation.LOOP_LINEAR,"%s should loop" % looping): return
 	if not check(player.get_animation("Shoot").loop_mode == Animation.LOOP_NONE,"Shoot should play once"): return
 	if not check(model.skeleton != null and model.skeleton.get_bone_count() == 21,"Infantry skeleton missing"): return
+	# The saw is picked out in bright steel so it reads against the dark coat.
+	var saw: MeshInstance3D = model.get_node("Rig/infantry_rig2/Skeleton3D/chainsaw_rig")
+	if not check(saw.material_override is StandardMaterial3D and saw.material_override.albedo_color.v > 0.6 and model.teeth.material_override is ShaderMaterial,"Saw should carry the bright steel override"): return
 	# Size and facing: on the ground, about 1.8 m tall, within a tile, eyes toward -Z.
 	var meshes := Bounds.meshes(unit)
 	if not check(meshes.size() >= 5,"Infantry meshes missing: %d" % meshes.size()): return
@@ -75,6 +78,15 @@ func run() -> void:
 	step(unit,model,2)
 	if not check(foe.health < health_before,"Infantry did not fire"): return
 	if not check(model.acting() and model.current_clip() == &"Shoot","A shot should play Shoot, got %s" % model.current_clip()): return
+	# The gun line, not the face, runs through the target: the pistol sits beside the body, so the body turns past it.
+	step(unit,model,6)
+	var gun_from: Vector3 = model.muzzle_position(); var gun_dir: Vector3 = model.gun_direction()
+	gun_from.y = 0; gun_dir.y = 0; gun_dir = gun_dir.normalized()
+	var to_foe: Vector3 = Vector3(foe.global_position.x,0,foe.global_position.z)-gun_from
+	var miss: float = (to_foe-gun_dir*to_foe.dot(gun_dir)).length()
+	if not check(model.has_gun_line() and to_foe.dot(gun_dir) > 0 and miss < 0.25,"Gun line misses the target by %.2f m (dir %s)" % [miss,gun_dir]): return
+	var face_yaw: float = atan2(-(foe.global_position.x-unit.global_position.x),-(foe.global_position.z-unit.global_position.z))
+	if not check(absf(angle_difference(unit.get_node("Visuals").rotation.y,face_yaw)) > deg_to_rad(2),"Body should turn past the face line so the offset gun lines up"): return
 	foe.free()
 	step(unit,model,45)
 	if not check(not model.acting() and model.current_clip() == &"Rest","Rest should return after the shot, got %s" % model.current_clip()): return
