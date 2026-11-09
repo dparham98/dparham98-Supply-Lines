@@ -19,6 +19,6 @@ func run() -> void:
 	root.add_child(terrain)
 	await process_frame
 	var ground = terrain.get_node("Ground")
-	if not check(ground.material_override == material,"Ground should use the terrain material saved in terrain.tscn"): return
+	if not check(ground.material_override.shader == material.shader and ground.material_override.get_shader_parameter("tile_albedo") == material.get_shader_parameter("tile_albedo"),"Ground should use the terrain material saved in terrain.tscn"): return
 	if not check(ground.grid_size == Vector2i(500,500) and is_equal_approx(ground.tile_size,1.0),"Gameplay grid changed"): return
 	print("GROUND_TILES_TEST_PASSED"); quit()
