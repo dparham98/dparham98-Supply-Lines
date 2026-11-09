@@ -47,6 +47,6 @@ position = Vector3(196.9,0,156.5)
 rotation_degrees = Vector3(0,90,0)
 assigned_depot_path = NodePath("../../Buildings/EastDepot")
 [node name="Train" parent="Entities/Units" instance=ExtResource("train")]
-position = Vector3(176,0,156.5)
+position = Vector3(180,0,156.5)
 [node name="Hostile" parent="Entities/Units" index="1"]
 process_mode = 4

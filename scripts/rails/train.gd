@@ -19,12 +19,15 @@ func _ready() -> void:
 	add_to_group("rail_trains")
 	can_gather = false; can_capture_depots = false
 	rail_network.changed.connect(_rail_changed)
-	snap_to_track()
+	# Trains authored in a map load before all of its track has registered.
+	if game.is_node_ready(): snap_to_track()
+	else: snap_to_track.call_deferred()
 # Trains do not claim ground cells.
 func _claim(_cell: Vector2i) -> void: pass
 func _release(_cell: Vector2i) -> void: pass
 ## Puts the train on the nearest piece; a train off any track stays where it is and waits.
 func snap_to_track() -> void:
+	if not is_inside_tree(): return
 	var hit: Dictionary = rail_network.nearest_piece(global_position,20.0)
 	if hit.is_empty(): piece = null; return
 	piece = hit.piece; along = hit.distance
@@ -72,7 +75,7 @@ func check_round_trip_fuel() -> void:
 	if not fuel_warning.is_empty(): game.notify("Train fuel warning: "+fuel_warning)
 func _rail_changed() -> void:
 	_checked_revision = rail_network.revision
-	if not is_instance_valid(piece): snap_to_track()
+	if not is_instance_valid(piece) and game.is_node_ready(): snap_to_track()
 	if not route_active or route_paused: return
 	var connected := route_connected()
 	if waiting_for_rail:
