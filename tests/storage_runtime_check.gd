@@ -74,6 +74,8 @@ func run() -> void:
 	hud.pick_stop(destination,Input.is_key_pressed(KEY_SHIFT))
 	shift(false)
 	game.pending_unit_command = ""
+	# Trains draw Depot energy; hold it level so the storage arithmetic stays exact.
+	game.get_node("RailNetwork").rules.train_energy_per_metre = 0.0
 	for frame in range(3000):
 		train._process(1.0/60)
 		if train.order == "idle" and train.order_queue.is_empty() and not train.crates.is_empty() and destination.coal > coal: break
