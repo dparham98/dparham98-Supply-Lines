@@ -87,6 +87,7 @@ Combat values, moving fire and splash: [combat batch](docs/COMBAT_BATCH.md).
 
 Scout/Tank/Drone terrain abilities and editor exercise: [terrain abilities](docs/TERRAIN_ABILITIES.md).
 
+Grass and desert ground tiles: [ground tiles](docs/GROUND_TILES.md).
 Depot rails and explicit train supply routes: [rail batch and editor exercise](docs/RAIL_BATCH.md).
 
 Latest economy plan and proposed balance: [economy plan](docs/ECONOMY_PLAN.md). [Depot production correction](docs/DEPOT_PRODUCTION_CORRECTION.md).
