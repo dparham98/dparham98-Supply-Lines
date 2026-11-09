@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" path="res://scenes/camera/rts_camera.tscn" id="camera"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/depot.tscn" id="depot"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/infantry.tscn" id="infantry"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/cargo_vehicle.tscn" id="cargo_start"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/hostile.tscn" id="enemy"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/ore_deposit.tscn" id="ore"]
 [ext_resource type="PackedScene" path="res://scenes/ui/skirmish_hud.tscn" id="hud"]
@@ -69,6 +70,8 @@ position = Vector3(178.5,0,163.5)
 [node name="Units" type="Node3D" parent="Entities"]
 [node name="Infantry" parent="Entities/Units" instance=ExtResource("infantry")]
 position = Vector3(164.5,0,159.5)
+[node name="StarterTruck" parent="Entities/Units" instance=ExtResource("cargo_start")]
+position = Vector3(170.5,0,159.5)
 [node name="Hostile" parent="Entities/Units" instance=ExtResource("enemy")]
 position = Vector3(184.5,0,120.5)
 [node name="WaypointMarkers" type="Node3D" parent="."]

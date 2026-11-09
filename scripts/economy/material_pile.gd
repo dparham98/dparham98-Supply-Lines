@@ -17,6 +17,11 @@ func extract(requested: int, team := "") -> int:
 	if remaining == 0:
 		remove_from_group("resources"); remove_from_group("material_piles"); queue_free()
 	return taken
+## A build site adds to an existing pile of the same kind instead of starting another.
+func add(amount: int) -> void:
+	if amount <= 0 or is_queued_for_deletion(): return
+	remaining += amount
+	update_label()
 func update_label() -> void:
 	$Label.text = "%s pile · %d" % [material_kind.capitalize(),remaining]
 	$Visuals.visible = remaining > 0

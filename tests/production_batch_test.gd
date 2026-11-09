@@ -61,7 +61,7 @@ func run() -> void:
 	await click(hud.build_menu.get_node("Actions/Barracks"))
 	if not check(game.global_plan_kind == &"barracks","Barracks GUI plan command failed"): return
 	await click_at(rig.camera.unproject_position(point))
-	for plan in get_nodes_in_group("construction_plans"): plan.try_complete()
+	for plan in get_nodes_in_group("construction_plans"): plan.complete_from_stock()
 	if not check(get_nodes_in_group("production_buildings").size() == 1,"Barracks world placement failed"): return
 	var barracks = get_nodes_in_group("production_buildings")[0]
 	barracks.set_process(false)
@@ -70,7 +70,7 @@ func run() -> void:
 	await click(hud.build_menu.get_node("Actions/TankFactory"))
 	if not check(game.global_plan_kind == &"tank_factory","Tank Factory GUI plan command failed"): return
 	await click_at(rig.camera.unproject_position(point))
-	for plan in get_nodes_in_group("construction_plans"): plan.try_complete()
+	for plan in get_nodes_in_group("construction_plans"): plan.complete_from_stock()
 	if not check(get_nodes_in_group("production_buildings").size() == 2,"Factory world placement failed"): return
 	var factory = get_nodes_in_group("production_buildings")[1]
 	factory.set_process(false)
