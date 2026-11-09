@@ -445,18 +445,23 @@ func update_contents() -> void:
 		info.get_node("Health").visible = false
 		name_label.text = "Construction plans"
 		info.get_node("HealthText").text = "%d pending" % get_tree().get_nodes_in_group("construction_plans").size()
-		info.get_node("Details").text = "Place on valid terrain anywhere.\nPlans wait for one covering Depot or\ndeployed Cargo truck with the full cost.\nClick a plan to inspect or cancel it."
+		info.get_node("Details").text = "Place on valid terrain, or on a pile.\nDeliver iron to the footprint, then\norder Infantry to construct; a covering\nstockpile pays the energy as they build."
 		hint_text = "B opens this page; each tile's key places that plan. Pin (P) makes new plans pay only from one Depot or deployed Cargo truck you pick on the map or minimap."
 		return
 	if is_instance_valid(node) and node.is_in_group("construction_plans"):
 		info.get_node("Health").visible = false
 		name_label.text = node.spec.title+" plan"
 		set_icon("plan")
-		info.get_node("HealthText").text = "Unpaid · no resources reserved"
-		var payer_text: String = str(node.payer.name) if is_instance_valid(node.payer) else "Unavailable"
-		info.get_node("Details").text = "%s\nCost %d E / %d I\nPayer: %s\nDoes not block movement" % [node.state,node.spec.energy,node.spec.iron,payer_text if node.pinned else "Auto covering friendly Depot"]
+		var payer_text: String = str(node.payer.name) if is_instance_valid(node.payer) else ("Unavailable" if node.pinned else "Auto covering stockpile")
+		if node.kind == &"rail":
+			info.get_node("HealthText").text = "Unpaid · no resources reserved"
+			info.get_node("Details").text = "%s\nCost %d E / %d I\nPayer: %s\nDoes not block movement" % [node.state,node.spec.energy,node.spec.iron,payer_text]
+			hint_text = "Rail completes when the tile is clear and one covering Depot can pay. Cancel is free."
+		else:
+			info.get_node("HealthText").text = ("Materials on site" if node.materials_covered() else "Needs materials on site") if not node.state.begins_with("Constructing") else node.state
+			info.get_node("Details").text = "%s\n%s\nEnergy %d/%d from %s\n%s" % [node.site_text().replace(" · ","\n"),node.state,node.energy_paid,node.spec.energy,payer_text,"Does not block movement"]
+			hint_text = "Unload a Cargo truck here, or right-click with a worker carrying iron, to pile materials on the footprint. Right-click with Infantry to construct: 5 iron per two saw swings, energy charged as they build. Cancel is free; piles stay."
 		commands.get_node("Title").text = "PENDING CONSTRUCTION"
-		hint_text = "Completes when terrain is clear and one friendly covering Depot or deployed Cargo truck can pay. Cancel is free."
 		show_button("CancelPlan","Cancel plan")
 		return
 	if not is_instance_valid(node):
@@ -729,13 +734,13 @@ func refresh_global_menu() -> void:
 	if not global_pinned: build_menu.get_node("Bank").text = "PAYS: AUTO (NEAREST)"
 	elif pin_name.is_empty(): build_menu.get_node("Bank").text = "PAYS: PIN LOST · PLANS WAIT"
 	else: build_menu.get_node("Bank").text = "PAYS: %s ONLY" % pin_name.to_upper()
-	build_menu.get_node("Bank").tooltip_text = "One covering Depot or deployed Cargo truck pays each plan's full cost when it completes. Rails pay from Depots only. No pooled resources."
+	build_menu.get_node("Bank").tooltip_text = "One covering Depot or deployed Cargo truck pays each plan's energy as Infantry build it. Iron must be delivered to the footprint first. Rails pay fully from Depots. No pooled resources."
 	set_tile(build_menu.get_node("Actions/Pin"),"Unpin payer (back to Auto)" if global_pinned else "Pin payer","New plans pay from the nearest covering stockpile that can pay." if global_pinned else "Pick one Depot or deployed Cargo truck on the map or minimap; new plans pay only from it.")
 	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"iron_mine","Mine"],[&"rail","Rail"]]:
 		var spec: Dictionary = network.plan_spec(pair[0])
 		var button: Button = build_menu.get_node("Actions/"+pair[1])
 		button.disabled = false
-		set_tile(button,spec.title,"%d E · %d I · plan, paid when built" % [spec.energy,spec.iron])
+		set_tile(button,spec.title,("%d E · %d I · paid by a Depot when the tile is clear" if pair[0] == &"rail" else "%d E · %d I · iron delivered to the site, energy as built") % [spec.energy,spec.iron])
 func toggle_pin() -> void:
 	if not global_pinned:
 		game.global_plan_kind = &""
@@ -751,7 +756,7 @@ func pick_prompt() -> String:
 		"load":
 			if selected_cargo() != null: return "LOAD · CHOOSE A STOP\nLeft-click a Depot on the map or minimap to take the crates beside it, or click a crate. Shift queues. Right-click or Esc cancels."
 		"unload":
-			if selected_cargo() != null: return "UNLOAD · CHOOSE A STOP\nLeft-click a Depot on the map or minimap to unpack there, or open ground to set crates down. Shift queues. Right-click or Esc cancels."
+			if selected_cargo() != null: return "UNLOAD · CHOOSE A STOP\nLeft-click a Depot on the map or minimap to unpack there, a build site to deliver its materials, or open ground to set crates down. Shift queues. Right-click or Esc cancels."
 		"pin":
 			if global_build_open: return "PIN A PAYER\nLeft-click a Depot or deployed Cargo truck on the map or minimap. New plans pay only from it. Right-click or Esc cancels."
 	return ""
@@ -762,6 +767,9 @@ func pick_stops() -> Array[Node3D]:
 	for group in ["depots","mobile_supplies"]:
 		for node in get_tree().get_nodes_in_group(group):
 			if (SupplySource.available(node,"player") if game.pending_unit_command == "pin" else vehicle.shipment_endpoint(node)): stops.append(node)
+	if game.pending_unit_command == "unload":
+		for plan in get_tree().get_nodes_in_group("construction_plans"):
+			if vehicle.stop_valid("unload",plan,plan.global_position): stops.append(plan)
 	return stops
 func pick_stop(stop: Node3D, queued := false) -> void:
 	var mode: String = game.pending_unit_command

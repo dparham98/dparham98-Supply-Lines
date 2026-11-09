@@ -12,9 +12,9 @@ const STORAGE_WARNING := 0.9
 const POPUP_SECONDS := 1.5
 const PING_SECONDS := 0.6
 const HIGHLIGHT_SECONDS := 0.8
-const ORDER_COLORS := {"move": Color(0.498,0.827,0.902), "attack": Color(0.89,0.35,0.31), "attack_move": Color(0.89,0.35,0.31), "gather": Color(0.435,0.682,0.353), "return": Color(0.941,0.698,0.29), "repair": Color(0.941,0.698,0.29), "capture": Color(0.91,0.96,0.98), "load": Color(0.498,0.827,0.902), "unload": Color(0.941,0.698,0.29), "deploy": Color(0.941,0.698,0.29)}
+const ORDER_COLORS := {"move": Color(0.498,0.827,0.902), "attack": Color(0.89,0.35,0.31), "attack_move": Color(0.89,0.35,0.31), "gather": Color(0.435,0.682,0.353), "return": Color(0.941,0.698,0.29), "repair": Color(0.941,0.698,0.29), "capture": Color(0.91,0.96,0.98), "construct": Color(0.941,0.698,0.29), "load": Color(0.498,0.827,0.902), "unload": Color(0.941,0.698,0.29), "deploy": Color(0.941,0.698,0.29)}
 ## Icon shown beside the pointer while a command or placement is armed.
-const ARMED_ICONS := {"move": "move", "attack": "attack", "gather": "gather", "repair": "repair", "capture": "capture", "load": "load", "unload": "unload", "deploy": "deploy", "build": "build", "pin": "depot"}
+const ARMED_ICONS := {"move": "move", "attack": "attack", "gather": "gather", "repair": "repair", "capture": "capture", "construct": "build", "load": "load", "unload": "unload", "deploy": "deploy", "build": "build", "pin": "depot"}
 var _armed_icons := {}
 ## Groups whose authored text labels this overlay replaces. Placement ghosts and waypoints keep theirs.
 const LABELLED_GROUPS := ["units","selectable_buildings","resources","material_piles","supply_crates","iron_deposits","construction_plans"]
@@ -154,7 +154,8 @@ func _draw() -> void:
 	var font := get_theme_default_font()
 	for plan in get_tree().get_nodes_in_group("construction_plans"):
 		var corners := plan_outline(plan,camera)
-		for i in range(corners.size()-1): draw_dashed_line(corners[i],corners[i+1],Color(0.91,0.96,0.98,0.8),1.5,6)
+		var ready: bool = plan.kind != &"rail" and plan.materials_covered()
+		for i in range(corners.size()-1): draw_dashed_line(corners[i],corners[i+1],Color(0.45,0.95,0.55,0.9) if ready else Color(0.91,0.96,0.98,0.8),1.5,6)
 	if is_instance_valid(hovered) and hovered.is_in_group("units") and not camera.is_position_behind(hovered.global_position):
 		var rect: Rect2 = Bounds.screen_rect(hovered,camera)
 		var color := Color(1,1,1,0.75) if hovered.team == "player" else Color(RED,0.85)
@@ -298,7 +299,7 @@ func update_hover_card(mouse: Vector2) -> void:
 		line = "%d left" % node.remaining
 		if node.get("amount") != null and node.amount > 0: ratio = float(node.remaining)/node.amount
 	elif node.is_in_group("construction_plans"):
-		line = "Unpaid · %d E · %d I · %s" % [node.spec.energy,node.spec.iron,node.state]
+		line = ("Unpaid · %d E · %d I · %s" % [node.spec.energy,node.spec.iron,node.state]) if node.kind == &"rail" else "%s\n%s" % [node.site_text(),node.state]
 	else:
 		line = "%s · health %d / %d" % [str(node.get("team")).capitalize(),node.health,node.max_health]
 		if node.is_in_group("mines"): line += " · %d iron left" % node.remaining

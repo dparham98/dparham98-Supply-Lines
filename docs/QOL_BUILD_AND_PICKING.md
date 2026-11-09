@@ -6,7 +6,7 @@ Quality-of-life changes requested after PR #17. They replace parts of [PLAYTEST_
 
 - **Global Build is B** (was N). On the build page B places Barracks, so the header Build button is disabled while the page is open: B, B builds Barracks.
 - **No local build menus.** Infantry and Depots lost their Build tile and page. Everything is built through the header Build page as plans ([PENDING_CONSTRUCTION.md](PENDING_CONSTRUCTION.md)). Depots still print Depot trucks, Cargo vehicles and Trains.
-- **Deployed Cargo vehicles pay plans** inside their supply radius, as Infantry building from truck stock did before. That includes deployed Trains, which are mobile supplies too. Rails still need a Depot. A Generator or production building paid by a vehicle starts with no assigned Depot; assign one from its Context column.
+- **Deployed Cargo vehicles pay plans' energy** inside their supply radius (materials go to the site, see SITE_CONSTRUCTION.md), as Infantry building from truck stock did before. That includes deployed Trains, which are mobile supplies too. Rails still need a Depot. A Generator or production building paid by a vehicle starts with no assigned Depot; assign one from its Context column.
 - **Rail stays armed** after each plan so a line can be laid tile by tile; Esc or right-click finishes.
 - **Pin payer (P)** replaces the build page's payer dropdown:
   - unpinned, each plan pays from the nearest covering stockpile able to pay ("PAYS: AUTO");

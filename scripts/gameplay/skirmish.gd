@@ -182,6 +182,8 @@ func issue_order(screen: Vector2, queued := false) -> void:
 	var mobile := pick_target(screen,"mobile_supplies",34)
 	if is_instance_valid(mobile) and mobile.team == "player": dropoff = mobile
 	var building := pick_target(screen,"selectable_buildings",50)
+	var plan := pick_target(screen,"construction_plans",50)
+	if is_instance_valid(plan) and (plan.finished or plan.kind == &"rail"): plan = null
 	var crate := pick_crate(screen)
 	var camera := get_viewport().get_camera_3d()
 	var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(screen),camera.project_ray_normal(screen))
@@ -191,6 +193,9 @@ func issue_order(screen: Vector2, queued := false) -> void:
 		if unit.team != "player" or not unit.is_selected: continue
 		selected += 1
 		if enemy: give_order(unit,{kind = "attack", target = enemy},queued)
+		# Build sites: trucks unload what they carry onto the site; workers construct (delivering carried cargo first).
+		elif plan and unit.is_cargo_vehicle and not unit.is_in_group("rail_trains") and (not unit.crates.is_empty() or unit.stockpile.total() > 0): give_order(unit,{kind = "unload", target = plan, point = plan.global_position},queued)
+		elif plan and unit.can_construct and not unit.is_cargo_vehicle and not unit.is_depot_truck: give_order(unit,{kind = "construct", target = plan},queued)
 		elif crate and unit.is_cargo_vehicle and not unit.is_in_group("rail_trains"): give_order(unit,{kind = "load", target = crate, point = crate.global_position},queued)
 		elif crate and unit.can_gather and unit.cargo > 0 and crate.accepts(unit.cargo_kind): give_order(unit,{kind = "return", target = crate},queued)
 		elif point != null and ground.get_tile_at_position(point) != null and ground.get_terrain(ground.get_tile_at_position(point)) == 3 and unit.can_gather:
@@ -212,6 +217,7 @@ func issue_order(screen: Vector2, queued := false) -> void:
 	if selected == 0: notify("Left-click an infantry unit first.")
 	elif queued: notify("Order queued. Shift-right-click adds more; a plain order replaces the queue.")
 	elif enemy: notify("Attack order: approach and fire at range.")
+	elif plan: notify("Build site: Cargo vehicles unload materials onto it; Infantry construct from the pile.")
 	elif crate: notify("Crate order: vehicles load it; workers deliver into it or gather from it.")
 	elif forest_ordered: notify("Harvest wood from the forest tile and deliver it to a friendly Depot.")
 	elif resource: notify("Gather %s and deliver to a friendly Depot." % resource.resource_kind)
@@ -254,6 +260,9 @@ func issue_card_order(screen: Vector2, queued := false) -> void:
 			target = pick_target(screen,"depots",50)
 			var mobile := pick_target(screen,"mobile_supplies",34)
 			if is_instance_valid(mobile) and mobile.get("deployed") == true: target = mobile
+			# Unload also lands on a queued build site.
+			var site := pick_target(screen,"construction_plans",50)
+			if pending_unit_command == "unload" and is_instance_valid(site) and not site.finished and site.kind != &"rail": target = site
 	var ground_point = Plane(Vector3.UP,0).intersects_ray(get_viewport().get_camera_3d().project_ray_origin(screen),get_viewport().get_camera_3d().project_ray_normal(screen))
 	# Attack on open ground is attack-move.
 	if pending_unit_command == "attack" and not is_instance_valid(target) and ground_point != null:

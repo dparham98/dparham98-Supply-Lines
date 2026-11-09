@@ -63,7 +63,7 @@ func run() -> void:
 	assert(not manager.selecting)
 	game._unhandled_input(event)
 	var plan = get_nodes_in_group("construction_plans")[0]
-	assert(plan.try_complete() != null and payer.energy == energy-100 and payer.iron == stock-40)
+	assert(plan.complete_from_stock() != null and payer.energy == energy-100 and payer.iron == stock-40)
 	assert(get_nodes_in_group("energy_generators").size() == 1)
 	var generator = get_nodes_in_group("energy_generators")[0]
 	generator.set_process(false)
@@ -78,7 +78,7 @@ func run() -> void:
 	assert(hud.global_pinned and hud.global_payer == outpost and game.pending_unit_command.is_empty() and hud.build_menu.visible and "OUTPOST" in hud.build_menu.get_node("Bank").text.to_upper())
 	energy = payer.energy
 	var pinned = network.queue_plan(outpost.global_position+Vector3(12,0,12),&"generator",hud.global_payer,hud.global_pinned)
-	assert(pinned != null and pinned.try_complete() == null and payer.energy == energy)
+	assert(pinned != null and pinned.complete_from_stock() == null and payer.energy == energy)
 	pinned.cancel()
 	hud.build_menu.get_node("Actions/Pin").pressed.emit()
 	assert(not hud.global_pinned and game.pending_unit_command.is_empty())
