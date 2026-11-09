@@ -75,6 +75,7 @@ func build_scenes() -> void:
 	var forest_tiles: Array[PackedScene] = []
 	for index in range(1,5): forest_tiles.append(load("res://scenes/terrain/forest_tile_%02d.tscn" % index))
 	terrain.set("forest_tile_scenes", forest_tiles)
+	terrain.set("mountain_mesh", load("res://assets/models/terrain/mountains.res"))
 	terrain.set("mountain_scene", load("res://scenes/terrain/mountain.tscn"))
 	terrain.set("ore_scene", load("res://scenes/terrain/ore_deposit.tscn"))
 	terrain.editor_description = "Ground contains terrain rules; Landmarks is the saved visible scenery. Edit asset slots and press Rebuild terrain scenery."

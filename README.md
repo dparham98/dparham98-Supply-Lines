@@ -87,6 +87,7 @@ Combat values, moving fire and splash: [combat batch](docs/COMBAT_BATCH.md).
 
 Scout/Tank/Drone terrain abilities and editor exercise: [terrain abilities](docs/TERRAIN_ABILITIES.md).
 
+Sculpted mountains: [mountains](docs/MOUNTAINS.md).
 Grass, desert, water and forest tiles: [ground tiles](docs/GROUND_TILES.md).
 Depot rails and explicit train supply routes: [rail batch and editor exercise](docs/RAIL_BATCH.md).
 

@@ -57,7 +57,8 @@ func _batches(root: Node3D, group: Node3D, scene: PackedScene, placements: Array
 		item.owner = root
 
 ## With forest_tiles, each forest spot takes one of those scenes in place of tree_scene.
-func build(tree_scene: PackedScene, mountain_scene: PackedScene, ore_scene: PackedScene, seed_: int = 2817, forest_tiles: Array = []) -> Node3D:
+## With mountain_mesh, that sculpted mesh replaces the scattered mountain_scene props.
+func build(tree_scene: PackedScene, mountain_scene: PackedScene, ore_scene: PackedScene, seed_: int = 2817, forest_tiles: Array = [], mountain_mesh: Mesh = null) -> Node3D:
 	var cells := FileAccess.get_file_as_bytes("res://assets/maps/terrain_cells.bin")
 	assert(cells.size() == 250000)
 	var rng := RandomNumberGenerator.new()
@@ -115,6 +116,17 @@ func build(tree_scene: PackedScene, mountain_scene: PackedScene, ore_scene: Pack
 			var typed_trees: Array[Transform3D] = tile_trees[i]
 			var typed_colors: Array[Color] = tile_colors[i]
 			_batches(root, forests, forest_tiles[i], typed_trees, typed_colors, "%02d" % (i+1))
-	_scatter(root, "Mountains", mountain_scene, rocks, rock_colors)
+	if mountain_mesh == null:
+		_scatter(root, "Mountains", mountain_scene, rocks, rock_colors)
+	else:
+		var mountains := Node3D.new()
+		mountains.name = "Mountains"
+		root.add_child(mountains)
+		mountains.owner = root
+		var massif := MeshInstance3D.new()
+		massif.name = "Massif"
+		massif.mesh = mountain_mesh
+		mountains.add_child(massif)
+		massif.owner = root
 	_scatter(root, "OreDeposits", ore_scene, ores, ore_colors)
 	return root

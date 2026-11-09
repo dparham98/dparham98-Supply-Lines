@@ -16,6 +16,9 @@ uniform vec3 grass_surface_mean = vec3(0.097, 0.161, 0.041);
 uniform vec3 desert_surface_mean = vec3(0.586, 0.399, 0.137);
 uniform vec3 water_surface_mean = vec3(0.0127, 0.1046, 0.1574);
 uniform vec3 forest_surface_mean = vec3(0.044, 0.108, 0.027);
+uniform vec3 mountain_surface_mean = vec3(0.0902, 0.0942, 0.0736);
+// Desert tiles darkened to stony ground, for the mountain foot where the sculpted mesh does not cover it.
+uniform vec3 stony_tint = vec3(0.2, 0.22, 0.38);
 const float MAP_METRES = 500.0;
 // All tiles of a set share their borders, so any variant can sit beside any other. UVs stay continuous
 // across tiles and only the layer changes, which keeps mip selection seamless.
@@ -29,10 +32,10 @@ void fragment() {
  float terrain = round(texture(category_map, UV).r * 255.0);
  vec3 normal_map = vec3(0.5, 0.5, 1.0);
  ROUGHNESS = terrain == 1.0 ? 0.33 : 0.96;
- // Grass, water, desert and forest floor are tiled; forest floor uses the grass set.
- if (terrain <= 3.0) {
-  float first_layer = terrain == 2.0 ? 4.0 : (terrain == 1.0 ? 8.0 : 0.0);
-  vec3 mean = terrain == 0.0 ? grass_surface_mean : (terrain == 1.0 ? water_surface_mean : (terrain == 2.0 ? desert_surface_mean : forest_surface_mean));
+ // Grass, water, desert, forest floor and mountain foot are tiled; forest floor uses the grass set and the foot the desert set.
+ if (terrain <= 4.0) {
+  float first_layer = terrain == 2.0 || terrain == 4.0 ? 4.0 : (terrain == 1.0 ? 8.0 : 0.0);
+  vec3 mean = terrain == 0.0 ? grass_surface_mean : (terrain == 1.0 ? water_surface_mean : (terrain == 2.0 ? desert_surface_mean : (terrain == 3.0 ? forest_surface_mean : mountain_surface_mean)));
   vec2 tile_uv = UV * MAP_METRES / tile_metres;
   vec3 layer_uv = vec3(tile_uv, tile_layer(tile_uv, first_layer));
   // Tint by the soft variation of the map image. Near a border that blurry image holds the colour of the
@@ -40,6 +43,7 @@ void fragment() {
   vec3 tint = color / mean;
   float difference = max(abs(tint.r - 1.0), max(abs(tint.g - 1.0), abs(tint.b - 1.0)));
   color = texture(tile_albedo, layer_uv).rgb * mix(vec3(1.0), tint, surface_tint * (1.0 - smoothstep(0.25, 0.5, difference)));
+  if (terrain == 4.0) { color *= stony_tint; }
   normal_map = texture(tile_normal, layer_uv).rgb;
  }
  if (terrain == 1.0) {

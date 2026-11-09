@@ -26,7 +26,7 @@ func check_scenes() -> void:
 	assert(world.get_node("Terrain/Ground").mesh != null)
 	assert(world.get_node("Terrain/Ground").material_override != null)
 	assert(forest_spots(world.get_node("Terrain/Landmarks/Forests")) == 1646)
-	assert(world.get_node("Terrain/Landmarks/Mountains/Rock").multimesh.instance_count == 1300)
+	assert(world.get_node("Terrain/Landmarks/Mountains/Massif").mesh != null)
 	assert(world.get_node("Terrain/Landmarks/OreDeposits/OreRock").multimesh.instance_count == 867)
 	assert(world.has_node("Lighting/Sun"))
 	assert(world.has_node("Interface/Legend/Contents/TerrainInfo"))
