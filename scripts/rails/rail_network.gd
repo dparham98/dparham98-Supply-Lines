@@ -230,8 +230,9 @@ func _tail(piece: Node3D, d: float, forward: bool, wanted: float, out: PackedVec
 		var link := connection(current,0 if dir_forward else 1)
 		if link.is_empty(): break
 		current = link.piece
-		dir_forward = link.end == 0
-		at = 0.0 if dir_forward else current.length()
+		# Walking back from the end we arrived at: entering at end 1 means distance falls from the full length.
+		dir_forward = link.end == 1
+		at = current.length() if dir_forward else 0.0
 	for p in collected: out.append(p)
 ## Position and tangent at `s` along a line, extrapolating straight past either end.
 static func line_point(track: Dictionary, s: float) -> Array:
