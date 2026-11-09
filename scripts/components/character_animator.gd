@@ -10,6 +10,9 @@ extends Node3D
 @export var shoot_clip: StringName = &"Shoot"
 ## Ground speed (m/s) at which the run clip plays at normal rate; faster units stride faster.
 @export_range(0.1,20,0.1) var run_reference_speed := 2.0
+## Swings the work clip contains, and swings to fit into one reported work cycle.
+@export_range(1,8,1) var work_swings_in_clip := 1
+@export_range(1,8,1) var work_swings_per_cycle := 2
 @export_range(0,0.5,0.01) var blend_time := 0.12
 ## Bone the shot leaves from; falls back to this node when missing.
 @export var muzzle_bone: StringName = &"pistol"
@@ -21,7 +24,7 @@ extends Node3D
 @export var teeth_path: NodePath
 @export_range(0,30,0.5) var teeth_speed := 10.0
 var _motion: StringName = &"idle"
-var _speed := 0.0
+var _value := 0.0
 var _motion_frame := -2
 var _action_left := 0.0
 var _teeth_running := false
@@ -69,11 +72,15 @@ func aim_yaw(target: Vector3) -> float:
 		if dir.length_squared() < 0.0001 or want.length_squared() < 0.0001: break
 		yaw += dir.signed_angle_to(want,Vector3.UP)
 	return yaw
-## Report this frame's motion: &"run" with the ground speed, &"work", or &"idle". Lapses after a frame.
-func set_motion(kind: StringName, speed := 0.0) -> void:
+## Report this frame's motion: &"run" with the ground speed, &"work" with the work cycle period in
+## seconds, &"aim" (hold the gun on a target), or &"idle". Lapses after a frame without a call.
+func set_motion(kind: StringName, value := 0.0) -> void:
 	_motion = kind
-	_speed = speed
+	_value = value
 	_motion_frame = Engine.get_process_frames()
+## Restart the work clip so its swings line up with a work cycle that starts now.
+func sync_work() -> void:
+	if player and player.current_animation == String(work_clip): player.seek(0.0,true)
 ## Play a one-shot clip now (&"shoot"); motion resumes when it ends.
 func play_action(kind: StringName) -> void:
 	var clip := shoot_clip if kind == &"shoot" else StringName(kind)
@@ -105,12 +112,28 @@ func _process(delta: float) -> void:
 		_action_left -= delta
 		_run_teeth(false)
 		return
+	if kind == &"aim" and player.has_animation(shoot_clip):
+		_hold_aim()
+		_run_teeth(false)
+		return
 	var clip := _clip_for(kind)
 	if not player.has_animation(clip): clip = idle_clip
 	if player.has_animation(clip) and (player.current_animation != String(clip) or not player.is_playing()):
 		player.play(clip,blend_time)
-	player.speed_scale = clampf(_speed/run_reference_speed,0.5,2.0) if kind == &"run" and _speed > 0.0 else 1.0
+	player.speed_scale = _pace(kind,clip)
 	_run_teeth(kind == &"work")
+## Run strides with ground speed; work fits `work_swings_per_cycle` swings into the reported cycle.
+func _pace(kind: StringName, clip: StringName) -> float:
+	if _value <= 0.0: return 1.0
+	if kind == &"run": return clampf(_value/run_reference_speed,0.5,2.0)
+	if kind == &"work": return player.get_animation(clip).length*work_swings_per_cycle/(work_swings_in_clip*_value)
+	return 1.0
+## Keep the gun up between shots: the shoot clip ends in the aimed pose, so a finished one-shot holds it.
+func _hold_aim() -> void:
+	player.speed_scale = 1.0
+	if player.assigned_animation == String(shoot_clip): return
+	player.play(shoot_clip,blend_time)
+	player.seek(player.get_animation(shoot_clip).length,true)
 func _run_teeth(running: bool) -> void:
 	if teeth == null or running == _teeth_running: return
 	_teeth_running = running

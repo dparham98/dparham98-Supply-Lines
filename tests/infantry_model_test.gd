@@ -21,6 +21,7 @@ func step(unit: Node3D, model: Node3D, frames: int) -> void:
 	for i in range(frames):
 		unit._process(1.0/60)
 		model._process(1.0/60)
+		if model.player: model.player.advance(1.0/60)
 func run() -> void:
 	game = load("res://scenes/maps/resource_skirmish.tscn").instantiate()
 	root.add_child(game)
@@ -64,8 +65,12 @@ func run() -> void:
 	if not check(is_equal_approx(player.speed_scale,unit.move_speed/model.run_reference_speed),"Run pace should follow move speed: %.2f" % player.speed_scale): return
 	# Gathering plays Hack and runs the saw teeth.
 	unit._stop_route(); unit.order = "idle"
-	unit.state = "Gathering"; unit._animate(); model._process(1.0/60)
+	unit.state = "Gathering"; unit._work_timer = 0.0; unit._animate(); model._process(1.0/60)
 	if not check(model.current_clip() == &"Hack","Gathering should play Hack, got %s" % model.current_clip()): return
+	# Two swings per extraction: the 1.5 s one-swing clip runs so two fit the 1.2 s gather cycle.
+	if not check(is_equal_approx(unit.harvest_interval,1.2),"Gather cycle should be 1.2 s, got %.2f" % unit.harvest_interval): return
+	if not check(is_equal_approx(player.speed_scale,player.get_animation("Hack").length*2.0/unit.harvest_interval),"Hack pace should fit two swings per cycle: %.2f" % player.speed_scale): return
+	if not check(player.current_animation_position < 0.05,"Hack should restart with the work cycle"): return
 	if not check(model.teeth != null and is_equal_approx(model.teeth.get_instance_shader_parameter(&"speed"),model.teeth_speed),"Saw teeth should run while hacking"): return
 	unit.state = "Idle"; unit._animate(); model._process(1.0/60)
 	if not check(model.current_clip() == &"Rest" and is_zero_approx(model.teeth.get_instance_shader_parameter(&"speed")),"Teeth should stop and Rest resume when idle"): return
@@ -87,7 +92,19 @@ func run() -> void:
 	if not check(model.has_gun_line() and to_foe.dot(gun_dir) > 0 and miss < 0.25,"Gun line misses the target by %.2f m (dir %s)" % [miss,gun_dir]): return
 	var face_yaw: float = atan2(-(foe.global_position.x-unit.global_position.x),-(foe.global_position.z-unit.global_position.z))
 	if not check(absf(angle_difference(unit.get_node("Visuals").rotation.y,face_yaw)) > deg_to_rad(2),"Body should turn past the face line so the offset gun lines up"): return
-	foe.free()
+	# Between shots the gun stays up on the target; the next shot is a recoil from that pose, not from Rest.
 	step(unit,model,45)
-	if not check(not model.acting() and model.current_clip() == &"Rest","Rest should return after the shot, got %s" % model.current_clip()): return
+	if not check(not model.acting() and model.motion() == &"aim" and player.assigned_animation == "Shoot" and not player.is_playing(),"Gun should hold its aim between shots (motion %s, clip %s)" % [model.motion(),player.assigned_animation]): return
+	var held: Vector3 = model.muzzle_position()
+	if not check(held.y > 0.95,"Held aim should keep the pistol raised, muzzle y %.2f" % held.y): return
+	var health_mid: int = foe.health
+	for i in range(90):
+		step(unit,model,1)
+		if foe.health < health_mid: break
+	if not check(foe.health < health_mid and model.acting() and player.is_playing() and player.current_animation == "Shoot","Second shot should play the recoil from the held pose"): return
+	foe.free()
+	await process_frame
+	step(unit,model,45)
+	if not check(not model.acting() and model.motion() == &"idle" and model.current_clip() == &"Rest","Rest should return once the target is gone, got %s" % model.current_clip()): return
+	if not check(model.muzzle_position().y < 0.9,"Pistol should drop at Rest"): return
 	print("INFANTRY_MODEL_TEST_PASSED"); quit()

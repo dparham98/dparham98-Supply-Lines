@@ -42,7 +42,8 @@ var _attack_enabled := true
 @export var attack_damage := 16
 @export var shot_interval := 0.7
 @export var carry_capacity := 10
-@export var harvest_interval := 0.6
+## Two saw swings per extraction (docs/INFANTRY_MODEL.md).
+@export var harvest_interval := 1.2
 @export var harvest_amount := 5
 @export var interaction_range := 4.0
 var health := 100
@@ -159,15 +160,21 @@ func _animator() -> Node3D:
 	var model := $Visuals.get_node_or_null("Model")
 	return model if model != null and model.has_method("set_motion") else null
 var _animated_from := Vector3.INF
-## Tell the model what this frame looked like: a step is a run, work at a source or building is work.
+var _aimed_frame := -2
+## Tell the model what this frame looked like: a step is a run, a target in range keeps the gun up,
+## work at a source or building is work with its cycle period.
 func _animate() -> void:
 	var model := _animator()
 	var here := global_position
 	if model == null: _animated_from = here; return
 	var kind: StringName = &"idle"
-	if _animated_from != Vector3.INF and here != _animated_from: kind = &"run"
-	elif state == "Gathering" or state.begins_with("Repairing"): kind = &"work"
-	model.set_motion(kind,move_speed)
+	var value := 0.0
+	if _animated_from != Vector3.INF and here != _animated_from: kind = &"run"; value = move_speed
+	elif _aimed_frame == Engine.get_process_frames(): kind = &"aim"
+	elif state == "Gathering": kind = &"work"; value = harvest_interval
+	elif state.begins_with("Repairing"): kind = &"work"; value = engineering_rules.repair_interval if engineering_rules else 0.0
+	model.set_motion(kind,value)
+	if kind == &"work" and _work_timer == 0.0 and model.has_method("sync_work"): model.sync_work()
 	_animated_from = here
 # Orders, movement and combat for one frame. Callers tick fuel first.
 func _order_process(delta: float) -> void:
@@ -453,6 +460,7 @@ func _shoot(target: Node3D) -> void:
 	# A turret tracks the target between shots; a unit without one turns its whole body as it fires.
 	var turret := _turret()
 	if turret: turret.aim_at(target.global_position)
+	_aimed_frame = Engine.get_process_frames()
 	if _cooldown > 0: return
 	_cooldown = CombatResolver.interval_for(self,target)
 	var animator := _animator()
