@@ -15,4 +15,4 @@ Keep editing the same named working file per unit. Use Backups for revisions. Do
 .gdignore prevents Godot from importing this work-in-progress folder. Put intentional game-ready exports in the game's assets folder separately.
 
 Copy provenance and SHA256 verification are in migration_manifest.json. Scout reference images are packed. Older projects may retain external image paths; use References or Archive copies for relinking if needed.
-- Depot: `Blender/Buildings/Depot/Depot.blend` (the `depot_warehouse` collection) exports to `assets/models/buildings/depot.glb`; see `docs/DEPOT_MODEL.md`.
+- Depot: `Blender/Buildings/Depot/Depot.blend` (the `depot_warehouse` collection) exports to `assets/models/buildings/depot.glb`. `Depot_tractor_exit.blend` and `Depot_truck_assemble.blend` are its production clips; see `docs/DEPOT_MODEL.md`.

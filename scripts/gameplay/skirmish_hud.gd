@@ -64,7 +64,8 @@ func _ready() -> void:
 	for i in feed.get_child_count():
 		feed.get_child(i).pressed.connect(focus_alert.bind(i))
 	card.get_node("CancelPlan").pressed.connect(func():
-		if is_instance_valid(shown) and shown.is_in_group("construction_plans"): shown.cancel())
+		if is_instance_valid(shown) and shown.is_in_group("construction_plans"): shown.cancel()
+		elif is_instance_valid(shown) and shown.is_in_group("depots"): shown.cancel_current())
 	context.get_node("GeneratorMode").item_selected.connect(func(index):
 		if is_instance_valid(shown) and shown.is_in_group("energy_generators"):
 			shown.set_fuel_preference(["wood","coal","either"][index]))
@@ -483,10 +484,11 @@ func update_contents() -> void:
 		show_storage("Loose storage",node.stockpile)
 		if node.queue > 0:
 			var kind: String = node.pending[0] if not node.pending.is_empty() else ""
-			show_progress("Producing · "+DEPOT_PRODUCTS.get(kind,kind.capitalize()),"%d%%%s" % [roundi(node.progress/node.print_seconds*100)," · %d more queued" % (node.queue-1) if node.queue > 1 else ""],node.progress/node.print_seconds)
+			show_progress("Producing · "+DEPOT_PRODUCTS.get(kind,kind.capitalize()),"%d%%%s" % [roundi(node.progress/node.current_seconds()*100)," · %d more queued" % (node.queue-1) if node.queue > 1 else ""],node.progress/node.current_seconds())
 		info.get_node("Details").text = "Queue %d / %d%s" % [node.queue,node.queue_limit," · capture %d%%" % roundi(node.capture_progress/node.rules.capture_seconds*100) if node.capture_progress > 0 else ""]
 		if node.team == "player":
 			show_shipment(node)
+			if node.can_cancel(): show_button("CancelPlan","Cancel production")
 			show_production("PrintTruck","Depot truck",node.rules.truck_energy_cost,node.rules.truck_iron_cost,node)
 			show_production("PrintCargo","Cargo vehicle",network.supply_rules.cargo_energy_cost,network.supply_rules.cargo_iron_cost,node)
 			var rails = game.get_node("RailNetwork").rules

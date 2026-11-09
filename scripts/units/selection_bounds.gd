@@ -5,7 +5,7 @@ static func meshes(actor: Node3D) -> Array[MeshInstance3D]:
 	var visuals = actor.get_node_or_null("Visuals")
 	if visuals != null:
 		for node in visuals.find_children("*", "MeshInstance3D", true, false):
-			if node.mesh != null and node.is_visible_in_tree() and selectable(node,visuals): result.append(node)
+			if node.mesh != null and node.is_visible_in_tree() and selectable(node,visuals) and absf(node.global_basis.determinant()) > 0.000001: result.append(node)
 	return result
 ## Parts tagged not_selectable, and everything under them, take no part in picking or outlines.
 static func selectable(node: Node, visuals: Node) -> bool:

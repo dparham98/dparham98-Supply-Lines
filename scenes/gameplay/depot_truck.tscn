@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/gameplay/unit_agent.gd" id="agent"]
 [ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
-[ext_resource type="PackedScene" path="res://scenes/models/engineer_prototype.tscn" id="model"]
+[ext_resource type="PackedScene" path="res://scenes/models/depot_truck_model.tscn" id="model"]
 
 [ext_resource type="Resource" path="res://assets/economy/depot_rules.tres" id="stats"]
 
@@ -14,9 +14,9 @@ roughness = 0.85
 shading_mode = 0
 
 [sub_resource type="TorusMesh" id="r2"]
-inner_radius = 0.85
-outer_radius = 0.96
-rings = 20
+inner_radius = 7.9
+outer_radius = 8.1
+rings = 64
 ring_segments = 6
 material = SubResource("r1")
 
@@ -30,7 +30,6 @@ move_speed = 3.0
 attack_damage = 0
 
 [node name="Visuals" type="Node3D" parent="."]
-scale = Vector3(1.8,0.65,2.0)
 script = ExtResource("slot")
 model_scene = ExtResource("model")
 
@@ -42,7 +41,7 @@ visible = false
 mesh = SubResource("r2")
 
 [node name="Status" type="Label3D" parent="."]
-position = Vector3(0,3.3,0)
+position = Vector3(0,5.2,0)
 billboard = 1
 no_depth_test = true
 font_size = 30
@@ -52,7 +51,7 @@ modulate = Color(0.65,0.95,1,1)
 text = "INFANTRY · 100/100"
 
 [node name="Cargo" type="Label3D" parent="."]
-position = Vector3(0,4.0,0)
+position = Vector3(0,5.9,0)
 billboard = 1
 no_depth_test = true
 font_size = 27

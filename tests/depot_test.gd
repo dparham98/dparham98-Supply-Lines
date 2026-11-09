@@ -44,7 +44,7 @@ func run() -> void:
 	assert(first.energy == 230 and first.iron == 30)
 	# Complete both prepaid jobs through the original printer exit logic.
 	first._process(3.1)
-	first._process(3.1)
+	first._process(first.current_seconds()+0.1)
 	var printed_truck: Node3D
 	for unit in get_nodes_in_group("units"):
 		unit.set_process(false)

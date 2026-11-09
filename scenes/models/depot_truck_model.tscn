@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/vehicle_rig.gd" id="rig"]
+[ext_resource type="PackedScene" path="res://assets/models/units/depot_truck.glb" id="truck"]
+
+[node name="DepotTruckModel" type="Node3D"]
+script = ExtResource("rig")
+wheel_paths = Array[NodePath]([NodePath("Rig/warehouse_root/warehouse_power_unit/warehouse_wheel_FL"), NodePath("Rig/warehouse_root/warehouse_power_unit/warehouse_wheel_FR"), NodePath("Rig/warehouse_root/warehouse_power_unit/warehouse_wheel_BL"), NodePath("Rig/warehouse_root/warehouse_power_unit/warehouse_wheel_BR"), NodePath("Rig/warehouse_root/warehouse_deck/warehouse_wheel_T1L"), NodePath("Rig/warehouse_root/warehouse_deck/warehouse_wheel_T1R"), NodePath("Rig/warehouse_root/warehouse_deck/warehouse_wheel_T2L"), NodePath("Rig/warehouse_root/warehouse_deck/warehouse_wheel_T2R")])
+steer_paths = Array[NodePath]([NodePath("Rig/warehouse_root/warehouse_power_unit/warehouse_wheel_FL"), NodePath("Rig/warehouse_root/warehouse_power_unit/warehouse_wheel_FR")])
+wheel_radius = 0.95
+
+[node name="Rig" parent="." instance=ExtResource("truck")]
+transform = Transform3D(-0.6,0,0,0,0.6,0,0,0,-0.6,0,0,1.8)

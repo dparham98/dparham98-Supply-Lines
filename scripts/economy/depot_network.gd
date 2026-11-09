@@ -48,9 +48,10 @@ func construct(point: Vector3) -> bool:
 	establish(point,0,0)
 	if builder_required: select_depot(payer)
 	return true
-func establish(point: Vector3, energy: int, iron: int) -> Node3D:
+func establish(point: Vector3, energy: int, iron: int, model_yaw := 0.0) -> Node3D:
 	var node = depot_scene.instantiate()
 	node.position = point
+	node.get_node("Visuals").rotation.y = model_yaw
 	node.grant_construction_infantry = true
 	node.initial_energy = energy
 	node.initial_iron = iron
@@ -77,9 +78,17 @@ func deploy_truck(unit: Node3D, point: Vector3) -> bool:
 		unit._claim(unit.grid_position)
 		game.notify("Truck needs an empty Depot footprint on buildable land."); return false
 	var rules = unit.deployment_rules
+	# The Depot takes the truck's nearest 90 degree heading; its model turns and pulls up from where the truck stood.
+	var visuals: Node3D = unit.get_node("Visuals")
+	var yaw: float = visuals.rotation.y
+	var heading := snappedf(yaw,PI/2)
+	var trailer: Node3D = visuals.get_node_or_null("Model/Rig")
+	var from: Vector3 = trailer.global_position if trailer != null else unit.global_position
+	from.y = point.y
 	unit.remove_from_group("units")
 	unit.queue_free()
-	establish(point,rules.deployed_energy,rules.deployed_iron)
+	var depot := establish(point,rules.deployed_energy,rules.deployed_iron,heading+PI/2)
+	depot.get_node("Visuals/Model").play_deploy(from,angle_difference(heading,yaw))
 	game.notify("Truck consumed; new Depot established with its configured starter inventory.")
 	return true
 
