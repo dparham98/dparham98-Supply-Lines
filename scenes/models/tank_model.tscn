@@ -6,4 +6,4 @@ script = ExtResource("turret")
 turret_path = NodePath("Tank/Tank_Root/Tank_Hull/Tank_Turret")
 muzzle_path = NodePath("Tank/Tank_Root/Tank_Hull/Tank_Turret/Barrel_Mount/Tank_Barrel/Barrel_Muzzle_Brake")
 [node name="Tank" parent="." instance=ExtResource("tank")]
-transform = Transform3D(-0.4,0,0,0,0.4,0,0,0,-0.4,0,0,0)
+transform = Transform3D(-0.6,0,0,0,0.6,0,0,0,-0.6,0,0,0)

@@ -31,9 +31,9 @@ func run() -> void:
 		for i in range(8):
 			var p: Vector3 = tank.global_transform.affine_inverse()*(mesh.global_transform*mesh.get_aabb().get_endpoint(i))
 			low = minf(low,p.y); high = maxf(high,p.y); front = minf(front,p.z); back = maxf(back,p.z); left = minf(left,p.x); right = maxf(right,p.x)
-	if not check(absf(low) < 0.05 and high < 2.2,"Tank not on the ground or too tall (%.2f..%.2f)" % [low,high]): return
-	# The barrel points -Z: the model reaches further forward than back, and is wider than a tile but under three.
-	if not check(front < -2.5 and back < 2.0 and right-left > 2.0 and right-left < 3.0,"Tank size or facing wrong: z %.2f..%.2f, x %.2f..%.2f" % [front,back,left,right]): return
+	if not check(absf(low) < 0.05 and high < 3.3,"Tank not on the ground or too tall (%.2f..%.2f)" % [low,high]): return
+	# The barrel points -Z: the model reaches further forward than back; at world scale 0.6 the hull is about 3.5 m wide.
+	if not check(front < -3.7 and back < 3.0 and right-left > 3.0 and right-left < 4.5,"Tank size or facing wrong: z %.2f..%.2f, x %.2f..%.2f" % [front,back,left,right]): return
 	var rig = game.get_node("CameraRig")
 	rig.set_process(false)
 	rig.focus_position(tank.global_position+Vector3(0,0,-1),20)
@@ -46,6 +46,6 @@ func run() -> void:
 	for i in range(120):
 		model.aim_at(aim); model._process(1.0/60)
 	var muzzle: Vector3 = tank.global_transform.affine_inverse()*model.muzzle_position()
-	if not check(muzzle.x > 2.0 and absf(muzzle.z) < 0.3,"Turret did not aim right: muzzle at %s" % muzzle): return
+	if not check(muzzle.x > 3.0 and absf(muzzle.z) < 0.4,"Turret did not aim right: muzzle at %s" % muzzle): return
 	await shot("tank_turret")
 	print("TANK_MODEL_RUNTIME_CHECK_PASSED"); quit(TestOutput.exit_code())

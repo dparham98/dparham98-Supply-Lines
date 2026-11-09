@@ -9,4 +9,4 @@ lid_path = NodePath("Rig/truck_root/chassis/cargo_bed/cargo_lid")
 ramp_path = NodePath("Rig/truck_root/chassis/cargo_bed/rear_ramp")
 indicator_path = NodePath("Rig/truck_root/chassis/cargo_bed/cargo_lid/cargo_indicator")
 [node name="Rig" parent="." instance=ExtResource("truck")]
-transform = Transform3D(-0.4,0,0,0,0.4,0,0,0,-0.4,0,0,0)
+transform = Transform3D(-0.6,0,0,0,0.6,0,0,0,-0.6,0,0,0)

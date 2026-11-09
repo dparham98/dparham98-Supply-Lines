@@ -51,6 +51,8 @@ The cloud baseline was verified on 2026-10-28 (see [PROJECT_HANDOFF.md](PROJECT_
 
 ## 5. Art pipeline
 
+- **World scale (2026-11-08):** authored vehicles are built at true scale beside a 1.8 m figure and placed in the game at 0.6 (Tank 5.1 m, Cargo truck 4.8 m long and 2 m tall); infantry stays 1.8 m and building footprints are unchanged. The maglev track and train use the same 0.6. True scale would need buildings, ranges and the map scaled with it.
+
 - The Scout Blender model is static and unrigged and not exported.
 - Infantry: `Blender/Characters/Infantry/Infantry.blend` (2026-11-08 rigged cyborg) is exported to `assets/models/units/infantry.glb` and used by `scenes/models/infantry_model.tscn` (turned to face -Z). `character_animator.gd` plays Run while walking, Hack with running saw teeth while gathering or repairing, Shoot on each shot and Rest otherwise (docs/INFANTRY_MODEL.md). `infantry_model_test` and `infantry_model_runtime_check` cover it. Not yet accepted in play.
 - Cargo truck: `Blender/Vehicles/CargoTruck/CargoTruck.blend` (2026-11-08) is exported to `assets/models/units/cargo_truck.glb` and used by `scenes/models/cargo_truck_model.tscn` (scale 0.4, turned to face -Z). `vehicle_rig.gd` rolls and steers the wheels from the vehicle's travel, opens the lid and ramp while deployed or transferring, and raises the cargo indicator when anything is aboard (docs/CARGO_TRUCK_MODEL.md). Trains and Depot trucks keep their placeholders. Not yet accepted in play.
