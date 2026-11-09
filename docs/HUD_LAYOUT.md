@@ -45,3 +45,7 @@ Phase 4 of the approved HUD plan, on branch `feature/hud-layout` from main `5762
   - An early layout put the tabs on their own row. That made the cargo bar 37 px taller, and `mobile_supply_runtime_check` then failed at an earlier step ("Move GUI did not pack supplies") because its world click landed on the HUD.
   - The tabs moved into the header row, and the check is back to its old failure point.
 - Needs a human playtest.
+
+## Bronze frame
+
+`HudFrame` in `scenes/ui/skirmish_hud.tscn` draws the bronze and red border over the bottom panel, which is now 272 px tall with 30 px side padding and 20 px bottom padding to clear it. The original art is `Blender/UI/hud_frame_source.webp`; `assets/ui/hud_frame.png` is that art at 22% (440 x 147). Two `NinePatchRect` nodes split it down the middle and stretch only plain rail sections, so the crest, bottom ornament and corners keep their shape at any width. The frame ignores the mouse.

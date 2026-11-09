@@ -44,7 +44,7 @@ func run() -> void:
 	# 1. Hover text and hints are tooltip windows, so they can't change the HUD height.
 	select(worker)
 	for frame in 4: await process_frame
-	if not check(is_equal_approx(hud.get_node("Bottom").size.y,260) and not hud.has_node("Bottom/Body/Row/Commands/Hover") and not hud.info.tooltip_text.is_empty(),"HUD height or hint tooltip wrong"): return
+	if not check(is_equal_approx(hud.get_node("Bottom").size.y,272) and not hud.has_node("Bottom/Body/Row/Commands/Hover") and not hud.info.tooltip_text.is_empty(),"HUD height or hint tooltip wrong"): return
 	# 1a. The grid never moves; while Load waits for a stop, the prompt takes the card's place.
 	var grid_y: float = hud.card.global_position.y
 	var cargo = spawn("res://scenes/gameplay/cargo_vehicle.tscn",Vector3(-14,0,10))
@@ -56,7 +56,7 @@ func run() -> void:
 	var armed_height: float = hud.get_node("Bottom").size.y
 	game.pending_unit_command = ""
 	select(worker)
-	if not check(hud.card.visible and is_equal_approx(armed_y,grid_y) and is_equal_approx(armed_height,260),"Arming Load moved the grid (%.0f to %.0f)" % [grid_y,armed_y]): return
+	if not check(hud.card.visible and is_equal_approx(armed_y,grid_y) and is_equal_approx(armed_height,272),"Arming Load moved the grid (%.0f to %.0f)" % [grid_y,armed_y]): return
 	cargo.free()
 	# 2. Every command tile, build tile and header action shows its hotkey.
 	var missing := []

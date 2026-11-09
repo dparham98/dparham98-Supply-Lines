@@ -78,7 +78,7 @@ func run() -> void:
 	var map: Control = hud.get_node("Bottom/Body/Row/MapColumn/Map")
 	for case in [[null,null],[worker,null],[tank,null],[truck,null],[null,game.depot]]:
 		await select(case[0],case[1])
-		if not check(is_equal_approx(hud.get_node("Bottom").size.y,260) and map.size.x == map.size.y,"HUD height %.0f or map %s not fixed" % [hud.get_node("Bottom").size.y,map.size]): return
+		if not check(is_equal_approx(hud.get_node("Bottom").size.y,272) and map.size.x == map.size.y,"HUD height %.0f or map %s not fixed" % [hud.get_node("Bottom").size.y,map.size]): return
 	# Bars stay short: Info has a fixed width.
 	if not check(is_equal_approx(info.size.x,300) and hud.get_node("Bottom/Body/Row/Info/Health").size.x <= 300,"Info column not fixed at 300 px"): return
 	print("COMPACT_GRID_TEST_PASSED")

@@ -9,6 +9,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/icons/unload.svg" id="icon_unload"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/load.svg" id="icon_load"]
 [ext_resource type="Script" path="res://scripts/ui/hud_ornament.gd" id="ornament_script"]
+[ext_resource type="Texture2D" path="res://assets/ui/hud_frame.png" id="hud_frame"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/rail.svg" id="icon_rail"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/back.svg" id="icon_back"]
 [ext_resource type="Script" path="res://scripts/ui/map_overlay.gd" id="overlay_script"]
@@ -48,10 +49,10 @@
 bg_color = Color(0.025,0.045,0.06,0.98)
 border_width_top = 2
 border_color = Color(0.12,0.5,0.58,1)
-content_margin_left = 12.0
-content_margin_right = 12.0
+content_margin_left = 30.0
+content_margin_right = 30.0
 content_margin_top = 8.0
-content_margin_bottom = 8.0
+content_margin_bottom = 20.0
 [sub_resource type="StyleBoxFlat" id="bar_background"]
 bg_color = Color(0.12,0.17,0.21,1)
 border_width_left = 1
@@ -281,11 +282,11 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -260.0
+offset_top = -272.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_styles/panel = SubResource("panel")
-custom_minimum_size = Vector2(0,260)
+custom_minimum_size = Vector2(0,272)
 [node name="Body" type="VBoxContainer" parent="Bottom"]
 layout_mode = 2
 theme_override_constants/separation = 6
@@ -1838,6 +1839,45 @@ horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.941,0.698,0.29,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
+[node name="HudFrame" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+[node name="Left" type="NinePatchRect" parent="HudFrame"]
+layout_mode = 1
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -2.0
+offset_top = -297.0
+offset_bottom = 12.0
+mouse_filter = 2
+texture = ExtResource("hud_frame")
+region_rect = Rect2(0,0,220,147)
+patch_margin_left = 90
+patch_margin_top = 88
+patch_margin_right = 119
+patch_margin_bottom = 53
+[node name="Right" type="NinePatchRect" parent="HudFrame"]
+layout_mode = 1
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -297.0
+offset_right = 2.0
+offset_bottom = 12.0
+mouse_filter = 2
+texture = ExtResource("hud_frame")
+region_rect = Rect2(220,0,220,147)
+patch_margin_left = 119
+patch_margin_top = 88
+patch_margin_right = 90
+patch_margin_bottom = 53
 [node name="SelectionBox" type="Panel" parent="."]
 visible = false
 mouse_filter = 2
