@@ -1,6 +1,6 @@
 extends SceneTree
 # Rendered: the authored Depot Truck, the authored crate with resource bands, and the fold-out deploy
-# (docs/DEPOT_MODEL.md). Saves depot_truck, depot_crates and depot_fold_0/1/2/3.
+# (docs/DEPOT_MODEL.md). Saves depot_truck, depot_crates, depot_fold_0-3 and depot_build_0-5.
 const TestOutput = preload("res://tests/test_output.gd")
 var game: Node3D
 func _initialize() -> void: call_deferred("run")
@@ -21,7 +21,7 @@ func run() -> void:
 	var network = game.get_node("DepotNetwork")
 	var rig = game.get_node("CameraRig")
 	rig.set_process(false)
-	var start: Vector2i = game.ground.find_buildable_footprint(Vector2i(220,170),Vector2i(10,10))
+	var start: Vector2i = game.ground.find_buildable_footprint(Vector2i(220,170),Vector2i(30,30))+Vector2i(10,10)
 	var site: Vector3 = game.ground.tile_to_world(start+Vector2i(5,5))
 	var truck: Node3D = network.truck_scene.instantiate()
 	truck.position = site
@@ -54,4 +54,20 @@ func run() -> void:
 	for step in [[1,4.0],[2,7.0],[3,9.99]]:
 		fold.player.seek(step[1],true)
 		await shot("depot_fold_%d.png" % step[0])
+	# Production: the tractor pulls out and the trailer is built beside the Depot.
+	depot.set_process(false)
+	depot.energy = 2000; depot.iron = 2000
+	for cell in depot.truck_side_cells(): game.ground.set_tile_feature(cell,"occupied_by",null)
+	fold.player.seek(fold.player.get_animation(&"deploy").length,true)
+	if not check(depot.request_truck(),"Truck order refused"): return
+	depot._process(0.1)
+	if not check(not depot.truck_cells.is_empty(),"Truck side blocked in the render check"): return
+	for step in [[0,3.0],[1,6.25],[2,8.5],[3,10.5],[4,14.1]]:
+		depot.progress = step[1]
+		fold.show_truck(step[1])
+		await shot("depot_build_%d.png" % step[0])
+	depot.progress = depot.current_seconds()
+	depot._process(0.1)
+	if not check(depot.queue == 0,"Truck not delivered"): return
+	await shot("depot_build_5.png")
 	print("DEPOT_TRUCK_MODEL_RUNTIME_CHECK_PASSED"); quit(TestOutput.exit_code())

@@ -44,7 +44,12 @@ func infantry_stats() -> UnitStats:
 @export var dropoff_range := 8.5
 @export var footprint := Vector2i(10,10)
 @export var queue_limit := 3
+## How much faster a cancelled truck's animation runs backwards.
+@export_range(0.5,8,0.5) var cancel_speed := 2.0
 var queue := 0
+var cancelling := false
+## Tiles reserved beside the Depot while a truck is being built there.
+var truck_cells: Array[Vector2i] = []
 var progress := 0.0
 var cells: Array[Vector2i] = []
 @onready var game = get_tree().get_first_node_in_group("skirmish")
@@ -86,9 +91,17 @@ func _process(delta: float) -> void:
 	try_construction_infantry()
 	if queue <= 0: progress = 0; $Progress.text = "%s DEPOT · E %d / I %d · capture %d%%" % [team,energy,iron,roundi(capture_progress/rules.capture_seconds*100)]; return
 	if team != "player": return
-	progress = minf(print_seconds,progress+delta)
-	$Progress.text = "Printing %s · %d%%" % [pending[0],roundi(progress/print_seconds*100)]
-	if progress >= print_seconds:
+	if cancelling: _step_cancel(delta); return
+	var truck: bool = pending[0] == "truck"
+	var seconds := current_seconds()
+	if truck and truck_cells.is_empty():
+		if $Visuals/Model.deploying(): $Progress.text = "Depot unfolding · truck waiting"; return
+		if not _begin_truck(): $Progress.text = "Exit blocked · waiting"; return
+	progress = minf(seconds,progress+delta)
+	if truck: $Visuals/Model.show_truck(progress)
+	$Progress.text = "Printing %s · %d%%" % [pending[0],roundi(progress/seconds*100)]
+	if progress >= seconds:
+		if truck: _complete_truck(); return
 		var center = ground.get_tile_at_position(global_position)
 		var spawn := Vector2i(-1,-1)
 		for radius in range(6,16):
@@ -101,8 +114,7 @@ func _process(delta: float) -> void:
 			if spawn.x < 0: $Progress.text = "Train needs an empty friendly rail tile near Depot"; return
 		var kind: String = pending.pop_front()
 		var scene: PackedScene = infantry_scene
-		if kind == "truck": scene = game.get_node("DepotNetwork").truck_scene
-		elif kind == "cargo": scene = game.get_node("DepotNetwork").cargo_scene
+		if kind == "cargo": scene = game.get_node("DepotNetwork").cargo_scene
 		elif kind == "train": scene = game.get_node("RailNetwork").train_scene
 		var unit = scene.instantiate()
 		if "start_fuelled" in unit: unit.start_fuelled = false # New vehicles start empty.
@@ -113,6 +125,78 @@ func _process(delta: float) -> void:
 		if kind == "infantry": game.units_printed += 1
 		game.notify("%s ready at %s." % [kind,name])
 
+## Seconds the job at the head of the queue takes.
+func current_seconds() -> float:
+	return $Visuals/Model.truck_seconds() if not pending.is_empty() and pending[0] == "truck" else print_seconds
+## The tiles a new truck stands on beside this Depot, or none if that ground is off the map.
+func truck_side_cells() -> Array[Vector2i]:
+	var side: AABB = $Visuals/Model.truck_side
+	var result: Array[Vector2i] = []
+	var a = ground.get_tile_at_position($Visuals/Model.to_global(side.position))
+	var b = ground.get_tile_at_position($Visuals/Model.to_global(side.end))
+	if a == null or b == null: return result
+	for z in range(mini(a.y,b.y),maxi(a.y,b.y)+1):
+		for x in range(mini(a.x,b.x),maxi(a.x,b.x)+1): result.append(Vector2i(x,z))
+	return result
+func _begin_truck() -> bool:
+	var side := truck_side_cells()
+	if side.is_empty(): return false
+	for cell in side:
+		if not ground.is_tile_valid(cell): return false
+	for cell in side: ground.set_tile_feature(cell,"occupied_by","depot_%s" % get_instance_id())
+	truck_cells = side
+	return true
+func _release_truck_side() -> void:
+	for cell in truck_cells:
+		if ground.tiles[cell.y*ground.grid_size.x+cell.x].occupied_by == "depot_%s" % get_instance_id(): ground.set_tile_feature(cell,"occupied_by",null)
+	truck_cells.clear()
+## The chassis and trailer on the side become the real truck, on the same spot.
+func _complete_truck() -> void:
+	var where: Vector3 = $Visuals/Model.assembly.global_position
+	pending.pop_front()
+	queue -= 1
+	progress = 0
+	_release_truck_side()
+	$Visuals/Model.finish_truck()
+	var unit = game.get_node("DepotNetwork").truck_scene.instantiate()
+	unit.start_fuelled = false
+	unit.position = where
+	game.get_node("Entities/Units").add_child(unit,true)
+	unit.global_position = where
+	unit.get_node("Visuals").rotation.y = $Visuals.rotation.y
+	game.notify("truck ready at %s." % name)
+func can_cancel() -> bool:
+	return team == "player" and queue > 0 and not pending.is_empty() and not cancelling
+## Cancels the job in progress for a full refund. A truck first backs its animation out.
+func cancel_current() -> bool:
+	if not can_cancel(): return false
+	if truck_cells.is_empty(): _drop_current()
+	else: cancelling = true
+	return true
+func _step_cancel(delta: float) -> void:
+	progress = maxf(0.0,progress-delta*cancel_speed)
+	$Visuals/Model.show_truck(progress)
+	$Progress.text = "Cancelling truck · %d%%" % roundi(progress/current_seconds()*100)
+	if progress <= 0.0:
+		_release_truck_side()
+		_drop_current()
+func _drop_current() -> void:
+	var cost := _job_cost(pending.pop_front())
+	queue -= 1
+	progress = 0
+	cancelling = false
+	stockpile.deposit(&"energy",cost.x)
+	stockpile.deposit(&"iron",cost.y)
+func _job_cost(kind: String) -> Vector2i:
+	match kind:
+		"truck": return Vector2i(rules.truck_energy_cost,rules.truck_iron_cost)
+		"cargo":
+			var config = game.get_node("DepotNetwork").supply_rules
+			return Vector2i(config.cargo_energy_cost,config.cargo_iron_cost)
+		"train":
+			var config = game.get_node("RailNetwork").rules
+			return Vector2i(config.cargo_energy_cost,config.cargo_iron_cost)
+	return Vector2i.ZERO
 func spend_local(energy_cost: int, iron_cost: int) -> bool:
 	return stockpile.spend({&"energy":energy_cost,&"iron":iron_cost})
 func request_truck() -> bool:
@@ -151,6 +235,10 @@ func update_capture(delta: float) -> void:
 		capture_progress = 0
 		capture_team = ""
 		# Inventory changes hands intact; paid production is cancelled without refund.
+		if not truck_cells.is_empty():
+			_release_truck_side()
+			$Visuals/Model.show_truck(0.0)
+		cancelling = false
 		pending.clear()
 		queue = 0
 		progress = 0
@@ -158,6 +246,7 @@ func update_capture(delta: float) -> void:
 		game.notify("Depot captured by %s; local inventory retained, queue cancelled." % team)
 func _exit_tree() -> void:
 	if not is_instance_valid(ground): return
+	_release_truck_side()
 	for cell in cells:
 		if ground.tiles[cell.y*500+cell.x].occupied_by == "depot_%s" % get_instance_id(): ground.set_tile_feature(cell,"occupied_by",null)
 

@@ -86,7 +86,7 @@ func status_for(node: Node3D) -> Dictionary:
 		var damaged: bool = health < max_health
 		if damaged or is_selected(node) or node == hovered or show_all(): entry.health = float(health)/max_health
 	if node.is_in_group("depots"):
-		if node.queue > 0: entry.progress = node.progress/node.print_seconds
+		if node.queue > 0: entry.progress = node.progress/node.current_seconds()
 		if node.capture_progress > 0: entry.capture = node.capture_progress/node.rules.capture_seconds
 	elif node.is_in_group("production_buildings"):
 		if node.queue > 0: entry.progress = node.progress/node.stats.print_seconds
