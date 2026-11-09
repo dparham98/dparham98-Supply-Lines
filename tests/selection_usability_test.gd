@@ -55,7 +55,7 @@ func run() -> void:
 	await process_frame
 	hud.open_global_build(); game.global_plan_kind = &"generator"
 	var energy: int = game.depot.energy
-	var edge := camera.unproject_position(game.depot.global_position+Vector3(3.8,0.4,3.8))
+	var edge := camera.unproject_position(game.depot.global_position+Vector3(3.8,3.0,3.0))
 	if not check(Bounds.hit_distance(game.depot,camera,edge) < INF,"Depot visible edge not pickable"): return
 	mouse(edge,true); mouse(edge,false)
 	await process_frame

@@ -60,7 +60,7 @@ static func pack(node: Node3D, kind: StringName) -> Node3D:
 static func pack_empty(node: Node3D) -> Node3D:
 	return _place(node,&"",0)
 static func _place(node: Node3D, kind: StringName, amount: int) -> Node3D:
-	var cell = free_cell(node.get_tree(),node.global_position,node.footprint.x/2+2 if node.is_in_group("depots") else 2,8,beside_radius(node))
+	var cell = free_cell(node.get_tree(),node.global_position,mini(node.footprint.x,node.footprint.y)/2+2 if node.is_in_group("depots") else 2,8,beside_radius(node))
 	if cell == null: return null
 	if amount > 0: node.stockpile.withdraw(kind,amount)
 	return spawn(node.get_tree(),cell,kind,amount,node.team)

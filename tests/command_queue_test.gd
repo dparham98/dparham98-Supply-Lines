@@ -39,8 +39,8 @@ func run() -> void:
 	for node in get_nodes_in_group("units"): node.set_selected(node == worker)
 	var start: Vector3 = worker.global_position
 	var a: Vector3 = start+Vector3(6,0,-4)
-	var b: Vector3 = start+Vector3(10,0,-8)
-	var c: Vector3 = start+Vector3(4,0,-10)
+	var b: Vector3 = start+Vector3(10,0,0)
+	var c: Vector3 = start+Vector3(14,0,-2)
 	# Queuing on an idle unit starts at once; later entries wait their turn.
 	worker.queue_order({kind = "move", point = a})
 	worker.queue_order({kind = "move", point = b})

@@ -38,7 +38,7 @@ func run() -> void:
 			worker._process(1.0/60)
 			if worker.cargo == 10: break
 		if not check(worker.cargo == 10 and (worker.global_position.x-source.global_position.x)*pair[1] > 0,"Clicked harvest order crossed to far side"): return
-		var edge: Vector3 = depot.global_position+Vector3(pair[1]*3.8,0.4,3.8)
+		var edge: Vector3 = depot.global_position+Vector3(pair[1]*6.0,3.0,3.0)
 		await right_at(camera.unproject_position(edge))
 		if not check(worker.order == "return" and worker.return_depot == depot and worker.return_explicit,"Depot edge click failed to order explicit delivery"): return
 		for frame in range(3000):

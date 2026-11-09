@@ -41,7 +41,7 @@ func infantry_stats() -> UnitStats:
 	return stats
 
 @export var print_seconds := 3.0
-@export var dropoff_range := 7.0
+@export var dropoff_range := 11.5
 @export var footprint := Vector2i(17,10)
 @export var queue_limit := 3
 var queue := 0

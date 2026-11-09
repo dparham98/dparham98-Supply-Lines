@@ -52,7 +52,7 @@ func run() -> void:
 	var site := Vector3.ZERO
 	for x in range(-12,13,4):
 		for z in range(-12,13,4):
-			if site == Vector3.ZERO and network.can_place_size(truck.global_position+Vector3(x,0,z),truck,Vector2i(8,8)) and not network.plan_overlaps(network.footprint_start(truck.global_position+Vector3(x,0,z),Vector2i(8,8)),Vector2i(8,8)): site = truck.global_position+Vector3(x,0,z)
+			if site == Vector3.ZERO and network.can_place_size(truck.global_position+Vector3(x,0,z),truck,Vector2i(17,10)) and not network.plan_overlaps(network.footprint_start(truck.global_position+Vector3(x,0,z),Vector2i(17,10)),Vector2i(17,10)): site = truck.global_position+Vector3(x,0,z)
 	if not check(site != Vector3.ZERO,"No Depot plan site beside the truck"): return
 	var depots_before := get_nodes_in_group("depots").size()
 	var plan = network.queue_plan(site,&"depot",truck,true)
