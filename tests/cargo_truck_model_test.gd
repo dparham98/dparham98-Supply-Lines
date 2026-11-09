@@ -35,7 +35,7 @@ func run() -> void:
 	var model = truck.get_node("Visuals/Model")
 	if not check(model.scene_file_path == "res://scenes/models/cargo_truck_model.tscn" and model.has_method("set_drive"),"Cargo vehicle does not use the truck model"): return
 	if not check(model._wheels.size() == 6 and model._steers.size() == 2 and model.lid != null and model.ramp != null and model.indicator != null,"Truck rig nodes missing"): return
-	# Facing and size: cab toward -Z, on the ground, about 3.2 m long and under 1.5 m tall.
+	# Facing and size: cab toward -Z, on the ground, about 4.8 m long and 2 m tall at world scale 0.6.
 	var cab: Node3D = model.get_node("Rig/truck_root/chassis/cab")
 	if not check(truck.to_local(cab.global_position).z < -0.5,"Cab should face -Z"): return
 	var low := INF; var high := -INF; var front := INF; var back := -INF; var left := INF; var right := -INF
@@ -43,7 +43,7 @@ func run() -> void:
 		for i in range(8):
 			var p: Vector3 = truck.global_transform.affine_inverse()*(mesh.global_transform*mesh.get_aabb().get_endpoint(i))
 			low = minf(low,p.y); high = maxf(high,p.y); front = minf(front,p.z); back = maxf(back,p.z); left = minf(left,p.x); right = maxf(right,p.x)
-	if not check(absf(low) < 0.05 and high < 1.5 and back-front > 3.0 and back-front < 3.4 and right-left < 1.4,"Truck size wrong: y %.2f..%.2f z %.2f..%.2f x %.2f..%.2f" % [low,high,front,back,left,right]): return
+	if not check(absf(low) < 0.05 and high < 2.2 and back-front > 4.6 and back-front < 5.0 and right-left < 2.1,"Truck size wrong: y %.2f..%.2f z %.2f..%.2f x %.2f..%.2f" % [low,high,front,back,left,right]): return
 	# Standing still: nothing rolls, hatches shut, indicator down.
 	step(truck,model,3)
 	var indicator_rest: float = model.indicator.position.y

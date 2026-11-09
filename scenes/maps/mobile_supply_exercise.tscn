@@ -17,6 +17,6 @@ initial_iron = 25
 [node name="ForestSupply" parent="Entities/Units" instance=ExtResource("cargo")]
 position = Vector3(98.5,0,28.5)
 [node name="ForestInfantry" parent="Entities/Units" instance=ExtResource("infantry")]
-position = Vector3(98.5,0,25.5)
+position = Vector3(101.5,0,28.5)
 [node name="Hostile" parent="Entities/Units" index="1"]
 process_mode = 4

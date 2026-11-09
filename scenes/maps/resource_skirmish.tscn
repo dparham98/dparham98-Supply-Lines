@@ -71,7 +71,7 @@ position = Vector3(178.5,0,163.5)
 [node name="Infantry" parent="Entities/Units" instance=ExtResource("infantry")]
 position = Vector3(164.5,0,159.5)
 [node name="StarterTruck" parent="Entities/Units" instance=ExtResource("cargo_start")]
-position = Vector3(170.5,0,159.5)
+position = Vector3(160.5,0,151.5)
 [node name="Hostile" parent="Entities/Units" instance=ExtResource("enemy")]
 position = Vector3(184.5,0,120.5)
 [node name="WaypointMarkers" type="Node3D" parent="."]

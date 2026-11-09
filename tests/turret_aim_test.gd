@@ -16,20 +16,20 @@ func run() -> void:
 	await process_frame
 	if not check(model.turret != null and model.muzzle != null,"Tank model has no turret or muzzle node"): return
 	var rest: Vector3 = model.muzzle_position()
-	if not check(rest.z < -2.0 and absf(rest.x) < 0.05 and rest.y > 0.8,"Muzzle at rest should sit ahead of the hull: %s" % rest): return
+	if not check(rest.z < -3.0 and absf(rest.x) < 0.05 and rest.y > 1.2,"Muzzle at rest should sit ahead of the hull: %s" % rest): return
 	# A target to the right: the turret turns no faster than its rate, then settles on it.
 	var right := Vector3(10,0,0)
 	step(model,10,right)
 	if not check(absf(model.turret_yaw()) < deg_to_rad(50),"Turret turned too fast: %.1f deg in 1/6 s" % rad_to_deg(model.turret_yaw())): return
 	step(model,120,right)
 	var aimed: Vector3 = model.muzzle_position()
-	if not check(aimed.x > 2.0 and absf(aimed.z) < 0.3,"Muzzle should point right (+X): %s" % aimed): return
+	if not check(aimed.x > 3.0 and absf(aimed.z) < 0.4,"Muzzle should point right (+X): %s" % aimed): return
 	var dir: Vector3 = (right-model.turret.global_position); dir.y = 0
 	var barrel: Vector3 = aimed-model.turret.global_position; barrel.y = 0
 	if not check(barrel.normalized().dot(dir.normalized()) > 0.995,"Barrel not on the target line"): return
 	# Behind: the long way round still arrives.
 	step(model,180,Vector3(0,0,10))
-	if not check(model.muzzle_position().z > 2.0,"Muzzle should point back (+Z): %s" % model.muzzle_position()): return
+	if not check(model.muzzle_position().z > 3.0,"Muzzle should point back (+Z): %s" % model.muzzle_position()): return
 	# No target for two frames: aiming lapses and the turret eases back at its rate, then sways.
 	await process_frame; await process_frame
 	if not check(not model.aiming(),"Aiming should lapse without aim_at calls"): return
