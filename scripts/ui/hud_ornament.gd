@@ -1,8 +1,8 @@
 extends Control
 # Decorative filler for spare HUD width: a framed panel with faint hatching, corner ticks and a
 # small emblem. It carries no information, so the fixed-size HUD never stretches content to fill space.
-@export var line_color := Color(0.165,0.239,0.282,1)
-@export var accent_color := Color(0.122,0.435,0.502,0.55)
+@export var line_color := Color(0.451,0.42,0.349,1)
+@export var accent_color := Color(0.58,0.49,0.396,0.55)
 @export var hatch_spacing := 14.0
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -10,7 +10,7 @@ func _ready() -> void:
 func _draw() -> void:
 	if size.x < 24 or size.y < 24: return
 	var rect := Rect2(Vector2(2,2),size-Vector2(4,4))
-	draw_rect(rect,Color(0.039,0.071,0.086,0.6))
+	draw_rect(rect,Color(0.05,0.055,0.047,0.6))
 	var hatch := Color(line_color,0.35)
 	var x := -rect.size.y
 	while x < rect.size.x:
@@ -28,7 +28,7 @@ func _draw() -> void:
 	if radius < 10: return
 	var hexagon := PackedVector2Array()
 	for i in 7: hexagon.append(center+Vector2.from_angle(PI/6+TAU*i/6)*radius)
-	draw_colored_polygon(hexagon.slice(0,6),Color(0.039,0.071,0.086,0.9))
+	draw_colored_polygon(hexagon.slice(0,6),Color(0.05,0.055,0.047,0.9))
 	draw_polyline(hexagon,accent_color,2,true)
 	draw_line(center+Vector2(-radius*0.45,0),center+Vector2(radius*0.45,0),accent_color,2)
 	draw_line(center+Vector2(0,-radius*0.45),center+Vector2(0,radius*0.45),accent_color,2)

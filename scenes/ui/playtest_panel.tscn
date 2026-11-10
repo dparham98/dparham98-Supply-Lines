@@ -11,7 +11,7 @@
 [ext_resource type="PackedScene" path="res://scenes/gameplay/cargo_vehicle.tscn" id="cargo"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/depot_truck.tscn" id="depot_truck"]
 [sub_resource type="StyleBoxFlat" id="panel"]
-bg_color = Color(0.025,0.045,0.06,0.94)
+bg_color = Color(0.068,0.077,0.066,0.94)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2

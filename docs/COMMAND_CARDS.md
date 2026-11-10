@@ -25,3 +25,6 @@ The 82 ruby and gold cards in `assets/ui/command_cards/` come from the `supply-l
 Cards are opaque, so states use the image colour instead of the background: hover brightens, pressed and disabled darken. A tile that cannot be afforded is also darkened, and its tooltip still says what is missing. Unaffordable and disabled tiles look similar, but the card is still clickable.
 
 `tests/command_cards_test.gd` covers assignment, fit and the state swaps. Nobody has judged the look or the small-size readability in play.
+n## HUD colours
+
+The HUD palette matches the supplied HUD reference: olive-black panels, bronze borders, gold accents, a crimson message strip and cream text. Health stays green. Energy is now cream everywhere it appears as a resource. Team colours, the other resource colours and world markers (selection box, Depot range ring, order pings) did not change.

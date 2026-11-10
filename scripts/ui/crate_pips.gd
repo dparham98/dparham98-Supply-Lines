@@ -3,7 +3,7 @@ extends HBoxContainer
 ## resource colour; an empty crate is a dim brown square; a free slot is an outline only.
 ## Authored in scenes/ui/crate_pips.tscn with a fixed set of pips that are shown or hidden.
 signal pip_pressed(index: int, shift: bool)
-const COLORS := {&"energy": Color(0.498,0.827,0.902), &"iron": Color(0.604,0.655,0.678), &"wood": Color(0.435,0.682,0.353), &"coal": Color(0.788,0.541,0.29)}
+const COLORS := {&"energy": Color(0.818,0.771,0.652), &"iron": Color(0.604,0.655,0.678), &"wood": Color(0.435,0.682,0.353), &"coal": Color(0.788,0.541,0.29)}
 const EMPTY_CRATE := Color(0.56,0.4,0.22,0.45)
 ## Whether pips take clicks (the Depot panel) or let the pointer through (hover card, storage).
 @export var clickable := false
