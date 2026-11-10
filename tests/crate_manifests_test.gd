@@ -1,6 +1,6 @@
 extends SceneTree
 # Crate manifests (docs/CRATE_MANIFESTS.md): what a vehicle loads, crates made as they are loaded,
-# repeat trips, shortages, the Load page and the Depot Empty crate tile.
+# repeat trips, shortages, the Load page and the Depot Make crates tile.
 const TRUCK := "res://scenes/gameplay/cargo_vehicle.tscn"
 var game: Node3D
 var hud: CanvasLayer
@@ -142,13 +142,9 @@ func run() -> void:
 	if not check(not hud.manifest_panel.visible and hud.card.visible and not hud.pick.visible,"Load page stayed open after cancelling"): return
 	truck.manifest[&"iron"] = 1; select(truck)
 	if not check("Manifest: 1 iron" in hud.info.get_node("Details").text,"Vehicle panel does not show its manifest"): return
-	# The Depot card makes empty crates; the old panel controls are gone.
+	# The Depot card makes full crates (tests/truck_worksites_test.gd); the old panel controls are gone.
 	select(null,depot)
-	var tile: Button = hud.card.get_node("EmptyCrate")
-	if not check(tile.visible and not hud.manifest_panel.visible,"Depot card wrong"): return
-	tile.pressed.emit(); hud._process(0)
-	var crates: Array[Node3D] = CrateYard.beside(depot)
-	if not check(crates.size() == 1 and crates[0].amount == 0,"Empty crate tile did not set down an empty crate"): return
+	if not check(hud.card.get_node("MakeCrates").visible and not hud.card.has_node("EmptyCrate") and not hud.manifest_panel.visible,"Depot card wrong"): return
 	clear_crates()
 	if not check(not hud.has_node("Bottom/Body/Row/Context/Shipment") and not hud.has_node("Bottom/Body/Row/Context/Manifest/Pack"),"Old crate panel still present"): return
 	print("CRATE_MANIFESTS_TEST_PASSED")

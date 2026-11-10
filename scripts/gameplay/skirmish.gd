@@ -58,6 +58,7 @@ func armed() -> bool:
 # Esc, pausing and paused clicks drop any armed command or placement.
 func cancel_armed() -> void:
 	global_plan_kind = &""
+	if is_instance_valid(hud): hud.crate_page_open = false
 	placing_rail = false
 	placing_depot = false
 	placing_generator = false
@@ -148,9 +149,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not global_plan_kind.is_empty() and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var camera := get_viewport().get_camera_3d()
 		var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(event.position),camera.project_ray_normal(event.position))
-		# Rail stays armed so a line can be laid tile by tile; Esc or right-click finishes.
-		if point != null and $DepotNetwork.queue_plan(point,global_plan_kind,hud.global_payer if is_instance_valid(hud.global_payer) else null,hud.global_pinned) != null and global_plan_kind != &"rail":
-			global_plan_kind = &""
+		if point != null: place_global_plan(point,event.shift_pressed)
 		get_viewport().set_input_as_handled()
 		return
 	if placing_rail and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
@@ -184,6 +183,26 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	issue_order(event.position,event.shift_pressed)
 	get_viewport().set_input_as_handled()
+## Places the armed plan. From a truck's Worksite page (docs/TRUCK_WORKSITES.md) the selected trucks
+## also fetch its materials; Shift keeps placing and queues their fetches.
+func place_global_plan(point: Vector3, queued := false) -> Node3D:
+	var worksite: bool = hud.worksite_open
+	var payer: Node3D = hud.global_payer if not worksite and is_instance_valid(hud.global_payer) else null
+	var plan = $DepotNetwork.queue_plan(point,global_plan_kind,payer,hud.global_pinned and not worksite)
+	if plan == null: return null
+	if worksite:
+		var trucks: Array[Node3D] = hud.worksite_trucks()
+		for truck in trucks: give_order(truck,{kind = "fetch", target = plan},queued)
+		var materials := PackedStringArray()
+		for kind in plan.materials(): materials.append("%d %s" % [plan.materials()[kind],kind])
+		notify("%s worksite placed. %s %s, then order Infantry to construct it." % [plan.spec.title,"The truck brings" if trucks.size() == 1 else "%d trucks bring" % trucks.size()," and ".join(materials)])
+		if not queued:
+			global_plan_kind = &""
+			hud.close_build()
+		return plan
+	# Rail stays armed so a line can be laid tile by tile; Esc or right-click finishes.
+	if global_plan_kind != &"rail": global_plan_kind = &""
+	return plan
 ## The friendly crate under the pointer, if any.
 func pick_crate(screen: Vector2) -> Node3D:
 	var crate := pick_target(screen,"supply_crates")
@@ -224,7 +243,7 @@ func issue_order(screen: Vector2, queued := false) -> void:
 		selected += 1
 		if enemy: give_order(unit,{kind = "attack", target = enemy},queued)
 		# Build sites: trucks unload what they carry onto the site; workers construct (delivering carried cargo first).
-		elif plan and unit.is_cargo_vehicle and not unit.is_in_group("rail_trains") and (not unit.crates.is_empty() or unit.stockpile.total() > 0): give_order(unit,{kind = "unload", target = plan, point = plan.global_position},queued)
+		elif plan and unit.is_cargo_vehicle and not unit.is_in_group("rail_trains"): give_order(unit,{kind = "fetch", target = plan},queued)
 		elif plan and unit.can_construct and not unit.is_cargo_vehicle and not unit.is_depot_truck: give_order(unit,{kind = "construct", target = plan},queued)
 		elif crate and unit.is_cargo_vehicle and not unit.is_in_group("rail_trains"): give_order(unit,{kind = "load", target = crate, point = crate.global_position},queued)
 		elif crate and unit.can_gather and unit.cargo > 0 and crate.accepts(unit.cargo_kind): give_order(unit,{kind = "return", target = crate},queued)
@@ -247,7 +266,7 @@ func issue_order(screen: Vector2, queued := false) -> void:
 	if selected == 0: notify("Left-click an infantry unit first.")
 	elif queued: notify("Order queued. Shift-right-click adds more; a plain order replaces the queue.")
 	elif enemy: notify("Attack order: approach and fire at range.")
-	elif plan: notify("Build site: Cargo vehicles unload materials onto it; Infantry construct from the pile.")
+	elif plan: notify("Build site: Cargo vehicles fetch exactly the materials it lacks; Infantry construct from the pile.")
 	elif crate: notify("Crate order: vehicles load it; workers deliver into it or gather from it.")
 	elif forest_ordered: notify("Harvest wood from the forest tile and deliver it to a friendly Depot.")
 	elif resource: notify("Gather %s and deliver to a friendly Depot." % resource.resource_kind)

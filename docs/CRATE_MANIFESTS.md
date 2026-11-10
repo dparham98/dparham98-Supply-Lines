@@ -28,7 +28,7 @@ A Cargo vehicle or Train keeps a **manifest**: how many crates of each resource 
 
 ## Crates on the map
 
-- **Empty crate (K)** is a Depot command card tile. It sets down an empty crate for workers to fill.
+- **Make crates (K)** is a Depot command card tile. Its page sets down full crates of any resource; see `TRUCK_WORKSITES.md`. Depots no longer make empty crates.
 - Unloading on open ground still sets crates down, and workers can still gather from them.
 - Clicking a crate with Load still picks it up, whatever the manifest says.
 - Loading crates set down beside a Depot back into storage needs a truck or worker.

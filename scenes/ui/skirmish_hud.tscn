@@ -55,6 +55,8 @@
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_crate_resource_wood.png" id="card_crate_resource_wood"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_crate_resource_coal.png" id="card_crate_resource_coal"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_create_empty_crate.png" id="card_create_empty_crate"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_global_build.png" id="card_global_build"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_pack_one_crate.png" id="card_pack_one_crate"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_generator_fuel_wood.png" id="card_generator_fuel_wood"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_generator_fuel_coal.png" id="card_generator_fuel_coal"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_generator_fuel_either.png" id="card_generator_fuel_either"]
@@ -129,6 +131,10 @@ corner_radius_bottom_left = 3
 action = &"command_load"
 [sub_resource type="Shortcut" id="shortcut_command_load"]
 events = [SubResource("key_command_load")]
+[sub_resource type="InputEventAction" id="key_command_worksite"]
+action = &"command_worksite"
+[sub_resource type="Shortcut" id="shortcut_command_worksite"]
+events = [SubResource("key_command_worksite")]
 [sub_resource type="InputEventAction" id="key_command_unload"]
 action = &"command_unload"
 [sub_resource type="Shortcut" id="shortcut_command_unload"]
@@ -292,10 +298,10 @@ events = [SubResource("key_resource_wood")]
 action = &"resource_coal"
 [sub_resource type="Shortcut" id="shortcut_resource_coal"]
 events = [SubResource("key_resource_coal")]
-[sub_resource type="InputEventAction" id="key_command_empty_crate"]
-action = &"command_empty_crate"
-[sub_resource type="Shortcut" id="shortcut_command_empty_crate"]
-events = [SubResource("key_command_empty_crate")]
+[sub_resource type="InputEventAction" id="key_command_make_crates"]
+action = &"command_make_crates"
+[sub_resource type="Shortcut" id="shortcut_command_make_crates"]
+events = [SubResource("key_command_make_crates")]
 [sub_resource type="InputEventAction" id="key_command_burn_either"]
 action = &"command_burn_either"
 [sub_resource type="Shortcut" id="shortcut_command_burn_either"]
@@ -1604,6 +1610,32 @@ horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
+[node name="Worksite" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+tooltip_text = "Choose a building and place it. This truck fetches exactly its materials from the nearest Depot."
+shortcut = SubResource("shortcut_command_worksite")
+layout_mode = 0
+visible = false
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_global_build")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Worksite"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="Unload" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
 tooltip_text = "Click a friendly Depot or deployed Cargo vehicle to unpack the carried crates. Shift queues."
@@ -1656,17 +1688,17 @@ horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
-[node name="EmptyCrate" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+[node name="MakeCrates" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
-tooltip_text = "Sets down an empty crate beside this Depot for workers to fill."
-shortcut = SubResource("shortcut_command_empty_crate")
+tooltip_text = "Opens the crate page. Each resource tile sets down a full 25-unit crate beside this Depot."
+shortcut = SubResource("shortcut_command_make_crates")
 layout_mode = 0
 custom_minimum_size = Vector2(46,46)
 text = ""
-icon = ExtResource("card_create_empty_crate")
+icon = ExtResource("card_pack_one_crate")
 expand_icon = true
 icon_alignment = 1
-[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/EmptyCrate"]
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/MakeCrates"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
