@@ -448,7 +448,7 @@ func update_contents() -> void:
 		else:
 			info.get_node("HealthText").text = ("Materials on site" if node.materials_covered() else "Needs materials on site") if not node.state.begins_with("Constructing") else node.state
 			info.get_node("Details").text = "%s\n%s\nEnergy %d/%d from %s\n%s" % [node.site_text().replace(" · ","\n"),node.state,node.energy_paid,node.spec.energy,payer_text,"Does not block movement"]
-			hint_text = "Unload a Cargo truck here, or right-click with a worker carrying iron, to pile materials on the footprint. Right-click with Infantry to construct: 5 iron per two saw swings, energy charged as they build. Cancel is free; piles stay."
+			hint_text = "Unload a Cargo truck here, or right-click with a worker carrying iron, to pile materials on the footprint. Right-click with Infantry to construct: 5 iron per one saw blow, energy charged as they build. Cancel is free; piles stay."
 		commands.get_node("Title").text = "PENDING CONSTRUCTION"
 		show_button("CancelPlan","Cancel plan")
 		return

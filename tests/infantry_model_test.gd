@@ -73,9 +73,9 @@ func run() -> void:
 	unit._stop_route(); unit.order = "idle"
 	unit.state = "Gathering"; unit._work_timer = 0.0; unit._animate(); model._process(1.0/60)
 	if not check(model.current_clip() == &"Hack","Gathering should play Hack, got %s" % model.current_clip()): return
-	# Two swings per extraction: the 1.5 s one-swing clip runs so two fit the 1.2 s gather cycle.
+	# One full-bodied blow per extraction, at very nearly the speed it was animated.
 	if not check(is_equal_approx(unit.harvest_interval,1.2),"Gather cycle should be 1.2 s, got %.2f" % unit.harvest_interval): return
-	if not check(is_equal_approx(player.speed_scale,player.get_animation("Hack").length*2.0/unit.harvest_interval),"Hack pace should fit two swings per cycle: %.2f" % player.speed_scale): return
+	if not check(is_equal_approx(player.speed_scale,player.get_animation("Hack").length/unit.harvest_interval) and absf(player.speed_scale-1.0) < 0.05,"Hack pace should fit one swing per cycle: %.2f" % player.speed_scale): return
 	if not check(player.current_animation_position < 0.05,"Hack should restart with the work cycle"): return
 	if not check(model.teeth != null and is_equal_approx(model.teeth.get_instance_shader_parameter(&"speed"),model.teeth_speed),"Saw teeth should run while hacking"): return
 	unit.state = "Idle"; unit._animate(); model._process(1.0/60)
