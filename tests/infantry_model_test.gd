@@ -2,7 +2,7 @@ extends SceneTree
 # Headless: the Infantry's rigged model (assets/models/units/infantry.glb via scenes/models/infantry_model.tscn)
 # faces -Z, stands 1.8 m on the ground, carries Rest/Run/Hack/Shoot clips, and the unit agent drives
 # them: a step plays Run at the unit's pace, gathering plays Hack with the saw teeth running, a shot
-# plays Shoot once and returns to Rest. Tracers leave the pistol bone.
+# plays Shoot once with a muzzle flash and light, and returns to Rest. The bullet flies from the barrel tip.
 const Bounds = preload("res://scripts/units/selection_bounds.gd")
 var game: Node3D
 func _initialize() -> void: call_deferred("run")
@@ -38,7 +38,13 @@ func run() -> void:
 	for looping in ["Rest","Run","Hack"]:
 		if not check(player.get_animation(looping).loop_mode == Animation.LOOP_LINEAR,"%s should loop" % looping): return
 	if not check(player.get_animation("Shoot").loop_mode == Animation.LOOP_NONE,"Shoot should play once"): return
-	if not check(model.skeleton != null and model.skeleton.get_bone_count() == 21,"Infantry skeleton missing"): return
+	if not check(model.skeleton != null and model.skeleton.get_bone_count() == 22,"Infantry skeleton missing"): return
+	if not check(absf(player.get_animation("Shoot").length-14.0/24.0) < 0.04,"Shoot should have its held lead-in: %.3f s" % player.get_animation("Shoot").length): return
+	var flash_bone: int = model.skeleton.find_bone("flash")
+	if not check(flash_bone >= 0 and model.flash_light != null,"Muzzle flash bone or light missing"): return
+	for clip in ["Rest","Run","Hack"]:
+		player.play(clip); player.seek(0.1,true); model.skeleton.force_update_all_bone_transforms()
+		if not check(model.skeleton.get_bone_pose_scale(flash_bone).x < 0.05,"%s should keep the flash shut" % clip): return
 	# The saw is picked out in bright steel so it reads against the dark coat.
 	var saw: MeshInstance3D = model.get_node("Rig/infantry_rig2/Skeleton3D/chainsaw_rig")
 	if not check(saw.material_override is StandardMaterial3D and saw.material_override.albedo_color.v > 0.6 and model.teeth.material_override is ShaderMaterial,"Saw should carry the bright steel override"): return
@@ -83,6 +89,20 @@ func run() -> void:
 	step(unit,model,2)
 	if not check(foe.health < health_before,"Infantry did not fire"): return
 	if not check(model.acting() and model.current_clip() == &"Shoot","A shot should play Shoot, got %s" % model.current_clip()): return
+	# The shot lands on the flash: bright bone, light on, and a bullet leaving the barrel toward the target.
+	if not check(model.skeleton.get_bone_pose_scale(flash_bone).x > 0.5 and model.flash_light.visible and model.flash_light.light_energy > 0.5,"The shot should light the muzzle flash (scale %.2f)" % model.skeleton.get_bone_pose_scale(flash_bone).x): return
+	var bullets := game.get_children().filter(func(n): return n.get_script() == preload("res://scripts/gameplay/projectile.gd"))
+	if not check(bullets.size() == 1,"The shot should fire one bullet, got %d" % bullets.size()): return
+	var bullet: Node3D = bullets[0]
+	if not check(bullet.global_position.distance_to(model.muzzle_position()) < 0.7,"Bullet should leave the barrel: %.2f m away" % bullet.global_position.distance_to(model.muzzle_position())): return
+	var aim_point: Vector3 = foe.global_position+Vector3.UP*1.7
+	if not check((-bullet.global_transform.basis.z).dot((aim_point-bullet.global_position).normalized()) > 0.99,"Bullet should point at its target"): return
+	for i in range(120):
+		if not is_instance_valid(bullet): break
+		var was := bullet.global_position
+		await process_frame
+		if is_instance_valid(bullet) and not check(bullet.global_position.distance_to(aim_point) <= was.distance_to(aim_point)+0.001,"Bullet should close on its target"): return
+	if not check(not is_instance_valid(bullet),"Bullet should disappear on arrival"): return
 	# The gun line, not the face, runs through the target: the pistol sits beside the body, so the body turns past it.
 	step(unit,model,6)
 	var gun_from: Vector3 = model.muzzle_position(); var gun_dir: Vector3 = model.gun_direction()
@@ -90,6 +110,8 @@ func run() -> void:
 	var to_foe: Vector3 = Vector3(foe.global_position.x,0,foe.global_position.z)-gun_from
 	var miss: float = (to_foe-gun_dir*to_foe.dot(gun_dir)).length()
 	if not check(model.has_gun_line() and to_foe.dot(gun_dir) > 0 and miss < 0.25,"Gun line misses the target by %.2f m (dir %s)" % [miss,gun_dir]): return
+	var barrel: Vector3 = (model.skeleton.global_transform.basis*model.skeleton.get_bone_global_pose(flash_bone).basis.y).normalized()
+	if not check(barrel.dot(model.gun_direction()) > 0.995,"Gun line should follow the barrel, dot %.4f" % barrel.dot(model.gun_direction())): return
 	var face_yaw: float = atan2(-(foe.global_position.x-unit.global_position.x),-(foe.global_position.z-unit.global_position.z))
 	if not check(absf(angle_difference(unit.get_node("Visuals").rotation.y,face_yaw)) > deg_to_rad(2),"Body should turn past the face line so the offset gun lines up"): return
 	# Between shots the gun stays up on the target; the next shot is a recoil from that pose, not from Rest.
@@ -97,6 +119,7 @@ func run() -> void:
 	if not check(not model.acting() and model.motion() == &"aim" and player.assigned_animation == "Shoot" and not player.is_playing(),"Gun should hold its aim between shots (motion %s, clip %s)" % [model.motion(),player.assigned_animation]): return
 	var held: Vector3 = model.muzzle_position()
 	if not check(held.y > 0.95,"Held aim should keep the pistol raised, muzzle y %.2f" % held.y): return
+	if not check(model.skeleton.get_bone_pose_scale(flash_bone).x < 0.05 and not model.flash_light.visible,"Flash should be out between shots"): return
 	var health_mid: int = foe.health
 	for i in range(90):
 		step(unit,model,1)

@@ -252,8 +252,8 @@ func issue_order(screen: Vector2, queued := false) -> void:
 	elif forest_ordered: notify("Harvest wood from the forest tile and deliver it to a friendly Depot.")
 	elif resource: notify("Gather %s and deliver to a friendly Depot." % resource.resource_kind)
 	elif dropoff: notify("Return carried resources or repair this Depot.")
-func show_shot(start: Vector3, end: Vector3, team: String) -> void:
-	var shot = tracer_scene.instantiate()
+func show_shot(start: Vector3, end: Vector3, team: String, projectile: PackedScene = null) -> void:
+	var shot = (projectile if projectile != null else tracer_scene).instantiate()
 	add_child(shot)
 	shot.configure(start,end,team)
 

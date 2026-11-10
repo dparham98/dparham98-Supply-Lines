@@ -10,14 +10,32 @@ albedo_color = Color(0.72, 0.74, 0.78, 1)
 metallic = 0.9
 metallic_specular = 0.6
 roughness = 0.35
+[sub_resource type="StandardMaterial3D" id="flash_hot"]
+shading_mode = 0
+albedo_color = Color(1,0.96,0.72,1)
 [node name="InfantryModel" type="Node3D"]
 script = ExtResource("animator")
 player_path = NodePath("Rig/AnimationPlayer")
 work_clip = &"Hack"
+muzzle_bone = &"flash"
+gun_bone = &"pistol"
+gun_rest_axis = Vector3(0.175,-0.287,0.942)
+gun_sample_time = 0.04
+shot_lead_time = 0.125
+flash_bone = &"flash"
+flash_light_path = NodePath("Rig/infantry_rig2/Skeleton3D/pistol/Muzzle light")
+flash_light_energy = 1.8
 teeth_path = NodePath("Rig/infantry_rig2/Skeleton3D/chainsaw/chainsaw_teeth_rig")
 [node name="Rig" parent="." instance=ExtResource("rig")]
 transform = Transform3D(-1,0,0,0,1,0,0,0,-1,0,0,0)
-[node name="chainsaw_rig" parent="Rig/infantry_rig2/Skeleton3D" index="1"]
+[node name="Muzzle light" parent="Rig/infantry_rig2/Skeleton3D/pistol" index="0"]
+visible = false
+omni_range = 2.6
+omni_attenuation = 1.0
+[node name="Muzzle flash" parent="Rig/infantry_rig2/Skeleton3D/flash" index="0"]
+material_override = SubResource("flash_hot")
+cast_shadow = 0
+[node name="chainsaw_rig" parent="Rig/infantry_rig2/Skeleton3D" index="3"]
 material_override = SubResource("saw_steel")
 [node name="chainsaw_teeth_rig" parent="Rig/infantry_rig2/Skeleton3D/chainsaw" index="0"]
 material_override = SubResource("teeth_material")

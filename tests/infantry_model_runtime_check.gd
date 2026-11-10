@@ -48,6 +48,8 @@ func run() -> void:
 	var hack_pose: Transform3D = model.skeleton.get_bone_global_pose(arm)
 	if not check(rest_pose.origin.distance_to(hack_pose.origin) > 0.05,"Hack does not move the saw arm"): return
 	await shot("infantry_hack")
-	await pose(player,"Shoot",0.09)
+	await pose(player,"Shoot",0.14)
+	model._update_flash_light()
+	if not check(model.flash_light.visible,"Muzzle light should be on at the shot"): return
 	await shot("infantry_shoot")
 	print("INFANTRY_MODEL_RUNTIME_CHECK_PASSED"); quit(TestOutput.exit_code())
