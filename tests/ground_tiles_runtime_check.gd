@@ -1,5 +1,5 @@
 extends SceneTree
-# Rendered check: grass and desert show tile detail up close, and open grass has no black spots from an invalid normal. Saves ground_tiles_close, _play, _map, _forest and _water.
+# Rendered check: grass and desert show tile detail up close, open grass has no black spots from an invalid normal, and the noise behind the ground has no jumps. Saves ground_tiles_close, _play, _map, _forest and _water.
 const TestOutput = preload("res://tests/test_output.gd")
 var game: Node3D
 func _initialize() -> void: call_deferred("run")
@@ -21,6 +21,30 @@ func detail(image: Image, area: Rect2i) -> float:
 		for x in range(area.position.x,area.end.x):
 			total += absf(image.get_pixel(x,y).get_luminance()-image.get_pixel(x+1,y).get_luminance())
 	return total/area.get_area()
+# Draws the relief height itself over open grass. It is a smooth field, so any sharp step between neighbouring
+# pixels is a seam in the noise, which shows in the game as a dark streak. This view holds a seam the old hash made.
+func check_noise_is_continuous(rig: Node) -> bool:
+	var material: ShaderMaterial = game.get_node("Terrain/Ground").material_override
+	var marker := "  float height = layered_noise(relief_uv, 3);
+"
+	if not check(material.shader.code.contains(marker),"Shader changed: the noise check cannot find the relief height"): return false
+	var debug := Shader.new()
+	debug.code = material.shader.code.replace(marker,marker+"  NOISE_VIEW = vec3(height);
+").replace("void fragment() {
+","void fragment() {
+ vec3 NOISE_VIEW = vec3(0.0);
+").replace(" ALBEDO = color;
+"," ALBEDO = vec3(0.0); EMISSION = NOISE_VIEW; ROUGHNESS = 1.0; SPECULAR = 0.0;
+")
+	material.shader = debug
+	var image: Image = await shot(rig,Vector3(128.5,0,100.5),26,"ground_tiles_noise")
+	var step := 0.0
+	for y in range(0,580):
+		for x in range(0,1279):
+			step = maxf(step,absf(image.get_pixel(x,y).r-image.get_pixel(x+1,y).r))
+			step = maxf(step,absf(image.get_pixel(x,y).r-image.get_pixel(x,y+1).r))
+	print("Largest noise step %.4f" % step)
+	return check(step < 0.02,"The ground noise has a seam: step %.4f" % step)
 func run() -> void:
 	root.size = Vector2i(1280,900)
 	game = load("res://scenes/maps/resource_skirmish.tscn").instantiate()
@@ -44,4 +68,5 @@ func run() -> void:
 	await shot(rig,Vector3.ZERO,480,"ground_tiles_map")
 	await shot(rig,Vector3(178.5,0,-101.5),20,"ground_tiles_forest")
 	await shot(rig,Vector3(-60,0,-20),20,"ground_tiles_water")
+	if not await check_noise_is_continuous(rig): return
 	print("GROUND_TILES_RUNTIME_CHECK_PASSED"); quit(TestOutput.exit_code())

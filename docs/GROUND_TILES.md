@@ -26,6 +26,7 @@ Open ground (grass, forest floor and desert) gets four layers on top of the tile
 - **Colour patches:** broad drifts about 64 m across and smaller dry patches about 17 m across, plus dry straw on the grass beside desert.
 - **Breakup:** a larger copy of the tile pattern at a scale that never lines up with the 4 m tiles.
 - **Relief:** gentle slopes lit by the sun. The bent normal is length-limited, because past that limit the surface renders black.
+- **Noise:** the hash works on whole numbers on purpose. A float hash can give the two cells that share a grid corner different values, which draws a straight dark seam along the cell edge.
 
 | Setting | Value | Meaning |
 | --- | --- | --- |
@@ -47,6 +48,6 @@ The four forest overlays (pine, broadleaf, mixed and sparse) replace the old con
 ## Checks
 
 - `tests/ground_tiles_test.gd` (headless): both arrays have twelve mipmapped layers, the settings exist, the blend map agrees with the map cells, the Ground node uses the saved material, the gameplay grid is unchanged, and all 1,646 forest spots use the four patches within the triangle budget.
-- `tests/ground_tiles_runtime_check.gd` (rendered): grass and desert show tile detail up close, open grass has no black spots, and saves close, play-zoom, whole-map, forest and water views.
+- `tests/ground_tiles_runtime_check.gd` (rendered): grass and desert show tile detail up close, open grass has no black spots, the noise has no seams, and saves close, play-zoom, whole-map, forest and water views.
 
 Tile size, forest scale, feature share and tint were chosen by eye against renders. Water and mountain-foot borders keep the blocky steps of the map.
