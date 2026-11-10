@@ -1,0 +1,18 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/projectile.gd" id="projectile"]
+[ext_resource type="PackedScene" path="res://assets/models/projectiles/grenade_round.glb" id="model"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/grenade_blast.tscn" id="impact"]
+
+[node name="GrenadeRound" type="Node3D"]
+script = ExtResource("projectile")
+speed = 11.0
+half_length = 0.1
+keep_body_material = true
+impact_scene = ExtResource("impact")
+arc_ratio = 0.16
+spin_path = NodePath("Model/grenade_round")
+spin_speed = 720.0
+
+[node name="Model" parent="." instance=ExtResource("model")]
+transform = Transform3D(-1,0,0,0,1,0,0,0,-1,0,0,0)
