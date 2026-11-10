@@ -12,8 +12,17 @@ extends Node3D
 @export var keep_body_material := false
 ## Spawned where the shot lands, leaning back toward the shooter (the scene's -Z).
 @export var impact_scene: PackedScene
+## A lobbed shot rises above the straight line by this share of its length; 0 flies straight.
+@export_range(0,1,0.01) var arc_ratio := 0.0
+## A part that tumbles in flight, and how fast (degrees a second).
+@export var spin_path: NodePath
+@export var spin_speed := 0.0
 var _left := 0.0
 var _end := Vector3.ZERO
+var _line_start := Vector3.ZERO
+var _line_dir := Vector3.FORWARD
+var _line_length := 0.0
+@onready var _spinner: Node3D = get_node_or_null(spin_path)
 func configure(start: Vector3, end: Vector3, team: String) -> void:
 	var path := end-start
 	var span := path.length()
@@ -22,6 +31,9 @@ func configure(start: Vector3, end: Vector3, team: String) -> void:
 	look_at(global_position+dir,Vector3.FORWARD if absf(dir.y) > 0.99 else Vector3.UP)
 	_left = maxf(span-half_length*2.0,0.0)
 	_end = end
+	_line_start = global_position
+	_line_dir = dir
+	_line_length = _left
 	_paint(player_color if team == "player" else enemy_color)
 func _paint(trail: Color) -> void:
 	for node in find_children("*","MeshInstance3D",true,false):
@@ -35,11 +47,22 @@ func _paint(trail: Color) -> void:
 		mesh_node.material_override = material
 func _process(delta: float) -> void:
 	var step := minf(speed*delta,_left)
-	global_position += -global_transform.basis.z*step
 	_left -= step
+	if arc_ratio > 0.0: _follow_arc()
+	else: global_position += -global_transform.basis.z*step
+	if _spinner: _spinner.rotate_object_local(Vector3.RIGHT,deg_to_rad(spin_speed)*delta)
 	if _left > 0.0: return
 	_land()
 	queue_free()
+## A parabola over the straight line from muzzle to target, pointing along its own slope.
+func _follow_arc() -> void:
+	if _line_length <= 0.0: return
+	var flown := _line_length-_left
+	var t := flown/_line_length
+	global_position = _line_start+_line_dir*flown+Vector3.UP*4.0*arc_ratio*_line_length*t*(1.0-t)
+	var slope := 4.0*arc_ratio*(1.0-2.0*t)
+	var ahead := _line_dir+Vector3.UP*slope
+	look_at(global_position+ahead,Vector3.FORWARD if absf(ahead.normalized().y) > 0.99 else Vector3.UP)
 func _land() -> void:
 	if impact_scene == null: return
 	var impact: Node3D = impact_scene.instantiate()

@@ -1,0 +1,31 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/components/character_animator.gd" id="animator"]
+[ext_resource type="PackedScene" path="res://assets/models/units/grenadier.glb" id="rig"]
+[ext_resource type="PackedScene" path="res://scenes/models/grenadier_death_fx.tscn" id="death_fx"]
+[sub_resource type="StandardMaterial3D" id="flash_hot"]
+shading_mode = 0
+albedo_color = Color(1,0.86,0.55,1)
+[node name="GrenadierModel" type="Node3D"]
+script = ExtResource("animator")
+player_path = NodePath("Rig/AnimationPlayer")
+run_reference_speed = 2.0
+muzzle_bone = &"flash"
+gun_bone = &"gun"
+gun_rest_axis = Vector3(-0.221,-0.9544,0.2009)
+gun_sample_time = 0.04
+shot_lead_time = 0.125
+flash_bone = &"flash"
+flash_light_path = NodePath("Rig/grenadier_rig/Skeleton3D/gun/Muzzle light")
+flash_light_energy = 1.3
+death_clip = &"Die"
+death_fx_scene = ExtResource("death_fx")
+[node name="Rig" parent="." instance=ExtResource("rig")]
+transform = Transform3D(-1,0,0,0,1,0,0,0,-1,0,0,0)
+[node name="Muzzle light" parent="Rig/grenadier_rig/Skeleton3D/gun" index="0"]
+visible = false
+omni_range = 2.8
+omni_attenuation = 1.0
+[node name="Muzzle flash" parent="Rig/grenadier_rig/Skeleton3D/flash" index="0"]
+material_override = SubResource("flash_hot")
+cast_shadow = 0
+[editable path="Rig"]

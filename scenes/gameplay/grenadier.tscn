@@ -2,8 +2,9 @@
 
 [ext_resource type="Script" path="res://scripts/gameplay/unit_agent.gd" id="agent"]
 [ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
-[ext_resource type="PackedScene" path="res://scenes/models/grenadier_placeholder.tscn" id="model"]
+[ext_resource type="PackedScene" path="res://scenes/models/grenadier_model.tscn" id="model"]
 
+[ext_resource type="PackedScene" path="res://scenes/gameplay/grenade_round.tscn" id="round"]
 [ext_resource type="Resource" path="res://assets/units/grenadier.tres" id="stats"]
 
 [sub_resource type="StandardMaterial3D" id="r1"]
@@ -21,6 +22,7 @@ material = SubResource("r1")
 [node name="Grenadier" type="Node3D"]
 script = ExtResource("agent")
 unit_stats = ExtResource("stats")
+projectile_scene = ExtResource("round")
 can_construct = false
 can_gather = false
 can_capture_depots = false

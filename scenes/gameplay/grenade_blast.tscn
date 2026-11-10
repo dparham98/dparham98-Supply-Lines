@@ -1,0 +1,30 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/burst_effect.gd" id="burst"]
+[ext_resource type="PackedScene" path="res://assets/models/projectiles/grenade_blast.glb" id="model"]
+
+[sub_resource type="StandardMaterial3D" id="flash_hot"]
+shading_mode = 0
+albedo_color = Color(1,0.9,0.6,1)
+
+[node name="GrenadeBlast" type="Node3D"]
+script = ExtResource("burst")
+clip = &"Impact"
+flash_path = NodePath("Model/Impact_Flash")
+light_path = NodePath("Light")
+light_energy = 2.0
+one_shot = true
+
+[node name="Model" parent="." instance=ExtResource("model")]
+transform = Transform3D(-1,0,0,0,1,0,0,0,-1,0,0,0)
+
+[node name="Impact_Flash" parent="Model" index="0"]
+material_override = SubResource("flash_hot")
+
+[node name="Light" type="OmniLight3D" parent="."]
+visible = false
+light_color = Color(1,0.72,0.42,1)
+omni_range = 6.0
+omni_attenuation = 1.0
+
+[editable path="Model"]

@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/burst_effect.gd" id="burst"]
+[ext_resource type="PackedScene" path="res://assets/models/effects/grenadier_death_oil.glb" id="model"]
+
+[node name="GrenadierDeathFx" type="Node3D"]
+script = ExtResource("burst")
+clip = &"Death"
+flash_path = NodePath("Model/Spark_Main")
+light_path = NodePath("Light")
+light_energy = 0.9
+one_shot = true
+
+[node name="Model" parent="." instance=ExtResource("model")]
+transform = Transform3D(-1,0,0,0,1,0,0,0,-1,0,0,0)
+
+[node name="Light" type="OmniLight3D" parent="."]
+transform = Transform3D(1,0,0,0,1,0,0,0,1,0,0.8,0)
+visible = false
+light_color = Color(0.55,0.85,1,1)
+omni_range = 2.8
+omni_attenuation = 1.0
