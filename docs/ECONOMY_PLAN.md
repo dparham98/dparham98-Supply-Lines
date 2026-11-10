@@ -33,7 +33,7 @@ Status: discussion plan, not implemented balance. Depot production correction, s
 | Deployed Train supply/drop-off radius | Implemented user revision: half Depot, currently 17.5 / 3.5 |
 | Deploy / pack time | Implemented user confirmation: 2 seconds each; movement packs before departing |
 | Building materials | Iron must be delivered onto the plan's footprint (truck unload, worker drop, or placing over a pile); Infantry build in 5 per 1.2 s cycle; energy charged in step from the covering stockpile (SITE_CONSTRUCTION.md) |
-| Wood per forest tile | 20; retain Infantry carry 10, harvest 5 every 1.2 seconds (two saw swings; was 0.6 before the animated model) |
+| Wood per forest tile | 20; retain Infantry carry 10, harvest 5 every 1.2 seconds (one saw blow; was 0.6 before the animated model) |
 | Iron Mine construction | 75 energy / 25 iron; proposed 2x2 footprint entirely on iron tiles |
 | Iron Mine repair | Existing 10 HP per second for 2 energy / 1 iron; either side can repair |
 | Generator wood conversion | Implemented editable prototype: 1 wood -> 10 energy over 2 seconds (5 E/s) |

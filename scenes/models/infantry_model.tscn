@@ -18,6 +18,7 @@ albedo_color = Color(1,0.96,0.72,1)
 script = ExtResource("animator")
 player_path = NodePath("Rig/AnimationPlayer")
 work_clip = &"Hack"
+work_swings_per_cycle = 1
 muzzle_bone = &"flash"
 gun_bone = &"pistol"
 gun_rest_axis = Vector3(0.175,-0.287,0.942)

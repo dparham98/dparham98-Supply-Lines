@@ -44,7 +44,7 @@ var _attack_enabled := true
 ## What a shot looks like in flight; empty uses the map's plain tracer.
 @export var projectile_scene: PackedScene
 @export var carry_capacity := 10
-## Two saw swings per extraction (docs/INFANTRY_MODEL.md).
+## One saw blow per extraction (docs/INFANTRY_MODEL.md).
 @export var harvest_interval := 1.2
 @export var harvest_amount := 5
 @export var interaction_range := 4.0
@@ -608,7 +608,7 @@ func _repair(delta: float) -> void:
 		_work_timer = 0
 		if not EngineeringWork.tick(self,order_target,repair_payer): state = "Repair paused · local funds unavailable"
 ## Build at a queued site (docs/SITE_CONSTRUCTION.md): carried materials the site needs go onto its
-## pile first, then the worker builds them in at its work pace, 5 per two saw swings.
+## pile first, then the worker builds them in at its work pace, 5 per saw blow.
 func command_construct(plan: Node3D) -> void:
 	if not can_construct or is_depot_truck or is_cargo_vehicle or not is_instance_valid(plan) or not plan.is_in_group("construction_plans") or plan.finished or plan.kind == &"rail": return
 	_stop_route()
