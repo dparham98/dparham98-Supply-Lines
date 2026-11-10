@@ -4,7 +4,7 @@ extends Control
 # actors, replacing their always-on text labels at runtime. Hold Alt to show everything.
 const Bounds = preload("res://scripts/units/selection_bounds.gd")
 const TEAM_COLORS := {"player": Color(0.37,0.82,0.54), "enemy": Color(0.89,0.35,0.31), "neutral": Color(0.6,0.65,0.68)}
-const RESOURCE_COLORS := {&"energy": Color(0.498,0.827,0.902), &"iron": Color(0.604,0.655,0.678), &"wood": Color(0.435,0.682,0.353), &"coal": Color(0.788,0.541,0.29)}
+const RESOURCE_COLORS := {&"energy": Color(0.818,0.771,0.652), &"iron": Color(0.604,0.655,0.678), &"wood": Color(0.435,0.682,0.353), &"coal": Color(0.788,0.541,0.29)}
 const AMBER := Color(0.941,0.698,0.29)
 const RED := Color(0.89,0.35,0.31)
 const TRACK := Color(0.055,0.09,0.114,0.85)

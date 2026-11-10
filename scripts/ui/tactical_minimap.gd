@@ -3,7 +3,7 @@ extends Control
 @export var bounds := Rect2(-250,-250,500,500)
 @onready var game = get_tree().get_first_node_in_group("skirmish")
 const Overlay = preload("res://scripts/ui/map_overlay.gd")
-const EDGE := Color(0.04,0.07,0.09,0.9)
+const EDGE := Color(0.05,0.055,0.047,0.9)
 const ALERT_PULSE_SECONDS := 6.0
 func _process(_delta: float) -> void:
 	queue_redraw()
@@ -80,4 +80,4 @@ func _draw() -> void:
 	if outline.size() == 4:
 		outline.append(outline[0])
 		draw_polyline(outline,Color(1,1,1,0.85),1.0,true)
-	draw_rect(Rect2(Vector2.ZERO,size),Color(0.165,0.239,0.282),false,2)
+	draw_rect(Rect2(Vector2.ZERO,size),Color(0.451,0.42,0.349),false,2)
