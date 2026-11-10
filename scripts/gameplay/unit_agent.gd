@@ -492,11 +492,25 @@ func _shoot(target: Node3D) -> void:
 	var target_height: Vector3 = target.get_node("Visuals").position if target.has_node("Visuals") else Vector3.ZERO
 	var model := $Visuals.get_node_or_null("Model")
 	var muzzle: Vector3 = model.muzzle_position() if model != null and model.has_method("muzzle_position") else global_position+Vector3.UP*1.7+$Visuals.position
-	game.show_shot(muzzle,target.global_position+Vector3.UP*1.7+target_height,team,projectile_scene)
+	if turret and turret.has_method("fire"): turret.fire()
+	game.show_shot(muzzle,_shot_end(muzzle,target,target.global_position+Vector3.UP*1.7+target_height),team,projectile_scene)
 	CombatResolver.strike(self,target)
 	if is_instance_valid(target) and game.has_method("mark_attacked"): game.mark_attacked(target)
 	if is_instance_valid(target) and target.is_in_group("selectable_buildings") and target.get("team") == "player" and team != "player" and game.has_method("alert"):
 		game.alert("%s under attack" % target.name,target.global_position,"attack:%d" % target.get_instance_id(),"attack")
+## Where a modelled projectile stops: on the near face of the target's body, so its impact is not buried inside.
+func _shot_end(muzzle: Vector3, target: Node3D, fallback: Vector3) -> Vector3:
+	if projectile_scene == null: return fallback
+	var parts := preload("res://scripts/units/selection_bounds.gd").meshes(target)
+	if parts.is_empty(): return fallback
+	var box: AABB = parts[0].global_transform*parts[0].get_aabb()
+	for part in parts: box = box.merge(part.global_transform*part.get_aabb())
+	var aim := box.get_center()
+	# A long barrel can reach past a close target; the round then goes off at the muzzle.
+	var from := Vector2(global_position.x,global_position.z)
+	if box.has_point(muzzle) or from.distance_to(Vector2(aim.x,aim.z)) < from.distance_to(Vector2(muzzle.x,muzzle.z)): return muzzle
+	var hit: Variant = box.intersects_segment(muzzle,aim)
+	return hit if hit != null else aim
 # Turn so the gun line runs through the target when the model knows where its gun points; otherwise face it.
 func _aim_body(target: Node3D, turret: Node3D, animator: Node) -> void:
 	if turret != null: return

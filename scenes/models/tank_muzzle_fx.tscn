@@ -1,0 +1,28 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/burst_effect.gd" id="burst"]
+[ext_resource type="PackedScene" path="res://assets/models/projectiles/tank_muzzle_fx.glb" id="model"]
+
+[sub_resource type="StandardMaterial3D" id="flash_hot"]
+shading_mode = 0
+albedo_color = Color(1,0.96,0.72,1)
+
+[node name="TankMuzzleFx" type="Node3D"]
+script = ExtResource("burst")
+flash_path = NodePath("Model/Muzzle_Flash")
+light_path = NodePath("Light")
+light_energy = 5.0
+
+[node name="Model" parent="." instance=ExtResource("model")]
+
+[node name="Muzzle_Flash" parent="Model" index="0"]
+material_override = SubResource("flash_hot")
+
+[node name="Light" type="OmniLight3D" parent="."]
+transform = Transform3D(1,0,0,0,1,0,0,0,1,0,0,1)
+visible = false
+light_color = Color(1,0.76,0.46,1)
+omni_range = 7.0
+omni_attenuation = 1.0
+
+[editable path="Model"]

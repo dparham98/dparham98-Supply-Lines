@@ -8,6 +8,8 @@
 
 [ext_resource type="Resource" path="res://assets/economy/fuel_tank.tres" id="fuel"]
 
+[ext_resource type="PackedScene" path="res://scenes/gameplay/tank_shell.tscn" id="shell"]
+
 [sub_resource type="StandardMaterial3D" id="r1"]
 albedo_color = Color(0.2,1,0.6,1)
 roughness = 0.85
@@ -24,6 +26,7 @@ material = SubResource("r1")
 script = ExtResource("agent")
 fuel_rules = ExtResource("fuel")
 unit_stats = ExtResource("stats")
+projectile_scene = ExtResource("shell")
 can_construct = false
 can_gather = false
 can_capture_depots = false
