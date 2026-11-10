@@ -55,14 +55,6 @@ func run() -> void:
 	if not check(art(refuel) == "sl_auto_refuel_off.png" and not refuel.has_theme_color_override("icon_normal_color"),"Auto-refuel off art wrong or tinted"): return
 	cargo.auto_refuel = true; select(cargo)
 	if not check(art(refuel) == "sl_auto_refuel_on.png","Auto-refuel on art wrong"): return
-	# Generator: the image is the action the button will take.
-	var generator: Node3D = game.get_node("Entities/Buildings/Generator")
-	generator.set_process(false)
-	generator.team = "player"
-	generator.enabled = true; select(null,generator)
-	if not check(art(hud.card.get_node("ToggleGenerator")) == "sl_generator_pause.png","Generator pause art wrong"): return
-	generator.enabled = false; select(null,generator)
-	if not check(art(hud.card.get_node("ToggleGenerator")) == "sl_generator_resume.png","Generator resume art wrong"): return
 	# Build page: Pin swaps to Unpin while a payer is pinned.
 	select(null)
 	var pin: Button = hud.build_menu.get_node("Actions/Pin")
@@ -70,5 +62,17 @@ func run() -> void:
 	if not check(art(pin) == "sl_pin_payer.png","Pin art wrong"): return
 	hud.global_pinned = true; hud.refresh_global_menu()
 	if not check(art(pin) == "sl_unpin_payer.png","Unpin art wrong"): return
+	# Generator, on the map that has one: the image is the action the button will take.
+	root.remove_child(game); game.free(); await process_frame
+	game = load("res://scenes/maps/generator_exercise.tscn").instantiate()
+	root.add_child(game); await process_frame
+	game.set_process(false)
+	hud = game.get_node("Interface"); hud.set_process(false)
+	var generator: Node3D = game.get_node("Entities/Buildings/Generator")
+	generator.set_process(false)
+	generator.enabled = true; select(null,generator)
+	if not check(art(hud.card.get_node("ToggleGenerator")) == "sl_generator_pause.png","Generator pause art wrong"): return
+	generator.enabled = false; select(null,generator)
+	if not check(art(hud.card.get_node("ToggleGenerator")) == "sl_generator_resume.png","Generator resume art wrong"): return
 	print("COMMAND_CARDS_TEST_PASSED")
 	quit(0)
