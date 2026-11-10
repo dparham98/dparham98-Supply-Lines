@@ -12,6 +12,9 @@ uniform vec3 rock_warm : source_color = vec3(0.44, 0.37, 0.3);
 uniform vec3 scree : source_color = vec3(0.36, 0.32, 0.25);
 uniform vec3 snow : source_color = vec3(0.86, 0.88, 0.92);
 uniform float snow_line = 7.8;
+// Part of the map whose rock is drawn by the sculpted landscape instead (docs/LANDSCAPE_LOOKDEV.md), as world X and Z
+// min and max. Set by scripts/tools/build_landscape.gd; all zero draws every mountain here.
+uniform vec4 landscape_region = vec4(0.0);
 varying vec3 world_position;
 varying vec3 world_normal;
 varying vec2 vertex_data;
@@ -38,6 +41,7 @@ vec3 surface_normal(vec3 p, vec3 n, vec3 weights) {
  return normalize(x_map.zyx * weights.x + y_map.xzy * weights.y + z_map.xyz * weights.z);
 }
 void fragment() {
+ if (world_position.x > landscape_region.x && world_position.z > landscape_region.y && world_position.x < landscape_region.z && world_position.z < landscape_region.w) { discard; }
  vec3 n = normalize(world_normal);
  vec3 weights = axis_weights(n);
  float fine = sample_detail(world_position / detail_metres, weights);

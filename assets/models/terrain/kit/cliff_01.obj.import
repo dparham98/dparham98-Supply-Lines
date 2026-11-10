@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dlclc8sa4l0x"
+path="res://.godot/imported/cliff_01.obj-ed1001a4b252af769234e8301d397b57.mesh"
+
+[deps]
+
+files=["res://.godot/imported/cliff_01.obj-ed1001a4b252af769234e8301d397b57.mesh"]
+
+source_file="res://assets/models/terrain/kit/cliff_01.obj"
+dest_files=["res://.godot/imported/cliff_01.obj-ed1001a4b252af769234e8301d397b57.mesh", "res://.godot/imported/cliff_01.obj-ed1001a4b252af769234e8301d397b57.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

@@ -48,11 +48,13 @@ func run() -> void:
 		if not check(planned.has(cell) and ground.terrain_cells[cell.y*500+cell.x] == 3,"Clearing affected unvisited or source cells"): return
 	# The saved tree batches are duplicated per match; crossed-cell patch instances disappear.
 	var visuals = game.get_node("Terrain").forest_state
-	var patch := Vector2i(destination.x/2,destination.y/2)
 	var hidden := 0
 	for part in range(visuals.batches.size()):
+		# Old patches stand for 2 x 2 cells; the landscape's single trees stand for one and are felled over time.
+		var patch := Vector2i(destination.x/visuals.patch_cells[part],destination.y/visuals.patch_cells[part])
 		for index in visuals.indices[part].get(patch,[]):
-			if not check(visuals.batches[part].multimesh.get_instance_transform(index).basis.determinant() == 0,"Cleared tree instance remains visible"): return
+			# The headless renderer keeps no instance data to read back, so the transform is only checked when rendering.
+			if not check(DisplayServer.get_name() == "headless" or visuals.batches[part].multimesh.get_instance_transform(index).basis.determinant() == 0,"Cleared tree instance remains visible"): return
 			hidden += 1
 	if not check((hidden > 0 or DisplayServer.get_name() == "headless") and ground._clearing_mask.get_pixel(destination.x,destination.y).r == 1,"Forest visuals did not update"): return
 	tank.free()

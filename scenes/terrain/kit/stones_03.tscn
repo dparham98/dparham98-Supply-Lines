@@ -1,0 +1,8 @@
+[gd_scene format=3]
+[ext_resource type="Mesh" path="res://assets/models/terrain/kit/stones_03.obj" id="mesh"]
+[ext_resource type="Material" path="res://assets/materials/terrain/landscape_rock.tres" id="material"]
+[node name="Stones03" type="Node3D"]
+[node name="Mesh" type="MeshInstance3D" parent="."]
+material_override = ExtResource("material")
+cast_shadow = 0
+mesh = ExtResource("mesh")

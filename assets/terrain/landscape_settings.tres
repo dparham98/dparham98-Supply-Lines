@@ -1,0 +1,64 @@
+[gd_resource type="Resource" script_class="LandscapeSettings" format=3]
+
+[ext_resource type="Script" path="res://scripts/terrain/landscape_settings.gd" id="script"]
+[ext_resource type="ArrayMesh" path="res://assets/models/terrain/landscape_ground.res" id="ground"]
+[ext_resource type="ArrayMesh" path="res://assets/models/terrain/landscape_water.res" id="water"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/cliff_01.tscn" id="cliff_01"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/ore_01.tscn" id="ore_01"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/ore_02.tscn" id="ore_02"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/ore_03.tscn" id="ore_03"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/log_01.tscn" id="log_01"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/mossy_rock_01.tscn" id="mossy_rock_01"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/tall_grass_01.tscn" id="tall_grass_01"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/tall_grass_02.tscn" id="tall_grass_02"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/cliff_02.tscn" id="cliff_02"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/cliff_03.tscn" id="cliff_03"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/boulder_01.tscn" id="boulder_01"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/boulder_02.tscn" id="boulder_02"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/boulder_03.tscn" id="boulder_03"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/stones_01.tscn" id="stones_01"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/stones_02.tscn" id="stones_02"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/stones_03.tscn" id="stones_03"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/shore_rock_01.tscn" id="shore_rock_01"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/shore_rock_02.tscn" id="shore_rock_02"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/reeds_01.tscn" id="reeds_01"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/reeds_02.tscn" id="reeds_02"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/bush_01.tscn" id="bush_01"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/bush_02.tscn" id="bush_02"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/dry_bush_01.tscn" id="dry_bush_01"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/dry_bush_02.tscn" id="dry_bush_02"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/tuft_01.tscn" id="tuft_01"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/tuft_02.tscn" id="tuft_02"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/dry_tuft_01.tscn" id="dry_tuft_01"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/dry_tuft_02.tscn" id="dry_tuft_02"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/flower_01.tscn" id="flower_01"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/flower_02.tscn" id="flower_02"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/flower_03.tscn" id="flower_03"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/conifer_01.tscn" id="conifer_01"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/conifer_02.tscn" id="conifer_02"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/conifer_03.tscn" id="conifer_03"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/broadleaf_01.tscn" id="broadleaf_01"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/broadleaf_02.tscn" id="broadleaf_02"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/broadleaf_03.tscn" id="broadleaf_03"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/fern_01.tscn" id="fern_01"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/fern_02.tscn" id="fern_02"]
+
+[resource]
+script = ExtResource("script")
+ground_mesh = ExtResource("ground")
+water_mesh = ExtResource("water")
+cliff_scenes = Array[PackedScene]([ExtResource("cliff_01"), ExtResource("cliff_02"), ExtResource("cliff_03")])
+boulder_scenes = Array[PackedScene]([ExtResource("boulder_01"), ExtResource("boulder_02"), ExtResource("boulder_03")])
+stone_scenes = Array[PackedScene]([ExtResource("stones_01"), ExtResource("stones_02"), ExtResource("stones_03")])
+shore_rock_scenes = Array[PackedScene]([ExtResource("shore_rock_01"), ExtResource("shore_rock_02")])
+reed_scenes = Array[PackedScene]([ExtResource("reeds_01"), ExtResource("reeds_02")])
+bush_scenes = Array[PackedScene]([ExtResource("bush_01"), ExtResource("bush_02")])
+dry_bush_scenes = Array[PackedScene]([ExtResource("dry_bush_01"), ExtResource("dry_bush_02")])
+tall_grass_scenes = Array[PackedScene]([ExtResource("tall_grass_01"), ExtResource("tall_grass_02")])
+tuft_scenes = Array[PackedScene]([ExtResource("tuft_01"), ExtResource("tuft_02")])
+dry_tuft_scenes = Array[PackedScene]([ExtResource("dry_tuft_01"), ExtResource("dry_tuft_02")])
+flower_scenes = Array[PackedScene]([ExtResource("flower_01"), ExtResource("flower_02"), ExtResource("flower_03")])
+conifer_scenes = Array[PackedScene]([ExtResource("conifer_01"), ExtResource("conifer_02"), ExtResource("conifer_03")])
+broadleaf_scenes = Array[PackedScene]([ExtResource("broadleaf_01"), ExtResource("broadleaf_02"), ExtResource("broadleaf_03")])
+ore_scenes = Array[PackedScene]([ExtResource("ore_01"), ExtResource("ore_02"), ExtResource("ore_03")])
+undergrowth_scenes = Array[PackedScene]([ExtResource("fern_01"), ExtResource("fern_02"), ExtResource("fern_01"), ExtResource("fern_02"), ExtResource("fern_01"), ExtResource("bush_02"), ExtResource("mossy_rock_01"), ExtResource("log_01")])

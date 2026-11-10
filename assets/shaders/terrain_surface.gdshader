@@ -34,6 +34,9 @@ uniform float breakup_strength = 0.55;
 // Gentle rolling relief lit by the sun, on grass and on desert.
 uniform float grass_relief = 0.5;
 uniform float desert_relief = 1.0;
+// Part of the map drawn by the sculpted landscape instead (docs/LANDSCAPE_LOOKDEV.md), as UV min and max. Set by
+// scripts/tools/build_landscape.gd; all zero draws the whole map here.
+uniform vec4 landscape_region = vec4(0.0);
 const float MAP_METRES = 500.0;
 const float BLEND_RANGE = 8.0;
 // All tiles of a set share their borders, so any variant can sit beside any other. UVs stay continuous
@@ -86,6 +89,7 @@ void ground_set(vec2 tile_uv, float first_layer, vec3 map_color, vec3 mean, floa
  albedo *= mix(vec3(1.0), clamp(large / max(average, vec3(0.01)), vec3(0.5), vec3(1.6)), breakup);
 }
 void fragment() {
+ if (UV.x > landscape_region.x && UV.y > landscape_region.y && UV.x < landscape_region.z && UV.y < landscape_region.w) { discard; }
  vec3 color = texture(surface_map, UV).rgb;
  float terrain = round(texture(category_map, UV).r * 255.0);
  vec3 normal_map = vec3(0.5, 0.5, 1.0);

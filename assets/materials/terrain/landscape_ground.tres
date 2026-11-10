@@ -1,0 +1,20 @@
+[gd_resource type="ShaderMaterial" load_steps=9 format=3]
+
+[ext_resource type="Shader" path="res://assets/shaders/landscape_ground.gdshader" id="1"]
+[ext_resource type="Texture2D" path="res://assets/maps/terrain_surface.png" id="2"]
+[ext_resource type="CompressedTexture2DArray" path="res://assets/textures/terrain/ground_tiles_albedo.png" id="3"]
+[ext_resource type="CompressedTexture2DArray" path="res://assets/textures/terrain/ground_tiles_normal.png" id="4"]
+[ext_resource type="Texture2D" path="res://assets/textures/terrain/ground_blend.png" id="5"]
+[ext_resource type="Texture2D" path="res://assets/textures/terrain/landscape_fields.res" id="6"]
+[ext_resource type="Texture2D" path="res://assets/textures/terrain/mountain_rock_detail.png" id="7"]
+[ext_resource type="Texture2D" path="res://assets/textures/terrain/mountain_rock_normal.png" id="8"]
+
+[resource]
+shader = ExtResource("1")
+shader_parameter/surface_map = ExtResource("2")
+shader_parameter/tile_albedo = ExtResource("3")
+shader_parameter/tile_normal = ExtResource("4")
+shader_parameter/ground_blend = ExtResource("5")
+shader_parameter/fields = ExtResource("6")
+shader_parameter/rock_detail = ExtResource("7")
+shader_parameter/rock_normal = ExtResource("8")

@@ -1,0 +1,7 @@
+[gd_scene format=3]
+[ext_resource type="Mesh" path="res://assets/models/terrain/kit/bush_02.obj" id="mesh"]
+[ext_resource type="Material" path="res://assets/materials/terrain/landscape_foliage.tres" id="material"]
+[node name="Bush02" type="Node3D"]
+[node name="Mesh" type="MeshInstance3D" parent="."]
+material_override = ExtResource("material")
+mesh = ExtResource("mesh")
