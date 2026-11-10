@@ -18,7 +18,6 @@ offset_top = 16.0
 offset_right = 16.0
 offset_bottom = 16.0
 mouse_filter = 0
-metadata/edge_pan_passthrough = true
 theme_override_styles/panel = SubResource("StyleBoxFlat_h1wg5")
 
 [node name="Contents" type="VBoxContainer" parent="Legend" unique_id=628844679]
