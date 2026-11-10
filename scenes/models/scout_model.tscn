@@ -1,6 +1,7 @@
 [gd_scene format=3]
 [ext_resource type="Script" path="res://scripts/components/character_animator.gd" id="animator"]
 [ext_resource type="PackedScene" path="res://assets/models/units/scout.glb" id="rig"]
+[ext_resource type="PackedScene" path="res://scenes/models/scout_death_fx.tscn" id="death_fx"]
 [sub_resource type="StandardMaterial3D" id="flash_hot"]
 shading_mode = 0
 albedo_color = Color(1,0.8,0.4,1)
@@ -19,6 +20,8 @@ shot_lead_time = 0.375
 flash_bone = &"flash"
 flash_light_path = NodePath("Rig/Skater rig/Skeleton3D/gun/Muzzle light")
 flash_light_energy = 2.0
+death_clip = &"die"
+death_fx_scene = ExtResource("death_fx")
 [node name="Rig" parent="." instance=ExtResource("rig")]
 transform = Transform3D(-1,0,0,0,1,0,0,0,-1,0,0,0)
 [node name="Muzzle light" parent="Rig/Skater rig/Skeleton3D/gun" index="0"]

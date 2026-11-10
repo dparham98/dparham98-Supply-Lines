@@ -535,7 +535,15 @@ func take_damage(amount: int) -> void:
 		remove_from_group("enemies")
 		died.emit(self)
 		game.unit_died(self)
+		_leave_corpse()
 		queue_free()
+## A model with a death clip stays behind to play it out. The unit itself is gone at once, so a
+## corpse cannot be selected, targeted or walked into.
+func _leave_corpse() -> void:
+	var model := $Visuals.get_node_or_null("Model")
+	if model == null or not model.has_method("has_death_clip") or not model.has_death_clip(): return
+	model.reparent(game)
+	model.play_death()
 func _exit_tree() -> void:
 	if is_instance_valid(ground):
 		for cell in _claimed.duplicate(): _release(cell)

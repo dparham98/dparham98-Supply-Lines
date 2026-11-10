@@ -2,6 +2,7 @@
 [ext_resource type="Script" path="res://scripts/components/character_animator.gd" id="animator"]
 [ext_resource type="PackedScene" path="res://assets/models/units/infantry.glb" id="rig"]
 [ext_resource type="Shader" path="res://assets/shaders/chainsaw_teeth.gdshader" id="teeth_shader"]
+[ext_resource type="PackedScene" path="res://scenes/models/infantry_death_fx.tscn" id="death_fx"]
 [sub_resource type="ShaderMaterial" id="teeth_material"]
 shader = ExtResource("teeth_shader")
 shader_parameter/albedo = Vector3(0.62, 0.64, 0.66)
@@ -26,6 +27,8 @@ flash_bone = &"flash"
 flash_light_path = NodePath("Rig/infantry_rig2/Skeleton3D/pistol/Muzzle light")
 flash_light_energy = 1.8
 teeth_path = NodePath("Rig/infantry_rig2/Skeleton3D/chainsaw/chainsaw_teeth_rig")
+death_clip = &"Die"
+death_fx_scene = ExtResource("death_fx")
 [node name="Rig" parent="." instance=ExtResource("rig")]
 transform = Transform3D(-1,0,0,0,1,0,0,0,-1,0,0,0)
 [node name="Muzzle light" parent="Rig/infantry_rig2/Skeleton3D/pistol" index="0"]
