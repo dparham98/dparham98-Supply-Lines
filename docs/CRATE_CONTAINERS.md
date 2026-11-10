@@ -1,5 +1,7 @@
 # Crate containers
 
+**Update:** packing, Refill on pickup, Shift-click unpacking and the Depot crate panel were replaced by manifests. See `CRATE_MANIFESTS.md`. The rest of this page still describes crates on the map.
+
 These replace the crate reservation described in `CRATE_SHIPMENTS.md`. The user asked for crates as clearly independent containers on the map. Work is on branch `feature/crate-containers`, cut from `fix/playtest-feedback` (PR #14). The numbers are editable prototypes.
 
 ## Rules

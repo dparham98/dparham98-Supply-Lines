@@ -69,19 +69,6 @@ func run() -> void:
 	await process_frame
 	first.command_unload(game.depot)
 	if not check(run_until(first,func(): return first.order == "idle",40) and first.crates.is_empty() and first.order_queue.is_empty(),"Repeat trip returned to a destroyed pickup Depot"): return
-	await fixture(MAP)
-	game.depot.iron = 100
-	for i in range(3): CrateYard.pack(game.depot,&"iron")
-	game.depot.stockpile.refill = true
-	game.depot.stockpile.set_target(&"iron",3)
-	select(null,game.depot)
-	hud.unpack_pip(0,true)
-	if not check(CrateYard.count_beside(game.depot,&"iron") == 2 and game.depot.stockpile.refill_targets[&"iron"] == 2,"Unpacking one crate decremented the Refill target twice"): return
-	# Simulate pickup and require the remaining target to be restored.
-	CrateYard.beside(game.depot)[0].queue_free()
-	game.depot.iron = 100
-	CrateYard.restock(game.depot)
-	if not check(CrateYard.count_beside(game.depot,&"iron") == 2 and game.depot.iron == 75,"Refill did not replace the next picked-up crate"): return
 	# Both owner types must reject a full yard without withdrawing loose stock.
 	for mobile in [false,true]:
 		await fixture(MAP)
@@ -90,8 +77,6 @@ func run() -> void:
 		block_yard(owner_node)
 		var before: int = owner_node.stockpile.amount(&"iron")
 		if not check(CrateYard.pack(owner_node,&"iron") == null and CrateYard.pack_empty(owner_node) == null,"Packing escaped a blocked yard radius"): return
-		owner_node.stockpile.refill = true; owner_node.stockpile.set_target(&"iron",1)
-		for i in range(4): CrateYard.restock(owner_node)
-		if not check(owner_node.stockpile.amount(&"iron") == before and get_nodes_in_group("supply_crates").is_empty(),"Refill drained a blocked yard into out-of-range crates"): return
+		if not check(owner_node.stockpile.amount(&"iron") == before and get_nodes_in_group("supply_crates").is_empty(),"A blocked yard lost stock or made crates"): return
 	print("CRATE_LIFECYCLE_TEST_PASSED")
 	quit(0)

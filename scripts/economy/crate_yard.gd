@@ -52,7 +52,7 @@ static func spawn(tree: SceneTree, cell: Vector2i, kind: StringName, amount: int
 	crate.position = tree.get_first_node_in_group("terrain_grid").tile_to_world(cell)
 	parent.add_child(crate,true)
 	return crate
-## Packs one full crate of `kind` from the node's loose stock onto a free tile beside it.
+## Sets one full crate of `kind` from the node's loose stock onto a free tile beside it.
 static func pack(node: Node3D, kind: StringName) -> Node3D:
 	if node.stockpile.amount(kind) < ResourceStockpile.CRATE: return null
 	return _place(node,kind,ResourceStockpile.CRATE)
@@ -64,25 +64,6 @@ static func _place(node: Node3D, kind: StringName, amount: int) -> Node3D:
 	if cell == null: return null
 	if amount > 0: node.stockpile.withdraw(kind,amount)
 	return spawn(node.get_tree(),cell,kind,amount,node.team)
-## Packs until `target` crates of `kind` are beside the node; returns how many it packed.
-static func pack_to(node: Node3D, kind: StringName, target: int) -> int:
-	var packed := 0
-	var count := count_beside(node,kind)
-	while count < target and pack(node,kind) != null:
-		count += 1; packed += 1
-	return packed
-## Empties the nearest crate of `kind` beside the node into its storage; returns the units moved.
-static func unpack(node: Node3D, kind: StringName) -> int:
-	for crate in beside(node):
-		if crate.resource_kind == kind and crate.amount > 0: return unpack_crate(node,crate)
-	return 0
-## Empties one crate into the node's storage as far as space allows; an emptied crate is removed.
-static func unpack_crate(node: Node3D, crate: Node3D) -> int:
-	if crate.amount == 0: return 0
-	var moved: int = node.stockpile.deposit(crate.resource_kind,crate.amount)
-	crate.extract(moved)
-	if crate.amount == 0: crate.queue_free()
-	return moved
 ## Crate contents as {kind, amount}, grouped by resource for pip rows.
 static func contents(crates: Array) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
@@ -92,8 +73,3 @@ static func contents(crates: Array) -> Array[Dictionary]:
 		var kb := ResourceStockpile.KINDS.find(b.kind)
 		return a.amount > b.amount if ka == kb else (ka >= 0 and (kb < 0 or ka < kb)))
 	return result
-## Refill after pickup: repack crates beside the node up to its targets while loose stock allows.
-static func restock(node: Node3D) -> void:
-	var stockpile: ResourceStockpile = node.stockpile
-	if not stockpile.refill: return
-	for kind in stockpile.refill_targets: pack_to(node,kind,stockpile.refill_targets[kind])

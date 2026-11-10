@@ -267,6 +267,12 @@ func issue_card_order(screen: Vector2, queued := false) -> void:
 		if is_instance_valid(target): hud.pick_stop(target,queued)
 		else: notify("Click a friendly Depot or deployed Cargo truck to pin it.")
 		return
+	# Assign: the Depot whose stock a selected Generator burns.
+	if pending_unit_command == "assign_depot":
+		target = pick_target(screen,"depots",50)
+		if is_instance_valid(target): hud.pick_stop(target,queued)
+		else: notify("Click a friendly Depot that covers this Generator.")
+		return
 	if pending_unit_command == "attack":
 		target = pick_target(screen,"enemies")
 		if target == null:

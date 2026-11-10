@@ -86,7 +86,6 @@ func request_infantry() -> bool:
 	game.notify("Depots grant one Infantry on establishment. Produce additional Infantry at Barracks.")
 	return false
 func _process(delta: float) -> void:
-	CrateYard.restock(self)
 	update_capture(delta)
 	try_construction_infantry()
 	if queue <= 0: progress = 0; $Progress.text = "%s DEPOT · E %d / I %d · capture %d%%" % [team,energy,iron,roundi(capture_progress/rules.capture_seconds*100)]; return
