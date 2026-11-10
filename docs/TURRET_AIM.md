@@ -22,3 +22,13 @@ The Tank's turret turns toward whatever the tank is shooting at and swings gentl
 - `scenes/gameplay/tank_shell.tscn` is the shell, `projectile_scene` on `tank.tscn`. It flies at 20 m/s and stops on the near face of the target body (`_shot_end` in `unit_agent.gd`). Damage still lands when the gun fires, so a target killed by the shot has its impact appear after it is gone.
 - Tank `attack_range` is 10 (was 5). The barrel tip is about 4.3 m from the centre of the Tank, so at 5 the shell had almost no flight. This is longer than the Tank vision of 7 and any other unit range, and is provisional until playtested.
 - Check: `tests/tank_fire_test.gd` (headless).
+
+## Death
+
+A dead tank plays one of the three effects in `death_scenes` on `scenes/models/tank_model.tscn`, picked at random. The unit leaves the game at once and only the model stays behind, as with the Infantry and Scout, so a wreck cannot be selected, targeted or block anything.
+
+- `tank_death_cookoff.tscn` (6 s): a moment of sparks, then the magazine goes. The turret is thrown clear and the charred hull burns in a spreading oil pool, with two smaller explosions.
+- `tank_death_bleed.tscn` (5.5 s): the left track snaps and whips out behind. The hull lists onto its bare wheels, the gun droops and oil pumps from five wounds.
+- `tank_death_overload.tscn` (5 s): blue arcs crawl over the tank while the turret spins out of control, then the core blows both hatches off.
+
+`assets/models/units/tank.glb` must not be re-exported to carry clips, because the track shader depends on its vertex order. Instead each effect's GLB holds stand-in nodes keyed in Blender, and `scripts/components/tank_death.gd` copies `Drive_Hull`, `Drive_Turret` and `Drive_Mount` onto the real nodes every frame. `Drive_Light`, `Drive_Scorch` and `Drive_Hide` carry a number in their keyed scale: light strength, how burnt the tank looks, and the moment `hide_parts` come off. `turret_release` sets when the turret stops keeping its aim and takes the authored pose; effects mounted on `Drive_Turret` are only correct after that, so the bleed-out, which never releases, mounts nothing there.

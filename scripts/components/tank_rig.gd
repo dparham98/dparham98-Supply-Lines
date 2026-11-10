@@ -21,6 +21,9 @@ extends "res://scripts/components/turret_aim.gd"
 @export_range(0,10,0.1) var rock_degrees := 1.1
 @export_range(0.5,10,0.1) var rock_hertz := 2.6
 @export_range(0,20,0.1) var rock_damping := 4.5
+## The ways this tank can die, one picked at random (scenes/models/tank_death_*.tscn).
+@export var death_scenes: Array[PackedScene] = []
+var _dying := false
 var _since_fire := INF
 var _rock_axis := Vector3.RIGHT
 var _speed := 0.0
@@ -64,6 +67,20 @@ func set_drive(speed: float, turn: float, _delta: float) -> void:
 	if absf(turn) > 0.0005:
 		_pivot = signf(turn)*pivot_speed
 		_pivot_left = pivot_hold
+func has_death_clip() -> bool:
+	return not death_scenes.is_empty()
+func dying() -> bool:
+	return _dying
+## The wreck plays out on its own from here; the effect removes this model when it ends.
+func play_death() -> void:
+	_dying = true
+	_since_fire = INF
+	_barrel.position = _barrel_rest
+	_hull.transform.basis = _hull_rest
+	# The scorch overlay is drawn on the authored mesh, so the running gear has to be back in that pose.
+	_apply("L",0.0)
+	_apply("R",0.0)
+	add_child(death_scenes.pick_random().instantiate())
 func set_hatches(_open: bool) -> void: pass
 func set_load(_fraction: float) -> void: pass
 func driving() -> bool:
@@ -74,6 +91,7 @@ func track_travel_right() -> float: return _travel_right
 ## Fraction of a link pitch for a travel distance: 0 is the authored pose.
 func link_phase(travel: float) -> float: return fposmod(travel/link_pitch,1.0)
 func _process(delta: float) -> void:
+	if _dying: return
 	super._process(delta)
 	_recoil(delta)
 	_pivot_left -= delta
