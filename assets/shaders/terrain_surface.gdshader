@@ -43,16 +43,20 @@ float tile_layer(vec2 tile_uv, float first_layer) {
  if (pick < feature_share) { return first_layer + 2.0 + floor(pick / feature_share * 2.0); }
  return first_layer + floor((pick - feature_share) / (1.0 - feature_share) * 2.0);
 }
-float hash(vec2 p) {
- vec3 q = fract(vec3(p.xyx) * 0.1031);
- q += dot(q, q.yzx + 33.33);
- return fract((q.x + q.y) * q.z);
+// Whole-number hash. Both cells that share a grid corner must get exactly the same value for it. A float hash
+// amplifies rounding differences until they do not, which draws a straight seam along the cell edge.
+float hash(ivec2 p) {
+ uint h = uint(p.x) * 1597334677u + uint(p.y) * 3812015801u;
+ h = (h ^ (h >> 15u)) * 2246822519u;
+ h = (h ^ (h >> 13u)) * 3266489917u;
+ h = h ^ (h >> 16u);
+ return float(h) / 4294967295.0;
 }
 float value_noise(vec2 p) {
- vec2 cell = floor(p);
+ ivec2 cell = ivec2(floor(p));
  vec2 f = fract(p);
  f = f * f * (3.0 - 2.0 * f);
- return mix(mix(hash(cell), hash(cell + vec2(1.0, 0.0)), f.x), mix(hash(cell + vec2(0.0, 1.0)), hash(cell + vec2(1.0, 1.0)), f.x), f.y);
+ return mix(mix(hash(cell), hash(cell + ivec2(1, 0)), f.x), mix(hash(cell + ivec2(0, 1)), hash(cell + ivec2(1, 1)), f.x), f.y);
 }
 // Layered noise in the range 0-1. Each layer is turned so no grid shows.
 float layered_noise(vec2 p, int layers) {
