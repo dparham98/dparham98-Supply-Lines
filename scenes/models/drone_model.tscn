@@ -1,0 +1,13 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/components/character_animator.gd" id="animator"]
+[ext_resource type="PackedScene" path="res://assets/models/units/drone.glb" id="rig"]
+[ext_resource type="PackedScene" path="res://scenes/models/drone_death_fx.tscn" id="death_fx"]
+[node name="DroneModel" type="Node3D"]
+script = ExtResource("animator")
+player_path = NodePath("Rig/AnimationPlayer")
+run_reference_speed = 6.0
+blend_time = 0.35
+death_clip = &"Die"
+death_fx_scene = ExtResource("death_fx")
+[node name="Rig" parent="." instance=ExtResource("rig")]
+transform = Transform3D(-1,0,0,0,1,0,0,0,-1,0,0,0)
