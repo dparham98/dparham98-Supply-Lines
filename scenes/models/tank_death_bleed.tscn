@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/tank_death.gd" id="death"]
+[ext_resource type="PackedScene" path="res://assets/models/effects/tank_death_bleed.glb" id="model"]
+[ext_resource type="Material" path="res://assets/materials/tank_scorch.tres" id="scorch"]
+
+[node name="TankDeathBleed" type="Node3D"]
+script = ExtResource("death")
+scorch_material = ExtResource("scorch")
+hide_parts = Array[NodePath]([NodePath("Tank/Tank_Root/Tank_Hull/Track_Links_L")])
+clip = &"Death"
+flash_path = NodePath("Model/Drive_Light")
+light_path = NodePath("Light")
+light_energy = 1.2
+one_shot = true
+
+[node name="Model" parent="." instance=ExtResource("model")]
+transform = Transform3D(-0.6,0,0,0,0.6,0,0,0,-0.6,0,0,0)
+
+[node name="Light" type="OmniLight3D" parent="."]
+transform = Transform3D(1,0,0,0,1,0,0,0,1,-1.5,1.2,0)
+visible = false
+light_color = Color(1,0.88,0.68,1)
+omni_range = 7.0
+omni_attenuation = 1.0
