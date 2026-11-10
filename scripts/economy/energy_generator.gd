@@ -33,6 +33,16 @@ func output_rate() -> float:
 	if not active(): return 0.0
 	var kind := cycle_kind if not cycle_kind.is_empty() else choose_fuel()
 	return float(cycle_output)/cycle_seconds if not cycle_kind.is_empty() else float(fuel_rules.output(kind))/fuel_rules.seconds(kind)
+## The fuel its Depot holds for the current setting and how long that burns, for the HUD.
+func fuel_left_text() -> String:
+	if not source_valid(): return "No Depot"
+	var parts: Array[String] = []
+	var seconds := 0.0
+	for kind in ([&"wood",&"coal"] if fuel_preference == "either" else [StringName(fuel_preference)]):
+		var amount: int = assigned_depot.stockpile.amount(kind)
+		parts.append("%d %s" % [amount,kind])
+		seconds += amount*fuel_rules.seconds(kind)
+	return "%s · %ds" % [" + ".join(parts),roundi(seconds)]
 func cycle_ready() -> bool:
 	return source_valid() and assigned_depot.stockpile.amount(cycle_kind) >= 1 and assigned_depot.stockpile.space() >= cycle_output
 func describe_state() -> String:

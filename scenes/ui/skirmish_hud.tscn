@@ -50,6 +50,15 @@
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_rail.png" id="card_build_rail"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_pin_payer.png" id="card_pin_payer"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_back.png" id="card_build_back"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_crate_resource_iron.png" id="card_crate_resource_iron"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_crate_resource_energy.png" id="card_crate_resource_energy"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_crate_resource_wood.png" id="card_crate_resource_wood"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_crate_resource_coal.png" id="card_crate_resource_coal"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_create_empty_crate.png" id="card_create_empty_crate"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_generator_fuel_wood.png" id="card_generator_fuel_wood"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_generator_fuel_coal.png" id="card_generator_fuel_coal"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_generator_fuel_either.png" id="card_generator_fuel_either"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_assigned_depot.png" id="card_assigned_depot"]
 [sub_resource type="StyleBoxFlat" id="panel"]
 bg_color = Color(0.068,0.077,0.066,0.98)
 border_width_top = 2
@@ -267,6 +276,34 @@ events = [SubResource("key_produce_train")]
 action = &"produce_ubermech"
 [sub_resource type="Shortcut" id="shortcut_produce_ubermech"]
 events = [SubResource("key_produce_ubermech")]
+[sub_resource type="InputEventAction" id="key_resource_iron"]
+action = &"resource_iron"
+[sub_resource type="Shortcut" id="shortcut_resource_iron"]
+events = [SubResource("key_resource_iron")]
+[sub_resource type="InputEventAction" id="key_resource_energy"]
+action = &"resource_energy"
+[sub_resource type="Shortcut" id="shortcut_resource_energy"]
+events = [SubResource("key_resource_energy")]
+[sub_resource type="InputEventAction" id="key_resource_wood"]
+action = &"resource_wood"
+[sub_resource type="Shortcut" id="shortcut_resource_wood"]
+events = [SubResource("key_resource_wood")]
+[sub_resource type="InputEventAction" id="key_resource_coal"]
+action = &"resource_coal"
+[sub_resource type="Shortcut" id="shortcut_resource_coal"]
+events = [SubResource("key_resource_coal")]
+[sub_resource type="InputEventAction" id="key_command_empty_crate"]
+action = &"command_empty_crate"
+[sub_resource type="Shortcut" id="shortcut_command_empty_crate"]
+events = [SubResource("key_command_empty_crate")]
+[sub_resource type="InputEventAction" id="key_command_burn_either"]
+action = &"command_burn_either"
+[sub_resource type="Shortcut" id="shortcut_command_burn_either"]
+events = [SubResource("key_command_burn_either")]
+[sub_resource type="InputEventAction" id="key_command_assign_depot"]
+action = &"command_assign_depot"
+[sub_resource type="Shortcut" id="shortcut_command_assign_depot"]
+events = [SubResource("key_command_assign_depot")]
 [node name="Interface" type="CanvasLayer"]
 process_mode = 3
 script = ExtResource("hud")
@@ -629,18 +666,6 @@ custom_minimum_size = Vector2(250,0)
 layout_mode = 2
 size_flags_horizontal = 0
 theme_override_constants/separation = 5
-[node name="GeneratorMode" type="OptionButton" parent="Bottom/Body/Row/Context"]
-layout_mode = 2
-visible = false
-item_count = 3
-popup/item_0/text = "Burn wood"
-popup/item_0/id = 0
-popup/item_1/text = "Burn coal"
-popup/item_1/id = 1
-popup/item_2/text = "Either · wood first"
-popup/item_2/id = 2
-fit_to_longest_item = false
-clip_text = true
 [node name="AssignedSource" type="OptionButton" parent="Bottom/Body/Row/Context"]
 layout_mode = 2
 visible = false
@@ -668,87 +693,31 @@ layout_mode = 2
 show_percentage = false
 theme_override_styles/background = SubResource("bar_background")
 theme_override_styles/fill = SubResource("progress_fill")
-[node name="Shipment" type="VBoxContainer" parent="Bottom/Body/Row/Context"]
+[node name="Manifest" type="VBoxContainer" parent="Bottom/Body/Row/Context"]
 layout_mode = 2
 visible = false
 theme_override_constants/separation = 3
-[node name="Head" type="HBoxContainer" parent="Bottom/Body/Row/Context/Shipment"]
+[node name="Head" type="HBoxContainer" parent="Bottom/Body/Row/Context/Manifest"]
 layout_mode = 2
-[node name="Label" type="Label" parent="Bottom/Body/Row/Context/Shipment/Head"]
+[node name="Label" type="Label" parent="Bottom/Body/Row/Context/Manifest/Head"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Crates beside"
+text = "Load manifest"
 theme_override_colors/font_color = Color(0.72,0.69,0.59,1)
 theme_override_font_sizes/font_size = 12
-[node name="Value" type="Label" parent="Bottom/Body/Row/Context/Shipment/Head"]
+[node name="Value" type="Label" parent="Bottom/Body/Row/Context/Manifest/Head"]
 layout_mode = 2
 text = "crate = 25"
 theme_override_font_sizes/font_size = 12
-[node name="Pips" parent="Bottom/Body/Row/Context/Shipment" instance=ExtResource("crate_pips")]
+[node name="Pips" parent="Bottom/Body/Row/Context/Manifest" instance=ExtResource("crate_pips")]
 layout_mode = 2
 clickable = true
-[node name="Pack" type="HBoxContainer" parent="Bottom/Body/Row/Context/Shipment"]
+[node name="Hint" type="Label" parent="Bottom/Body/Row/Context/Manifest"]
 layout_mode = 2
-theme_override_constants/separation = 3
-[node name="Kind" type="OptionButton" parent="Bottom/Body/Row/Context/Shipment/Pack"]
-custom_minimum_size = Vector2(70,24)
-clip_text = true
-fit_to_longest_item = false
-layout_mode = 2
-focus_mode = 0
+autowrap_mode = 3
 theme_override_font_sizes/font_size = 12
-tooltip_text = "Resource to pack"
-item_count = 4
-selected = 1
-popup/item_0/text = "Energy"
-popup/item_0/id = 0
-popup/item_1/text = "Iron"
-popup/item_1/id = 1
-popup/item_2/text = "Wood"
-popup/item_2/id = 2
-popup/item_3/text = "Coal"
-popup/item_3/id = 3
-[node name="One" type="Button" parent="Bottom/Body/Row/Context/Shipment/Pack"]
-custom_minimum_size = Vector2(24,24)
-layout_mode = 2
-focus_mode = 0
-theme_override_font_sizes/font_size = 12
-text = "+1"
-tooltip_text = "Pack one crate (25 loose units) beside this stockpile"
-[node name="Truckload" type="Button" parent="Bottom/Body/Row/Context/Shipment/Pack"]
-custom_minimum_size = Vector2(0,24)
-clip_text = true
-layout_mode = 2
-size_flags_horizontal = 3
-focus_mode = 0
-theme_override_font_sizes/font_size = 12
-text = "Truck"
-tooltip_text = "Truckload: pack until 4 crates of this resource are beside it (one Cargo truck)"
-[node name="Trainload" type="Button" parent="Bottom/Body/Row/Context/Shipment/Pack"]
-custom_minimum_size = Vector2(0,24)
-clip_text = true
-layout_mode = 2
-size_flags_horizontal = 3
-focus_mode = 0
-theme_override_font_sizes/font_size = 12
-text = "Train"
-tooltip_text = "Trainload: pack until 12 crates of this resource are beside it (one Train)"
-[node name="Foot" type="HBoxContainer" parent="Bottom/Body/Row/Context/Shipment"]
-layout_mode = 2
-theme_override_constants/separation = 4
-[node name="Refill" type="CheckButton" parent="Bottom/Body/Row/Context/Shipment/Foot"]
-layout_mode = 2
-size_flags_horizontal = 3
-focus_mode = 0
-text = "Refill on pickup"
-theme_override_font_sizes/font_size = 12
-tooltip_text = "On: repack the crates beside it to these counts each time vehicles collect them. Off: leave the space empty."
-[node name="EmptyCrate" type="Button" parent="Bottom/Body/Row/Context/Shipment/Foot"]
-layout_mode = 2
-focus_mode = 0
-text = "+ Empty"
-theme_override_font_sizes/font_size = 12
-tooltip_text = "Set down an empty crate beside this stockpile for workers to fill"
+theme_override_colors/font_color = Color(0.72,0.69,0.59,1)
+text = "Add crates, then left-click a Depot on the map or minimap. Click a crate to pick it up instead. Shift queues."
 [node name="Route" type="HBoxContainer" parent="Bottom/Body/Row/Context"]
 layout_mode = 2
 visible = false
@@ -1687,17 +1656,268 @@ horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
+[node name="EmptyCrate" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+tooltip_text = "Sets down an empty crate beside this Depot for workers to fill."
+shortcut = SubResource("shortcut_command_empty_crate")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_create_empty_crate")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/EmptyCrate"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="BurnWood" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+tooltip_text = "1 wood makes 10 energy in 2 seconds."
+shortcut = SubResource("shortcut_resource_wood")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_generator_fuel_wood")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/BurnWood"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="BurnCoal" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+tooltip_text = "1 coal makes 50 energy in 5 seconds."
+shortcut = SubResource("shortcut_resource_coal")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_generator_fuel_coal")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/BurnCoal"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="BurnEither" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+tooltip_text = "Burns wood while the Depot has it, then coal."
+shortcut = SubResource("shortcut_command_burn_either")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_generator_fuel_either")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/BurnEither"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="AssignDepot" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+tooltip_text = "Pick the Depot whose fuel this Generator burns and whose storage it fills."
+shortcut = SubResource("shortcut_command_assign_depot")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_assigned_depot")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/AssignDepot"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="Pick" type="VBoxContainer" parent="Bottom/Body/Row/Commands"]
 visible = false
 custom_minimum_size = Vector2(196,146)
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 4
 [node name="Prompt" type="Label" parent="Bottom/Body/Row/Commands/Pick"]
 custom_minimum_size = Vector2(196,0)
 layout_mode = 2
 autowrap_mode = 3
 theme_override_font_sizes/font_size = 12
 text = "Left-click a Depot on the map or minimap."
+[node name="LoadTiles" type="GridContainer" parent="Bottom/Body/Row/Commands/Pick"]
+layout_mode = 2
+visible = false
+columns = 4
+theme_override_constants/h_separation = 4
+theme_override_constants/v_separation = 4
+[node name="Iron" type="Button" parent="Bottom/Body/Row/Commands/Pick/LoadTiles"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_resource_iron")
+layout_mode = 2
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("card_crate_resource_iron")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Pick/LoadTiles/Iron"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -34.0
+offset_top = 1.0
+offset_right = -4.0
+offset_bottom = 15.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="Energy" type="Button" parent="Bottom/Body/Row/Commands/Pick/LoadTiles"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_resource_energy")
+layout_mode = 2
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("card_crate_resource_energy")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Pick/LoadTiles/Energy"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -34.0
+offset_top = 1.0
+offset_right = -4.0
+offset_bottom = 15.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="Wood" type="Button" parent="Bottom/Body/Row/Commands/Pick/LoadTiles"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_resource_wood")
+layout_mode = 2
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("card_crate_resource_wood")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Pick/LoadTiles/Wood"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -34.0
+offset_top = 1.0
+offset_right = -4.0
+offset_bottom = 15.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="Coal" type="Button" parent="Bottom/Body/Row/Commands/Pick/LoadTiles"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_resource_coal")
+layout_mode = 2
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("card_crate_resource_coal")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Pick/LoadTiles/Coal"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -34.0
+offset_top = 1.0
+offset_right = -4.0
+offset_bottom = 15.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="Clear" type="Button" parent="Bottom/Body/Row/Commands/Pick/LoadTiles"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_command_cancel")
+layout_mode = 2
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("card_create_empty_crate")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Pick/LoadTiles/Clear"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -34.0
+offset_top = 1.0
+offset_right = -4.0
+offset_bottom = 15.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="Cancel" type="Button" parent="Bottom/Body/Row/Commands/Pick"]
 theme_type_variation = &"CommandCard"
 shortcut = SubResource("shortcut_build_back")

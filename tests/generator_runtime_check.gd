@@ -75,14 +75,14 @@ func run() -> void:
 	generator.reset_cycle(); depot.energy = 500; depot.wood = 20; depot.coal = 10
 	focus(generator.global_position,60)
 	await click_at(target(generator))
-	if not check(hud.shown == generator and hud.context.get_node("GeneratorMode").visible,"Generator fuel HUD selection failed"): return
+	if not check(hud.shown == generator and hud.card.get_node("BurnWood").visible and not hud.context.get_node("AssignedSource").visible,"Generator fuel tiles not shown"): return
 	await shot("generator_wood")
-	await choose(hud.context.get_node("GeneratorMode"),1)
-	if not check(generator.fuel_preference == "coal","Coal popup selection failed"): return
+	await click(hud.card.get_node("BurnCoal"))
+	if not check(generator.fuel_preference == "coal","Burn Coal tile failed"): return
 	generator._process(4)
 	if not check(depot.energy == 500 and depot.coal == 10 and generator.cycle_kind == &"coal" and generator.cycle_elapsed == 4,"Coal cycle produced early"): return
 	await shot("generator_coal")
-	await choose(hud.context.get_node("GeneratorMode"),0)
+	await click(hud.card.get_node("BurnWood"))
 	await click(hud.card.get_node("ToggleGenerator"))
 	generator._process(100)
 	if not check(not generator.enabled and generator.cycle_elapsed == 4 and depot.coal == 10,"Pause GUI consumed fuel or progressed"): return
@@ -91,8 +91,8 @@ func run() -> void:
 	if not check(generator.enabled and depot.energy == 550 and depot.coal == 9 and depot.wood == 20,"Resume GUI lost the pending coal cycle"): return
 	generator._process(2)
 	if not check(depot.energy == 560 and depot.wood == 19,"Wood preference did not apply next cycle"): return
-	await choose(hud.context.get_node("GeneratorMode"),2)
-	if not check(generator.fuel_preference == "either","Either popup failed"): return
+	await click(hud.card.get_node("BurnEither"))
+	if not check(generator.fuel_preference == "either","Burn Either tile failed"): return
 	depot.wood = 0; depot.coal = 1; generator._process(5)
 	if not check(depot.energy == 610 and depot.coal == 0,"Either did not use available coal"): return
 	generator._process(100)
@@ -106,8 +106,10 @@ func run() -> void:
 	if not check(depot.stockpile.space() == 1 and depot.wood == 0,"Freed storage did not accept full output"): return
 	var other = game.get_node("Entities/Buildings/EastDepot")
 	# Move the camera only; source assignment remains an explicit HUD choice.
-	await choose(hud.context.get_node("AssignedSource"),hud.assignment_sources.find(other))
-	if not check(generator.assigned_depot == other,"Generator operating Depot popup failed"): return
+	await click(hud.card.get_node("AssignDepot"))
+	if not check(game.pending_unit_command == "assign_depot" and hud.pick.visible and hud.pick_stops().has(other) and hud.pick_stops().has(depot),"Assign Depot prompt missing"): return
+	hud.pick_stop(other)
+	if not check(generator.assigned_depot == other,"Assign Depot tile failed"): return
 	other.wood = 1; var old: int = depot.energy; var old_other: int = other.energy
 	generator._process(2)
 	if not check(depot.energy == old and other.energy == old_other+10 and other.wood == 0,"Generator assignment charged wrong stockpile"): return

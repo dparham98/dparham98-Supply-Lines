@@ -12,8 +12,6 @@ var _amounts: Dictionary = {}
 const CRATE := 25
 var reserved := 0
 ## Refill after pickup: the owner repacks crates beside it up to these counts while loose stock allows.
-var refill := false
-var refill_targets := {}
 func _init(limit: int = 2000) -> void:
 	capacity = maxi(1,limit)
 	for kind in KINDS: _amounts[kind] = 0
@@ -30,8 +28,6 @@ func resize(limit: int) -> bool:
 func set_amount(kind: StringName, value: int) -> void:
 	if not KINDS.has(kind): return
 	_amounts[kind] = clampi(value,0,space()+amount(kind))
-func set_target(kind: StringName, count: int) -> void:
-	refill_targets[kind] = maxi(0,count)
 func deposit(kind: StringName, requested: int) -> int:
 	if not KINDS.has(kind) or requested <= 0: return 0
 	var accepted := mini(requested,space())

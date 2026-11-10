@@ -171,7 +171,37 @@ var job_target: Node3D
 var _job_requires_target := false
 var job_point := Vector3.ZERO
 var _trip_pickup := {}
+## Crates of each resource to carry, {kind: count} (docs/CRATE_MANIFESTS.md). It stays on the vehicle,
+## so every repeat trip loads the same mix.
+var manifest := {}
 func crate_slots() -> int: return stockpile.capacity/ResourceStockpile.CRATE
+func manifest_total() -> int:
+	var total := 0
+	for kind in manifest: total += manifest[kind]
+	return total
+func manifest_add(kind: StringName) -> bool:
+	if manifest_total() >= crate_slots(): return false
+	manifest[kind] = manifest.get(kind,0)+1
+	return true
+## Gives every free slot to this resource; false when there are none.
+func manifest_fill(kind: StringName) -> bool:
+	var free := crate_slots()-manifest_total()
+	if free <= 0: return false
+	manifest[kind] = manifest.get(kind,0)+free
+	return true
+func manifest_text() -> String:
+	var parts: Array[String] = []
+	for kind in ResourceStockpile.KINDS:
+		if manifest.get(kind,0) > 0: parts.append("%d %s" % [manifest[kind],kind])
+	return " · ".join(parts)
+## Crates still to load, {kind: count}. Crates already aboard count, so a partly unloaded crate is not doubled.
+func manifest_missing() -> Dictionary:
+	var missing := manifest.duplicate()
+	for crate in crates:
+		if missing.get(crate.kind,0) > 0: missing[crate.kind] -= 1
+	return missing
+func _has_crate_slot() -> bool:
+	return crates.size() < crate_slots() and stockpile.space() >= ResourceStockpile.CRATE
 func crate_units(kind: StringName = &"") -> int:
 	var total := 0
 	for crate in crates:
@@ -206,7 +236,7 @@ func command_unload(node: Node3D = null, point = null) -> void:
 func _start_job(kind: String, node: Node3D, point = null) -> void:
 	if _crate_stop(node) and kind == "unload": point = node.global_position; node = null
 	if not stop_valid(kind,node,point):
-		game.notify("Trains load and unload at friendly Depots." if is_in_group("rail_trains") else ("Choose a crate, or a Depot with crates beside it." if kind == "load" else "Choose a Depot, a deployed Cargo vehicle, or open ground."))
+		game.notify("Trains load and unload at friendly Depots." if is_in_group("rail_trains") else ("Choose a crate or a Depot." if kind == "load" else "Choose a Depot, a deployed Cargo vehicle, or open ground."))
 		return
 	pack_supplies()
 	cancel_supply_route()
@@ -263,7 +293,36 @@ func pickup_crates(node: Node3D, point: Vector3) -> Array[Node3D]:
 	for crate in CrateYard.crates_near(get_tree(),point,CrateYard.CLUSTER_RADIUS,team):
 		if crate != node and crate.amount > 0: result.append(crate)
 	return result
+## Tops up to the manifest at a Depot or deployed vehicle. Crates set down beside it go first, then
+## full crates are made from its stock. A shortage leaves the slot empty rather than changing the mix.
+func _load_manifest(node: Node3D) -> int:
+	var count := 0
+	var missing := manifest_missing()
+	for kind in ResourceStockpile.KINDS:
+		var need: int = missing.get(kind,0)
+		for crate in CrateYard.beside(node):
+			if need <= 0 or not _has_crate_slot(): break
+			if crate.resource_kind != kind or crate.amount <= 0: continue
+			crates.append({kind = kind, amount = crate.amount})
+			_sync_reserved()
+			crate.queue_free()
+			need -= 1; count += 1
+		while need > 0 and _has_crate_slot() and node.stockpile.amount(kind) >= ResourceStockpile.CRATE:
+			node.stockpile.withdraw(kind,ResourceStockpile.CRATE)
+			crates.append({kind = kind, amount = ResourceStockpile.CRATE})
+			_sync_reserved()
+			need -= 1; count += 1
+	return count
+## Whether a Load at this stop would find anything to take.
+func pickup_possible(node: Node3D, point: Vector3) -> bool:
+	if not shipment_endpoint(node) or manifest.is_empty(): return not pickup_crates(node,point).is_empty()
+	var missing := manifest_missing()
+	for kind in missing:
+		if missing[kind] <= 0: continue
+		if node.stockpile.amount(kind) >= ResourceStockpile.CRATE or CrateYard.count_beside(node,kind) > 0: return true
+	return false
 func load_crates(node: Node3D, point: Vector3) -> int:
+	if shipment_endpoint(node) and not manifest.is_empty(): return _load_manifest(node)
 	var count := 0
 	for crate in pickup_crates(node,point):
 		if crates.size() >= crate_slots() or stockpile.space() < ResourceStockpile.CRATE: break
@@ -332,7 +391,7 @@ func _crate_job(delta: float) -> void:
 	if order == "load":
 		var loaded := load_crates(job_target,job_point)
 		if loaded == 0 and crates.is_empty():
-			if trips == "repeat": state = "Waiting for crates %s" % label; _update_display(); return
+			if trips == "repeat": state = "Waiting for %s %s" % ["stock" if not manifest.is_empty() and shipment_endpoint(job_target) else "crates",label]; _update_display(); return
 			order = "idle"; job_target = null; state = "No crates %s" % label; _update_display(); return
 		_trip_pickup = stop
 		order = "idle"; job_target = null
@@ -346,7 +405,7 @@ func _crate_job(delta: float) -> void:
 		# Trips: return to the last pickup while it has crates (all) or forever (repeat).
 		if trips != "once" and order_queue.is_empty() and not _trip_pickup.is_empty() and (not _trip_pickup.get("requires_target",false) or shipment_endpoint(_trip_pickup.target)):
 			var pickup_target: Node3D = _trip_pickup.target if is_instance_valid(_trip_pickup.target) else null
-			if trips == "repeat" or not pickup_crates(pickup_target,_trip_pickup.point).is_empty():
+			if trips == "repeat" or pickup_possible(pickup_target,_trip_pickup.point):
 				order_queue.append({kind = "load", target = pickup_target, point = _trip_pickup.point, requires_target = _trip_pickup.get("requires_target",false)})
 				order_queue.append({kind = "unload", target = stop.target, point = stop.point, requires_target = stop.requires_target})
 	_update_display()
@@ -373,7 +432,6 @@ func _vehicle_process(delta: float) -> void:
 	$SupplyRadius.visible = supplies_available() and (is_selected or game.get_node("DepotNetwork").selected == self)
 	$SupplyRadius.scale = Vector3.ONE*mobile_rules.supply_radius()
 	if supplies_available():
-		CrateYard.restock(self)
 		state = "Supplies deployed"
 		_update_display()
 		return

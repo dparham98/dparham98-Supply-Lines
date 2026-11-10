@@ -83,7 +83,7 @@ func run() -> void:
 	select_only(null)
 	game.selected_building = game.depot; hud._process(0)
 	var depot_keys := visible_keys()
-	if not check(depot_keys == ["U","C","T"] and depot_keys.size() == depot_keys.filter(func(k): return depot_keys.count(k) == 1).size(),"Depot card keys (Depot truck, Cargo, Train; no Build) missing or duplicated %s" % [depot_keys]): return
+	if not check(depot_keys == ["U","C","T","K"] and depot_keys.size() == depot_keys.filter(func(k): return depot_keys.count(k) == 1).size(),"Depot card keys (Depot truck, Cargo, Train, Empty crate; no Build) missing or duplicated %s" % [depot_keys]): return
 	game.selected_building = null
 	# Keys press visible buttons and show their letter.
 	select_only(worker)
