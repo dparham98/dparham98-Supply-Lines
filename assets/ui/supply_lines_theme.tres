@@ -149,6 +149,12 @@ corner_radius_top_left = 3
 corner_radius_top_right = 3
 corner_radius_bottom_right = 3
 corner_radius_bottom_left = 3
+[sub_resource type="StyleBoxEmpty" id="command_card"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+
 [resource]
 default_font_size = 14
 Button/colors/font_color = Color(0.812,0.859,0.878,1)
@@ -185,6 +191,17 @@ Button/styles/hover = SubResource("button_hover")
 Button/styles/pressed = SubResource("button_pressed")
 Button/styles/disabled = SubResource("button_disabled")
 Button/styles/focus = SubResource("button_focus")
+CommandCard/base_type = &"Button"
+CommandCard/colors/icon_normal_color = Color(1,1,1,1)
+CommandCard/colors/icon_hover_color = Color(1.35,1.3,1.2,1)
+CommandCard/colors/icon_pressed_color = Color(0.72,0.7,0.68,1)
+CommandCard/colors/icon_focus_color = Color(1,1,1,1)
+CommandCard/colors/icon_disabled_color = Color(0.38,0.36,0.38,1)
+CommandCard/constants/icon_max_width = 46
+CommandCard/styles/normal = SubResource("command_card")
+CommandCard/styles/hover = SubResource("command_card")
+CommandCard/styles/pressed = SubResource("command_card")
+CommandCard/styles/disabled = SubResource("command_card")
 OptionButton/constants/h_separation = 6
 OptionButton/constants/icon_max_width = 18
 OptionButton/styles/normal = SubResource("button_normal")

@@ -39,14 +39,14 @@ const STAT_ICONS := {"Speed": "speed", "Range": "focus", "Damage": "damage", "Vi
 	"Cost": "cost", "Deploys": "deploy", "Output": "generator", "Burning": "refuel", "Cycle": "cycle", "Mode": "mode",
 	"Energy": "generator", "Iron": "mine", "Queue": "queue"}
 const TILE_GAP := 4
-const OFF_ICON := Color(0.373,0.463,0.502)
 @onready var state_label: Label = $Bottom/Body/Row/Info/Head/Text/State
 const RESOURCE_KINDS := [&"energy",&"iron",&"wood",&"coal"]
 var _icons := {}
 # Cargo vehicles open on their delivery route page; Orders shows the ordinary command card.
 var strip_types: Array[String] = []
 var feed_points: Array[Vector3] = []
-const UNAFFORDABLE := Color(0.941,0.698,0.29)
+## Darkens a whole-card image that cannot be paid for yet. The card keeps its own colours.
+const UNAFFORDABLE := Color(0.5,0.42,0.4)
 const FEED_SECONDS := 45.0
 var assignment_sources: Array[Node3D] = []
 var assignment_signature := ""
@@ -509,7 +509,9 @@ func update_contents() -> void:
 		info.get_node("Details").text = "Assigned Depot: %s" % (source.name if is_instance_valid(source) else "none")
 		context.get_node("GeneratorMode").select(["wood","coal","either"].find(node.fuel_preference))
 		hint_text = "Wood: 1 → %d E / %.1fs. Coal: 1 → %d E / %.1fs. Either uses wood first. Changes apply next cycle; full storage pauses fuel use." % [node.fuel_rules.wood_output,node.fuel_rules.wood_seconds,node.fuel_rules.coal_output,node.fuel_rules.coal_seconds]
-		if node.team == "player": show_button("ToggleGenerator","Pause" if node.enabled else "Resume")
+		if node.team == "player":
+			show_button("ToggleGenerator","Pause" if node.enabled else "Resume")
+			set_card(card.get_node("ToggleGenerator"),"generator_pause" if node.enabled else "generator_resume")
 		if is_instance_valid(node.assigned_depot): show_button("FocusAssigned","Focus Depot")
 	else:
 		var nearest = nearest_depot(node)
@@ -528,14 +530,15 @@ func update_contents() -> void:
 		show_button("Stop","Stop")
 		if node.fuel_active():
 			show_button("ToggleRefuel","Auto-refuel: %s" % ("on" if node.auto_refuel else "off"))
-			if node.auto_refuel: card.get_node("ToggleRefuel").remove_theme_color_override("icon_normal_color")
-			else: card.get_node("ToggleRefuel").add_theme_color_override("icon_normal_color",OFF_ICON)
+			set_card(card.get_node("ToggleRefuel"),"auto_refuel_on" if node.auto_refuel else "auto_refuel_off")
 		if node.is_cargo_vehicle:
 			show_button("DeployCargo","Pack up supplies" if node.deployed else "Deploy supplies")
+			set_card(card.get_node("DeployCargo"),"pack_supplies" if node.deployed else "deploy_supplies")
 			explain(card.get_node("DeployCargo"),not node.supply_transition.is_empty(),"Wait for deploying or packing to finish.")
 			show_button("Load","Load crates")
 			show_button("Unload","Unload crates")
 			show_button("Trips","Trips: %s" % TRIP_LABELS[node.trips])
+			set_card(card.get_node("Trips"),"trips_"+str(node.trips))
 			if node.supplies_available() and node.team == "player": show_shipment(node)
 			hint_text = "Right-click a crate to load it. Unload at a Depot to unpack, or on open ground to set crates down. Shift queues stops. Trips: %s." % TRIP_LABELS[node.trips]
 		elif node.is_depot_truck:
@@ -553,6 +556,11 @@ func update_contents() -> void:
 				card.get_node("Repair").tooltip_text = "Restore up to %d HP every %.1fs for %d energy / %d iron from the selected local supply source. No wood is spent." % [node.engineering_rules.repair_hp,node.engineering_rules.repair_interval,node.engineering_rules.repair_energy,node.engineering_rules.repair_iron]
 			if node.can_capture_depots: show_button("Capture","Capture")
 			hint_text = "Right-click to move, gather or attack. Workers pay from and deliver to the nearest stockpile unless you right-click a Depot. Build plans with B."
+# Card art that follows the state of a button. Unchanged art is not reassigned, so buttons do not redraw each frame.
+func set_card(button: Button, id: String) -> void:
+	var path := "res://assets/ui/command_cards/sl_%s.png" % id
+	if not _icons.has(path): _icons[path] = load(path)
+	if button.icon != _icons[path]: button.icon = _icons[path]
 func show_button(id: String, text: String) -> void:
 	desired_buttons.append(id)
 	set_tile(card.get_node(id),text,str(card.get_node(id).get_meta("detail","")))
@@ -732,6 +740,7 @@ func refresh_global_menu() -> void:
 	elif pin_name.is_empty(): build_menu.get_node("Bank").text = "PAYS: PIN LOST · PLANS WAIT"
 	else: build_menu.get_node("Bank").text = "PAYS: %s ONLY" % pin_name.to_upper()
 	build_menu.get_node("Bank").tooltip_text = "One covering Depot or deployed Cargo truck pays each plan's energy as Infantry build it. Iron must be delivered to the footprint first. Rails pay fully from Depots. No pooled resources."
+	set_card(build_menu.get_node("Actions/Pin"),"unpin_payer" if global_pinned else "pin_payer")
 	set_tile(build_menu.get_node("Actions/Pin"),"Unpin payer (back to Auto)" if global_pinned else "Pin payer","New plans pay from the nearest covering stockpile that can pay." if global_pinned else "Pick one Depot or deployed Cargo truck on the map or minimap; new plans pay only from it.")
 	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"iron_mine","Mine"],[&"rail","Rail"]]:
 		var spec: Dictionary = network.plan_spec(pair[0])
