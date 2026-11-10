@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
 [ext_resource type="PackedScene" path="res://scenes/models/infantry_model.tscn" id="model"]
 
+[ext_resource type="PackedScene" path="res://scenes/gameplay/infantry_bullet.tscn" id="bullet"]
 [ext_resource type="Resource" path="res://assets/units/infantry.tres" id="stats"]
 
 [ext_resource type="Resource" path="res://assets/economy/engineering_rules.tres" id="engineering"]
@@ -24,6 +25,7 @@ material = SubResource("r1")
 [node name="Infantry" type="Node3D"]
 script = ExtResource("agent")
 unit_stats = ExtResource("stats")
+projectile_scene = ExtResource("bullet")
 can_construct = true
 can_repair = true
 engineering_rules = ExtResource("engineering")

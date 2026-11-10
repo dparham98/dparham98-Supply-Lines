@@ -41,6 +41,8 @@ var _attack_enabled := true
 @export var attack_range := 12.0
 @export var attack_damage := 16
 @export var shot_interval := 0.7
+## What a shot looks like in flight; empty uses the map's plain tracer.
+@export var projectile_scene: PackedScene
 @export var carry_capacity := 10
 ## Two saw swings per extraction (docs/INFANTRY_MODEL.md).
 @export var harvest_interval := 1.2
@@ -490,7 +492,7 @@ func _shoot(target: Node3D) -> void:
 	var target_height: Vector3 = target.get_node("Visuals").position if target.has_node("Visuals") else Vector3.ZERO
 	var model := $Visuals.get_node_or_null("Model")
 	var muzzle: Vector3 = model.muzzle_position() if model != null and model.has_method("muzzle_position") else global_position+Vector3.UP*1.7+$Visuals.position
-	game.show_shot(muzzle,target.global_position+Vector3.UP*1.7+target_height,team)
+	game.show_shot(muzzle,target.global_position+Vector3.UP*1.7+target_height,team,projectile_scene)
 	CombatResolver.strike(self,target)
 	if is_instance_valid(target) and game.has_method("mark_attacked"): game.mark_attacked(target)
 	if is_instance_valid(target) and target.is_in_group("selectable_buildings") and target.get("team") == "player" and team != "player" and game.has_method("alert"):
