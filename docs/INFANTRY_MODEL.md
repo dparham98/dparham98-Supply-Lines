@@ -27,3 +27,9 @@ The Infantry uses the rigged cyborg from `Blender/Characters/Infantry/Infantry.b
 - Hack is used for both wood and iron gathering and for repair, since the saw is the only tool. Construction work is driven elsewhere and shows Rest for now.
 - The old static infantry file is kept at `Blender/Backups/Infantry/Infantry_2026-10-15_static.blend`.
 - Checks: `tests/infantry_model_test.gd` (headless: clips and loops, size and facing, the saw's steel override, Run while walking with pace, Hack and teeth while gathering, Shoot once then Rest, muzzle at the pistol, gun line through the target within 25 cm) and `tests/infantry_model_runtime_check.gd` (screenshots `infantry_idle`, `infantry_run`, `infantry_hack`, `infantry_shoot`, pickable). How the clips read at play speed, blend timing and the figure's scale next to the tank need a human look.
+
+## Death
+
+`Die` is one 4.17 s clip: the fall (about 1.9 s), the corpse lying there with a few twitches for about two seconds, then a short sink into the ground. `scripts/gameplay/unit_agent.gd` hands the model to the game when the unit dies and frees the unit at once, so gameplay is unchanged and a corpse cannot be selected, targeted or walked into. The model plays the clip and frees itself when it ends.
+
+`scenes/models/infantry_death_fx.tscn` is spawned on the corpse at that moment: oil jets, droplets, splats and a spreading pool, exposed wiring and sparks from `assets/models/effects/infantry_death_oil.glb`, which is keyed to the body's movement frame by frame. To change the timing or length, change the clip and rebuild the effect together in Blender.

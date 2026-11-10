@@ -33,6 +33,12 @@ extends Node3D
 ## A mesh carrying assets/shaders/chainsaw_teeth.gdshader: its `speed` instance uniform runs while working.
 @export var teeth_path: NodePath
 @export_range(0,30,0.5) var teeth_speed := 10.0
+## Clip played once when the unit dies. It holds the fall, the time the corpse lies there and its
+## removal, so the model frees itself when the clip ends.
+@export var death_clip: StringName = &""
+## Spawned on this model at death (oil, sparks); built to the same timeline as the clip.
+@export var death_fx_scene: PackedScene
+var _dying := false
 var _motion: StringName = &"idle"
 var _value := 0.0
 var _motion_frame := -2
@@ -105,6 +111,19 @@ func play_action(kind: StringName, from := 0.0) -> void:
 	player.play(clip,blend_time if from < 0.05 else 0.0)
 	player.seek(from,true)
 	_action_left = player.get_animation(clip).length-from
+func has_death_clip() -> bool:
+	return player != null and player.has_animation(death_clip)
+## The owner has already gone and this model is its corpse: play the death out, then remove it.
+func play_death() -> void:
+	_dying = true
+	_action_left = 0.0
+	_run_teeth(false)
+	player.speed_scale = 1.0
+	player.animation_finished.connect(func(clip: StringName) -> void: if clip == death_clip: queue_free())
+	player.play(death_clip,blend_time)
+	if death_fx_scene: add_child(death_fx_scene.instantiate())
+func dying() -> bool:
+	return _dying
 func motion() -> StringName:
 	return _motion if Engine.get_process_frames()-_motion_frame <= 1 else &"idle"
 func current_clip() -> StringName:
@@ -124,6 +143,7 @@ func _clip_for(kind: StringName) -> StringName:
 func _process(delta: float) -> void:
 	if player == null: return
 	_update_flash_light()
+	if _dying: return
 	var kind := motion()
 	if _action_left > 0.0:
 		_action_left -= delta

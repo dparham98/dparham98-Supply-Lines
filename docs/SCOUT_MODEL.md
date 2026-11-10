@@ -20,6 +20,12 @@ The shot goes off 0.375 s into the `shoot` clip, on the flash. `shot_lead_time` 
 
 `shoot` is full-body, so a Scout firing on the move glides in the firing pose while the clip plays.
 
+## Death
+
+`die` is one 4.17 s clip: the fall (about 1 s), the corpse lying there with a few twitches for about two seconds, then a short sink into the ground. `scripts/gameplay/unit_agent.gd` hands the model to the game when the unit dies and frees the unit at once, so gameplay is unchanged and a corpse cannot be selected, targeted or walked into. The model plays the clip and frees itself when it ends.
+
+`scenes/models/scout_death_fx.tscn` is spawned on the corpse at that moment: oil jets, droplets, splats and a spreading pool, exposed wiring and sparks from `assets/models/effects/scout_death_oil.glb`, which is keyed to the body's movement frame by frame. To change the timing or length, change the clip and rebuild the effect together in Blender.
+
 ## Checks
 
 - `tests/scout_model_test.gd` (headless): clips and loops, size and facing, light off at rest and driven by the flash bone, first shot on the firing frame, barrel on the target, wind-up with no early damage.
