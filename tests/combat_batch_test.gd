@@ -60,6 +60,7 @@ func run() -> void:
 	shooter._shoot(tank)
 	if not check(tank.health == 20 and shooter._cooldown == 3,"Tank heavy attack/cadence incorrect"): return
 	shooter._cooldown = 0
+	outside.global_position = origin+Vector3(0,0,shooter.attack_range+1)
 	shooter._shoot(outside)
 	if not check(outside.health == 55,"Out-of-range shot accepted"): return
 	outside.global_position = origin+Vector3(-4,0,0)

@@ -95,7 +95,11 @@ func run() -> void:
 	if not check(bullets.size() == 1,"The shot should fire one bullet, got %d" % bullets.size()): return
 	var bullet: Node3D = bullets[0]
 	if not check(bullet.global_position.distance_to(model.muzzle_position()) < 0.7,"Bullet should leave the barrel: %.2f m away" % bullet.global_position.distance_to(model.muzzle_position())): return
-	var aim_point: Vector3 = foe.global_position+Vector3.UP*1.7
+	# Bullets fly at the middle of the target's body and stop on its surface.
+	var foe_parts := Bounds.meshes(foe)
+	var foe_box: AABB = foe_parts[0].global_transform*foe_parts[0].get_aabb()
+	for part in foe_parts: foe_box = foe_box.merge(part.global_transform*part.get_aabb())
+	var aim_point: Vector3 = foe_box.get_center()
 	if not check((-bullet.global_transform.basis.z).dot((aim_point-bullet.global_position).normalized()) > 0.99,"Bullet should point at its target"): return
 	for i in range(120):
 		if not is_instance_valid(bullet): break

@@ -1,6 +1,7 @@
 [gd_scene format=3]
 [ext_resource type="Script" path="res://scripts/components/tank_rig.gd" id="turret"]
 [ext_resource type="PackedScene" path="res://assets/models/units/tank.glb" id="tank"]
+[ext_resource type="PackedScene" path="res://scenes/models/tank_muzzle_fx.tscn" id="muzzle_fx"]
 [ext_resource type="Shader" path="res://assets/shaders/tank_running_gear.gdshader" id="gear"]
 [ext_resource type="Texture2D" path="res://assets/models/units/tank_T_Tank_BaseColor.png" id="base"]
 [ext_resource type="Texture2D" path="res://assets/models/units/tank_T_Tank_Metallic-T_Tank_Roughness.png" id="mr"]
@@ -25,7 +26,7 @@ shader_parameter/wheel_spacing = 2.0
 [node name="TankModel" type="Node3D"]
 script = ExtResource("turret")
 turret_path = NodePath("Tank/Tank_Root/Tank_Hull/Tank_Turret")
-muzzle_path = NodePath("Tank/Tank_Root/Tank_Hull/Tank_Turret/Barrel_Mount/Tank_Barrel/Barrel_Muzzle_Brake")
+muzzle_path = NodePath("Tank/Tank_Root/Tank_Hull/Tank_Turret/Barrel_Mount/MuzzleFx")
 [node name="Tank" parent="." instance=ExtResource("tank")]
 transform = Transform3D(-0.6,0,0,0,0.6,0,0,0,-0.6,0,0,0)
 [node name="Return_Rollers_L" parent="Tank/Tank_Root/Tank_Hull" index="26"]
@@ -40,3 +41,6 @@ material_override = SubResource("road")
 material_override = SubResource("links")
 [node name="Track_Links_R" parent="Tank/Tank_Root/Tank_Hull" index="32"]
 material_override = SubResource("links")
+[node name="MuzzleFx" parent="Tank/Tank_Root/Tank_Hull/Tank_Turret/Barrel_Mount" instance=ExtResource("muzzle_fx")]
+transform = Transform3D(1,0,0,0,1,0,0,0,1,0,0,5.65)
+[editable path="Tank"]
