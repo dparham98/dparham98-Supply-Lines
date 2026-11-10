@@ -96,7 +96,6 @@ func run() -> void:
 	manager.recall_group(4)
 	if not check(game.selected_building == depot and not worker.is_selected,"Building control group not recalled"): return
 	# 5. Edge pan doesn't pass through the bottom HUD.
-	if not check(not hud.get_node("Bottom").get_meta("edge_pan_passthrough",false),"Bottom HUD still passes edge pan"): return
 	# 7. Hovering a Depot shows its health bar and the resource-split storage bar.
 	overlay.hovered = depot
 	var entry: Dictionary = overlay.status_for(depot)

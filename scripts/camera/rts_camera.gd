@@ -14,12 +14,10 @@ enum StartupFocus { AUTHORED_POSITION, HEADQUARTERS, WHOLE_MAP }
 @export_range(1, 30, 0.5) var pan_response: float = 12.0
 @export_range(1, 30, 0.5) var movement_smoothing: float = 12.0
 @export var edge_pan_enabled: bool = true
-## Entering this band acts like holding the corresponding arrow key.
-@export_range(4, 120, 1) var edge_margin: float = 64.0
-## Over interactive UI only this outermost strip pans, so the screen edge still works across the HUD in fullscreen.
-@export_range(1, 32, 1) var ui_edge_margin: float = 6.0
-## Inside a band, every this many pixels of pointer movement steers the pan toward the drag direction.
-@export_range(1, 20, 1) var edge_motion_pixels: float = 4.0
+## The cursor pans only inside this thin strip at the window's edge, over the world and the HUD alike.
+@export_range(1, 32, 1) var edge_margin: float = 3.0
+## Holds the cursor inside the window while it has focus, so it stops at the edge instead of leaving.
+@export var confine_cursor: bool = true
 @export_category("Zoom And Orbit")
 @export_range(5, 80, 1) var min_zoom: float = 20.0
 @export_range(100, 900, 1) var max_zoom: float = 480.0
@@ -53,21 +51,28 @@ var _zoom_anchor_active := false
 var _zoom_anchor_world := Vector3.ZERO
 var _zoom_anchor_screen := Vector2.ZERO
 var _editor_signature := Vector4(-1, -1, -1, -1)
-## True after the pointer left the window: in windowed play, dragging past an edge keeps panning.
+## True after the pointer left the window, where it must not keep panning from its last position.
 var _pointer_outside := false
-var _pointer_last := Vector2(-INF, -INF)
-var _pointer_motion := Vector2.ZERO
-## The steered direction while the pointer stays in a band; ZERO outside one.
-var _edge_direction := Vector2.ZERO
+var _cursor_confined := false
 
 func _ready() -> void:
 	if Engine.is_editor_hint():
 		_apply_editor_preview()
 		return
 	set_view(global_position, default_zoom, yaw_degrees, pitch_degrees)
+	if wants_cursor_confined():
+		Input.mouse_mode = Input.MOUSE_MODE_CONFINED
+		_cursor_confined = true
 	get_viewport().size_changed.connect(_on_viewport_resized)
 	if startup_focus == StartupFocus.HEADQUARTERS: call_deferred("focus_hq")
 	elif startup_focus == StartupFocus.WHOLE_MAP: call_deferred("show_overview")
+
+func _exit_tree() -> void:
+	if _cursor_confined: Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+## Only in a real run. Test scripts add scenes to the tree without making them the current scene.
+func wants_cursor_confined() -> bool:
+	return confine_cursor and edge_pan_enabled and get_tree().current_scene != null
 
 func _process(delta: float) -> void:
 	if Engine.is_editor_hint():
@@ -123,68 +128,19 @@ func _notification(what: int) -> void:
 	elif what == NOTIFICATION_WM_MOUSE_EXIT: _pointer_outside = true
 	elif what == NOTIFICATION_WM_MOUSE_ENTER: _pointer_outside = false
 
-func _pointer_over_ui() -> bool:
-	return get_viewport().gui_get_hovered_control() != null
-
-func _pointer_blocks_edge_pan() -> bool:
-	# Read-only overlays can occupy an edge without creating a dead strip.
-	var control := get_viewport().gui_get_hovered_control()
-	while control != null:
-		if control.get_meta("edge_pan_passthrough", false): return false
-		control = control.get_parent_control()
-	return _pointer_over_ui()
-
-## The edge pan for the live pointer: the full band over the world, the outer strip over the HUD,
-## and any side the pointer has been dragged beyond while the window keeps focus.
+## The edge pan for the live pointer. Only the strip at the window's edge counts, and a pointer outside the window pans nothing.
 func pointer_edge_pan() -> Vector2:
-	var viewport_size := get_viewport().get_visible_rect().size
-	var mouse := get_viewport().get_mouse_position()
-	var edge := Vector2.ZERO
-	if _pointer_outside:
-		# Past the window: the display server says which side; the last in-window position is the fallback.
-		var beyond := pointer_beyond_window(viewport_size)
-		if beyond.x == INF: edge = edge_pan_vector(mouse, viewport_size)
-		else: mouse = beyond; edge = edge_pan_vector(beyond, viewport_size)
-	else: edge = edge_pan_vector(mouse, viewport_size, ui_edge_margin if _pointer_blocks_edge_pan() else -1.0)
-	return steer_edge_pan(edge, mouse)
+	if _pointer_outside: return Vector2.ZERO
+	return edge_pan_vector(get_viewport().get_mouse_position(), get_viewport().get_visible_rect().size)
 
-## The pointer's position outside the window in viewport coordinates, or (INF, INF) if unknown or inside.
-func pointer_beyond_window(viewport_size: Vector2) -> Vector2:
-	if DisplayServer.get_name() == "headless": return Vector2(INF, INF)
-	var window := get_window()
-	if window.size.x <= 0 or window.size.y <= 0: return Vector2(INF, INF)
-	var local := Vector2(DisplayServer.mouse_get_position() - window.position) * viewport_size / Vector2(window.size)
-	return Vector2(INF, INF) if Rect2(Vector2.ZERO, viewport_size).has_point(local) else local
-
-## In a band, the pan follows the pointer's own drag direction: moving into the edge pans that way,
-## while a still pointer, or one sliding along the edge, keeps the last steered direction.
-func steer_edge_pan(edge: Vector2, mouse: Vector2) -> Vector2:
-	var step := mouse - _pointer_last if _pointer_last.x != -INF else Vector2.ZERO
-	_pointer_last = mouse
-	if edge == Vector2.ZERO:
-		_edge_direction = Vector2.ZERO; _pointer_motion = Vector2.ZERO
-		return Vector2.ZERO
-	# Entering a band starts straight out from that edge; the entry step itself isn't a drag.
-	if _edge_direction == Vector2.ZERO:
-		_edge_direction = edge; _pointer_motion = Vector2.ZERO
-		return edge
-	_pointer_motion += step
-	if _pointer_motion.length() < edge_motion_pixels: return _edge_direction
-	var drag := _pointer_motion.normalized()
-	_pointer_motion = Vector2.ZERO
-	if drag.dot(edge) > 0.2: _edge_direction = drag
-	return _edge_direction
-
-## Pan direction for a pointer position. Inside the band (`margin`, or Edge Margin) along a side
-## pans that way; a position past a side counts as being on that side.
-func edge_pan_vector(mouse: Vector2, viewport_size: Vector2, margin := -1.0) -> Vector2:
+## Pan direction for a pointer position: the sides whose strip it is in, eight directions in all.
+func edge_pan_vector(mouse: Vector2, viewport_size: Vector2) -> Vector2:
 	if viewport_size.x <= 0 or viewport_size.y <= 0: return Vector2.ZERO
 	var direction := Vector2.ZERO
-	margin = maxf(1, minf(edge_margin if margin < 0 else margin, minf(viewport_size.x, viewport_size.y) * 0.25))
-	if mouse.x < margin: direction.x = -1
-	elif mouse.x > viewport_size.x - margin: direction.x = 1
-	if mouse.y < margin: direction.y = -1
-	elif mouse.y > viewport_size.y - margin: direction.y = 1
+	if mouse.x < edge_margin: direction.x = -1
+	elif mouse.x > viewport_size.x - edge_margin: direction.x = 1
+	if mouse.y < edge_margin: direction.y = -1
+	elif mouse.y > viewport_size.y - edge_margin: direction.y = 1
 	return direction.normalized()
 
 func apply_navigation(pan: Vector2, rotation: float, fast: bool, delta: float) -> void:
