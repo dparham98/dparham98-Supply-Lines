@@ -1,5 +1,5 @@
 extends SceneTree
-# Rendered check: grass and desert show tile detail up close. Saves ground_tiles_close, _play, _map, _forest and _water.
+# Rendered check: grass and desert show tile detail up close, and open grass has no black spots from an invalid normal. Saves ground_tiles_close, _play, _map, _forest and _water.
 const TestOutput = preload("res://tests/test_output.gd")
 var game: Node3D
 func _initialize() -> void: call_deferred("run")
@@ -35,7 +35,12 @@ func run() -> void:
 	print("Detail grass %.4f desert %.4f" % [grass,desert])
 	if not check(grass > 0.012,"Grass shows no tile detail: %.4f" % grass): return
 	if not check(desert > 0.008,"Desert shows no tile detail: %.4f" % desert): return
-	await shot(rig,Vector3(140.5,0,120.5),95,"ground_tiles_play")
+	var play: Image = await shot(rig,Vector3(140.5,0,120.5),95,"ground_tiles_play")
+	var darkest := 1.0
+	for y in range(20,280):
+		for x in range(20,1260): darkest = minf(darkest,play.get_pixel(x,y).get_luminance())
+	print("Darkest open grass %.3f" % darkest)
+	if not check(darkest > 0.08,"Open grass has a black spot: %.3f" % darkest): return
 	await shot(rig,Vector3.ZERO,480,"ground_tiles_map")
 	await shot(rig,Vector3(178.5,0,-101.5),20,"ground_tiles_forest")
 	await shot(rig,Vector3(-60,0,-20),20,"ground_tiles_water")

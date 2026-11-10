@@ -18,6 +18,24 @@ Grass, desert, water and forests are drawn with the tiles from `Blender/Terrain/
 
 The tint divides `terrain_surface.png` by its mean colour for that ground type (`grass_surface_mean` and the matching desert, water and forest values). Near a border that blurry image holds the colour of the neighbouring ground, so large differences are ignored; otherwise the border shows as a dark or bright band.
 
+## World-scale look
+
+Open ground (grass, forest floor and desert) gets four layers on top of the tiles, all in `terrain_surface.gdshader` and all drawing only. Gameplay still reads `terrain_cells.bin`, so the drawn line can differ from the real cell border by about a metre.
+
+- **Soft border:** `assets/textures/terrain/ground_blend.png` holds each cell's distance from the desert and grass border, slightly blurred to round off the steps. Noise makes the line wander. Rebuild it after the map cells change: `godot --headless --path . --script res://scripts/tools/build_ground_blend_map.gd`. It stays lossless (`detect_3d/compress_to=0` in its `.import`).
+- **Colour patches:** broad drifts about 64 m across and smaller dry patches about 17 m across, plus dry straw on the grass beside desert.
+- **Breakup:** a larger copy of the tile pattern at a scale that never lines up with the 4 m tiles.
+- **Relief:** gentle slopes lit by the sun. The bent normal is length-limited, because past that limit the surface renders black.
+
+| Setting | Value | Meaning |
+| --- | --- | --- |
+| `border_wander` | 0.65 | How far the line wanders, in metres. |
+| `border_softness` | 0.28 | Half-width of the crossfade, in metres. |
+| `dry_margin`, `dry_strength` | 6, 0.55 | Width of the dry strip beside desert, and how dry it gets. |
+| `macro_strength` | 1 | Strength of the colour patches. |
+| `breakup_strength` | 0.55 | Strength of the larger tile pattern. |
+| `grass_relief`, `desert_relief` | 0.5, 1 | Strength of the relief on each. |
+
 ## Forests
 
 The four forest overlays (pine, broadleaf, mixed and sparse) replace the old cone trees. Each of the 1,646 forest spots holds one patch, chosen at bake time, so a Tank clearing a cell removes the patch on that 2 x 2 tile area as before.
@@ -28,7 +46,7 @@ The four forest overlays (pine, broadleaf, mixed and sparse) replace the old con
 
 ## Checks
 
-- `tests/ground_tiles_test.gd` (headless): both arrays have twelve mipmapped layers, the settings exist, the Ground node uses the saved material, the gameplay grid is unchanged, and all 1,646 forest spots use the four patches within the triangle budget.
-- `tests/ground_tiles_runtime_check.gd` (rendered): grass and desert show tile detail up close, and saves close, play-zoom, whole-map, forest and water views.
+- `tests/ground_tiles_test.gd` (headless): both arrays have twelve mipmapped layers, the settings exist, the blend map agrees with the map cells, the Ground node uses the saved material, the gameplay grid is unchanged, and all 1,646 forest spots use the four patches within the triangle budget.
+- `tests/ground_tiles_runtime_check.gd` (rendered): grass and desert show tile detail up close, open grass has no black spots, and saves close, play-zoom, whole-map, forest and water views.
 
-Tile size, forest scale, feature share and tint were chosen by eye against renders. Grass and desert borders keep the blocky steps of the map.
+Tile size, forest scale, feature share and tint were chosen by eye against renders. Water and mountain-foot borders keep the blocky steps of the map.
