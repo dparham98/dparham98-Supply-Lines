@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/projectile.gd" id="projectile"]
+[ext_resource type="PackedScene" path="res://assets/models/projectiles/rail_spike.glb" id="model"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/rail_spike_impact.tscn" id="impact"]
+
+[node name="RailSpike" type="Node3D"]
+script = ExtResource("projectile")
+speed = 38.0
+half_length = 0.39
+keep_body_material = true
+impact_scene = ExtResource("impact")
+
+[node name="Model" parent="." instance=ExtResource("model")]
+transform = Transform3D(-1.5,0,0,0,1.5,0,0,0,-1.5,0,0,0)

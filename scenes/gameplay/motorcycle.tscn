@@ -2,11 +2,13 @@
 
 [ext_resource type="Script" path="res://scripts/gameplay/unit_agent.gd" id="agent"]
 [ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
-[ext_resource type="PackedScene" path="res://scenes/models/motorcycle_placeholder.tscn" id="model"]
+[ext_resource type="PackedScene" path="res://scenes/models/motorcycle_model.tscn" id="model"]
 
 [ext_resource type="Resource" path="res://assets/units/motorcycle.tres" id="stats"]
 
 [ext_resource type="Resource" path="res://assets/economy/fuel_motorcycle.tres" id="fuel"]
+
+[ext_resource type="PackedScene" path="res://scenes/gameplay/rail_spike.tscn" id="spike"]
 
 [sub_resource type="StandardMaterial3D" id="r1"]
 albedo_color = Color(0.2,1,0.6,1)
@@ -14,8 +16,8 @@ roughness = 0.85
 shading_mode = 0
 
 [sub_resource type="TorusMesh" id="r2"]
-inner_radius = 0.85
-outer_radius = 0.96
+inner_radius = 1.38
+outer_radius = 1.5
 rings = 20
 ring_segments = 6
 material = SubResource("r1")
@@ -24,6 +26,7 @@ material = SubResource("r1")
 script = ExtResource("agent")
 fuel_rules = ExtResource("fuel")
 unit_stats = ExtResource("stats")
+projectile_scene = ExtResource("spike")
 can_construct = false
 can_gather = false
 can_capture_depots = false
