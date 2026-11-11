@@ -217,6 +217,9 @@ func _process(_delta: float) -> void:
 	manifest_panel.visible = loading
 	if loading: update_manifest_panel()
 	if crating: update_crate_page()
+	# The camera lets the map's edge scroll up past the bottom panel instead of stopping behind it.
+	var rig = game.get_node_or_null("CameraRig")
+	if rig != null and not is_equal_approx(rig.screen_bottom_inset,$Bottom.size.y): rig.screen_bottom_inset = $Bottom.size.y
 	# B opens the build page; there, B is Barracks.
 	$Bottom/Body/Header/GlobalBuild.disabled = global_build_open
 	place_tiles()
