@@ -13,7 +13,7 @@ func _initialize() -> void:
 		"command_load": KEY_L, "command_unload": KEY_U, "command_trips": KEY_C,
 		# The Load page and the Generator card. Energy avoids E, which turns the camera.
 		"resource_iron": KEY_I, "resource_energy": KEY_N, "resource_wood": KEY_W, "resource_coal": KEY_C,
-		"command_empty_crate": KEY_K, "command_burn_either": KEY_R, "command_assign_depot": KEY_A,
+		"command_make_crates": KEY_K, "command_worksite": KEY_W, "command_burn_either": KEY_R, "command_assign_depot": KEY_A,
 		# Build page tiles (the card is hidden there, so letters can repeat) and header actions.
 		"build_depot": KEY_D, "build_generator": KEY_G, "build_barracks": KEY_B, "build_tank_factory": KEY_T, "build_mine": KEY_I, "build_rail": KEY_R, "build_pin": KEY_P, "build_back": KEY_ESCAPE,
 		# B opens the build page; the header button is disabled there, so B then picks Barracks.

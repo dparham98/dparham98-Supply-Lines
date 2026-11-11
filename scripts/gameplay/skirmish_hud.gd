@@ -26,7 +26,7 @@ var _tip_control: Control
 var _tip_since := 0.0
 ## Fixed command slots, row-major in the 4 × 3 grid. Commands that never share a card may share a slot.
 const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 4, "Return": 5, "DropMaterials": 6, "Build": 7,
-	"BurnWood": 4, "BurnCoal": 5, "BurnEither": 6, "AssignDepot": 7, "EmptyCrate": 3,
+	"BurnWood": 4, "BurnCoal": 5, "BurnEither": 6, "AssignDepot": 7, "MakeCrates": 3, "Worksite": 7,
 	"Repair": 8, "Capture": 9, "DeployTruck": 10, "CancelPlan": 11,
 	"DeployCargo": 2, "Load": 4, "Unload": 5, "Trips": 6,
 	"PrintTruck": 0, "PrintCargo": 1, "PrintTrain": 2,
@@ -54,6 +54,10 @@ var assignment_sources: Array[Node3D] = []
 var assignment_signature := ""
 ## The build page holds global, unpaid plans only; Infantry and Depots have no build menus of their own.
 var global_build_open := false
+## The build page opened from a truck's Worksite tile (docs/TRUCK_WORKSITES.md).
+var worksite_open := false
+## The Depot's Make crates page, which reuses the Load page's resource tiles.
+var crate_page_open := false
 ## Pin: new plans pay only from this stockpile. Unpinned plans pay from the nearest covering one able to pay.
 var global_payer: Node3D
 var global_pinned := false
@@ -101,10 +105,12 @@ func _ready() -> void:
 				if unit.is_cargo_vehicle: unit.trips = mode
 			game.notify("Trips: %s." % TRIP_LABELS[mode]))
 	for pair in [["Iron",&"iron"],["Energy",&"energy"],["Wood",&"wood"],["Coal",&"coal"]]:
-		load_tiles.get_node(pair[0]).pressed.connect(func(): edit_manifest(pair[1],Input.is_key_pressed(KEY_SHIFT)))
+		load_tiles.get_node(pair[0]).pressed.connect(func():
+			if crate_page_open: make_crates(pair[1],Input.is_key_pressed(KEY_SHIFT))
+			else: edit_manifest(pair[1],Input.is_key_pressed(KEY_SHIFT)))
 	load_tiles.get_node("Clear").pressed.connect(clear_manifest)
-	card.get_node("EmptyCrate").pressed.connect(func():
-		if is_instance_valid(shown) and shown.is_in_group("depots") and CrateYard.pack_empty(shown) == null: game.notify("No open tile beside %s for a crate." % shown.name))
+	card.get_node("MakeCrates").pressed.connect(open_crate_page)
+	card.get_node("Worksite").pressed.connect(open_worksite)
 	for pair in [["BurnWood","wood"],["BurnCoal","coal"],["BurnEither","either"]]:
 		card.get_node(pair[0]).pressed.connect(func():
 			if is_instance_valid(shown) and shown.is_in_group("energy_generators"): shown.set_fuel_preference(pair[1]))
@@ -201,12 +207,16 @@ func _process(_delta: float) -> void:
 	if pick.visible:
 		card.visible = false; build_menu.visible = false
 		if pick.get_node("Prompt").text != prompt: pick.get_node("Prompt").text = prompt
-	# Load is a page of tiles. Its instructions and the manifest sit in the Context column.
+	# Load is a page of tiles. Its instructions and the manifest sit in the Context column. The Depot's
+	# Make crates page uses the same tiles, without Clear or the manifest.
 	var loading: bool = pick.visible and game.pending_unit_command == "load"
-	load_tiles.visible = loading
-	pick.get_node("Prompt").visible = not loading
+	var crating: bool = pick.visible and crate_page_open
+	load_tiles.visible = loading or crating
+	load_tiles.get_node("Clear").visible = loading
+	pick.get_node("Prompt").visible = not (loading or crating)
 	manifest_panel.visible = loading
 	if loading: update_manifest_panel()
+	if crating: update_crate_page()
 	# B opens the build page; there, B is Barracks.
 	$Bottom/Body/Header/GlobalBuild.disabled = global_build_open
 	place_tiles()
@@ -427,6 +437,16 @@ func update_contents() -> void:
 	info.get_node("Health").visible = is_instance_valid(node)
 	$Bottom/Body/Header/Focus.disabled = not is_instance_valid(node)
 	$Bottom/Body/Header/Message.text = game.outcome if not game.outcome.is_empty() else game.message
+	if global_build_open and worksite_open:
+		commands.get_node("Title").text = "WORKSITE · CHOOSE A BUILDING"
+		refresh_global_menu()
+		info.get_node("Health").visible = false
+		name_label.text = "Worksite"
+		var trucks := worksite_trucks()
+		info.get_node("HealthText").text = "%d truck%s will fetch" % [trucks.size(),"" if trucks.size() == 1 else "s"]
+		info.get_node("Details").text = "Place a building. The selected trucks\nbring exactly its materials from the\nnearest Depot, then Infantry build it.\nShift places more and queues them."
+		hint_text = "Each tile's key places that building. The trucks load exact amounts, deliver them to the footprint and go back until it is covered. Esc stops placing; Back returns to the truck."
+		return
 	if global_build_open:
 		commands.get_node("Title").text = "GLOBAL BUILD · UNPAID PLANS"
 		refresh_global_menu()
@@ -474,7 +494,7 @@ func update_contents() -> void:
 			show_progress("Producing · "+DEPOT_PRODUCTS.get(kind,kind.capitalize()),"%d%%%s" % [roundi(node.progress/node.current_seconds()*100)," · %d more queued" % (node.queue-1) if node.queue > 1 else ""],node.progress/node.current_seconds())
 		info.get_node("Details").text = "Queue %d / %d%s" % [node.queue,node.queue_limit," · capture %d%%" % roundi(node.capture_progress/node.rules.capture_seconds*100) if node.capture_progress > 0 else ""]
 		if node.team == "player":
-			show_button("EmptyCrate","Empty crate")
+			show_button("MakeCrates","Make crates")
 			if node.can_cancel(): show_button("CancelPlan","Cancel production")
 			show_production("PrintTruck","Depot truck",node.rules.truck_energy_cost,node.rules.truck_iron_cost,node)
 			show_production("PrintCargo","Cargo vehicle",network.supply_rules.cargo_energy_cost,network.supply_rules.cargo_iron_cost,node)
@@ -543,7 +563,8 @@ func update_contents() -> void:
 			show_button("Unload","Unload crates")
 			show_button("Trips","Trips: %s" % TRIP_LABELS[node.trips])
 			set_card(card.get_node("Trips"),"trips_"+str(node.trips))
-			hint_text = "Load sets a manifest of crates, then picks a Depot. Right-click a crate to load it. Unload at a Depot to unpack, or on open ground to set crates down. Shift queues stops. Trips: %s." % TRIP_LABELS[node.trips]
+			if not node.is_in_group("rail_trains"): show_button("Worksite","Worksite")
+			hint_text = "Worksite places a building and fetches exactly its materials. Right-click a build site to fetch for it. Load sets a manifest of crates, then picks a Depot. Unload at a Depot to unpack, or on open ground to set crates down. Shift queues stops. Trips: %s." % TRIP_LABELS[node.trips]
 		elif node.is_depot_truck:
 			show_button("DeployTruck","Deploy")
 			hint_text = "Deploy on an empty Depot footprint. This vehicle does not carry transferable cargo."
@@ -640,6 +661,8 @@ func explain(button: Button, disabled: bool, reason: String) -> void:
 	elif button.tooltip_text == reason: button.tooltip_text = ""
 func close_build() -> void:
 	global_build_open = false
+	worksite_open = false
+	crate_page_open = false
 	game.global_plan_kind = &""
 	if game.pending_unit_command == "pin": game.pending_unit_command = ""
 	game.placing_rail = false
@@ -676,6 +699,7 @@ func update_manifest_panel() -> void:
 	manifest_panel.get_node("Pips").show_crates(planned,vehicle.crate_slots())
 	for pair in [["Iron","Iron"],["Energy","Energy"],["Wood","Wood"],["Coal","Coal"]]:
 		set_tile(load_tiles.get_node(pair[0]),pair[1]+" crate","Adds one crate to the manifest. Shift fills every free slot.")
+		load_tiles.get_node(pair[0]).disabled = false
 	set_tile(load_tiles.get_node("Clear"),"Clear manifest","Removes every crate from the manifest.")
 func show_fuel_tile(id: String, label: String, mode: String, current: String) -> void:
 	show_button(id,label)
@@ -698,6 +722,47 @@ func update_assignment(building: Node3D) -> void:
 	option.text = "Choose covering Depot to operate" if index < 0 else option.get_item_text(index)
 	option.tooltip_text = "Construction payer and operating Depot are separate. Production queues must be empty to reassign. No automatic assignment or resource pooling."
 
+## The Worksite page: the build page for the selected trucks (docs/TRUCK_WORKSITES.md).
+func open_worksite() -> void:
+	if worksite_trucks().is_empty(): return
+	close_build()
+	game.cancel_armed()
+	global_build_open = true
+	worksite_open = true
+	shown = selected_object()
+	refresh_global_menu()
+	game.notify("Worksite: choose a building, then place it. The selected trucks fetch exactly its materials.")
+func worksite_trucks() -> Array[Node3D]:
+	var trucks: Array[Node3D] = []
+	for unit in selected_units():
+		if unit.is_cargo_vehicle and not unit.is_in_group("rail_trains"): trucks.append(unit)
+	return trucks
+## The Depot's Make crates page: each resource tile sets down one full crate beside it.
+func open_crate_page() -> void:
+	if not is_instance_valid(shown) or not shown.is_in_group("depots"): return
+	game.cancel_armed()
+	crate_page_open = true
+	game.notify("Make crates: each tile sets down a full %d-unit crate beside %s. Shift makes five. Esc closes." % [ResourceStockpile.CRATE,shown.name])
+const CRATE_BATCH := 5
+func make_crates(kind: StringName, batch := false) -> int:
+	if not is_instance_valid(shown) or not shown.is_in_group("depots"): return 0
+	var made := 0
+	for i in range(CRATE_BATCH if batch else 1):
+		if shown.stockpile.amount(kind) < ResourceStockpile.CRATE:
+			if made == 0: game.notify("%s needs %d %s for a crate." % [shown.name,ResourceStockpile.CRATE,kind])
+			break
+		if CrateYard.pack(shown,kind) == null:
+			if made == 0: game.notify("No open tile beside %s for a crate." % shown.name)
+			break
+		made += 1
+	if made > 0: game.notify("%d %s crate%s set down beside %s." % [made,kind,"" if made == 1 else "s",shown.name])
+	return made
+func update_crate_page() -> void:
+	for pair in [["Iron",&"iron"],["Energy",&"energy"],["Wood",&"wood"],["Coal",&"coal"]]:
+		var button: Button = load_tiles.get_node(pair[0])
+		var short: bool = shown.stockpile.amount(pair[1]) < ResourceStockpile.CRATE
+		set_tile(button,pair[0]+" crate","Sets down a full %d-unit %s crate beside the Depot. Shift makes %d." % [ResourceStockpile.CRATE,pair[1],CRATE_BATCH])
+		explain(button,short,"Needs %d %s in this Depot." % [ResourceStockpile.CRATE,pair[1]])
 func open_global_build() -> void:
 	close_build()
 	game.pending_unit_command = ""
@@ -718,6 +783,17 @@ func begin_global_placement(kind: StringName) -> void:
 	game.global_plan_kind = kind
 	game.notify("Click valid terrain to place an unpaid %s plan. Esc cancels placement; existing plans remain." % network.plan_spec(kind).title)
 func refresh_global_menu() -> void:
+	build_menu.get_node("Actions/Pin").visible = not worksite_open
+	build_menu.get_node("Actions/Rail").visible = not worksite_open
+	if worksite_open:
+		build_menu.get_node("Bank").text = "DELIVERS: EXACT MATERIALS"
+		build_menu.get_node("Bank").tooltip_text = "The selected trucks load exactly what the building needs and unload it on the footprint. A covering stockpile pays the energy as Infantry build."
+		for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"iron_mine","Mine"]]:
+			var spec: Dictionary = network.plan_spec(pair[0])
+			var button: Button = build_menu.get_node("Actions/"+pair[1])
+			button.disabled = false
+			set_tile(button,spec.title+" worksite","%d E · %d I · the trucks bring the %d iron; energy is paid as Infantry build" % [spec.energy,spec.iron,spec.iron])
+		return
 	var pin_name := str(global_payer.name) if global_pinned and SupplySource.available(global_payer,"player") else ""
 	if not global_pinned: build_menu.get_node("Bank").text = "PAYS: AUTO (NEAREST)"
 	elif pin_name.is_empty(): build_menu.get_node("Bank").text = "PAYS: PIN LOST · PLANS WAIT"
@@ -744,6 +820,9 @@ func toggle_pin() -> void:
 
 # Map picking for Load, Unload and Pin: the card becomes a prompt, and eligible stops pulse on the minimap.
 func pick_prompt() -> String:
+	if crate_page_open:
+		if is_instance_valid(shown) and shown.is_in_group("depots") and shown.team == "player": return "MAKE CRATES"
+		crate_page_open = false
 	match game.pending_unit_command:
 		"load":
 			if selected_cargo() != null: return "LOAD · CHOOSE A STOP"
@@ -756,7 +835,7 @@ func pick_prompt() -> String:
 	return ""
 func pick_stops() -> Array[Node3D]:
 	var stops: Array[Node3D] = []
-	if pick_prompt().is_empty(): return stops
+	if pick_prompt().is_empty() or crate_page_open: return stops
 	if game.pending_unit_command == "assign_depot":
 		for depot in get_tree().get_nodes_in_group("depots"):
 			if SupplySource.covers(depot,shown.global_position,shown.team): stops.append(depot)

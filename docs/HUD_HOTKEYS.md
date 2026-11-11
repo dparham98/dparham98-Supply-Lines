@@ -15,10 +15,13 @@ Phase 1 of the HUD plan (hotkeys, queuing and HUD modernization), approved on 20
 | --- | --- |
 | Unit | M Move · A Attack · G Gather · S Stop · V Deliver · R Repair · C Capture · X Drop materials · T Auto-refuel · D Deploy into Depot |
 | Cargo Supply panel | M Move · D Deploy/pack · P Pause/resume route · X Cancel route (T Auto-refuel is on the Orders page) |
-| Depot | U Depot Truck · C Cargo Vehicle · T Train · K Empty crate |
+| Cargo Orders page | M Move · S Stop · D Deploy/pack supplies · T Auto-refuel · L Load · U Unload · C Trips · W Worksite |
+| Depot | U Depot Truck · C Cargo Vehicle · T Train · K Make crates |
 | Production building | I Infantry · S Scout · G Grenadier · T Tank · M Motorcycle · D Drone · U Übermech |
 | Generator | P Pause/resume · F Focus assigned Depot · W Burn wood · C Burn coal · R Burn either · A Assign Depot |
 | Load page | I Iron · N Energy · W Wood · C Coal · X Clear · Esc Cancel. Shift fills free slots |
+| Make crates page | I Iron · N Energy · W Wood · C Coal · Esc Cancel. Shift makes five |
+| Worksite page | D Depot · G Generator · B Barracks · T Tank Factory · I Iron Mine · Esc Back |
 | Construction plan | X Cancel plan |
 
 Two camera keys moved: overview is now **O** (was M) and focus HQ is now **Backspace** (was F). Arrows, Q/E, Shift, wheel and Home are unchanged. Esc still cancels an armed command.

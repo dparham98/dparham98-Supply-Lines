@@ -283,7 +283,7 @@ func _start_next_order() -> void:
 	# Skip entries whose target is gone or that the unit refuses, such as an unreachable attack.
 	while order == "idle" and not order_queue.is_empty():
 		var entry: Dictionary = order_queue.pop_front()
-		if entry.kind in ["attack","gather","repair","capture","construct","load","unload"] and not is_instance_valid(entry.get("target")) and not (entry.kind in ["load","unload"] and entry.get("point") != null): continue
+		if entry.kind in ["attack","gather","repair","capture","construct","fetch","load","unload"] and not is_instance_valid(entry.get("target")) and not (entry.kind in ["load","unload"] and entry.get("point") != null): continue
 		run_order(entry)
 func order_point(entry: Dictionary) -> Variant:
 	if entry.kind in ["move","attack_move","deploy"]: return entry.point

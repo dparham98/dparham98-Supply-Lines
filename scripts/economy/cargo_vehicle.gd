@@ -155,6 +155,7 @@ func cancel_supply_route() -> void:
 	order = "idle"
 	state = "Route cancelled · cargo retained"
 func command_move(point: Vector3) -> void:
+	_clear_fetch()
 	pack_supplies()
 	cancel_supply_route()
 	super.command_move(point)
@@ -313,6 +314,26 @@ func _load_manifest(node: Node3D) -> int:
 			_sync_reserved()
 			need -= 1; count += 1
 	return count
+## Fetch (docs/TRUCK_WORKSITES.md): exact amounts for a build site. Crates set down beside the stop
+## that fit inside the amount go first, then crates of up to 25 units are made from loose stock.
+func _load_exact(node: Node3D) -> int:
+	var count := 0
+	for kind in ResourceStockpile.KINDS:
+		var want: int = fetch_load.get(kind,0)
+		for crate in CrateYard.beside(node):
+			if want <= 0 or not _has_crate_slot(): break
+			if crate.resource_kind != kind or crate.amount <= 0 or crate.amount > want: continue
+			crates.append({kind = kind, amount = crate.amount})
+			_sync_reserved()
+			want -= crate.amount; count += 1
+			crate.queue_free()
+		while want > 0 and _has_crate_slot() and node.stockpile.amount(kind) > 0:
+			var chunk := mini(mini(want,ResourceStockpile.CRATE),node.stockpile.amount(kind))
+			node.stockpile.withdraw(kind,chunk)
+			crates.append({kind = kind, amount = chunk})
+			_sync_reserved()
+			want -= chunk; count += 1
+	return count
 ## Whether a Load at this stop would find anything to take.
 func pickup_possible(node: Node3D, point: Vector3) -> bool:
 	if not shipment_endpoint(node) or manifest.is_empty(): return not pickup_crates(node,point).is_empty()
@@ -322,6 +343,7 @@ func pickup_possible(node: Node3D, point: Vector3) -> bool:
 		if node.stockpile.amount(kind) >= ResourceStockpile.CRATE or CrateYard.count_beside(node,kind) > 0: return true
 	return false
 func load_crates(node: Node3D, point: Vector3) -> int:
+	if shipment_endpoint(node) and not fetch_load.is_empty(): return _load_exact(node)
 	if shipment_endpoint(node) and not manifest.is_empty(): return _load_manifest(node)
 	var count := 0
 	for crate in pickup_crates(node,point):
@@ -389,9 +411,11 @@ func _crate_job(delta: float) -> void:
 	var stop := {target = job_target if shipment_endpoint(job_target) or _site_stop(job_target) else null, point = job_point, requires_target = _job_requires_target}
 	var label := stop_name({target = job_target, point = job_point})
 	if order == "load":
+		var exact := not fetch_load.is_empty()
 		var loaded := load_crates(job_target,job_point)
+		fetch_load = {}
 		if loaded == 0 and crates.is_empty():
-			if trips == "repeat": state = "Waiting for %s %s" % ["stock" if not manifest.is_empty() and shipment_endpoint(job_target) else "crates",label]; _update_display(); return
+			if trips == "repeat" and not exact: state = "Waiting for %s %s" % ["stock" if not manifest.is_empty() and shipment_endpoint(job_target) else "crates",label]; _update_display(); return
 			order = "idle"; job_target = null; state = "No crates %s" % label; _update_display(); return
 		_trip_pickup = stop
 		order = "idle"; job_target = null
@@ -413,10 +437,136 @@ func command_return(target: Node3D = null) -> void:
 	# Right-click: Load a crate; at a Depot or deployed vehicle, unload when carrying crates, else load.
 	if _crate_stop(target) and not is_in_group("rail_trains"): _start_job("load",target)
 	elif shipment_endpoint(target): _start_job("unload" if not crates.is_empty() else "load",target)
-	elif _site_stop(target) and not is_in_group("rail_trains"):
-		if crates.is_empty() and stockpile.total() == 0: game.notify("Nothing aboard to deliver to the build site.")
-		else: _start_job("unload",target)
+	elif _site_stop(target) and not is_in_group("rail_trains"): command_fetch(target)
 	else: game.notify("Load a crate, or unload at a friendly Depot, a build site or on open ground.")
+
+## Fetch (docs/TRUCK_WORKSITES.md): brings a build site exactly what it still lacks. Materials aboard
+## go first; the rest is loaded at the nearest Depot or deployed vehicle holding it. Trucks fetching
+## for the same site split the work, and the truck goes back until the site is covered.
+var fetch_plan: Node3D
+## Exact amounts to take at the next Load, {kind: units}.
+var fetch_load := {}
+## What this truck is bringing to fetch_plan, {kind: units}, so other trucks fetch only the rest.
+var fetch_claim := {}
+var _fetch_retry := 0.0
+const FETCH_RETRY_SECONDS := 1.0
+func run_order(entry: Dictionary) -> void:
+	# Any order except the fetch's own steps ends the fetch.
+	if entry.kind != "fetch" and not entry.get("fetch",false): _clear_fetch()
+	if entry.kind == "fetch": command_fetch(entry.get("target"))
+	else: super.run_order(entry)
+func _clear_fetch() -> void:
+	fetch_plan = null; fetch_claim = {}; fetch_load = {}
+	if order == "fetch": order = "idle"; order_target = null
+## True while this truck is working on a fetch for the plan.
+func fetching(plan: Node3D) -> bool:
+	return is_instance_valid(plan) and fetch_plan == plan and order in ["fetch","load","unload"]
+## Materials and amounts this site still needs that no other truck is bringing.
+func site_need(plan: Node3D) -> Dictionary:
+	var need := {}
+	for kind in plan.materials():
+		var amount: int = plan.shortfall(kind)
+		for unit in get_tree().get_nodes_in_group("mobile_supplies"):
+			if unit != self and unit.has_method("fetching") and unit.fetching(plan): amount -= unit.fetch_claim.get(kind,0)
+		if amount > 0: need[kind] = amount
+	return need
+## Units of a resource aboard, loose and in crates.
+func cargo_units(kind: StringName) -> int:
+	return stockpile.amount(kind)+crate_units(kind)
+## New crates that still fit aboard.
+func free_crate_slots() -> int:
+	return maxi(0,mini(crate_slots()-crates.size(),stockpile.space()/ResourceStockpile.CRATE))
+## The nearest stop holding any of these materials, preferring one that holds all of them.
+func fetch_source(want: Dictionary) -> Node3D:
+	var any: Node3D
+	var candidates: Array[Node3D] = []
+	for group in ["depots","mobile_supplies"]:
+		for node in get_tree().get_nodes_in_group(group):
+			if shipment_endpoint(node): candidates.append(node)
+	candidates.sort_custom(func(a,b): return a.global_position.distance_squared_to(global_position) < b.global_position.distance_squared_to(global_position))
+	for node in candidates:
+		var held := 0
+		var full := true
+		for kind in want:
+			var available := _available_at(node,kind)
+			held += mini(available,want[kind])
+			if available < want[kind]: full = false
+		if full: return node
+		if held > 0 and any == null: any = node
+	return any
+func _available_at(node: Node3D, kind: StringName) -> int:
+	var total: int = node.stockpile.amount(kind)
+	for crate in CrateYard.beside(node):
+		if crate.resource_kind == kind: total += crate.amount
+	return total
+func command_fetch(plan: Node3D) -> void:
+	if is_in_group("rail_trains") or not _site_stop(plan):
+		_clear_fetch()
+		if order == "idle": state = "Fetch needs a build site"
+		return
+	pack_supplies()
+	cancel_supply_route()
+	_stop_route()
+	fetch_plan = plan
+	order_target = plan
+	var title: String = plan.spec.title
+	var need := site_need(plan)
+	if need.is_empty():
+		_clear_fetch(); order = "idle"; order_target = null
+		state = "The %s site has its materials" % title
+		_update_display(); return
+	# Materials already aboard count first; the rest fills free crate slots.
+	var aboard := {}
+	var want := {}
+	var slots := free_crate_slots()
+	for kind in ResourceStockpile.KINDS:
+		if not need.has(kind): continue
+		var carried := mini(need[kind],cargo_units(kind))
+		if carried > 0: aboard[kind] = carried
+		var more: int = need[kind]-carried
+		var fits := mini(more,slots*ResourceStockpile.CRATE)
+		if fits > 0:
+			want[kind] = fits
+			slots -= ceili(float(fits)/ResourceStockpile.CRATE)
+	var source := fetch_source(want) if not want.is_empty() else null
+	var steps: Array[Dictionary] = []
+	fetch_claim = aboard.duplicate()
+	if source != null:
+		fetch_load = {}
+		for kind in want:
+			var take := mini(want[kind],_available_at(source,kind))
+			if take > 0:
+				fetch_load[kind] = take
+				fetch_claim[kind] = fetch_claim.get(kind,0)+take
+		steps.append({kind = "unload", target = plan, point = plan.global_position, requires_target = true, fetch = true})
+		steps.append({kind = "fetch", target = plan})
+		for i in steps.size(): order_queue.insert(i,steps[i])
+		_start_job("load",source)
+		state = "Fetching %s for the %s site from %s" % [_amounts_text(fetch_load),title,source.name]
+		return
+	if not aboard.is_empty():
+		steps.append({kind = "fetch", target = plan})
+		for i in steps.size(): order_queue.insert(i,steps[i])
+		_start_job("unload",plan)
+		state = "Delivering %s to the %s site" % [_amounts_text(aboard),title]
+		return
+	# Nothing aboard and no stop holds what the site needs: wait and look again.
+	fetch_claim = {}
+	order = "fetch"
+	_fetch_retry = FETCH_RETRY_SECONDS
+	state = "Waiting for %s for the %s site" % [" and ".join(PackedStringArray(need.keys().map(func(k): return str(k)))),title]
+	_update_display()
+func _amounts_text(amounts: Dictionary) -> String:
+	var parts: Array[String] = []
+	for kind in ResourceStockpile.KINDS:
+		if amounts.get(kind,0) > 0: parts.append("%d %s" % [amounts[kind],kind])
+	return ", ".join(parts)
+func _fetch_wait(delta: float) -> void:
+	if not _site_stop(fetch_plan):
+		_clear_fetch(); order = "idle"; state = "Build site gone"; _update_display(); return
+	_fetch_retry -= delta
+	if _fetch_retry <= 0: command_fetch(fetch_plan)
+	_update_display()
 func _process(delta: float) -> void:
 	if _dead: return
 	_vehicle_process(delta)
@@ -437,6 +587,7 @@ func _vehicle_process(delta: float) -> void:
 		return
 	if not route_active:
 		if order in ["load","unload"]: _crate_job(delta)
+		elif order == "fetch": _fetch_wait(delta)
 		else: _order_process(delta)
 		return
 	if not endpoints_friendly():
