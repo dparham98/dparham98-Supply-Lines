@@ -13,12 +13,22 @@ func run() -> void:
 	var cells := FileAccess.get_file_as_bytes("res://assets/maps/terrain_cells.bin")
 	var terrain = load("res://scenes/maps/terrain.tscn").instantiate()
 	if not check(terrain.landscape == settings,"terrain.tscn should hold the landscape settings"): return
-	var ground: MeshInstance3D = terrain.get_node_or_null("Landmarks/Landscape/Ground")
+	var ground: Node = terrain.get_node_or_null("Landmarks/Landscape/Ground")
 	var water: MeshInstance3D = terrain.get_node_or_null("Landmarks/Landscape/Water")
-	if not check(ground != null and ground.mesh != null and water != null and water.mesh != null,"Landscape ground and water should be saved in the scenery before the scene runs"): return
-	if not check(ground.mesh.surface_get_material(0) is ShaderMaterial and water.mesh.surface_get_material(0) is ShaderMaterial,"Landscape meshes need their saved materials"): return
+	if not check(ground != null and ground.get_child_count() == settings.ground_tiles.size() and not settings.ground_tiles.is_empty() and water != null and water.mesh != null,"Landscape ground squares and water should be saved in the scenery before the scene runs"): return
+	if not check(water.mesh.surface_get_material(0) is ShaderMaterial,"Landscape water needs its saved material"): return
+	# The squares cover the region exactly, each with its material and coarser levels of detail for distant views.
+	var covered := 0.0
+	var ground_triangles := 0
+	var vertices := PackedVector3Array()
+	for tile: MeshInstance3D in ground.get_children():
+		if not check(tile.mesh != null and tile.mesh.surface_get_material(0) is ShaderMaterial,"Ground square %s needs its mesh and material" % tile.name): return
+		var box: AABB = tile.mesh.get_aabb()
+		covered += box.size.x*box.size.z
+		ground_triangles += tile.mesh.get_faces().size()/3
+		vertices.append_array(tile.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX])
+	if not check(absf(covered-region.get_area()) < 1.0,"Ground squares cover %.0f of %d square metres" % [covered,region.get_area()]): return
 	# Heights: gentle where units walk, and never up to where Drones fly.
-	var vertices: PackedVector3Array = ground.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 	var highest := -INF
 	var walk_low := 0.0
 	var walk_high := 0.0
@@ -28,16 +38,17 @@ func run() -> void:
 		var x := vertex.x+250.0
 		var z := vertex.z+250.0
 		if x <= region.position.x+0.01 or z <= region.position.y+0.01 or x >= region.end.x-0.01 or z >= region.end.y-0.01: edge = maxf(edge,absf(vertex.y))
-		# A vertex well inside open ground: every cell around it is grass or desert.
+		# A vertex well inside open ground: its cell and every cell around it are grass or desert. Rock rounds into
+		# the corners of the cells beside it, so a vertex on one of those corners is not well inside.
 		var open := true
-		for dz in range(-1,1):
-			for dx in range(-1,1):
+		for dz in range(-1,2):
+			for dx in range(-1,2):
 				var kind := int(cells[clampi(floori(z)+dz,0,499)*500+clampi(floori(x)+dx,0,499)])
 				if kind != 0 and kind != 2: open = false
 		if open:
 			walk_low = minf(walk_low,vertex.y)
 			walk_high = maxf(walk_high,vertex.y)
-	print("Highest %.2f m, walkable %.3f to %.3f m, edge %.4f m, %d ground triangles" % [highest,walk_low,walk_high,edge,ground.mesh.get_faces().size()/3])
+	print("Highest %.2f m, walkable %.3f to %.3f m, edge %.4f m, %d ground triangles in %d squares" % [highest,walk_low,walk_high,edge,ground_triangles,ground.get_child_count()])
 	if not check(highest < DRONE_HEIGHT and highest > 5.0,"Rock height wrong: %.2f" % highest): return
 	if not check(walk_low > -0.35 and walk_high < 0.08,"Walkable ground strays from the flat grid: %.3f to %.3f" % [walk_low,walk_high]): return
 	if not check(edge < 0.001,"The landscape should meet the flat map at height 0 along its edge"): return
@@ -63,7 +74,7 @@ func run() -> void:
 	print("%d forest pieces on %d Forest cells" % [trees,forest_cells])
 	if not check(trees > forest_cells/2,"Too little forest scenery: %d on %d cells" % [trees,forest_cells]): return
 	# Nothing large on cells units can walk: boulders and cliffs stay on Mountain cells or their first metre.
-	var triangles := ground.mesh.get_faces().size()/3+water.mesh.get_faces().size()/3
+	var triangles := ground_triangles+water.mesh.get_faces().size()/3
 	for batch in terrain.get_node("Landmarks/Landscape").find_children("*","MultiMeshInstance3D",true,false):
 		triangles += batch.multimesh.mesh.get_faces().size()/3*batch.multimesh.instance_count
 		if not String(batch.name).contains("boulder"): continue
@@ -73,7 +84,11 @@ func run() -> void:
 			var z := floori(buffer[i*16+11]+250.0)
 			if not check(cells[z*500+x] == 4,"A boulder stands on a cell units can reach at %d,%d" % [x,z]): return
 	print("Landscape total %d triangles over %d square metres" % [triangles,region.get_area()])
-	if not check(triangles < 450000,"Landscape over its triangle budget: %d" % triangles): return
+	# About 50 triangles a square metre at full detail; only the batches on screen are drawn.
+	if not check(triangles < region.get_area()*55,"Landscape over its triangle budget: %d" % triangles): return
+	# The old mountain massif is not drawn where the whole map is sculpted.
+	var massif: Node3D = terrain.get_node_or_null("Landmarks/Mountains/Massif")
+	if region.encloses(Rect2i(0,0,500,500)) and not check(massif == null or not massif.visible,"The old massif should be hidden under a whole-map landscape"): return
 	root.add_child(terrain)
 	await process_frame
 	var grid = terrain.get_node("Ground")

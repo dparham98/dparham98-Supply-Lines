@@ -17,4 +17,4 @@ shader_parameter/rock_warm = null
 shader_parameter/scree = null
 shader_parameter/snow = null
 shader_parameter/snow_line = null
-shader_parameter/landscape_region = Vector4(-206, -194, -84, -122)
+shader_parameter/landscape_region = Vector4(-250, -250, 250, 250)

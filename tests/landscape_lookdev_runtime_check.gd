@@ -1,5 +1,6 @@
 extends SceneTree
-# Rendered views of the landscape look-development slice (docs/LANDSCAPE_LOOKDEV.md) at play zoom and close up.
+# Rendered views of the sculpted landscape (docs/LANDSCAPE_LOOKDEV.md): the first slice at play zoom and close up,
+# the rest of the map, its corner and the overview.
 # Saves landscape_<view>.png, or <prefix>_<view>.png when LANDSCAPE_SHOT_PREFIX is set (used for the before set).
 const TestOutput = preload("res://tests/test_output.gd")
 const VIEWS := [
@@ -12,6 +13,15 @@ const VIEWS := [
 	["close_grass",Vector3(-150,0,-172),30.0],
 	["close_mountain",Vector3(-122,0,-168),30.0],
 	["close_desert",Vector3(-112,0,-186),30.0],
+	# Beyond the first slice: the landscape covers the whole map.
+	["map_centre",Vector3(0,0,0),95.0],
+	["map_north_east",Vector3(150,0,-150),95.0],
+	["map_south_west",Vector3(-150,0,150),95.0],
+	["map_south_east",Vector3(170,0,190),95.0],
+	["map_corner_water",Vector3(-215,0,215),60.0],
+	["map_corner_wide",Vector3(-200,0,200),160.0],
+	["map_corner_tight",Vector3(-232,0,240),25.0],
+	["map_overview",Vector3(0,0,0),560.0],
 ]
 func _initialize() -> void: call_deferred("run")
 func run() -> void:
@@ -33,6 +43,7 @@ func run() -> void:
 		for frame in range(200): rig.advance_camera(1.0/60)
 		for frame in range(6): await process_frame
 		await RenderingServer.frame_post_draw
+		print("%s: draw calls %d, primitives %d" % [view[0],Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)])
 		if not TestOutput.save_png(self,root.get_texture().get_image(),"%s_%s.png" % [prefix,view[0]]): return
 	# A Tank's lane through the wood: cleared cells lose their own trees and show churned earth.
 	if only.is_empty() or "cleared".contains(only):

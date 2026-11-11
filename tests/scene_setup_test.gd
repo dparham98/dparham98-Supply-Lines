@@ -1,8 +1,9 @@
 extends SceneTree
 const TestOutput = preload("res://tests/test_output.gd")
 const OUTPUT = "camera_work/"
-# rebuild_scenery() overwrites this tracked generated scene; the test restores its exact bytes.
+# rebuild_scenery() overwrites these tracked generated scenes; the test restores their exact bytes.
 const LANDMARKS = "res://scenes/maps/terrain_landmarks.tscn"
+const LANDSCAPE = "res://scenes/maps/terrain_landscape.scn"
 func forest_spots(forests: Node) -> int:
 	var total := 0
 	for batch in forests.get_children(): total += batch.multimesh.instance_count
@@ -11,12 +12,12 @@ func _initialize() -> void: call_deferred("check_scenes")
 func clear_scripts(n: Node) -> void:
 	for child in n.get_children(): clear_scripts(child)
 	n.set_script(null)
-func restore_landmarks(original: PackedByteArray) -> bool:
-	var handle := FileAccess.open(LANDMARKS, FileAccess.WRITE)
+func restore_landmarks(original: PackedByteArray, path := LANDMARKS) -> bool:
+	var handle := FileAccess.open(path, FileAccess.WRITE)
 	if handle == null or not handle.store_buffer(original):
-		printerr("LANDMARKS_RESTORE_FAILED: cannot write " + LANDMARKS); quit(1); return false
+		printerr("LANDMARKS_RESTORE_FAILED: cannot write " + path); quit(1); return false
 	handle.close()
-	if FileAccess.get_file_as_bytes(LANDMARKS) != original:
+	if FileAccess.get_file_as_bytes(path) != original:
 		printerr("LANDMARKS_RESTORE_FAILED: contents differ after restore"); quit(1); return false
 	return true
 func check_scenes() -> void:
@@ -68,14 +69,15 @@ func check_scenes() -> void:
 	var terrain := load("res://scenes/maps/terrain.tscn").instantiate() as Node3D
 	assert(terrain.rebuild_action.is_valid())
 	var original_landmarks := FileAccess.get_file_as_bytes(LANDMARKS)
-	assert(not original_landmarks.is_empty())
+	var original_landscape := FileAccess.get_file_as_bytes(LANDSCAPE)
+	assert(not original_landmarks.is_empty() and not original_landscape.is_empty())
 	terrain.rebuild_scenery()
 	assert(terrain.get_node("Landmarks").scene_file_path == "res://scenes/maps/terrain_landmarks.tscn")
 	assert(forest_spots(terrain.get_node("Landmarks/Forests")) == 1646)
 	var rebuilt_mesh: MultiMesh = terrain.get_node("Landmarks/Forests/Trees01").multimesh
 	var rebuilt_buffers_valid: bool = rebuilt_mesh.buffer.size() == rebuilt_mesh.instance_count*16 and rebuilt_mesh.duplicate().buffer == rebuilt_mesh.buffer
 	terrain.free()
-	if not restore_landmarks(original_landmarks): return
+	if not restore_landmarks(original_landmarks) or not restore_landmarks(original_landscape, LANDSCAPE): return
 	assert(rebuilt_buffers_valid)
 	# Static render proves visibility does not depend on runtime generation.
 	clear_scripts(world)

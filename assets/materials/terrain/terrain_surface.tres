@@ -32,4 +32,4 @@ shader_parameter/macro_strength = null
 shader_parameter/breakup_strength = null
 shader_parameter/grass_relief = null
 shader_parameter/desert_relief = null
-shader_parameter/landscape_region = Vector4(0.088, 0.112, 0.332, 0.256)
+shader_parameter/landscape_region = Vector4(0, 0, 1, 1)

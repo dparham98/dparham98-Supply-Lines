@@ -21,10 +21,16 @@ func _ready() -> void:
 				copies[batch.material_override] = batch.material_override.duplicate()
 				copies[batch.material_override].set_shader_parameter("cleared_cells",$Ground.material_override.get_shader_parameter("cleared_cells"))
 			batch.material_override = copies[batch.material_override]
-	var sculpted := get_node_or_null("Landmarks/Landscape/Ground") as MeshInstance3D
-	if sculpted != null and $Ground.material_override is ShaderMaterial and sculpted.mesh.surface_get_material(0) is ShaderMaterial:
-		sculpted.material_override = sculpted.mesh.surface_get_material(0).duplicate()
-		sculpted.material_override.set_shader_parameter("cleared_cells",$Ground.material_override.get_shader_parameter("cleared_cells"))
+	var sculpted := get_node_or_null("Landmarks/Landscape/Ground")
+	if sculpted != null and $Ground.material_override is ShaderMaterial:
+		var ground_copies := {}
+		for tile in sculpted.get_children():
+			if not tile is MeshInstance3D or not tile.mesh.surface_get_material(0) is ShaderMaterial: continue
+			var shared: ShaderMaterial = tile.mesh.surface_get_material(0)
+			if not ground_copies.has(shared):
+				ground_copies[shared] = shared.duplicate()
+				ground_copies[shared].set_shader_parameter("cleared_cells",$Ground.material_override.get_shader_parameter("cleared_cells"))
+			tile.material_override = ground_copies[shared]
 
 # Felled trees topple over a second or two; this only moves saved batch instances.
 func _process(delta: float) -> void:
@@ -43,6 +49,8 @@ func _process(delta: float) -> void:
 @export var scatter_seed: int = 2817
 @export_tool_button("Rebuild terrain scenery", "Reload") var rebuild_action: Callable = rebuild_scenery
 
+const LANDSCAPE_SCENE := "res://scenes/maps/terrain_landscape.scn"
+
 func rebuild_scenery() -> void:
 	if not tree_scene or not mountain_scene or not ore_scene:
 		push_warning("Assign all three terrain asset scenes before rebuilding.")
@@ -58,6 +66,22 @@ func rebuild_scenery() -> void:
 			push_error("Terrain rebuild has incomplete instance data; saved scenery was not changed.")
 			output.free()
 			return
+	# The sculpted landscape is large, so it is saved apart as a compressed binary scene that the landmarks instance.
+	var landscape_node := output.get_node_or_null("Landscape")
+	if landscape_node != null:
+		for child in landscape_node.find_children("*","",true,false): child.owner = landscape_node
+		var part := PackedScene.new()
+		if part.pack(landscape_node) != OK or ResourceSaver.save(part,LANDSCAPE_SCENE,ResourceSaver.FLAG_COMPRESS) != OK:
+			push_error("Could not save " + LANDSCAPE_SCENE)
+			output.free()
+			return
+		output.remove_child(landscape_node)
+		landscape_node.free()
+		# Taking over the path makes the instance refer to the saved file, without reloading over cached batches.
+		part.take_over_path(LANDSCAPE_SCENE)
+		var placed: Node = part.instantiate()
+		output.add_child(placed)
+		placed.owner = output
 	var packed := PackedScene.new()
 	if packed.pack(output) != OK: return
 	if ResourceSaver.save(packed, "res://scenes/maps/terrain_landmarks.tscn") != OK: return
