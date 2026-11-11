@@ -29,6 +29,9 @@ enum StartupFocus { AUTHORED_POSITION, HEADQUARTERS, WHOLE_MAP }
 @export_category("Map And Overview")
 @export var map_bounds := Rect2(-250, -250, 500, 500)
 @export var constrain_view_to_map: bool = true
+## Pixels at the bottom of the window covered by the HUD. The map's edge may scroll up to the top
+## of this strip instead of stopping behind it. The skirmish HUD sets it to its panel's height.
+@export_range(0, 600, 1) var screen_bottom_inset: float = 0.0
 @export_range(40, 80, 1) var overview_pitch_degrees: float = 60.0
 @export_range(0, 0.3, 0.01) var overview_padding: float = 0.08
 @export_category("Editor Preview")
@@ -209,14 +212,26 @@ func _aspect() -> float:
 	var viewport_size := get_viewport().get_visible_rect().size
 	return viewport_size.x / maxf(1, viewport_size.y)
 
+## The share of the window's height that is not covered by the HUD.
+func _visible_fraction() -> float:
+	var height := get_viewport().get_visible_rect().size.y
+	return clampf(1.0 - screen_bottom_inset / maxf(1, height), 0.2, 1.0)
+
+## Keeps the uncovered part of the view inside the map. The HUD covers the bottom of the window, so
+## that part's middle sits ahead of the focus, toward the top of the screen.
 func _clamp_focus(focus: Vector3, zoom: float, yaw: float, pitch: float) -> Vector3:
 	if not constrain_view_to_map: return Vector3(focus.x, 0, focus.z)
+	var fraction := _visible_fraction()
 	var half_width := zoom * 0.5 * _aspect()
-	var half_depth := zoom * 0.5 / sin(deg_to_rad(pitch))
+	var full_half_depth := zoom * 0.5 / sin(deg_to_rad(pitch))
+	var half_depth := full_half_depth * fraction
+	var ahead := Vector3(-sin(yaw), 0, -cos(yaw)) * full_half_depth * (1.0 - fraction)
+	var visible := focus + ahead
 	var x := absf(cos(yaw)) * half_width + absf(sin(yaw)) * half_depth
 	var z := absf(sin(yaw)) * half_width + absf(cos(yaw)) * half_depth
 	var center := map_bounds.get_center()
-	return Vector3(center.x if x * 2 >= map_bounds.size.x else clampf(focus.x, map_bounds.position.x + x, map_bounds.end.x - x), 0, center.y if z * 2 >= map_bounds.size.y else clampf(focus.z, map_bounds.position.y + z, map_bounds.end.y - z))
+	visible = Vector3(center.x if x * 2 >= map_bounds.size.x else clampf(visible.x, map_bounds.position.x + x, map_bounds.end.x - x), 0, center.y if z * 2 >= map_bounds.size.y else clampf(visible.z, map_bounds.position.y + z, map_bounds.end.y - z))
+	return visible - ahead
 
 func ground_point(screen_position: Vector2) -> Variant:
 	return Plane(Vector3.UP, 0).intersects_ray(camera.project_ray_origin(screen_position), camera.project_ray_normal(screen_position))
@@ -285,7 +300,7 @@ func focus_selection() -> void:
 	focus_position(center, maxf(default_zoom, maxf(width / _aspect(), depth * sin(deg_to_rad(pitch_degrees))) * 1.3))
 
 func overview_zoom() -> float:
-	var vertical := map_bounds.size.y * sin(deg_to_rad(overview_pitch_degrees))
+	var vertical := map_bounds.size.y * sin(deg_to_rad(overview_pitch_degrees)) / _visible_fraction()
 	return maxf(vertical, map_bounds.size.x / _aspect()) * (1 + overview_padding)
 
 func show_overview() -> void:
