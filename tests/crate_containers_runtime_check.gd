@@ -63,7 +63,7 @@ func run() -> void:
 	if not game.selected_building == depot: await click_at(screen(depot.global_position))
 	if not check(game.selected_building == depot and hud.card.get_node("MakeCrates").is_visible_in_tree(),"Depot Make crates tile not shown"): return
 	var iron: int = depot.iron
-	for kind in [&"iron",&"iron",&"iron"]: CrateYard.pack(depot,kind)
+	for kind in [&"iron",&"iron"]: CrateYard.pack(depot,kind)
 	depot.coal = maxi(depot.coal,25)
 	CrateYard.pack(depot,&"coal")
 	# Real clicks: Make crates opens the page and its Iron tile sets down a full crate.
@@ -73,7 +73,7 @@ func run() -> void:
 	await click(hud.load_tiles.get_node("Iron"))
 	game.cancel_armed()
 	CrateYard.pack_empty(depot)
-	if not check(CrateYard.count_beside(depot,&"iron") == 4 and CrateYard.count_beside(depot,&"coal") == 1 and CrateYard.beside(depot).size() == 6 and depot.iron == before-25 and before == iron-75,"Real clicks did not make crates beside the Depot"): return
+	if not check(CrateYard.count_beside(depot,&"iron") == 3 and CrateYard.count_beside(depot,&"coal") == 1 and CrateYard.beside(depot).size() == 5 and depot.iron == before-25 and before == iron-50,"Real clicks did not make crates beside the Depot: iron crates %d, coal %d, beside %d, iron %d, before %d, start %d" % [CrateYard.count_beside(depot,&"iron"),CrateYard.count_beside(depot,&"coal"),CrateYard.beside(depot).size(),depot.iron,before,iron]): return
 	var iron_crate: Node3D
 	var empty_crate: Node3D
 	for crate in CrateYard.beside(depot):
