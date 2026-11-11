@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/burst_effect.gd" id="burst"]
+[ext_resource type="PackedScene" path="res://assets/models/projectiles/motorcycle_muzzle_fx.glb" id="model"]
+
+[node name="MotorcycleMuzzleFx" type="Node3D"]
+script = ExtResource("burst")
+flash_path = NodePath("Model/Steam_Jet")
+
+[node name="Model" parent="." instance=ExtResource("model")]
+
+[editable path="Model"]

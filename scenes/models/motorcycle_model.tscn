@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/motorcycle_rig.gd" id="rig_script"]
+[ext_resource type="PackedScene" path="res://assets/models/units/motorcycle.glb" id="rig"]
+[ext_resource type="PackedScene" path="res://scenes/models/motorcycle_muzzle_fx.tscn" id="muzzle_fx"]
+[ext_resource type="PackedScene" path="res://scenes/models/motorcycle_death_fx.tscn" id="death_fx"]
+
+[node name="MotorcycleModel" type="Node3D"]
+script = ExtResource("rig_script")
+turret_path = NodePath("Rig/bike_root/gun_swivel")
+muzzle_path = NodePath("Rig/bike_root/gun_swivel/gun_body/gun_barrel/muzzle/MuzzleFx")
+turn_speed_degrees = 540.0
+death_fx_scene = ExtResource("death_fx")
+
+[node name="Rig" parent="." instance=ExtResource("rig")]
+transform = Transform3D(-1,0,0,0,1,0,0,0,-1,0,0,0)
+
+[node name="MuzzleFx" parent="Rig/bike_root/gun_swivel/gun_body/gun_barrel/muzzle" instance=ExtResource("muzzle_fx")]
+
+[editable path="Rig"]
