@@ -4,9 +4,31 @@ extends Node3D
 var forest_state: ForestStateVisuals
 
 func _ready() -> void:
-	if Engine.is_editor_hint(): return
+	if Engine.is_editor_hint():
+		set_process(false)
+		return
 	forest_state = ForestStateVisuals.new()
-	forest_state.bind($Ground,get_node_or_null("Landmarks/Forests"))
+	forest_state.bind($Ground,get_node_or_null("Landmarks/Forests"),2)
+	# The sculpted landscape keeps one tree per cell and draws cleared ground from the same match-local mask.
+	forest_state.bind($Ground,get_node_or_null("Landmarks/Landscape/Forest"),1)
+	# Trees get the same mask, so they can be cut away in front of a cleared cell. One copy of each material.
+	var forest := get_node_or_null("Landmarks/Landscape/Forest")
+	if forest != null and $Ground.material_override is ShaderMaterial:
+		var copies := {}
+		for batch in forest.get_children():
+			if not batch is MultiMeshInstance3D or not batch.material_override is ShaderMaterial: continue
+			if not copies.has(batch.material_override):
+				copies[batch.material_override] = batch.material_override.duplicate()
+				copies[batch.material_override].set_shader_parameter("cleared_cells",$Ground.material_override.get_shader_parameter("cleared_cells"))
+			batch.material_override = copies[batch.material_override]
+	var sculpted := get_node_or_null("Landmarks/Landscape/Ground") as MeshInstance3D
+	if sculpted != null and $Ground.material_override is ShaderMaterial and sculpted.mesh.surface_get_material(0) is ShaderMaterial:
+		sculpted.material_override = sculpted.mesh.surface_get_material(0).duplicate()
+		sculpted.material_override.set_shader_parameter("cleared_cells",$Ground.material_override.get_shader_parameter("cleared_cells"))
+
+# Felled trees topple over a second or two; this only moves saved batch instances.
+func _process(delta: float) -> void:
+	if forest_state != null and forest_state.is_felling(): forest_state.advance(delta)
 
 @export_category("Terrain Asset Slots")
 @export var tree_scene: PackedScene
@@ -16,6 +38,8 @@ func _ready() -> void:
 @export var forest_tile_scenes: Array[PackedScene] = []
 ## When set, this sculpted mesh replaces the scattered mountain_scene props.
 @export var mountain_mesh: Mesh
+## When set, its region is drawn as sculpted landscape (docs/LANDSCAPE_LOOKDEV.md).
+@export var landscape: LandscapeSettings
 @export var scatter_seed: int = 2817
 @export_tool_button("Rebuild terrain scenery", "Reload") var rebuild_action: Callable = rebuild_scenery
 
@@ -24,7 +48,7 @@ func rebuild_scenery() -> void:
 		push_warning("Assign all three terrain asset scenes before rebuilding.")
 		return
 	var baker = load("res://scripts/tools/terrain_baker.gd").new()
-	var output: Node3D = baker.build(tree_scene, mountain_scene, ore_scene, scatter_seed, forest_tile_scenes, mountain_mesh)
+	var output: Node3D = baker.build(tree_scene, mountain_scene, ore_scene, scatter_seed, forest_tile_scenes, mountain_mesh, landscape)
 	if output.get_child_count() == 0:
 		output.free()
 		return

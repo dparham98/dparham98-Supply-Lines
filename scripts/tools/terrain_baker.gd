@@ -10,7 +10,7 @@ func _collect(node: Node, parent_transform: Transform3D, parts: Array) -> void:
 			if override:
 				if model == node.mesh: model = node.mesh.duplicate()
 				model.surface_set_material(surface, override)
-		parts.append({"name": node.name, "mesh": model, "transform": local, "material": node.material_override})
+		parts.append({"name": node.name, "mesh": model, "transform": local, "material": node.material_override, "shadows": node.cast_shadow})
 	for child in node.get_children(): _collect(child, local, parts)
 
 func _scatter(root: Node3D, name_: String, scene: PackedScene, placements: Array[Transform3D], colors: Array[Color]) -> void:
@@ -53,14 +53,18 @@ func _batches(root: Node3D, group: Node3D, scene: PackedScene, placements: Array
 		item.name = str(part["name"]) + suffix
 		item.multimesh = mm
 		item.material_override = part["material"]
+		item.cast_shadow = part["shadows"]
 		group.add_child(item)
 		item.owner = root
 
 ## With forest_tiles, each forest spot takes one of those scenes in place of tree_scene.
 ## With mountain_mesh, that sculpted mesh replaces the scattered mountain_scene props.
-func build(tree_scene: PackedScene, mountain_scene: PackedScene, ore_scene: PackedScene, seed_: int = 2817, forest_tiles: Array = [], mountain_mesh: Mesh = null) -> Node3D:
+## With landscape, its region gets the sculpted ground, water and scenery of docs/LANDSCAPE_LOOKDEV.md.
+func build(tree_scene: PackedScene, mountain_scene: PackedScene, ore_scene: PackedScene, seed_: int = 2817, forest_tiles: Array = [], mountain_mesh: Mesh = null, landscape: LandscapeSettings = null) -> Node3D:
 	var cells := FileAccess.get_file_as_bytes("res://assets/maps/terrain_cells.bin")
 	assert(cells.size() == 250000)
+	var sculpted = load("res://scripts/tools/landscape_baker.gd").new() if landscape != null else null
+	if sculpted != null: sculpted.settings = landscape
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_
 	# Separate generator, so rocks and ore keep their places whichever forest is used.
@@ -87,6 +91,9 @@ func build(tree_scene: PackedScene, mountain_scene: PackedScene, ore_scene: Pack
 				p.x += rng.randf_range(-0.3, 0.3)
 				p.z += rng.randf_range(-0.3, 0.3)
 				var tint: Color = Color.WHITE * rng.randf_range(0.8, 1.18)
+				# Where the landscape grows its own forest the old patch keeps its place in the batch, so every index
+				# outside the region is unchanged, but has no size.
+				if sculpted != null and sculpted.replaces_forest() and sculpted.covers(x, z): b = b.scaled(Vector3.ZERO)
 				if forest_tiles.is_empty():
 					trees.append(Transform3D(b, p))
 					tree_colors.append(tint)
@@ -101,6 +108,8 @@ func build(tree_scene: PackedScene, mountain_scene: PackedScene, ore_scene: Pack
 			elif t == 5:
 				for j in range(3):
 					var ob := Basis(Vector3.UP, rng.randf_range(0, TAU)).scaled(Vector3(rng.randf_range(0.5, 1), rng.randf_range(0.4, 1.2), rng.randf_range(0.5, 1)))
+					# As with forest: the landscape stands its own ore here, and the old rock keeps its place with no size.
+					if sculpted != null and sculpted.replaces_ore() and sculpted.covers(x, z): ob = ob.scaled(Vector3.ZERO)
 					ores.append(Transform3D(ob, p + Vector3(rng.randf_range(-0.4, 0.4), 0, rng.randf_range(-0.4, 0.4))))
 					ore_colors.append(Color(1, rng.randf_range(0.65, 1), rng.randf_range(0.65, 1)))
 	var root := Node3D.new()
@@ -129,4 +138,5 @@ func build(tree_scene: PackedScene, mountain_scene: PackedScene, ore_scene: Pack
 		mountains.add_child(massif)
 		massif.owner = root
 	_scatter(root, "OreDeposits", ore_scene, ores, ore_colors)
+	if sculpted != null: sculpted.add_to(root, cells, landscape, self)
 	return root

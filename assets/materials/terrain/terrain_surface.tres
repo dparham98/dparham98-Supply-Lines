@@ -1,14 +1,35 @@
-[gd_resource type="ShaderMaterial" load_steps=7 format=3]
+[gd_resource type="ShaderMaterial" format=3]
+
 [ext_resource type="Shader" path="res://assets/shaders/terrain_surface.gdshader" id="1"]
 [ext_resource type="Texture2D" path="res://assets/maps/terrain_surface.png" id="2"]
 [ext_resource type="Texture2D" path="res://assets/maps/terrain_data.png" id="3"]
 [ext_resource type="CompressedTexture2DArray" path="res://assets/textures/terrain/ground_tiles_albedo.png" id="4"]
 [ext_resource type="CompressedTexture2DArray" path="res://assets/textures/terrain/ground_tiles_normal.png" id="5"]
-[ext_resource type="Texture2D" uid="uid://hk5p2higvw2i" path="res://assets/textures/terrain/ground_blend.png" id="6"]
+[ext_resource type="Texture2D" path="res://assets/textures/terrain/ground_blend.png" id="6"]
+
 [resource]
+render_priority = 0
 shader = ExtResource("1")
 shader_parameter/surface_map = ExtResource("2")
 shader_parameter/category_map = ExtResource("3")
 shader_parameter/tile_albedo = ExtResource("4")
 shader_parameter/tile_normal = ExtResource("5")
+shader_parameter/tile_metres = null
+shader_parameter/feature_share = null
+shader_parameter/surface_tint = null
+shader_parameter/grass_surface_mean = null
+shader_parameter/desert_surface_mean = null
+shader_parameter/water_surface_mean = null
+shader_parameter/forest_surface_mean = null
+shader_parameter/mountain_surface_mean = null
+shader_parameter/stony_tint = null
 shader_parameter/ground_blend = ExtResource("6")
+shader_parameter/border_wander = null
+shader_parameter/border_softness = null
+shader_parameter/dry_margin = null
+shader_parameter/dry_strength = null
+shader_parameter/macro_strength = null
+shader_parameter/breakup_strength = null
+shader_parameter/grass_relief = null
+shader_parameter/desert_relief = null
+shader_parameter/landscape_region = Vector4(0.088, 0.112, 0.332, 0.256)
