@@ -1,6 +1,11 @@
 [gd_scene format=3]
 [ext_resource type="Script" path="res://scripts/economy/construction_plan.gd" id="plan"]
 [ext_resource type="Shader" path="res://assets/shaders/construction_grid.gdshader" id="shader"]
+[ext_resource type="PackedScene" path="res://scenes/models/construction_site_2x2.tscn" id="site_2"]
+[ext_resource type="PackedScene" path="res://scenes/models/construction_site_3x3.tscn" id="site_3"]
+[ext_resource type="PackedScene" path="res://scenes/models/construction_site_6x6.tscn" id="site_6"]
+[ext_resource type="PackedScene" path="res://scenes/models/construction_site_8x8.tscn" id="site_8"]
+[ext_resource type="PackedScene" path="res://scenes/models/construction_site_10x10.tscn" id="site_10"]
 [sub_resource type="ShaderMaterial" id="grid_material"]
 shader = ExtResource("shader")
 [sub_resource type="BoxMesh" id="grid_mesh"]
@@ -8,6 +13,13 @@ size = Vector3(1,0.05,1)
 material = SubResource("grid_material")
 [node name="ConstructionPlan" type="Node3D"]
 script = ExtResource("plan")
+site_scenes = Dictionary[int, PackedScene]({
+2: ExtResource("site_2"),
+3: ExtResource("site_3"),
+6: ExtResource("site_6"),
+8: ExtResource("site_8"),
+10: ExtResource("site_10")
+})
 [node name="Visuals" type="Node3D" parent="."]
 [node name="Grid" type="MeshInstance3D" parent="Visuals"]
 mesh = SubResource("grid_mesh")
