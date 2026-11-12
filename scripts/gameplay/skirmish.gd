@@ -215,6 +215,17 @@ func pick_target(screen: Vector2, group: String, _radius := 34.0) -> Node3D:
 		var d: float = preload("res://scripts/units/selection_bounds.gd").hit_distance(node,camera,screen)
 		if d < distance: distance = d; closest = node
 	return closest
+## A friendly unit or building under the pointer, for forced fire with the Attack command.
+func pick_friendly(screen: Vector2) -> Node3D:
+	var camera := get_viewport().get_camera_3d()
+	var closest: Node3D
+	var distance := INF
+	for group in ["units","selectable_buildings"]:
+		for node in get_tree().get_nodes_in_group(group):
+			if node.get("team") != "player" or not node.has_method("take_damage"): continue
+			var d: float = preload("res://scripts/units/selection_bounds.gd").hit_distance(node,camera,screen)
+			if d < distance: distance = d; closest = node
+	return closest
 # Shift-held orders join each unit's queue; plain orders replace it (docs/COMMAND_QUEUE.md).
 signal order_given(kind: String, point: Vector3, target: Node3D, queued: bool)
 func give_order(unit: Node3D, entry: Dictionary, queued: bool) -> void:
@@ -297,6 +308,8 @@ func issue_card_order(screen: Vector2, queued := false) -> void:
 		if target == null:
 			var building = pick_target(screen,"selectable_buildings",50)
 			if is_instance_valid(building) and (building.is_in_group("mines") or building.team not in ["player","neutral"]): target = building
+		# Nothing hostile under the pointer: the Attack command fires on a friendly unit or building.
+		if target == null: target = pick_friendly(screen)
 	elif pending_unit_command == "gather":
 		target = pick_target(screen,"resources",48)
 		if target == null:
@@ -364,6 +377,7 @@ func issue_card_order(screen: Vector2, queued := false) -> void:
 		if unit.team != "player" or not unit.is_selected: continue
 		if pending_unit_command == "move":
 			if point != null: give_order(unit,{kind = "move", point = point},queued)
+		elif pending_unit_command == "attack" and target.get("team") == unit.team: give_order(unit,{kind = "attack", target = target, forced = true},queued)
 		else: give_order(unit,{kind = pending_unit_command, target = target},queued)
 	# Shift keeps the command armed so several targets can be queued.
 	notify(pending_unit_command.capitalize()+(" order queued. Shift-click adds more; Esc stops." if queued else " order issued."))
