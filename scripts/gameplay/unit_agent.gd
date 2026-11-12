@@ -200,7 +200,7 @@ func _order_process(delta: float) -> void:
 	if order == "idle" and not order_queue.is_empty() and not out_of_fuel: _start_next_order()
 	_cooldown = maxf(0,_cooldown-delta)
 	_retry = maxf(0,_retry-delta)
-	if order == "attack" and not _may_hit(order_target):
+	if order == "attack" and (not is_instance_valid(order_target) or not _may_hit(order_target)):
 		_stop_route()
 		order = "idle"
 		state = "Attack target lost"
@@ -451,7 +451,7 @@ func _attack_order() -> void:
 		order = "idle"
 		state = "Attack unspecified"
 		return
-	if not _may_hit(order_target):
+	if not is_instance_valid(order_target) or not _may_hit(order_target):
 		order = "idle"
 		state = "Idle"
 		return

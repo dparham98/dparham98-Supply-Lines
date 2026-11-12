@@ -10,6 +10,7 @@ Edit `assets/units/*.tres` in Godot's Inspector, then restart. UnitStats contain
 - Grenadier and Tank splash is instantaneous at the primary target's center, provisional radius **3 map units**, inclusive boundary, measured between actor centers. Radius is editable. Other units have no splash.
 - Each victim takes its own class damage. Tanks are identified by unit ID; buildings by selectable_buildings group. The primary victim determines the whole shot's cooldown (Tank: 1 second normally, 3 against heavy targets). Secondary victims can lie beyond weapon range but within splash radius. One hit per victim, no friendly fire or neutral damage. No damage falloff, projectile travel, armor or line-of-sight rules were specified or added.
 - Attack card can target hostile units or owned hostile buildings. Infantry right-click continues to capture enemy Depots/mines; use Attack explicitly to damage them. Other armed units right-click hostile buildings to attack. Attacks reject invalid, dead, neutral, friendly and out-of-range targets.
+- Forced fire: the Attack card (A, then click) also takes a friendly unit or building when nothing hostile is under the pointer, and fires on it until it dies, so its death animation plays. It counts only for that order's target; splash, right-click, attack-move and idle defence still spare friendlies (`tests/friendly_attack_test.gd`).
 - No new enemy pressure, forest navigation/clearing, Drone flight or tentative death/jamming effects in this batch.
 
 ## Editor checks
