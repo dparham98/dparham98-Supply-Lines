@@ -653,37 +653,22 @@ p.cyl("fac_steel", TT, TT + Z * 1.0, 0.22, seg=14)
 p.cyl("fac_gunmetal", TT, TT + Z * 0.08, 0.42, seg=14)
 finish(p, "lift_ram", T(TT), root)
 
-# ---------------------------------------------------------------- the vehicle shell being assembled
-VO = V((TT.x, TT.y, TT_TOP))       # its origin sits on the turntable, front toward -Y
+# ---------------------------------------------------------------- the vehicle mount and the crane's plates
+# The game stands the queued unit's own model on `vehicle` (scripts/components/production_rig.gd), so the
+# plant builds whatever was ordered. The empty rides the lift and turntable; its front is toward -Y.
+VO = V((TT.x, TT.y, TT_TOP))
 vehicle = empty("vehicle", T(VO), root, 0.4)
-p = Part()                         # lower hull with a sloped glacis
-hull = [(-0.62, 0.95), (0.62, 0.95), (0.62, -0.75), (0.45, -1.08), (-0.45, -1.08), (-0.62, -0.75)]
-p.add(mk_prism(hull, VO + Z * 0.22, X, Y, 0.0, 0.5), "fac_primer", True)
-p.add(mk_prism([(-0.05, 0.0), (0.42, 0.0), (0.0, 0.5)], VO + V((0, -1.08, 0.22)), -Y, Z, -0.45, 0.45), "fac_primer", True)
-p.box("fac_hot", VO + V((0, -0.82, 0.62)), (0.7, 0.06, 0.05))           # fresh weld seams
-p.box("fac_hot", VO + V((0, 0.4, 0.73)), (1.1, 0.05, 0.03))
-finish(p, "veh_hull", T(VO), vehicle)
-for side in (-1, 1):
+# Three primer armour plates the crane carries in and lowers onto the unit, each with a hot weld edge. They
+# are seated at these heights above the turntable (animate_tank_factory.py's TOPS) and then merge away.
+PLATES = [("veh_plate_1", 1.5, 0.75, 0.35), ("veh_plate_2", 1.2, 0.65, 0.6), ("veh_plate_3", 0.9, 0.55, 0.85)]
+for name, w, d, top in PLATES:
     p = Part()
-    tx = side * 0.84
-    p.add(mk_box(VO + V((tx, -0.05, 0.33)), (0.34, 2.15, 0.5), None, 0.08), "fac_black", True)
-    for k in range(5):
-        y = -0.85 + k * 0.4
-        p.cyl("fac_steel", VO + V((tx - 0.18, y, 0.25)), VO + V((tx + 0.18, y, 0.25)), 0.16, seg=10)
-    p.box("fac_primer", VO + V((tx, -0.05, 0.6)), (0.4, 2.2, 0.06))
-    finish(p, "veh_track_%s" % ("l" if side < 0 else "r"), T(VO + V((tx, 0, 0))), vehicle)
-p = Part()                         # upper deck and engine grille
-p.add(mk_box(VO + V((0, 0.25, 0.86)), (1.22, 1.35, 0.3), None, 0.05), "fac_primer", True)
-for k in range(5):
-    p.box("fac_black", VO + V((-0.35 + k * 0.175, 0.62, 1.015)), (0.1, 0.5, 0.02))
-p.box("fac_hot", VO + V((0, -0.42, 0.72)), (1.0, 0.04, 0.03))
-finish(p, "veh_deck", T(VO + Z * 0.72), vehicle)
-p = Part()                         # turret with a stub barrel
-p.add(mk_prism(chamfer_poly(0.42, 0.45, 0.16), VO + V((0, 0.05, 0)), X, Y, 1.01, 1.33), "fac_primer", True)
-p.cyl("fac_gunmetal", VO + V((0, -0.38, 1.17)), VO + V((0, -1.25, 1.17)), 0.07, seg=10)
-p.cyl("fac_gunmetal", VO + V((0, -1.2, 1.17)), VO + V((0, -1.32, 1.17)), 0.1, seg=10)
-p.box("fac_hot", VO + V((0, 0.05, 1.335)), (0.5, 0.04, 0.01))
-finish(p, "veh_turret", T(VO + Z * 1.01), vehicle)
+    c = VO + Z * (top - 0.03)
+    p.add(mk_box(c, (w, d, 0.06), None, 0.015), "fac_primer", True)
+    p.box("fac_hot", c + Z * 0.032, (w * 0.8, 0.04, 0.012))
+    for sx in (-1, 1):
+        p.box("fac_gunmetal", c + V((sx * (w / 2 - 0.12), 0, 0.045)), (0.08, d * 0.6, 0.03))
+    finish(p, name, T(VO + Z * top), vehicle)
 
 # ---------------------------------------------------------------- the crane: gantry, trolley, hook
 GO = V((0.0, PARK_Y, RAIL_Z + 0.05))
