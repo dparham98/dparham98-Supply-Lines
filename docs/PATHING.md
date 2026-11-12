@@ -6,7 +6,7 @@ Routes are still found on the 1 m grid with A* (`terrain_grid.gd` `actor_path`, 
 
 - **The aim:** of the next 32 route cells (`AIM_LOOKAHEAD`), the last one first, then a halving search for the farthest one reachable in a straight lane. A lane is clear when every cell under the line, and 0.35 m either side of it (`LANE_HALF_WIDTH`), is open to the unit. This keeps runs off building corners and out of diagonal gaps.
 - **Re-aiming:** the aim is chosen again each time the unit crosses into a new cell, and when it reaches the aim. On open ground a unit within 32 cells of its goal walks one straight line to it. Longer routes bend gently toward the goal.
-- **Fallback:** when even the next cell is out of a straight lane (a unit stopped off centre beside an obstacle), it goes back through its own cell's centre first.
+- **Fallback:** when even the next cell is out of a straight lane (something moved into it, or a unit stopped off centre beside an obstacle), the unit plans again from its own cell and goes back through that cell's centre first. If there is no route, it waits half a second and its order plans again.
 - **Cells held:** a unit claims each cell as it crosses into it and lets go of the one it left, so it holds exactly the cell it stands in. If the next cell is taken by then, it stops at the edge, waits half a second and plans again, as before.
 - **The end:** the route's last cell is reached exactly on its centre, including goals on an interaction radius.
 - **Kept:** `_moving_to` is the cell being headed for, so the order loop, cargo trucks and the Train (which has its own rail walk) are unchanged. Fuel, forest clearing and moving fire work as before.

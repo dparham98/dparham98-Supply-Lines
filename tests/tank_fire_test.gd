@@ -27,8 +27,8 @@ func run() -> void:
 	for node in get_nodes_in_group("units"): node.set_process(false)
 	var origin := Vector3(180,0,180)
 	var tank := actor("tank","player",origin)
-	var foe := actor("hostile","enemy",origin+Vector3(12,0,0))
-	tank.attack_range = 14.0
+	var foe := actor("hostile","enemy",origin+Vector3(24,0,0))
+	tank.attack_range = 28.0
 	await process_frame
 	var model = tank.get_node("Visuals/Model")
 	var fx = model.muzzle

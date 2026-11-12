@@ -1,7 +1,7 @@
 extends SceneTree
 # Headless: units cross open ground in straight runs rather than cell to cell, turn at their turn rate
 # instead of snapping, hold exactly the cell they stand in, finish on the goal cell's centre, and
-# steer around a unit standing in the way (docs/PATHING.md).
+# steer around a unit standing in the way or stepping into its lane (docs/PATHING.md).
 const DT := 1.0/60
 var game: Node3D
 var ground: Node
@@ -80,5 +80,17 @@ func run() -> void:
 	if trail.is_empty(): return
 	if not check(trail.all(func(p): return ground.get_tile_at_position(p) != blocked),"The runner walked through the unit in its way"): return
 	if not check(runner.grid_position == corner+Vector2i(17,12),"The runner should still arrive"): return
+	# Something stepping into the lane mid-run: the unit plans again and still arrives, never through it.
+	var late := spawn("infantry",corner+Vector2i(3,24))
+	late.command_move(ground.tile_to_world(corner+Vector2i(25,24)))
+	for frame in range(60): late._process(DT)
+	var step_in := spawn("infantry",corner+Vector2i(16,24))
+	var stepped: Vector2i = step_in.grid_position
+	if not check(late._moving_to == corner+Vector2i(25,24),"The unit should be on one straight run when the lane is stepped into"): return
+	for frame in range(int(30.0/DT)):
+		late._process(DT)
+		if not check(ground.get_tile_at_position(late.global_position) != stepped,"The unit walked through one that stepped into its lane"): return
+		if late.order == "idle": break
+	if not check(late.grid_position == corner+Vector2i(25,24),"The unit should arrive after planning again"): return
 	print("SMOOTH_PATH_CHECKS_PASSED")
 	quit()

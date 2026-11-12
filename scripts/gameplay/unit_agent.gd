@@ -394,7 +394,8 @@ func _walk(delta: float) -> void:
 			_moving_to = _route.pop_front()
 			_aim_ahead()
 ## Head for the farthest of the next route cells reachable in a straight, clear lane. When even the next
-## cell is not (the unit stopped off centre beside an obstacle), go back through its own cell's centre.
+## cell is not (something moved into the lane, or the unit stopped off centre beside an obstacle), plan
+## again from its own cell and go back through that cell's centre.
 func _aim_ahead() -> void:
 	var cells: Array[Vector2i] = [_moving_to]
 	cells.append_array(_route.slice(0,AIM_LOOKAHEAD))
@@ -413,10 +414,20 @@ func _aim_ahead() -> void:
 		_moving_to = cells[best]
 		_route = _route.slice(best)
 		return
+	# The cells before the aim were dropped, so plan again from here, through this cell's centre.
 	var here = ground.get_tile_at_position(global_position)
-	if here != null and here != _moving_to:
-		_route.push_front(_moving_to)
+	if here == null: return
+	var goal: Vector2i = _route.back() if not _route.is_empty() else _moving_to
+	var path: Array[Vector2i] = ground.actor_path(here,goal,mobility_layer(),_owner_key())
+	if path.is_empty():
+		_route.clear()
 		_moving_to = here
+		_retry = 0.5
+		state = "Waiting for route"
+		return
+	path.remove_at(0)
+	_route = path
+	_moving_to = here
 ## Every cell under a lane LANE_HALF_WIDTH either side of the straight line is open to this unit.
 func _lane_clear(from: Vector3, to: Vector3) -> bool:
 	var run := Vector3(to.x-from.x,0,to.z-from.z)

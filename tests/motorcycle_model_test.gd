@@ -122,7 +122,7 @@ func run() -> void:
 	game.get_node("Entities/Units").add_child(foe)
 	foe.set_process(false)
 	for cell in foe._claimed.duplicate(): foe._release(cell)
-	foe.global_position = origin+Vector3(2.4,0,-8)
+	foe.global_position = origin+Vector3(8,0,-22)
 	await process_frame
 	await process_frame
 	if not check(not model.aiming() and unit.global_position.distance_to(foe.global_position) > unit.attack_range,"The target should start out of range"): return
