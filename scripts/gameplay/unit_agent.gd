@@ -56,6 +56,8 @@ var state := "Idle"
 var grid_position := Vector2i.ZERO
 var order := "idle"
 var order_target: Node3D
+## The current attack order was forced onto a friendly (the Attack command clicked on one).
+var attack_forced := false
 ## Shift-queued orders (docs/COMMAND_QUEUE.md): {kind, target, point}. The next starts when the unit goes idle.
 var order_queue: Array[Dictionary] = []
 var source: Node3D
@@ -123,8 +125,10 @@ func command_gather(node: Node3D) -> void:
 	state = "To "+str(node.resource_kind)
 	if cargo > 0 and cargo_kind != node.resource_kind: order = "return"
 	_work_timer = 0
-func command_attack(node: Node3D) -> void:
-	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or not CombatResolver.can_hit(self,node): return
+## `forced`: the player's explicit Attack command, which may target friendly units and buildings.
+func command_attack(node: Node3D, forced := false) -> void:
+	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or not CombatResolver.can_attack(self,node,forced): return
+	attack_forced = forced
 	_stop_route()
 	order = "attack"
 	order_target = node
@@ -196,7 +200,7 @@ func _order_process(delta: float) -> void:
 	if order == "idle" and not order_queue.is_empty() and not out_of_fuel: _start_next_order()
 	_cooldown = maxf(0,_cooldown-delta)
 	_retry = maxf(0,_retry-delta)
-	if order == "attack" and (not is_instance_valid(order_target) or not CombatResolver.can_hit(self,order_target)):
+	if order == "attack" and (not is_instance_valid(order_target) or not _may_hit(order_target)):
 		_stop_route()
 		order = "idle"
 		state = "Attack target lost"
@@ -267,7 +271,7 @@ func queue_order(entry: Dictionary) -> void:
 func run_order(entry: Dictionary) -> void:
 	match entry.kind:
 		"move": command_move(entry.point)
-		"attack": command_attack(entry.target)
+		"attack": command_attack(entry.target,entry.get("forced",false))
 		"gather": command_gather(entry.target)
 		"return": command_return(entry.get("target"))
 		"repair": command_repair(entry.target)
@@ -447,7 +451,7 @@ func _attack_order() -> void:
 		order = "idle"
 		state = "Attack unspecified"
 		return
-	if not is_instance_valid(order_target) or not CombatResolver.can_hit(self,order_target):
+	if not is_instance_valid(order_target) or not _may_hit(order_target):
 		order = "idle"
 		state = "Idle"
 		return
@@ -457,6 +461,11 @@ func _attack_order() -> void:
 	elif _retry <= 0:
 		state = "Pursuing"
 		if not _route_near(order_target,attack_range): state = "Target unreachable"
+## Forced fire counts only for the attack order's own target.
+func _forced_on(target: Node3D) -> bool:
+	return attack_forced and order == "attack" and target == order_target
+func _may_hit(target: Node3D) -> bool:
+	return CombatResolver.can_attack(self,target,_forced_on(target))
 func _nearest_opponent() -> Node3D:
 	var closest: Node3D
 	var distance := attack_range
@@ -473,7 +482,7 @@ func _turret() -> Node3D:
 	var model := $Visuals.get_node_or_null("Model")
 	return model if model != null and model.has_method("aim_at") else null
 func _shoot(target: Node3D) -> void:
-	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or not CombatResolver.can_hit(self,target) or global_position.distance_to(target.global_position) > attack_range: return
+	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or not _may_hit(target) or global_position.distance_to(target.global_position) > attack_range: return
 	# A turret tracks the target between shots; a unit without one turns its whole body as it fires.
 	var turret := _turret()
 	if turret: turret.aim_at(target.global_position)
@@ -494,7 +503,7 @@ func _shoot(target: Node3D) -> void:
 	var muzzle: Vector3 = model.muzzle_position() if model != null and model.has_method("muzzle_position") else global_position+Vector3.UP*1.7+$Visuals.position
 	if turret and turret.has_method("fire"): turret.fire()
 	game.show_shot(muzzle,_shot_end(muzzle,target,target.global_position+Vector3.UP*1.7+target_height),team,projectile_scene)
-	CombatResolver.strike(self,target)
+	CombatResolver.strike(self,target,_forced_on(target))
 	if is_instance_valid(target) and game.has_method("mark_attacked"): game.mark_attacked(target)
 	if is_instance_valid(target) and target.is_in_group("selectable_buildings") and target.get("team") == "player" and team != "player" and game.has_method("alert"):
 		game.alert("%s under attack" % target.name,target.global_position,"attack:%d" % target.get_instance_id(),"attack")
