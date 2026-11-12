@@ -223,8 +223,10 @@ func plan_spec(kind: StringName) -> Dictionary:
 	if scene == null: return {}
 	var preview = scene.instantiate()
 	var stats: ProductionBuildingStats = preview.stats
+	var visuals = preview.get_node_or_null("Visuals")
+	var model: PackedScene = visuals.model_scene if visuals != null and "model_scene" in visuals else null
 	preview.free()
-	return {"title":stats.display_name,"size":stats.footprint,"energy":stats.energy_cost,"iron":stats.iron_cost,"scene":scene}
+	return {"title":stats.display_name,"size":stats.footprint,"energy":stats.energy_cost,"iron":stats.iron_cost,"scene":scene,"model":model}
 func plan_terrain_valid(start: Vector2i, size: Vector2i, kind: StringName) -> bool:
 	return game.ground.ore_footprint_valid(start,size) if kind == &"iron_mine" else game.ground.is_footprint_valid(start,size)
 func plan_overlaps(start: Vector2i, size: Vector2i) -> bool:

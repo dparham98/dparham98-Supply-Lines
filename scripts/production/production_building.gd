@@ -64,13 +64,16 @@ func _process(delta: float) -> void:
 	if not source_friendly():
 		pending.clear()
 		progress = 0
+		_show_model(&"show_idle")
 		$Status.text = stats.display_name+" · assigned Depot unavailable"
 		return
 	if pending.is_empty():
 		progress = 0
+		_show_model(&"show_idle")
 		$Status.text = "%s → %s" % [stats.display_name,assigned_depot.name]
 		return
 	progress = minf(stats.print_seconds,progress+delta)
+	_show_model(&"show_print",[progress/stats.print_seconds])
 	if progress >= stats.print_seconds:
 		var queued_stats := unit_stats_for(pending[0])
 		var layer: int = queued_stats.mobility.layer if queued_stats.mobility != null else MobilityRules.Layer.GROUND
@@ -85,6 +88,7 @@ func _process(delta: float) -> void:
 		game.get_node("Entities/Units").add_child(unit,true)
 		if unit.unit_stats.unit_id == &"infantry": game.units_printed += 1
 		progress = 0
+		_show_model(&"unit_left")
 		game.notify("%s ready at %s." % [unit.unit_stats.display_name,name])
 	$Status.text = "%s · %d queued · %d%%" % [stats.display_name,queue,roundi(progress/stats.print_seconds*100)]
 func _key() -> String:
@@ -94,7 +98,19 @@ func take_damage(amount: int) -> void:
 	if health <= 0:
 		set_process(false)
 		for group in get_groups(): remove_from_group(group)
+		_leave_wreck()
 		queue_free()
+## A model with a death clip stays behind to play it out, as units leave their corpses. The building
+## itself is gone at once, so the wreck cannot be selected or targeted.
+func _leave_wreck() -> void:
+	var model := get_node_or_null("Visuals/Model")
+	if model == null or not model.has_method("has_death_clip") or not model.has_death_clip(): return
+	model.reparent(game if is_instance_valid(game) else get_parent())
+	model.play_death()
+## Production models that animate (docs/BARRACKS_MODEL.md) follow the queue; placeholders are left alone.
+func _show_model(method: StringName, args := []) -> void:
+	var model := get_node_or_null("Visuals/Model")
+	if model != null and model.has_method(method): model.callv(method,args)
 func _exit_tree() -> void:
 	if is_instance_valid(assigned_depot) and assigned_depot.ownership_changed.is_connected(_source_changed): assigned_depot.ownership_changed.disconnect(_source_changed)
 	if not is_instance_valid(ground): return
