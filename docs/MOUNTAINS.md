@@ -10,6 +10,8 @@ The mountains are one sculpted mesh generated in Godot from the Mountain cells o
 godot --headless --path . --script res://scripts/tools/build_mountain_mesh.gd
 ```
 
+Another map passes its own files after `--` (`--cells`, `--mesh`, `--material`), as in [BALANCED_MAP.md](BALANCED_MAP.md); the shared rock textures are then left alone.
+
 - **Shape:** height rises with distance from the edge of the mountain area, then ridged noise raises crests and cuts valleys. Smaller ridges run down the flanks.
 - **Outline:** the map cells are blocky, so vertices wander by up to about 3 m from them to give a natural edge. Rock can therefore overlap the first few metres of walkable ground and hide a unit standing right at the foot.
 - **Size:** 2 vertices per metre, 166,824 triangles. Settings are the constants at the top of the script.

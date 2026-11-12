@@ -66,6 +66,11 @@ func hover_target(screen: Vector2) -> Node3D:
 	# Crates are small and sit right beside Depots: a hit on one wins over the larger box behind it.
 	for crate in get_tree().get_nodes_in_group("supply_crates"):
 		if Bounds.hit_distance(crate,camera,screen) < INF: return crate
+	# Nothing else under the pointer: a Coal cell answers with what it and its field still hold.
+	if best == null:
+		var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(screen),camera.project_ray_normal(screen))
+		var cell = game.ground.get_tile_at_position(point) if point != null else null
+		if cell != null and game.ground.get_terrain(cell) == 6: return game.ground.coal_source(cell)
 	return best
 func is_selected(node: Node) -> bool:
 	return node.get("is_selected") == true or node == game.selected_building
@@ -281,6 +286,7 @@ func hud_name(node: Node) -> String:
 	if node.is_in_group("supply_crates"): return "Empty crate" if node.amount == 0 else "%s crate" % str(node.material_kind).capitalize()
 	if node.is_in_group("material_piles"): return "%s pile" % str(node.material_kind).capitalize()
 	if node.is_in_group("iron_deposits"): return "Iron deposit · build a mine to gather"
+	if node.is_in_group("coal_cells"): return "Coal deposit · Infantry dig it directly"
 	if node.is_in_group("resources"): return str(node.get("resource_name")) if node.get("resource_name") != null else "Resource"
 	if node.is_in_group("construction_plans"): return node.spec.title+" plan"
 	return get_parent().object_name(node)
@@ -295,6 +301,9 @@ func update_hover_card(mouse: Vector2) -> void:
 	if node.is_in_group("supply_crates"):
 		line = "%d / %d · not Depot storage\nVehicles load it · workers fill or gather" % [node.amount,node.CAPACITY]
 		ratio = float(node.amount)/node.CAPACITY
+	elif node.is_in_group("coal_cells"):
+		line = "%d left here · %d in this field" % [node.remaining,node.field_remaining()]
+		ratio = float(node.remaining)/node.amount
 	elif node.is_in_group("resources") or node.is_in_group("material_piles") or node.is_in_group("iron_deposits"):
 		line = "%d left" % node.remaining
 		if node.get("amount") != null and node.amount > 0: ratio = float(node.remaining)/node.amount

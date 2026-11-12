@@ -1,0 +1,152 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/gameplay/skirmish.gd" id="game"]
+[ext_resource type="PackedScene" path="res://scenes/maps/balanced_terrain.tscn" id="terrain"]
+[ext_resource type="PackedScene" path="res://scenes/maps/lighting.tscn" id="lights"]
+[ext_resource type="PackedScene" path="res://scenes/camera/rts_camera.tscn" id="camera"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/depot.tscn" id="depot"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/infantry.tscn" id="infantry"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/cargo_vehicle.tscn" id="cargo_start"]
+[ext_resource type="PackedScene" path="res://assets/models/rails/maglev_track_straight.glb" id="ghost_straight"]
+[ext_resource type="PackedScene" path="res://assets/models/rails/maglev_track_curve.glb" id="ghost_curve"]
+[ext_resource type="PackedScene" path="res://assets/models/rails/maglev_track_fork_left.glb" id="ghost_fork_left"]
+[ext_resource type="PackedScene" path="res://assets/models/rails/maglev_track_fork_right.glb" id="ghost_fork_right"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/hostile.tscn" id="enemy"]
+[ext_resource type="PackedScene" path="res://scenes/ui/skirmish_hud.tscn" id="hud"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/tracer.tscn" id="tracer"]
+[ext_resource type="Script" path="res://scripts/economy/depot_network.gd" id="network"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/depot_truck.tscn" id="truck"]
+[ext_resource type="Resource" path="res://assets/economy/supply_rules.tres" id="supply"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/energy_generator.tscn" id="generator"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/cargo_vehicle.tscn" id="cargo"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/construction_preview.tscn" id="preview"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/barracks.tscn" id="barracks"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/tank_factory.tscn" id="factory"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/iron_mine.tscn" id="mine"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/rail_network.tscn" id="rails"]
+[ext_resource type="Resource" path="res://assets/economy/engineering_rules.tres" id="engineering"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/material_pile.tscn" id="pile"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/waypoint_marker.tscn" id="waypoint"]
+[ext_resource type="Script" path="res://scripts/gameplay/waypoint_markers.gd" id="waypoints"]
+[ext_resource type="Texture2D" path="res://assets/maps/balanced/layout.png" id="layout"]
+[node name="BalancedSkirmish" type="Node3D" groups=["skirmish"]]
+editor_description = "Balanced two-player map with coal (docs/BALANCED_MAP.md). The player holds start A in the west. Start B in the east is the same land turned half a circle; it has no opponent yet, only the EnemyStart marker and Hostiles. Everything east of the map centre is the mirror of the west: move a marker and move its partner to the opposite position (x and z negated)."
+script = ExtResource("game")
+tracer_scene = ExtResource("tracer")
+pile_scene = ExtResource("pile")
+vehicle_fuel_required = true
+testing_coal_amount = 0
+playtest_tools = true
+testing_iron_grant = false
+message = "Send your Infantry to the iron mine south-east of the Depot. Coal lies inside the forests: cut a way in, then dig."
+[node name="DepotNetwork" type="Node" parent="."]
+script = ExtResource("network")
+depot_scene = ExtResource("depot")
+truck_scene = ExtResource("truck")
+generator_scene = ExtResource("generator")
+cargo_scene = ExtResource("cargo")
+barracks_scene = ExtResource("barracks")
+tank_factory_scene = ExtResource("factory")
+supply_rules = ExtResource("supply")
+mine_scene = ExtResource("mine")
+engineering_rules = ExtResource("engineering")
+[node name="ConstructionPreview" parent="." instance=ExtResource("preview")]
+[node name="Terrain" parent="." instance=ExtResource("terrain")]
+[node name="RailNetwork" parent="." instance=ExtResource("rails")]
+[node name="Lighting" parent="." instance=ExtResource("lights")]
+[node name="CameraRig" parent="." instance=ExtResource("camera")]
+process_mode = 3
+position = Vector3(-166,0,0)
+default_zoom = 72.0
+preview_zoom = 72.0
+[node name="Sites" type="Node3D" parent="."]
+editor_description = "Where each side is meant to settle. Markers only: nothing reads them in play. The map test measures from them, and an opponent can be placed on EnemyStart later."
+[node name="PlayerStart" type="Marker3D" parent="Sites"]
+editor_description = "Start A. The player's Depot stands here."
+position = Vector3(-166,0,0)
+gizmo_extents = 6.0
+[node name="EnemyStart" type="Marker3D" parent="Sites"]
+editor_description = "Start B: start A turned half a circle about the map centre. No opponent yet; a Depot placed here stands on the mirrored footprint."
+position = Vector3(166,0,0)
+gizmo_extents = 6.0
+[node name="SafeExpansionA" type="Marker3D" parent="Sites"]
+editor_description = "Start A's safe expansion: a pocket entered only from the main, with iron and the nearest coal."
+position = Vector3(-186,0,-110)
+gizmo_extents = 6.0
+[node name="ExposedExpansionA" type="Marker3D" parent="Sites"]
+editor_description = "Start A's exposed expansion, open to the south lane."
+position = Vector3(-168,0,112)
+gizmo_extents = 6.0
+[node name="SafeExpansionB" type="Marker3D" parent="Sites"]
+editor_description = "Start B's safe expansion."
+position = Vector3(186,0,110)
+gizmo_extents = 6.0
+[node name="ExposedExpansionB" type="Marker3D" parent="Sites"]
+editor_description = "Start B's exposed expansion, open to the north lane."
+position = Vector3(168,0,-112)
+gizmo_extents = 6.0
+[node name="Lanes" type="Node3D" parent="Sites"]
+editor_description = "Names for the three routes between the starts, for the map preview. Nothing reads them in play."
+[node name="NorthLane" type="Marker3D" parent="Sites/Lanes"]
+position = Vector3(40,0,-172)
+[node name="CentreLane" type="Marker3D" parent="Sites/Lanes"]
+position = Vector3(-72,0,6)
+[node name="SouthLane" type="Marker3D" parent="Sites/Lanes"]
+position = Vector3(-40,0,172)
+[node name="Entities" type="Node3D" parent="."]
+[node name="Buildings" type="Node3D" parent="Entities"]
+[node name="Depot" parent="Entities/Buildings" instance=ExtResource("depot")]
+position = Vector3(-166,0,0)
+initial_iron = 0
+[node name="IronMine" parent="Entities/Buildings" instance=ExtResource("mine")]
+editor_description = "Starter mine on start A's iron field, so the first iron can be gathered before any can be spent."
+position = Vector3(-142,0,13)
+[node name="IronMineB" parent="Entities/Buildings" instance=ExtResource("mine")]
+editor_description = "Starter mine on start B's iron field, mirroring start A's."
+position = Vector3(142,0,-13)
+[node name="Resources" type="Node3D" parent="Entities"]
+[node name="Units" type="Node3D" parent="Entities"]
+[node name="Infantry" parent="Entities/Units" instance=ExtResource("infantry")]
+position = Vector3(-163.5,0,9.5)
+[node name="StarterTruck" parent="Entities/Units" instance=ExtResource("cargo_start")]
+position = Vector3(-175.5,0,1.5)
+[node name="Hostile" parent="Entities/Units" instance=ExtResource("enemy")]
+position = Vector3(155.5,0,-8.5)
+[node name="HostileB2" parent="Entities/Units" instance=ExtResource("enemy")]
+position = Vector3(155.5,0,8.5)
+[node name="HostileB3" parent="Entities/Units" instance=ExtResource("enemy")]
+position = Vector3(176.5,0,-9.5)
+[node name="HostileB4" parent="Entities/Units" instance=ExtResource("enemy")]
+position = Vector3(166.5,0,12.5)
+[node name="HostileCoalNorth1" parent="Entities/Units" instance=ExtResource("enemy")]
+position = Vector3(-5.5,0,-15.5)
+[node name="HostileCoalNorth2" parent="Entities/Units" instance=ExtResource("enemy")]
+position = Vector3(6.5,0,-15.5)
+[node name="HostileCoalSouth1" parent="Entities/Units" instance=ExtResource("enemy")]
+position = Vector3(5.5,0,15.5)
+[node name="HostileCoalSouth2" parent="Entities/Units" instance=ExtResource("enemy")]
+position = Vector3(-6.5,0,15.5)
+[node name="RailPreview" type="Node3D" parent="."]
+visible = false
+[node name="Straight" parent="RailPreview" instance=ExtResource("ghost_straight")]
+transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
+[node name="Curve" parent="RailPreview" instance=ExtResource("ghost_curve")]
+transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
+[node name="ForkLeft" parent="RailPreview" instance=ExtResource("ghost_fork_left")]
+transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
+[node name="ForkRight" parent="RailPreview" instance=ExtResource("ghost_fork_right")]
+transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
+[node name="Status" type="Label3D" parent="RailPreview"]
+billboard = 1
+font_size = 30
+pixel_size = 0.03
+no_depth_test = true
+modulate = Color(0.75,1,0.85,1)
+text = "RAIL"
+[node name="WaypointMarkers" type="Node3D" parent="."]
+script = ExtResource("waypoints")
+marker_scene = ExtResource("waypoint")
+
+[node name="Interface" parent="." instance=ExtResource("hud")]
+[node name="Terrain" parent="Interface/Bottom/Body/Row/MapColumn/Map" index="0"]
+texture = ExtResource("layout")
+[editable path="Interface"]

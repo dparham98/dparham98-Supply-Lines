@@ -38,7 +38,7 @@ All types also share `refuel_coal_per_second = 5` and `low_fuel_fraction = 0.25`
 
 ## Testing coal grant (D2)
 
-`resource_skirmish.tscn` sets `testing_coal_amount = 200`, which places a shared 200-coal material pile named `TestingCoalPile` next to the starting Depot. It appears at the authored `Entities/Resources/TestingCoalPoint` marker. Infantry gathers it into a Depot like any other pile. It is a stand-in until coal extraction (stage 6) exists, and should be removed or replaced then. Earlier exercise scenes set the amount to 0.
+`resource_skirmish.tscn` sets `testing_coal_amount = 200`, which places a shared 200-coal material pile named `TestingCoalPile` next to the starting Depot. It appears at the authored `Entities/Resources/TestingCoalPoint` marker. Infantry gathers it into a Depot like any other pile. It is a stand-in until coal extraction (stage 6) exists, and should be removed or replaced then. Earlier exercise scenes set the amount to 0. The balanced map (BALANCED_MAP.md) has coal in the ground and sets it to 0; this map keeps its pile because it has no Coal cells.
 
 The approved default was a coal grant inside the Depot stockpile. That was changed because `depot_correction_test` fills the starting Depot to exactly its 2,000 capacity with energy and iron, so any starting coal breaks its unchanged assertions. The pile is created from the scene setting, using the same pile scene as dropped materials, rather than authored as a node. This is because exercise scenes inherit `resource_skirmish`, and an authored pile broke `mobile_supply_runtime_check`, which counts material piles.
 

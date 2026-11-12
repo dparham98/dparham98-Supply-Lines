@@ -19,6 +19,8 @@ uniform vec3 forest_surface_mean = vec3(0.044, 0.108, 0.027);
 uniform vec3 mountain_surface_mean = vec3(0.0902, 0.0942, 0.0736);
 // Desert tiles darkened to stony ground, for the mountain foot where the sculpted mesh does not cover it.
 uniform vec3 stony_tint = vec3(0.2, 0.22, 0.38);
+// Coal cells (category 6): how dark the seam is drawn.
+uniform vec3 coal_shade = vec3(0.1, 0.1, 0.125);
 // Distance from the desert and grass border, from scripts/tools/build_ground_blend_map.gd: 0.5 is the border.
 uniform sampler2D ground_blend : filter_linear, repeat_disable;
 // Metres the drawn border may wander either side of its smoothed line, and how wide the crossfade is.
@@ -133,6 +135,12 @@ void fragment() {
   // Water, and the mountain foot in darkened desert tiles.
   ground_set(tile_uv, terrain == 4.0 ? 4.0 : 8.0, color, terrain == 4.0 ? mountain_surface_mean : water_surface_mean, surface_tint, 0.0, color, normal_map);
   if (terrain == 4.0) { color *= stony_tint; }
+ } else if (terrain == 6.0) {
+  // Coal seam: the cracked desert tiles with their colour taken out, darkened to black rock.
+  vec3 seam;
+  ground_set(tile_uv, 4.0, desert_surface_mean, desert_surface_mean, 0.0, 0.0, seam, normal_map);
+  color = vec3(dot(seam, vec3(0.3, 0.5, 0.2))) * coal_shade;
+  ROUGHNESS = 0.6;
  }
  if (terrain == 1.0) {
   float wave = sin(UV.y * 900.0 + sin(UV.x * 170.0 + TIME * 0.18) * 1.4 + TIME * 0.7);

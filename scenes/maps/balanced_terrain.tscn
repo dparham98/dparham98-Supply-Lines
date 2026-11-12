@@ -1,0 +1,48 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/terrain/terrain_assets.gd" id="assets"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/tree.tscn" id="tree"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/mountain.tscn" id="mountain"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/ore_deposit.tscn" id="ore"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/coal_deposit.tscn" id="coal"]
+[ext_resource type="Material" path="res://assets/maps/balanced/terrain_surface.tres" id="surface"]
+[ext_resource type="Script" path="res://scripts/terrain/terrain_grid.gd" id="grid"]
+[ext_resource type="Resource" path="res://assets/economy/harvesting_rules.tres" id="harvesting"]
+[ext_resource type="ArrayMesh" path="res://assets/maps/balanced/mountains.res" id="mountains"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/forest_tile_01.tscn" id="forest_tile_1"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/forest_tile_02.tscn" id="forest_tile_2"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/forest_tile_03.tscn" id="forest_tile_3"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/forest_tile_04.tscn" id="forest_tile_4"]
+[ext_resource type="PackedScene" path="res://scenes/maps/balanced_terrain_landmarks.tscn" id="landmarks"]
+
+[sub_resource type="PlaneMesh" id="ground_mesh"]
+size = Vector2(500, 500)
+
+[sub_resource type="BoxShape3D" id="ground_shape"]
+size = Vector3(500, 0.1, 500)
+
+[node name="Terrain" type="Node3D"]
+editor_description = "The balanced two-player map (docs/BALANCED_MAP.md). Ground plays on assets/maps/balanced/terrain_cells.bin; Landmarks is its saved scenery. After the map data changes, press Rebuild terrain scenery here."
+script = ExtResource("assets")
+tree_scene = ExtResource("tree")
+mountain_scene = ExtResource("mountain")
+ore_scene = ExtResource("ore")
+forest_tile_scenes = Array[PackedScene]([ExtResource("forest_tile_1"), ExtResource("forest_tile_2"), ExtResource("forest_tile_3"), ExtResource("forest_tile_4")])
+mountain_mesh = ExtResource("mountains")
+coal_scene = ExtResource("coal")
+forest_chunk_metres = 50
+landmarks_path = "res://scenes/maps/balanced_terrain_landmarks.tscn"
+
+[node name="Ground" type="MeshInstance3D" parent="." groups=["terrain_grid"]]
+material_override = ExtResource("surface")
+mesh = SubResource("ground_mesh")
+script = ExtResource("grid")
+cells_path = "res://assets/maps/balanced/terrain_cells.bin"
+harvesting_rules = ExtResource("harvesting")
+
+[node name="GroundCollision" type="StaticBody3D" parent="Ground"]
+
+[node name="GroundBounds" type="CollisionShape3D" parent="Ground/GroundCollision"]
+shape = SubResource("ground_shape")
+
+[node name="Landmarks" parent="." instance=ExtResource("landmarks")]

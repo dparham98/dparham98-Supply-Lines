@@ -8,6 +8,9 @@ extends Node3D
 @export var testing_coal_amount := 0
 ## Development-only playtest panel on F10 (docs/PLAYTEST_TOOLS.md). Needs a debug build.
 @export var playtest_tools := false
+## Whether Depots take the DepotRules testing iron grant. The balanced map turns it off so a match starts
+## with no iron (docs/BALANCED_MAP.md).
+@export var testing_iron_grant := true
 func drop_material(unit: Node3D) -> Node3D:
 	if not unit.can_gather or unit.cargo <= 0 or unit.cargo_kind not in [&"iron",&"wood",&"coal"]: return null
 	var pile = pile_scene.instantiate()
@@ -249,6 +252,7 @@ func issue_order(screen: Vector2, queued := false) -> void:
 	var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(screen),camera.project_ray_normal(screen))
 	var selected := 0
 	var forest_ordered := false
+	var coal_ordered: Node3D
 	for unit in get_tree().get_nodes_in_group("units"):
 		if unit.team != "player" or not unit.is_selected: continue
 		selected += 1
@@ -261,6 +265,9 @@ func issue_order(screen: Vector2, queued := false) -> void:
 		elif point != null and ground.get_tile_at_position(point) != null and ground.get_terrain(ground.get_tile_at_position(point)) == 3 and unit.can_gather:
 			give_order(unit,{kind = "gather", target = ground.forest_source(ground.get_tile_at_position(point))},queued)
 			forest_ordered = true
+		elif point != null and ground.get_tile_at_position(point) != null and ground.get_terrain(ground.get_tile_at_position(point)) == 6 and unit.can_gather:
+			coal_ordered = ground.coal_source(ground.get_tile_at_position(point))
+			give_order(unit,{kind = "gather", target = coal_ordered},queued)
 		elif dropoff and dropoff.is_in_group("mobile_supplies") and unit.can_gather: give_order(unit,{kind = "return", target = dropoff},queued)
 		elif resource: give_order(unit,{kind = "gather", target = resource},queued)
 		elif dropoff and dropoff.team == unit.team and unit.cargo > 0: give_order(unit,{kind = "return", target = dropoff},queued)
@@ -280,6 +287,7 @@ func issue_order(screen: Vector2, queued := false) -> void:
 	elif plan: notify("Build site: Cargo vehicles fetch exactly the materials it lacks; Infantry construct from the pile.")
 	elif crate: notify("Crate order: vehicles load it; workers deliver into it or gather from it.")
 	elif forest_ordered: notify("Harvest wood from the forest tile and deliver it to a friendly Depot.")
+	elif is_instance_valid(coal_ordered): notify("Dig coal and deliver it to a friendly Depot. %d left in this field; workers move on through it cell by cell." % coal_ordered.field_remaining())
 	elif resource: notify("Gather %s and deliver to a friendly Depot." % resource.resource_kind)
 	elif dropoff: notify("Return carried resources or repair this Depot.")
 func show_shot(start: Vector3, end: Vector3, team: String, projectile: PackedScene = null) -> void:
@@ -318,7 +326,7 @@ func issue_card_order(screen: Vector2, queued := false) -> void:
 			if point != null and ground.get_tile_at_position(point) != null:
 				var cell = ground.get_tile_at_position(point)
 				if ground.get_terrain(cell) == 5: notify("Build an Iron Mine on this deposit before gathering iron."); return
-				target = ground.forest_source(cell)
+				target = ground.coal_source(cell) if ground.get_terrain(cell) == 6 else ground.forest_source(cell)
 	elif pending_unit_command == "repair": target = pick_target(screen,"selectable_buildings",50)
 	elif pending_unit_command == "capture": target = pick_target(screen,"capturable_buildings",50)
 	elif pending_unit_command in ["load","unload"]:

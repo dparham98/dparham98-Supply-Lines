@@ -61,7 +61,7 @@ func _ready() -> void:
 	health = max_health
 	add_to_group("selectable_buildings")
 	# Startup priority reserves the enabled testing iron grant before other authored stock.
-	iron = rules.testing_starting_iron if rules.testing_starting_iron >= 0 else (rules.initial_iron if initial_iron < 0 else initial_iron)
+	iron = rules.testing_starting_iron if testing_iron_granted() else (rules.initial_iron if initial_iron < 0 else initial_iron)
 	wood = initial_wood
 	coal = initial_coal
 	energy = rules.initial_energy if initial_energy < 0 else initial_energy
@@ -81,6 +81,9 @@ func _ready() -> void:
 			var cell := Vector2i(x,z)
 			cells.append(cell)
 			ground.set_tile_feature(cell,"occupied_by","depot_%s" % get_instance_id())
+## The DepotRules testing iron grant applies unless this map's skirmish switches it off (testing_iron_grant).
+func testing_iron_granted() -> bool:
+	return rules.testing_starting_iron >= 0 and (not is_instance_valid(game) or game.get("testing_iron_grant") != false)
 func request_infantry() -> bool:
 	# Compatibility rejection: repeatable infantry production belongs to Barracks.
 	game.notify("Depots grant one Infantry on establishment. Produce additional Infantry at Barracks.")

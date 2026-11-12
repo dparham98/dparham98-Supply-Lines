@@ -2,6 +2,9 @@ extends SceneTree
 # Sculpts the mountains from the Mountain cells of terrain_cells.bin (docs/MOUNTAINS.md) and saves the mesh and its
 # rock textures. Run after changing the map or the shape settings, then press Rebuild terrain scenery on terrain.tscn:
 #   godot --headless --path . --script res://scripts/tools/build_mountain_mesh.gd
+# Another map passes its own files after "--": --cells=<cells .bin> --mesh=<mesh .res> --material=<massif .tres>.
+# The shared rock textures are only rewritten for the original map.
+const ToolArgs := preload("res://scripts/tools/tool_args.gd")
 const WIDTH := 500
 const MOUNTAIN := 4
 const MESH_PATH := "res://assets/models/terrain/mountains.res"
@@ -26,15 +29,15 @@ var warp_x := FastNoiseLite.new()
 var warp_z := FastNoiseLite.new()
 
 func _initialize() -> void:
-	cells = FileAccess.get_file_as_bytes("res://assets/maps/terrain_cells.bin")
+	cells = FileAccess.get_file_as_bytes(ToolArgs.value("cells",ToolArgs.DEFAULT_CELLS))
 	if cells.size() != WIDTH*WIDTH:
 		push_error("Unexpected terrain_cells.bin size"); quit(1); return
 	_setup_noise()
 	_measure_distance()
-	_save_textures()
+	if not ToolArgs.given("mesh"): _save_textures()
 	var mesh := _build_mesh()
-	mesh.surface_set_material(0,load(MATERIAL_PATH))
-	if ResourceSaver.save(mesh,MESH_PATH) != OK:
+	mesh.surface_set_material(0,load(ToolArgs.value("material",MATERIAL_PATH)))
+	if ResourceSaver.save(mesh,ToolArgs.value("mesh",MESH_PATH),ResourceSaver.FLAG_COMPRESS if ToolArgs.given("mesh") else ResourceSaver.FLAG_NONE) != OK:
 		push_error("Could not save the mountain mesh"); quit(1); return
 	print("MOUNTAIN_MESH_BUILT ",mesh.get_faces().size()/3," triangles")
 	quit()

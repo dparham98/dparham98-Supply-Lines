@@ -1,5 +1,7 @@
 # Supply Lines — start here
 
+Balanced two-player map with coal in the ground: open **scenes/maps/balanced_skirmish.tscn** and press **F6**. See [layout, coal rules and how to regenerate it](docs/BALANCED_MAP.md). Nobody has played it yet.
+
 Latest engineering batch: [wood harvesting, capturable iron mines and local building repair](docs/ENGINEERING_BATCH.md). Open **scenes/maps/engineering_exercise.tscn** and press **F6** for a damaged-building test.
 
 Latest building/production batch: [Barracks, Tank Factory, original Depot cost and free construction infantry](docs/PRODUCTION_BATCH.md).
@@ -100,3 +102,5 @@ Shared buildable iron mines and every-tile forestry: [harvesting batch](docs/HAR
 Mobile supply deployment, Infantry delivery and physical material piles: [guide and exercise](docs/MOBILE_SUPPLY.md).
 
 Wood/coal-powered generators: [rules and editor exercise](docs/GENERATOR_BATCH.md).
+
+Coal deposits, the balanced map and per-map terrain data: [balanced map](docs/BALANCED_MAP.md).

@@ -19,7 +19,7 @@ Status: discussion plan, not implemented balance. Depot production correction, s
 3. Implemented; see MOBILE_SUPPLY.md. Deployed Cargo Trucks/trains use the user-confirmed half-Depot supply/drop-off ranges (17.5/3.5), two-second deployment/packing and automatic packing before movement. Infantry delivery, explicit mobile construction/repair payment, deliberate/death drops and shared collectible physical piles are enabled. Production/generation remains explicitly Depot-bound.
 4. Wood/coal generation implemented; see GENERATOR_BATCH.md. Editable 1 wood -> 10 E/2s and 1 coal -> 50 E/5s, explicit modes, pause/resume, atomic cycle completion and full-storage/fuel pauses. Water mode remains pending approval of its exact behavior.
 5. Vehicle fuel implemented (pending review); see FUEL_BATCH.md. Consumption by distance, out-of-fuel pause, single-source automatic refuelling, deployed-vehicle recovery and a warn-only train round-trip check. Drone fuel and landing/emergency rules remain pending approval.
-6. Add coal extraction and distribute forests/materials more broadly in separate map-data assets after testing the economy. Do not introduce the later signals/research/upkeep/tiling systems during this pass.
+6. Implemented on a second map, pending review and play; see BALANCED_MAP.md. Coal extraction (direct Infantry digging of Coal cells, 50 a cell, 1,000 a field) and a balanced layout with far more forest, in separate map-data assets. The original map is unchanged and still has only its testing coal pile. Original wording: add coal extraction and distribute forests/materials more broadly in separate map-data assets after testing the economy. Do not introduce the later signals/research/upkeep/tiling systems during this pass.
 
 ## Proposed balance sheet — approval pending
 
@@ -58,7 +58,7 @@ Coal is five times as efficient per fuel unit as wood in this proposal, with twi
 - Refueling: automatic when stopped in eligible friendly supply range, configurable desired reserve and automatic-refuel toggle. Explicit source selection; no pooling. Stockpile coal and fuel reserves are distinct; construction cannot spend fuel-tank contents. New vehicles start empty. Include an explicit way to supply/refuel a stranded vehicle without needing it to move.
 - Dropped piles (implemented, user approved): wood/iron/coal only, not loose energy; any player's Infantry may gather them. Piles have no supply radius and cannot be spent directly. No decay initially. Death drops carried physical materials, not vehicle fuel or energy. Vehicle cargo-destruction salvage remains a separate decision.
 - Drone recovery: propose automatic landing before reserve reaches zero, parked with no fuel burn. Define valid landing terrain, occupied-cell handling, warning threshold and emergency outcome when no landing cell can be reached. Do not invent instant death or free long-distance flight.
-- Coal access: decide whether direct harvesting is acceptable, or coal also requires a mine. Decide any research gates separately from forest obstruction and fuel access. Confirm whether mine foundations use the entire footprint or a center deposit tile before mapping sparse deposits.
+- Coal access: direct harvesting is implemented as the provisional rule (BALANCED_MAP.md); still decide whether it is acceptable, or coal also requires a mine. Decide any research gates separately from forest obstruction and fuel access. Confirm whether mine foundations use the entire footprint or a center deposit tile before mapping sparse deposits.
 
 ## Verification for each stage
 
