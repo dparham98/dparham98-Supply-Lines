@@ -30,6 +30,7 @@ func _ready() -> void:
 	$Visuals/Grid.material_override.set_shader_parameter("cells",Vector2(size))
 	$Label.position = $Visuals/Grid.position+Vector3(0,1.5,0)
 	dropoff_range = maxi(size.x,size.y)*0.5+2.5
+	_add_site_model()
 	refresh_label()
 func _process(delta: float) -> void:
 	elapsed += delta
@@ -149,11 +150,26 @@ func work(_unit: Node3D, amount: int) -> String:
 	if all_added() and energy_paid >= spec.energy: finish()
 	return ""
 func progress_percent() -> int:
+	return int(100.0*progress_fraction())
+## Share of the build done, 0..1: materials built in and energy paid.
+func progress_fraction() -> float:
 	var total: int = spec.energy
 	var done := energy_paid
 	for material in materials():
 		total += materials()[material]; done += added.get(material,0)
-	return 100 if total == 0 else int(100.0*done/total)
+	return 1.0 if total == 0 else float(done)/total
+## A building model with a construction clip stands on the site and goes up with the work
+## (docs/BARRACKS_MODEL.md). It is the building's own saved model scene; others show only the grid.
+func _add_site_model() -> void:
+	var scene: PackedScene = spec.get("model")
+	if scene == null: return
+	var model := scene.instantiate()
+	if not model.has_method("show_construction"):
+		model.free()
+		return
+	model.name = "Model"
+	model.position = Vector3($Visuals/Grid.position.x,0,$Visuals/Grid.position.z)
+	$Visuals.add_child(model)
 ## The stockpile paying energy: the pinned one, or the first covering one able to pay the whole
 ## remaining energy, latched so one payer sees the build through.
 func energy_payer(due: int) -> Node3D:
@@ -216,6 +232,8 @@ func refresh_label() -> void:
 		$Label.text = "PLAN · %s · %d E / %d I\n%s" % [spec.title,spec.energy,spec.iron,state]
 		return
 	$Label.text = "PLAN · %s · %d E / %d I\n%s\n%s" % [spec.title,spec.energy,spec.iron,site_text(),state]
+	var model := get_node_or_null("Visuals/Model")
+	if model != null: model.show_construction(progress_fraction())
 	var tint := TINT_WAITING
 	if state.begins_with("Constructing"): tint = TINT_BUILDING
 	elif materials_covered(): tint = TINT_READY
