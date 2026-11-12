@@ -105,6 +105,17 @@ func _process(delta: float) -> void:
 func _update_display() -> void:
 	state = describe_state()
 	$Status.text = "GENERATOR · %s" % state
+	_show_model(&"show_running",[active()])
+## An animated model (docs/GENERATOR_MODEL.md) runs while fuel burns; a placeholder is left alone.
+func _show_model(method: StringName, args := []) -> void:
+	var model := get_node_or_null("Visuals/Model")
+	if model != null and model.has_method(method): model.callv(method,args)
+## The model stays behind as a wreck that plays its death clip and removes itself.
+func _leave_wreck() -> void:
+	var model := get_node_or_null("Visuals/Model")
+	if model == null or not model.has_method("has_death_clip") or not model.has_death_clip() or get_parent() == null: return
+	model.reparent(get_parent())
+	model.play_death()
 func _key() -> String:
 	return "generator_%s" % get_instance_id()
 func _exit_tree() -> void:
@@ -118,6 +129,7 @@ func take_damage(amount: int) -> void:
 	if health <= 0:
 		set_process(false)
 		for group in get_groups(): remove_from_group(group)
+		_leave_wreck()
 		queue_free()
 
 func assign_source(depot: Node3D) -> bool:

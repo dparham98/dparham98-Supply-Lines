@@ -213,7 +213,7 @@ func plan_spec(kind: StringName) -> Dictionary:
 		var size: Vector2i = preview.footprint
 		preview.free()
 		return {"title":"Depot","size":size,"energy":depot_rules().depot_energy_cost,"iron":depot_rules().depot_iron_cost,"scene":depot_scene}
-	if kind == &"generator": return {"title":"Generator","size":supply_rules.generator_footprint,"energy":supply_rules.generator_energy_cost,"iron":supply_rules.generator_iron_cost,"scene":generator_scene}
+	if kind == &"generator": return {"title":"Generator","size":supply_rules.generator_footprint,"energy":supply_rules.generator_energy_cost,"iron":supply_rules.generator_iron_cost,"scene":generator_scene,"model":_model_scene(generator_scene)}
 	if kind == &"iron_mine": return {"title":"Iron Mine","size":engineering_rules.mine_footprint,"energy":engineering_rules.mine_energy_cost,"iron":engineering_rules.mine_iron_cost,"scene":mine_scene}
 	if kind == &"rail":
 		# Maglev pieces are laid directly by RailNetwork.place, not queued as plans.
@@ -227,6 +227,16 @@ func plan_spec(kind: StringName) -> Dictionary:
 	var model: PackedScene = visuals.model_scene if visuals != null and "model_scene" in visuals else null
 	preview.free()
 	return {"title":stats.display_name,"size":stats.footprint,"energy":stats.energy_cost,"iron":stats.iron_cost,"scene":scene,"model":model}
+var _model_scenes := {}
+## The model a building scene shows in its Visuals slot, so its construction site can stand it up.
+func _model_scene(scene: PackedScene) -> PackedScene:
+	if scene == null: return null
+	if not _model_scenes.has(scene):
+		var preview = scene.instantiate()
+		var visuals = preview.get_node_or_null("Visuals")
+		_model_scenes[scene] = visuals.model_scene if visuals != null and "model_scene" in visuals else null
+		preview.free()
+	return _model_scenes[scene]
 func plan_terrain_valid(start: Vector2i, size: Vector2i, kind: StringName) -> bool:
 	return game.ground.ore_footprint_valid(start,size) if kind == &"iron_mine" else game.ground.is_footprint_valid(start,size)
 func plan_overlaps(start: Vector2i, size: Vector2i) -> bool:
