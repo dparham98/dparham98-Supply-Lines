@@ -6,6 +6,8 @@ extends Resource
 @export_range(1, 100000, 1) var max_health: int = 1
 @export_range(0, 1000, 0.1) var movement_speed: float = 0.0
 @export_range(0, 1000, 0.1) var vision: float = 0.0
+## Degrees a second the body turns while travelling (docs/PATHING.md).
+@export_range(1, 3600, 1) var turn_rate: float = 360.0
 ## -1 means unspecified (Drone).
 @export var attack_range: float = -1.0
 ## Set both only after interpreting/confirming the original notation.

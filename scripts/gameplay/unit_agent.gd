@@ -38,6 +38,8 @@ var abilities: Array[StringName] = []
 var _attack_enabled := true
 @export var max_health := 100
 @export var move_speed := 7.0
+## How fast the body turns while travelling, in degrees a second (docs/PATHING.md). Unit stats set it.
+@export var turn_rate := 360.0
 @export var attack_range := 12.0
 @export var attack_damage := 16
 @export var shot_interval := 0.7
@@ -329,6 +331,13 @@ func _route_to_interaction(target: Node3D, radius: float) -> bool:
 	path.remove_at(0)
 	_route = path
 	return true
+## Toward the nearest open cell to the target; the order stops the walk once the target is in range.
+func _route_toward(target: Node3D) -> bool:
+	var center = ground.get_tile_at_position(target.global_position)
+	if center == null: return false
+	if _plan(ground.nearest_actor_cell(center,mobility_layer(),_owner_key())): return true
+	_retry = 1
+	return false
 func _route_near(target: Node3D, radius: float) -> bool:
 	var center = ground.get_tile_at_position(target.global_position)
 	if center == null: return false
@@ -339,20 +348,18 @@ func _route_near(target: Node3D, radius: float) -> bool:
 			if ground.can_traverse(cell,mobility_layer(),_owner_key()) and _plan(cell): return true
 	_retry = 1
 	return false
+## Route cells looked ahead for a straight run, and half the width of the lane a run must keep clear.
+const AIM_LOOKAHEAD := 32
+const LANE_HALF_WIDTH := 0.35
+## Travel along the route (docs/PATHING.md). `_moving_to` is the cell being headed for: the farthest
+## of the next route cells in a straight, clear lane, so open ground is crossed in straight runs rather
+## than cell to cell. The unit claims each cell as it crosses into it and lets go of the one it left.
 func _walk(delta: float) -> void:
 	if _moving_to.x < 0:
-		var next: Vector2i = _route[0]
-		if not ground.can_traverse(next,mobility_layer(),_owner_key()):
-			_route.clear()
-			_retry = 0.5
-			state = "Waiting for route"
-			return
-		_claim(next)
-		_moving_to = next
-		_route.remove_at(0)
+		_moving_to = _route.pop_front()
+		_aim_ahead()
 	var point: Vector3 = ground.tile_to_world(_moving_to)
-	_face(point)
-	var step := move_speed*delta
+	var step := move_speed*delta*_turn_speed(_turn_toward(point,delta))
 	if fuel_active():
 		if out_of_fuel or fuel <= 0:
 			_mark_out_of_fuel()
@@ -360,18 +367,98 @@ func _walk(delta: float) -> void:
 			return
 		if fuel_rules.coal_per_movement_unit > 0: step = minf(step,fuel/fuel_rules.coal_per_movement_unit)
 	var before := global_position
-	global_position = global_position.move_toward(point,step)
+	var next := global_position.move_toward(point,step)
+	var cell = ground.get_tile_at_position(next)
+	if cell != null and not _is_ours(cell):
+		if not ground.can_traverse(cell,mobility_layer(),_owner_key()):
+			_route.clear()
+			_moving_to = Vector2i(-1,-1)
+			_retry = 0.5
+			state = "Waiting for route"
+			return
+		_claim(cell)
+		for claimed in _claimed.duplicate():
+			if claimed != cell: _release(claimed)
+		grid_position = cell
+	global_position = next
+	if cell != null and cell != ground.get_tile_at_position(before): _aim_ahead()
 	if fuel_active(): burn_fuel(before.distance_to(global_position))
 	if unit_stats != null and unit_stats.mobility != null and unit_stats.mobility.clears_forest:
 		var entered = ground.get_tile_at_position(global_position)
 		if entered != null: ground.clear_forest(entered)
 	if global_position.distance_to(point) < 0.001:
-		# A completed cell must be exact, including goals on an interaction-radius boundary.
+		# The route's last cell must be exact, including goals on an interaction-radius boundary.
 		global_position = point
-		for cell in _claimed.duplicate():
-			if cell != _moving_to: _release(cell)
-		grid_position = _moving_to
 		_moving_to = Vector2i(-1,-1)
+		if not _route.is_empty():
+			_moving_to = _route.pop_front()
+			_aim_ahead()
+## Head for the farthest of the next route cells reachable in a straight, clear lane. When even the next
+## cell is not (something moved into the lane, or the unit stopped off centre beside an obstacle), plan
+## again from its own cell and go back through that cell's centre.
+func _aim_ahead() -> void:
+	var cells: Array[Vector2i] = [_moving_to]
+	cells.append_array(_route.slice(0,AIM_LOOKAHEAD))
+	# The last cell first, then a halving search between the nearest clear cell and the first blocked one.
+	var best := cells.size()-1
+	if not _lane_clear(global_position,ground.tile_to_world(cells[best])):
+		best = -1
+		if _lane_clear(global_position,ground.tile_to_world(cells[0])):
+			best = 0
+			var blocked := cells.size()-1
+			while blocked-best > 1:
+				var mid := (best+blocked)/2
+				if _lane_clear(global_position,ground.tile_to_world(cells[mid])): best = mid
+				else: blocked = mid
+	if best >= 0:
+		_moving_to = cells[best]
+		_route = _route.slice(best)
+		return
+	# The cells before the aim were dropped, so plan again from here, through this cell's centre.
+	var here = ground.get_tile_at_position(global_position)
+	if here == null: return
+	var goal: Vector2i = _route.back() if not _route.is_empty() else _moving_to
+	var path: Array[Vector2i] = ground.actor_path(here,goal,mobility_layer(),_owner_key())
+	if path.is_empty():
+		_route.clear()
+		_moving_to = here
+		_retry = 0.5
+		state = "Waiting for route"
+		return
+	path.remove_at(0)
+	_route = path
+	_moving_to = here
+## Every cell under a lane LANE_HALF_WIDTH either side of the straight line is open to this unit.
+func _lane_clear(from: Vector3, to: Vector3) -> bool:
+	var run := Vector3(to.x-from.x,0,to.z-from.z)
+	var length := run.length()
+	if length < 0.01: return true
+	var along := run/length
+	var side := Vector3(-along.z,0,along.x)*LANE_HALF_WIDTH
+	var checked := {}
+	var steps := ceili(length/0.25)
+	for i in range(steps+1):
+		var at := from+along*(length*i/steps)
+		for offset in [Vector3.ZERO,side,-side]:
+			var cell = ground.get_tile_at_position(at+offset)
+			if cell == null: return false
+			if checked.has(cell): continue
+			checked[cell] = true
+			if not ground.can_traverse(cell,mobility_layer(),_owner_key()): return false
+	return true
+## Turn the body toward a point at turn_rate; returns how far it still is from facing it, in radians.
+func _turn_toward(point: Vector3, delta: float) -> float:
+	var offset := point-global_position
+	if Vector2(offset.x,offset.z).length_squared() < 0.0001: return 0.0
+	var heading := atan2(-offset.x,-offset.z)
+	var yaw: float = $Visuals.rotation.y
+	var error := angle_difference(yaw,heading)
+	var turn := deg_to_rad(turn_rate)*delta
+	$Visuals.rotation.y = heading if absf(error) <= turn else wrapf(yaw+signf(error)*turn,-PI,PI)
+	return absf(angle_difference($Visuals.rotation.y,heading))
+## Full speed within 20 degrees of the heading, slowing to a turn on the spot at 90 degrees or more.
+func _turn_speed(error: float) -> float:
+	return clampf((PI*0.5-error)/(PI*0.5-deg_to_rad(20.0)),0.0,1.0)
 func _gather(delta: float) -> void:
 	if not is_instance_valid(source) or source.remaining <= 0:
 		if cargo > 0: order = "return"
@@ -460,7 +547,7 @@ func _attack_order() -> void:
 		_shoot(order_target)
 	elif _retry <= 0:
 		state = "Pursuing"
-		if not _route_near(order_target,attack_range): state = "Target unreachable"
+		if not _route_toward(order_target): state = "Target unreachable"
 ## Forced fire counts only for the attack order's own target.
 func _forced_on(target: Node3D) -> bool:
 	return attack_forced and order == "attack" and target == order_target
@@ -570,6 +657,7 @@ func apply_unit_stats() -> void:
 		return
 	max_health = unit_stats.max_health
 	move_speed = unit_stats.movement_speed
+	turn_rate = unit_stats.turn_rate
 	vision = unit_stats.vision
 	energy_cost = unit_stats.energy_cost
 	iron_cost = unit_stats.iron_cost

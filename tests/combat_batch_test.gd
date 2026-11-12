@@ -77,6 +77,7 @@ func run() -> void:
 		var goal: Vector2i = game.ground.find_nearest_open_tile(mover.grid_position+Vector2i(0,2))
 		mover._route.assign([goal])
 		mover.order = "move"
+		mover.get_node("Visuals").rotation.y = PI  # already facing the goal, so it moves at once
 		var victim = actor("tank","enemy",origin+Vector3(1,0,0))
 		var before: int = victim.health
 		mover._process(0.1)
