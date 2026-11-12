@@ -132,5 +132,5 @@ func run() -> void:
 	model.player.advance(0.2)
 	await process_frame
 	if not check(not is_instance_valid(model),"The wreck should remove itself"): return
-	print("BARRACKS MODEL OK")
+	print("BARRACKS_MODEL_TEST_PASSED")
 	quit(0)
