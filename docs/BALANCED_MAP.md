@@ -4,7 +4,7 @@ A second map, built for a fair two-player match, and the first map with coal in 
 
 ![Layout with starts, expansions and coal fields](images/balanced_map_preview.png)
 
-Open `scenes/maps/balanced_skirmish.tscn` and press **F6**. **F5** still runs `resource_skirmish.tscn`, and the original map, its files and `supply_lines_world.tscn` are unchanged. There is no scene picker in the game, so the new map is only reached from the editor.
+This is the game's main scene: **F5** runs it. The original map, `resource_skirmish.tscn`, is unchanged and still playable with **F6** on its scene; most tests still use it. There is no scene picker in the game.
 
 ## Layout
 
@@ -143,7 +143,7 @@ godot --path . --script res://scripts/tools/draw_map_preview.gd
 - **Belt depth.** 9 cells is about two minutes of sawing with a Depot beside it, and much longer when every load of wood is carried far. A Tank drives straight through. Whether that is real Infantry time or tedium needs your eye. Clearing a 9-cell corridor also yields 180 wood, worth 1,800 energy in a Generator.
 - **Coal amounts,** and whether 2,000 is enough reason to fight at midfield.
 - **Safe and exposed.** Both expansions are about equally far from the enemy by ground; the difference is that the exposed one can be reached without passing the main.
-- **Resistance.** Hostiles hold their ground and fire at 10 m. They do not cover the middle of the centre lane.
+- **Resistance.** Hostiles hold their ground and fire at 15 m (docs/PATHING.md). They do not cover the middle of the centre lane.
 - **Look.** Coal lumps, the dark seam and the large flat-topped massifs were set by eye from four renders. Water borders keep the blocky steps of the cells.
 - **Frame rate.** On one machine with vertical sync off the whole-map view drew 2.3 million triangles at about 280 frames a second, against 1.4 million and about 400 to 460 on the original map. Slower machines were not tried.
 
