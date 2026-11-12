@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/components/barracks_rig.gd" id="rig_script"]
+[ext_resource type="Script" path="res://scripts/components/production_rig.gd" id="rig_script"]
 [ext_resource type="PackedScene" path="res://assets/models/buildings/barracks.glb" id="rig"]
 [ext_resource type="PackedScene" path="res://scenes/models/barracks_death_fx.tscn" id="death_fx"]
 

@@ -1,14 +1,16 @@
 extends Node3D
-## Plays the Barracks' authored clips (docs/BARRACKS_MODEL.md): Idle while nothing prints, Build scrubbed
-## by construction progress, Print following production, and Die when the Barracks is destroyed. The rest
-## pose is the finished hall with its door closed and its cradle empty.
+## Plays a production building's authored clips: the Barracks (docs/BARRACKS_MODEL.md) and the Tank Factory
+## (docs/TANK_FACTORY_MODEL.md). Idle while nothing is made, Build scrubbed by construction progress, the
+## production clip following production, and Die when the building is destroyed. The rest pose is the
+## finished building with its door closed and nothing being made.
 @export var player_path := NodePath("Rig/AnimationPlayer")
 @export var idle_clip := &"Idle"
 @export var build_clip := &"Build"
+## The production clip ("Print" for the Barracks, "Produce" for the Tank Factory).
 @export var print_clip := &"Print"
 @export var death_clip := &"Die"
-## Seconds into Print when the printed figure reaches the door; the real unit appears outside then.
-## Print time is scaled onto 0..this, and the rest of the clip (the door closing) plays at normal speed.
+## Seconds into it when the new unit reaches the door; the real unit appears outside then.
+## Production time is scaled onto 0..this, and the rest of the clip (the door closing) plays at normal speed.
 @export_range(0.1,10,0.05) var print_spawn_seconds := 4.0
 ## Spawned on this model at death (fire, smoke, scrap); built on the same timeline as the clip.
 @export var death_fx_scene: PackedScene
@@ -22,15 +24,15 @@ func show_idle() -> void:
 	if _dying or _closing: return
 	if player.is_playing() and player.assigned_animation == idle_clip: return
 	player.play(idle_clip)
-## Construction progress 0..1: from bare ground to the finished hall.
+## Construction progress 0..1: from bare ground to the finished building.
 func show_construction(fraction: float) -> void:
 	if _dying: return
 	_pose(build_clip,clampf(fraction,0.0,1.0)*player.get_animation(build_clip).length)
-## Production progress 0..1 of the unit now printing. At 1 the figure waits at the open door.
+## Production progress 0..1 of the unit being made. At 1 it waits at the open door.
 func show_print(fraction: float) -> void:
 	if _dying or _closing: return
 	_pose(print_clip,clampf(fraction,0.0,1.0)*print_spawn_seconds)
-## The printed unit has stepped out: the door closes behind it, then the hall idles again.
+## The new unit has left: the door closes behind it, then the building idles again.
 func unit_left() -> void:
 	if _dying: return
 	_closing = true

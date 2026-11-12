@@ -1,0 +1,143 @@
+extends SceneTree
+# Headless: the Tank Factory's model (assets/models/buildings/tank_factory.glb via
+# scenes/models/tank_factory_model.tscn) fits its 8 x 8 footprint with the vehicle door toward +Z, its clips
+# start at frame 0, a construction plan shows the plant going up with the work, production plays Produce
+# with the vehicle assembled on the raised lift and driven out as the door opens, and a destroyed Tank Factory leaves a wreck
+# that plays Die, sinks and removes itself.
+const Bounds = preload("res://scripts/units/selection_bounds.gd")
+const Burst = preload("res://scripts/components/burst_effect.gd")
+const HALL := "Rig/tank_factory_root/"
+const MODEL := "res://scenes/models/tank_factory_model.tscn"
+var game: Node3D
+var network: Node
+func _initialize() -> void: call_deferred("run")
+func check(ok: bool, message: String) -> bool:
+	if ok: return true
+	push_error(message); quit(1); return false
+func site(kind: StringName, near: Vector3) -> Vector3:
+	var spec: Dictionary = network.plan_spec(kind)
+	for radius in range(10,100,4):
+		for offset in [Vector3(radius,0,0),Vector3(-radius,0,0),Vector3(0,0,radius),Vector3(0,0,-radius)]:
+			var point: Vector3 = near+offset
+			var start: Vector2i = network.footprint_start(point,spec.size)
+			if network.plan_terrain_valid(start,spec.size,kind) and not network.plan_overlaps(start,spec.size) and network.can_place_size(point,game.depot,spec.size): return point
+	return Vector3.INF
+## Model-space bounds of every mesh under `node`, leaving out effects.
+func extent(node: Node3D, space: Node3D) -> AABB:
+	var box := AABB()
+	var first := true
+	for mesh in node.find_children("*","MeshInstance3D",true,false):
+		if _in_effect(mesh,node): continue
+		if not (mesh as MeshInstance3D).is_visible_in_tree(): continue
+		for i in range(8):
+			var p: Vector3 = space.global_transform.affine_inverse()*(mesh.global_transform*mesh.get_aabb().get_endpoint(i))
+			if first: box = AABB(p,Vector3.ZERO); first = false
+			else: box = box.expand(p)
+	return box
+func _in_effect(mesh: Node, top: Node) -> bool:
+	var node := mesh.get_parent()
+	while node != null and node != top:
+		if node.get_script() == Burst: return true
+		node = node.get_parent()
+	return false
+func part(model: Node3D, name: String) -> Node3D:
+	return model.get_node(HALL+name)
+func run() -> void:
+	game = load("res://scenes/maps/resource_skirmish.tscn").instantiate()
+	root.add_child(game)
+	for i in range(3): await process_frame
+	network = game.get_node("DepotNetwork")
+	game.set_process(false)
+	for unit in get_nodes_in_group("units"): unit.set_process(false)
+	for depot in get_nodes_in_group("depots"): depot.set_process(false)
+	var depot = game.depot
+	depot.storage_capacity = 10000
+	depot.energy = 2000; depot.iron = 2000
+	# The clips: Idle loops, the others play once, and every track starts on frame 0.
+	var probe: Node3D = load(MODEL).instantiate()
+	root.add_child(probe)
+	var player: AnimationPlayer = probe.player
+	for clip in ["Idle","Build","Produce","Die"]:
+		if not check(player.has_animation(clip),"Tank Factory clip %s missing: %s" % [clip,player.get_animation_list()]): return
+		var animation := player.get_animation(clip)
+		if not check((animation.loop_mode == Animation.LOOP_LINEAR) == (clip == "Idle"),"%s loop mode wrong" % clip): return
+		for track in range(animation.get_track_count()):
+			if not check(animation.track_get_key_count(track) > 0 and is_zero_approx(animation.track_get_key_time(track,0)),"%s track %s does not start at frame 0" % [clip,animation.track_get_path(track)]): return
+	probe.free()
+	# A construction plan: nothing stands at the start, half the hall at half the work, all of it at the end.
+	var point := site(&"tank_factory",depot.global_position)
+	if not check(point != Vector3.INF,"No Tank Factory site"): return
+	var plan = network.queue_plan(point,&"tank_factory")
+	if not check(plan != null,"Tank Factory plan not placed"): return
+	plan.set_process(false)
+	var site_model: Node3D = plan.get_node_or_null("Visuals/Model")
+	if not check(site_model != null and site_model.scene_file_path == MODEL,"The Tank Factory plan should show its model"): return
+	var grid: Node3D = plan.get_node("Visuals/Grid")
+	if not check(Vector2(site_model.position.x,site_model.position.z).is_equal_approx(Vector2(grid.position.x,grid.position.z)),"Site model should stand on the footprint grid"): return
+	if not check(part(site_model,"plinth").scale.y < 0.01 and part(site_model,"roof").scale.y < 0.01,"Nothing should stand on a site before work starts"): return
+	var iron: int = plan.spec.iron
+	var energy: int = plan.spec.energy
+	plan.added = {&"iron": iron/2}; plan.energy_paid = energy/2
+	plan.refresh_label()
+	var half: float = plan.progress_fraction()
+	if not check(site_model.player.assigned_animation == &"Build" and absf(site_model.player.current_animation_position/site_model.player.get_animation(&"Build").length-half) < 0.01,"Build should follow construction progress: %.2f" % half): return
+	if not check(part(site_model,"walls").scale.y > 0.01 and part(site_model,"roof").scale.y < 0.01 and part(site_model,"gantry").scale.y < 0.01,"Half built: walls going up, roof and crane not on yet"): return
+	plan.added = {&"iron": iron}; plan.energy_paid = energy
+	plan.refresh_label()
+	if not check(part(site_model,"roof").scale.is_equal_approx(Vector3.ONE) and part(site_model,"stacks").scale.is_equal_approx(Vector3.ONE) and part(site_model,"gantry").scale.is_equal_approx(Vector3.ONE),"Fully built site should show the whole plant"): return
+	if not check(site_model.get_parent() == plan.get_node("Visuals"),"Site model belongs to the plan"): return
+	plan.added = {}; plan.energy_paid = 0
+	var building: Node3D = plan.complete_from_stock()
+	if not check(building != null,"Tank Factory plan did not complete"): return
+	building.set_process(false)
+	await process_frame
+	if not check(not is_instance_valid(plan) or plan.is_queued_for_deletion(),"Plan should go when the Tank Factory stands"): return
+	var model: Node3D = building.get_node("Visuals/Model")
+	if not check(model.scene_file_path == MODEL and model.has_method("show_print") and model.print_clip == &"Produce","Tank Factory does not use the rigged model"): return
+	# Inside its footprint, on the ground, door toward +Z; the crane on the roof is the tallest part.
+	var box := extent(model,building)
+	if not check(absf(box.position.y) < 0.05 and box.end.y > 5.5 and box.end.y < 6.3,"Tank Factory height wrong: y %.2f..%.2f" % [box.position.y,box.end.y]): return
+	if not check(box.position.x > -4.01 and box.end.x < 4.01 and box.position.z > -4.01 and box.end.z < 4.01,"Tank Factory outside its 8 x 8 footprint: %s" % box): return
+	if not check(box.size.x > 7.4 and box.size.z > 7.4,"Tank Factory should fill its footprint: %s" % box): return
+	var door := part(model,"bay_door")
+	if not check(building.to_local(door.global_position).z > 2.9,"The vehicle door should face +Z"): return
+	var vehicle := part(model,"vehicle")
+	var hull := part(model,"vehicle/veh_hull")
+	var deck := part(model,"vehicle/veh_deck")
+	var turret := part(model,"vehicle/veh_turret")
+	if not check(hull.scale.x < 0.01 and turret.scale.x < 0.01 and door.scale.is_equal_approx(Vector3.ONE),"Rest pose: no vehicle and door closed"): return
+	var turret_seat := turret.position
+	if not check(model.player.is_playing() and model.player.assigned_animation == &"Idle","A Tank Factory with nothing queued should idle"): return
+	# Production: Produce follows the queue, the vehicle is assembled, then it drives out as the door opens.
+	if not check(building.request_unit(&"tank"),"Tank not queued"): return
+	var print_seconds: float = building.stats.print_seconds
+	var units_before := get_nodes_in_group("units").size()
+	building._process(print_seconds*0.5)
+	if not check(model.player.assigned_animation == &"Produce" and not model.player.is_playing(),"Produce should be posed by production progress"): return
+	if not check(part(model,"turntable").position.y > 2.0,"The lift should hold the vehicle up near the roof while it is assembled"): return
+	if not check(hull.scale.y > 0.99 and deck.scale.x > 0.99 and turret.position.distance_to(turret_seat) > 0.3 and door.scale.y > 0.99,"Half made: hull and deck on, turret still on the crane, door closed (hull %.2f deck %.2f turret %.2f m from its seat, door %.2f)" % [hull.scale.y,deck.scale.x,turret.position.distance_to(turret_seat),door.scale.y]): return
+	building._process(print_seconds*0.49)
+	if not check(door.scale.y < 0.2 and turret.scale.x > 0.5 and building.to_local(vehicle.global_position).z > 2.5,"Nearly made: the vehicle should be at the open door (z %.2f door %.2f)" % [building.to_local(vehicle.global_position).z,door.scale.y]): return
+	building._process(print_seconds*0.02)
+	if not check(get_nodes_in_group("units").size() == units_before+1,"The unit was not produced"): return
+	if not check(model.closing() and model.player.is_playing() and hull.scale.x < 0.01,"The vehicle should be gone and the door closing"): return
+	model.player.advance(model.player.get_animation(&"Produce").length)
+	await process_frame
+	if not check(not model.closing() and model.player.assigned_animation == &"Idle" and door.scale.y > 0.99,"After the unit leaves the door closes and the plant idles"): return
+	# Destroyed: the building goes at once, its model stays behind as a wreck and removes itself.
+	building.take_damage(building.max_health)
+	if not check(not building.is_in_group("selectable_buildings") and not building.is_in_group("production_buildings"),"Destroyed Tank Factory still selectable"): return
+	if not check(model.get_parent() == game and model.dying() and model.player.assigned_animation == &"Die","A destroyed Tank Factory should leave its model playing Die"): return
+	var effects := model.get_children().filter(func(n): return n.get_script() == Burst)
+	if not check(effects.size() == 1 and effects[0].player.has_animation(&"Death"),"The wreck should carry its death effects"): return
+	await process_frame
+	if not check(not is_instance_valid(building),"The Tank Factory itself should be gone"): return
+	var die_length: float = model.player.get_animation(&"Die").length
+	model.player.advance(die_length-0.08)
+	var low := extent(model,model)
+	if not check(low.end.y < 0.1,"The wreck should have sunk out of sight by the end: top %.2f" % low.end.y): return
+	model.player.advance(0.2)
+	await process_frame
+	if not check(not is_instance_valid(model),"The wreck should remove itself"): return
+	print("TANK_FACTORY_MODEL_TEST_PASSED")
+	quit(0)
