@@ -33,6 +33,8 @@ extends Node3D
 @export var headroom := 1.3
 ## How high the lift raises the mount at the top of its travel.
 @export var lift_height := 2.4
+## The vehicle door. A flying unit leaves through the roof, so the door is held shut while it is made.
+@export var door_node := &""
 @onready var player: AnimationPlayer = get_node(player_path)
 var _dying := false
 var _closing := false
@@ -45,10 +47,19 @@ var _unit_height := 1.0
 var _unit_material: ShaderMaterial
 var _unit_turns := true
 var _mount_rest: Transform3D
+## A flying unit's way out: where its real self will hover (global), whether it has left the mount, and where
+## it lifted off from.
+var _flight_to = null
+var _lifted := false
+var _liftoff: Transform3D
+var _door: Node3D
+var _door_rest: Transform3D
 func _ready() -> void:
 	player.animation_finished.connect(_finished)
 	if vehicle_node != &"": _mount = find_child(String(vehicle_node),true,false)
 	if _mount != null: _mount_rest = _mount.transform
+	if door_node != &"": _door = find_child(String(door_node),true,false)
+	if _door != null: _door_rest = _door.transform
 	show_idle()
 func show_idle() -> void:
 	if _dying or _closing: return
@@ -65,15 +76,27 @@ func show_print(fraction: float) -> void:
 	var seconds := clampf(fraction,0.0,1.0)*print_spawn_seconds
 	_pose(print_clip,seconds)
 	if _wanted_unit != _unit_scene: _stand_unit(_wanted_unit)
-	_place_unit()
+	if not _lifted: _place_unit()
 	_form_unit(clampf((seconds-form_from)/(form_to-form_from),0.0,1.0))
+	if _flight_to != null and unit_model != null:
+		_hold_door()
+		if seconds > form_to: _fly(seconds)
 ## The model of the unit being made next (its scene's Visuals model). It takes the mount at the next show_print.
-func show_unit(model_scene: PackedScene) -> void:
+## For a flying unit, flight_to is where its real self will hover (a global Transform3D of its model): once
+## formed it lifts off the mount and rises out of the roof well to there, and the door stays shut.
+func show_unit(model_scene: PackedScene, flight_to = null) -> void:
 	_wanted_unit = model_scene
-## The new unit has left: the door closes behind it, then the building idles again.
+	_flight_to = flight_to
+## The new unit has left: the door closes behind it, then the building idles again. A flying unit left
+## through the roof with the door shut, so the building idles at once.
 func unit_left() -> void:
 	if _dying: return
+	var flew := _lifted
 	_clear_unit()
+	if flew:
+		_flight_to = null
+		show_idle()
+		return
 	_closing = true
 	player.play(print_clip)
 	player.seek(print_spawn_seconds,true)
@@ -143,6 +166,24 @@ func _place_unit() -> void:
 	var yaw := 0.0 if _unit_turns else -(_mount_rest.basis.inverse()*_mount.basis).get_euler().y
 	var facing := Basis(Vector3.UP,PI+yaw)
 	unit_model.transform = Transform3D(facing.scaled(unit_model.scale),Basis(Vector3.UP,yaw)*Vector3(0,-sink,float(unit_model.get_meta(&"factory_shift",0.0))))
+## Lifts a finished flying unit off the mount and flies it from the well to its hover point. Off the mount it
+## no longer follows the lift and turntable, it runs its own animation (rotors) and it grows to the size its
+## real self will have.
+func _fly(seconds: float) -> void:
+	if not _lifted:
+		# Where it stood when it was finished, wherever the clip has gone since.
+		_pose(print_clip,form_to)
+		_place_unit()
+		_liftoff = unit_model.global_transform
+		_pose(print_clip,seconds)
+		_hold_door()
+		unit_model.top_level = true
+		unit_model.process_mode = Node.PROCESS_MODE_INHERIT
+		_lifted = true
+	var t := smoothstep(0.0,1.0,(seconds-form_to)/maxf(print_spawn_seconds-form_to,0.01))
+	unit_model.global_transform = _liftoff.interpolate_with(_flight_to,t)
+func _hold_door() -> void:
+	if _door != null: _door.transform = _door_rest
 ## 0 nothing yet, 1 complete: the weld seam rises up the unit, which is primer below it. Complete, it wears its
 ## own colours.
 func _form_unit(formed: float) -> void:
@@ -161,6 +202,7 @@ func _clear_unit() -> void:
 		unit_model.queue_free()
 		unit_model = null
 	_unit_scene = null
+	_lifted = false
 ## Whether the unit on the mount is still being formed (in primer, cut by the weld seam).
 func unit_forming() -> bool:
 	return unit_model != null and _unit_material != null and _unit_meshes().any(func(m): return m.material_override == _unit_material)

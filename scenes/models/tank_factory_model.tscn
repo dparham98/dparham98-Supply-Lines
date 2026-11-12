@@ -13,6 +13,7 @@ script = ExtResource("rig_script")
 print_clip = &"Produce"
 death_fx_scene = ExtResource("death_fx")
 vehicle_node = &"vehicle"
+door_node = &"bay_door"
 build_material = SubResource("weld_material")
 
 [node name="Rig" parent="." instance=ExtResource("rig")]

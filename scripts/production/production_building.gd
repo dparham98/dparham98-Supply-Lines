@@ -73,12 +73,18 @@ func _process(delta: float) -> void:
 		$Status.text = "%s → %s" % [stats.display_name,assigned_depot.name]
 		return
 	progress = minf(stats.print_seconds,progress+delta)
-	_show_model(&"show_unit",[unit_model_scene(pending[0])])
+	var queued_stats := unit_stats_for(pending[0])
+	var layer: int = queued_stats.mobility.layer if queued_stats.mobility != null else MobilityRules.Layer.GROUND
+	var flight_to = null
+	if layer == MobilityRules.Layer.AIR:
+		# A flyer leaves through the roof: the factory flies its model to where the real one will hover.
+		var air_cell := _exit_cell(layer)
+		if air_cell.x < 0: air_cell = ground.get_tile_at_position(global_position)
+		flight_to = Transform3D(Basis(),ground.tile_to_world(air_cell)+_visuals_property(pending[0],&"position",Vector3.ZERO))
+	_show_model(&"show_unit",[unit_model_scene(pending[0]),flight_to])
 	_show_model(&"show_print",[progress/stats.print_seconds])
 	if progress >= stats.print_seconds:
-		var queued_stats := unit_stats_for(pending[0])
-		var layer: int = queued_stats.mobility.layer if queued_stats.mobility != null else MobilityRules.Layer.GROUND
-		var cell := ProductionExit.find_cell(ground,global_position,stats.footprint,layer)
+		var cell := _exit_cell(layer)
 		exit_blocked = cell.x < 0
 		if exit_blocked: $Status.text = stats.display_name+" · exit blocked, waiting"; return
 		var scene = pending.pop_front()
@@ -95,13 +101,22 @@ func _process(delta: float) -> void:
 ## The model a unit scene wears (its Visuals slot's model_scene), read from the packed scene without building
 ## the unit, so a factory can show the unit being made.
 static func unit_model_scene(scene: PackedScene) -> PackedScene:
-	if scene == null: return null
+	return _visuals_property(scene,&"model_scene",null)
+static func _visuals_property(scene: PackedScene, property_name: StringName, fallback: Variant) -> Variant:
+	if scene == null: return fallback
 	var state := scene.get_state()
 	for node in range(state.get_node_count()):
 		if state.get_node_name(node) != &"Visuals": continue
 		for property in range(state.get_node_property_count(node)):
-			if state.get_node_property_name(node,property) == &"model_scene": return state.get_node_property_value(node,property)
-	return null
+			if state.get_node_property_name(node,property) == property_name: return state.get_node_property_value(node,property)
+	return fallback
+## Where a finished unit appears: a flyer over the middle of the roof if that air cell is free, otherwise (and
+## for ground units) the first free cell around the building.
+func _exit_cell(layer: int) -> Vector2i:
+	if layer == MobilityRules.Layer.AIR:
+		var center = ground.get_tile_at_position(global_position)
+		if center != null and ground.can_traverse(center,layer): return center
+	return ProductionExit.find_cell(ground,global_position,stats.footprint,layer)
 func _key() -> String:
 	return "production_%s" % get_instance_id()
 func take_damage(amount: int) -> void:

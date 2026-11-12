@@ -147,6 +147,30 @@ func run() -> void:
 	await process_frame
 	building._process(print_seconds*0.05)
 	if not check(model.unit_model != null and model.unit_model.scene_file_path == "res://scenes/models/drone_model.tscn","Then a Drone should be made"): return
+	if not check(model.unit_model.get_parent() == vehicle and not model.unit_model.top_level,"The Drone is formed on the turntable"): return
+	# A flyer leaves through the roof: once formed it lifts off and rises to where the real Drone will hover.
+	# Progress carried on while the door closed behind the Motorcycle (0.1 + 0.05 so far).
+	building._process(print_seconds*0.7)
+	var drone_model: Node3D = model.unit_model
+	if not check(drone_model != null and drone_model.top_level and drone_model.process_mode == Node.PROCESS_MODE_INHERIT,"The finished Drone should lift off the turntable under its own power"): return
+	if not check(drone_model.global_position.y > building.global_position.y+4.5 and absf(building.to_local(drone_model.global_position).z) < 2.0,"The Drone should be rising out of the roof well (%s)" % building.to_local(drone_model.global_position)): return
+	if not check(door.scale.y > 0.99,"The door stays shut for a flyer"): return
+	building._process(print_seconds*0.14)
+	var hover: Vector3 = model._flight_to.origin
+	if not check(drone_model.global_position.distance_to(hover) < 0.3 and hover.y > building.global_position.y+10.0,"Nearly made: the Drone should be up at its flying height (%.2f m off)" % drone_model.global_position.distance_to(hover)): return
+	if not check(absf(drone_model.global_basis.get_scale().x-1.0) < 0.05 and door.scale.y > 0.99,"At full size, with the door still shut"): return
+	var drones_before := get_nodes_in_group("units").filter(func(u): return u.scene_file_path == "res://scenes/gameplay/drone.tscn").size()
+	building._process(print_seconds*0.02)
+	var drones := get_nodes_in_group("units").filter(func(u): return u.scene_file_path == "res://scenes/gameplay/drone.tscn")
+	if not check(drones.size() == drones_before+1,"The Drone was not produced"): return
+	var real: Node3D = drones.back().get_node("Visuals/Model")
+	if not check(real.global_position.distance_to(hover) < 0.05,"The real Drone should appear where the factory flew its model (%.2f m off)" % real.global_position.distance_to(hover)): return
+	await process_frame
+	if not check(model.unit_model == null and not model.closing() and model.player.assigned_animation == &"Idle" and door.scale.y > 0.99,"After a flyer leaves the plant idles with the door shut"): return
+	# Clearing the queue part way empties the turntable.
+	if not check(building.request_unit(&"motorcycle"),"Motorcycle not queued"): return
+	building._process(print_seconds*0.3)
+	if not check(model.unit_model != null,"The Motorcycle should be on the turntable"): return
 	building.pending.clear()
 	building._process(0.1)
 	await process_frame

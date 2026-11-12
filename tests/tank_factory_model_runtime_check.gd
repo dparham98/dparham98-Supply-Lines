@@ -1,7 +1,7 @@
 extends SceneTree
 # Rendered: the Tank Factory (docs/TANK_FACTORY_MODEL.md) at the game's camera and close up: a site going
-# up, the finished plant, a Tank, a Motorcycle and a Drone each formed on the lift in their own shape and the
-# Tank at the open door, and the collapse.
+# up, the finished plant, a Tank, a Motorcycle and a Drone each formed on the lift in their own shape, the Drone
+# flying out of the roof, the Tank at the open door, and the collapse.
 # Saves tank_factory_*.png. Also checks the finished Tank Factory is pickable on its roof. Pictures only;
 # judge them by eye.
 const Bounds = preload("res://scripts/units/selection_bounds.gd")
@@ -71,6 +71,12 @@ func run() -> void:
 		building.request_unit(StringName(id))
 		building._process(print_seconds*0.45)
 		await shot(building.global_position,13,"tank_factory_producing_%s" % id)
+		if id == "drone":
+			# It flies out of the roof well, up to its flying height.
+			building._process(print_seconds*0.35)
+			await shot(building.global_position,22,"tank_factory_drone_rising")
+			building._process(print_seconds*0.15)
+			await shot(building.global_position,30,"tank_factory_drone_out")
 		building.pending.clear()
 		building.progress = 0
 		building._process(0.01)
