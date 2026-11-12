@@ -1,0 +1,30 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/burst_effect.gd" id="burst"]
+[ext_resource type="PackedScene" path="res://assets/models/effects/generator_death_fx.glb" id="model"]
+
+[sub_resource type="StandardMaterial3D" id="flash_hot"]
+shading_mode = 0
+albedo_color = Color(1,0.86,0.5,1)
+
+[node name="GeneratorDeathFx" type="Node3D"]
+script = ExtResource("burst")
+clip = &"Death"
+flash_path = NodePath("Model/Flash")
+light_path = NodePath("Light")
+light_energy = 3.0
+one_shot = true
+
+[node name="Model" parent="." instance=ExtResource("model")]
+
+[node name="Flash" parent="Model" index="0"]
+material_override = SubResource("flash_hot")
+
+[node name="Light" type="OmniLight3D" parent="."]
+transform = Transform3D(1,0,0,0,1,0,0,0,1,-0.3,1.4,1.6)
+visible = false
+light_color = Color(1,0.62,0.3,1)
+omni_range = 8.0
+omni_attenuation = 1.0
+
+[editable path="Model"]

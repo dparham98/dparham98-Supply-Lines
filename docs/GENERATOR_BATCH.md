@@ -24,7 +24,7 @@ Coal yields five times as much energy per material unit, at twice the sustained 
 
 assets/economy/generator_rules.tres supplies wood/coal outputs and durations. The generator scene assigns it through fuel_rules. Changes affect subsequent cycles; a started cycle retains its latched values. SupplyRules still controls construction footprint/cost and cargo values. Its old energy_per_second field is retained for Inspector compatibility only and no longer produces free energy.
 
-The saved Generator placeholder, model slot and native HUD scene remain in use. No gameplay visuals are generated. Existing local stockpiles, 500-iron Depot test grant, one establishment Infantry, mobile deployment, trains/rails, piles, unit resources, combat fallback, camera/edge scrolling and pathing remain in place. No protected map textures/data or baked scenery changed.
+The Generator's model slot and native HUD scene remain in use; the slot now holds the animated steam generator (docs/GENERATOR_MODEL.md) in place of the placeholder. No gameplay visuals are generated. Existing local stockpiles, 500-iron Depot test grant, one establishment Infantry, mobile deployment, trains/rails, piles, unit resources, combat fallback, camera/edge scrolling and pathing remain in place. No protected map textures/data or baked scenery changed.
 
 Water generation, coal deposits/extraction, vehicle fuel consumption/refueling and Drone landing/emergency rules are not enabled. Coal in this exercise is authored test stock; it is not a new starting grant for ordinary Depots. Wood can now be harvested and stockpiled to power generators in ordinary play. Vehicle onboard fuel remains separate and inactive; generators never read it.
 
