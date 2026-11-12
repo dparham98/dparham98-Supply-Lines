@@ -34,3 +34,41 @@ A Depot Truck takes the length of both clips, about 14.2 s. Other Depot jobs sti
 - Capturing the Depot cancels the queue without a refund, as before, and resets the tractor to home.
 - `depot_truck_drive.blend` is not used. `vehicle_rig.gd` rolls the wheels from real ground speed.
 - Checks: `tests/depot_truck_model_test.gd` and `tests/depot_truck_model_runtime_check.gd`.
+
+## Destruction
+
+A destroyed Depot or Depot Truck is gone at once, so it cannot be selected or targeted, and its model stays behind as a wreck that plays its death and removes itself, as the other buildings and units do.
+
+- **Depot (6 s):**
+  - The stored crates go up (0.35 s): a fireball bursts out through the roof, which heaves up on the blast.
+  - Both roof halves sag in about their eaves and drop onto the floor; the ridge and rafters crash down after them.
+  - The front end wall falls in, and the back one topples out over the ramp. The outer floor wings tip down, and the eave rails come down onto them.
+  - The top crate of each stack is thrown clear and lands beside the Depot; the rest jolt askew. Shreds of tarp flutter down.
+  - The stock and the fallen canvas burn under a column of smoke and embers, over a scorched patch of ground. The roof burns down to its frame.
+  - The tractor's lights go out. The wreck sinks out of sight from 4.3 s.
+- **Depot Truck (5 s):**
+  - The tractor's fuel goes up (0.3 s), with a fireball out of the top of the cab.
+  - The tractor bucks nose high and comes down slewed and nose first, with both front wheels thrown off to lie flat beside it.
+  - The trailer jackknifes, then rolls over onto its side. Panels are thrown off the tractor.
+  - The tractor and then the trailer's load burn, with smoke and an oil pool. The wreck sinks out of sight from 3.6 s.
+- **How it is made:**
+  - `depot.glb` and `depot_truck.glb` hold clips assembled from three working files, so they are not re-exported to add a death. Instead, as with the Tank's deaths, each death is an effect file holding stand-ins named `Drive_<part>`, nested as the parts are.
+  - Their rest pose is the part's own: the finished warehouse (frame 240) for the Depot, the closed truck (frame 1) for the truck. `scripts/components/driven_death.gd` copies their keyed transforms onto the real parts each frame, so a death starts exactly where the model stands.
+  - `Drive_Scorch`'s scale is how burnt the model looks, through `assets/materials/tank_scorch.tres` over every mesh.
+  - Fire, smoke and debris are ordinary keyed meshes, as in the other death effects.
+- **Files:**
+  - Effect scenes: `assets/models/effects/depot_death_fx.glb` and `depot_truck_death_fx.glb`, wrapped by `scenes/models/depot_death_fx.tscn` and `depot_truck_death_fx.tscn`.
+  - Hooks: `death_scene` on `depot_rig.gd` and `vehicle_rig.gd`. The cargo truck has none, so it is unchanged.
+  - Working files: `Blender/Buildings/Depot/DepotDeath.blend` and `DepotTruckDeath.blend`, built by `Blender/Buildings/Depot/build/build_depot_death.py` from `Depot.blend`, which it only reads. Each death has its own file because both sets of stand-ins are named after the same parts.
+- **What stops when the Depot dies:**
+  - The fold-out, the tractor pulling out and the truck being built all stop where they are, and a truck half built disappears.
+  - The tractor is not moved by the death (`held_parts`), since it may be away building a truck; it goes down with the wreck where it stands.
+  - Only the Depot's own parts are driven (`parts_path`), not the truck being built, which has parts of the same names.
+- **Checks:**
+  - `tests/depot_death_test.gd` (headless):
+    - Each wreck stays behind and is removed from selection and targeting.
+    - Every driven part starts on its own pose.
+    - The Depot: the ridge and roof fall, and the tractor stays put.
+    - The truck: the trailer rolls over and a front wheel is thrown.
+    - Both are scorched, sink and remove themselves.
+  - `tests/depot_death_runtime_check.gd` (rendered): shots of each death held at the blast, the collapse, the burning and the sinking.

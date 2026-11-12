@@ -1,0 +1,35 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/driven_death.gd" id="death"]
+[ext_resource type="PackedScene" path="res://assets/models/effects/depot_death_fx.glb" id="model"]
+[ext_resource type="Material" path="res://assets/materials/tank_scorch.tres" id="scorch"]
+
+[sub_resource type="StandardMaterial3D" id="flash_hot"]
+shading_mode = 0
+albedo_color = Color(1,0.86,0.5,1)
+
+[node name="DepotDeathFx" type="Node3D"]
+script = ExtResource("death")
+scorch_material = ExtResource("scorch")
+held_parts = PackedStringArray("warehouse_power_unit")
+parts_path = NodePath("Warehouse")
+clip = &"Death"
+flash_path = NodePath("Model/Flash")
+light_path = NodePath("Light")
+light_energy = 4.0
+one_shot = true
+
+[node name="Model" parent="." instance=ExtResource("model")]
+transform = Transform3D(0,0,0.6,0,0.6,0,-0.6,0,0,0,0,0)
+
+[node name="Flash" parent="Model"]
+material_override = SubResource("flash_hot")
+
+[node name="Light" type="OmniLight3D" parent="."]
+transform = Transform3D(1,0,0,0,1,0,0,0,1,0,5.0,0)
+visible = false
+light_color = Color(1,0.58,0.26,1)
+omni_range = 20.0
+omni_attenuation = 1.0
+
+[editable path="Model"]

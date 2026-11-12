@@ -2,8 +2,10 @@
 [ext_resource type="Script" path="res://scripts/components/depot_rig.gd" id="rig"]
 [ext_resource type="PackedScene" path="res://assets/models/buildings/depot.glb" id="depot"]
 [ext_resource type="PackedScene" path="res://scenes/models/depot_truck_model.tscn" id="truck"]
+[ext_resource type="PackedScene" path="res://scenes/models/depot_death_fx.tscn" id="death_fx"]
 [node name="DepotModel" type="Node3D"]
 script = ExtResource("rig")
+death_scene = ExtResource("death_fx")
 [node name="Warehouse" parent="." instance=ExtResource("depot")]
 transform = Transform3D(0,0,0.6,0,0.6,0,-0.6,0,0,0,0,0)
 [node name="warehouse_power_unit" parent="Warehouse/warehouse_root"]
