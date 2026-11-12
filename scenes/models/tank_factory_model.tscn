@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/production_rig.gd" id="rig_script"]
+[ext_resource type="PackedScene" path="res://assets/models/buildings/tank_factory.glb" id="rig"]
+[ext_resource type="PackedScene" path="res://scenes/models/tank_factory_death_fx.tscn" id="death_fx"]
+
+[node name="TankFactoryModel" type="Node3D"]
+script = ExtResource("rig_script")
+print_clip = &"Produce"
+death_fx_scene = ExtResource("death_fx")
+
+[node name="Rig" parent="." instance=ExtResource("rig")]

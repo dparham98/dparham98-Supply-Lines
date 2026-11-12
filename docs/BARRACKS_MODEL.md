@@ -41,7 +41,7 @@ All at 24 fps, starting at frame 0, as per-object NLA tracks. The rest pose is t
 
 ## In the game
 
-`scripts/components/barracks_rig.gd` on the model scene's root plays the clips:
+`scripts/components/production_rig.gd` on the model scene's root plays the clips:
 
 - **Construction.** `construction_plan.gd` stands the building's own model scene on the site when that model has `show_construction`, and scrubs Build by the share of the build done (materials built in and energy paid). `depot_network.gd` puts the model scene in the plan's spec. Other buildings still show only the grid.
 - **Production.** `production_building.gd` calls `show_print` with the print progress, so Print 0 to 4 s is stretched over the print time; at the end the figure waits at the open door, also while the exit is blocked. When the unit appears outside it calls `unit_left`, and the door closes at normal speed before the hall idles again. If the next unit is already printing then, the cradle catches up once the door has closed. With nothing queued, or no friendly Depot, it calls `show_idle`.
