@@ -6,6 +6,7 @@ extends "res://scripts/gameplay/resource_node.gd"
 @export_range(0,10,0.1) var work_hold := 2.5
 var health := 1000
 var _work_left := 0.0
+var _wreck: Node3D
 var max_health: int:
 	get: return rules.mine_health
 var cells: Array[Vector2i] = []
@@ -24,6 +25,8 @@ func _ready() -> void:
 			ground.set_tile_feature(cell,"occupied_by",_key())
 			ground.iron_mines[cell] = self
 	add_to_group("mines"); add_to_group("selectable_buildings")
+	# The ore rocks drawn on and around the footprint give way to the pithead.
+	if ground.has_method("cover_ore"): ground.cover_ore(_key(),cells)
 	amount = reserves()
 	super._ready()
 func reserves() -> int:
@@ -56,6 +59,7 @@ func _leave_wreck() -> void:
 	if model == null or not model.has_method("has_death_clip") or not model.has_death_clip() or get_parent() == null: return
 	model.reparent(get_parent())
 	model.play_death()
+	_wreck = model
 func _key() -> String: return "mine_%s" % get_instance_id()
 func take_damage(amount_: int) -> void:
 	health = maxi(0,health-maxi(0,amount_))
@@ -66,6 +70,10 @@ func take_damage(amount_: int) -> void:
 		queue_free()
 func _exit_tree() -> void:
 	if not is_instance_valid(ground): return
+	# The ore rocks come back once the wreck has sunk away.
+	if ground.has_method("uncover_ore"):
+		if is_instance_valid(_wreck) and _wreck.is_inside_tree(): _wreck.tree_exited.connect(ground.uncover_ore.bind(_key()),CONNECT_ONE_SHOT)
+		else: ground.uncover_ore(_key())
 	for cell in cells:
 		if ground.iron_mines.get(cell) == self: ground.iron_mines.erase(cell)
 		if ground.tiles[cell.y*500+cell.x].occupied_by == _key(): ground.set_tile_feature(cell,"occupied_by",null)

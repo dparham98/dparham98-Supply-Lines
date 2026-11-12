@@ -17,6 +17,11 @@ var air_navigation: AStarGrid2D
 var air_occupancy: Dictionary = {}
 var cleared_forest: Dictionary = {}
 signal forest_cleared(cell: Vector2i)
+## Mines and mine sites hide the ore rocks drawn on and around their footprint (docs/IRON_MINE_MODEL.md).
+signal ore_cover_changed(cells: Array, covered: bool)
+## Cell -> how many mines or mine sites cover its ore rocks.
+var ore_covered: Dictionary = {}
+var _ore_covers: Dictionary = {}
 var _clearing_mask: Image
 var _clearing_texture: ImageTexture
 var _mask_dirty := false
@@ -169,6 +174,34 @@ func clear_forest(pos: Vector2i) -> bool:
 		_mask_dirty = true
 	forest_cleared.emit(pos)
 	return true
+## Hides the ore rocks on `footprint` and `margin` cells around it until uncover_ore(key). Covers may overlap.
+func cover_ore(key: String, footprint: Array, margin := 1) -> void:
+	uncover_ore(key)
+	var cells: Array[Vector2i] = []
+	var seen := {}
+	for at in footprint:
+		for dz in range(-margin,margin+1):
+			for dx in range(-margin,margin+1):
+				var cell: Vector2i = at+Vector2i(dx,dz)
+				if seen.has(cell) or not is_tile_in_bounds(cell): continue
+				seen[cell] = true
+				cells.append(cell)
+	_ore_covers[key] = cells
+	var changed: Array[Vector2i] = []
+	for cell in cells:
+		ore_covered[cell] = int(ore_covered.get(cell,0))+1
+		if ore_covered[cell] == 1: changed.append(cell)
+	if not changed.is_empty(): ore_cover_changed.emit(changed,true)
+func uncover_ore(key: String) -> void:
+	if not _ore_covers.has(key): return
+	var changed: Array[Vector2i] = []
+	for cell in _ore_covers[key]:
+		ore_covered[cell] = int(ore_covered.get(cell,1))-1
+		if ore_covered[cell] <= 0:
+			ore_covered.erase(cell)
+			changed.append(cell)
+	_ore_covers.erase(key)
+	if not changed.is_empty(): ore_cover_changed.emit(changed,false)
 func _process(_delta: float) -> void:
 	if _mask_dirty:
 		_clearing_texture.update(_clearing_mask)

@@ -31,7 +31,19 @@ func _ready() -> void:
 	$Label.position = $Visuals/Grid.position+Vector3(0,1.5,0)
 	dropoff_range = maxi(size.x,size.y)*0.5+2.5
 	_add_site_model()
+	# A mine site clears the ore rocks on its footprint so the pithead can be seen going up.
+	if kind == &"iron_mine" and network.game.ground.has_method("cover_ore"): network.game.ground.cover_ore(_ore_key(),_footprint_cells())
 	refresh_label()
+func _exit_tree() -> void:
+	if kind == &"iron_mine" and is_instance_valid(network) and is_instance_valid(network.game.ground) and network.game.ground.has_method("uncover_ore"): network.game.ground.uncover_ore(_ore_key())
+func _ore_key() -> String:
+	return "mine_plan_%s" % get_instance_id()
+func _footprint_cells() -> Array[Vector2i]:
+	var size: Vector2i = spec.size
+	var cells: Array[Vector2i] = []
+	for z in range(start.y,start.y+size.y):
+		for x in range(start.x,start.x+size.x): cells.append(Vector2i(x,z))
+	return cells
 func _process(delta: float) -> void:
 	elapsed += delta
 	if elapsed < 0.25: return

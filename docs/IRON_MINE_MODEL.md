@@ -50,6 +50,8 @@ All at 24 fps, starting at frame 0, as per-object NLA tracks. The rest pose is t
 - **Worked out.** With no reserves left the mine plays Depleted, after finishing a cycle if it was winding.
 - **Destruction.** The building is gone at once and its model stays behind, in the building's parent, as a wreck that plays Die and removes itself.
 
+- **Ore rocks.** The ore rocks baked into the terrain (`Landmarks/OreDeposits`, and the sculpted landscape's `Mesh_ore_*` scatter) stand on every ore cell, about as tall as the winch house. A mine, and a mine site while it is planned or going up, hides the rocks on its footprint and one cell round it, through `TerrainGrid.cover_ore` and `uncover_ore`; `scripts/terrain/ore_state_visuals.gd` gives those saved instances no size and puts them back as baked. Covers are counted per cell, so overlapping sites and mines are fine. A destroyed mine gives its rocks back only once its wreck has sunk away. Nothing is rebuilt at runtime, as with felled trees. The separate gatherable `OreDeposit` resource nodes are not touched.
+
 The old `Visuals` scale of 0.5 for the placeholder is gone; the model is authored at full size. The label moved up to 4.7 m to clear the winding wheel.
 
 Constant channels are kept both in the export (`export_optimize_animation_keep_anim_object`) and on import (`animation/remove_immutable_tracks=false`), because Idle, Depleted and Build hold the lamp, beacon, ore and dust still or hidden with keys that never change.
@@ -68,6 +70,8 @@ Always run the first three in order: the saved file keeps the pose the clips lea
 ## Checks
 
 - `tests/iron_mine_model_test.gd` (headless): the clips and their loop modes, every track starting at frame 0, the site model following construction progress, the size, footprint and front direction, the mine idle when unworked, winding (skip down the shaft, wheel turning) when iron is taken, finishing its cycle before going idle with the skip back up, going dark with an empty bin once worked out, and the wreck playing Die, ignoring the working switch, sinking out of sight and removing itself.
+- `tests/ore_cover_test.gd` (headless): the starting mine covers its rocks and the cells round it, a mine site covers its footprint until it is cancelled, a finished mine keeps them covered when its site goes, and a destroyed mine gives them back only once its wreck is gone.
+- `tests/ore_cover_runtime_check.gd` (rendered): shots of the starting mine and of a deposit spot bare, as a site and as a mine, and a check that covered rocks have no size and uncovered ones stand as baked.
 - `tests/iron_mine_model_runtime_check.gd` (rendered): shots of the skirmish's own mine, a site, the mine idle, winding and tipping, worked out, the collapse and the wreck, and a check that the mine is pickable on its headframe.
 
 Headless checks are not visual verification.
