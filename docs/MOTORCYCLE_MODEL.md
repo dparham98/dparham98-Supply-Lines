@@ -43,7 +43,7 @@ The gun is on the centre line behind the rider, raised so the barrel clears the 
 ## The shot
 
 - `scenes/models/motorcycle_muzzle_fx.tscn` is the steam, on the `muzzle` node: a jet from the muzzle, two jets from the brass cylinder, puffs from the valve, then a wisp that tapers off over the 2 s reload. Its `Fire` clip is the length of the reload.
-- `scenes/gameplay/rail_spike.tscn` is the spike, `projectile_scene` on `motorcycle.tscn`, flying at 38 m/s at 1.5 times its modelled size. With an attack range of 3 the flight lasts only two or three frames.
+- `scenes/gameplay/rail_spike.tscn` is the spike, `projectile_scene` on `motorcycle.tscn`, flying at 38 m/s at 1.5 times its modelled size. With an attack range of 16 (see PATHING.md) the flight lasts under half a second.
 - `scenes/gameplay/rail_spike_impact.tscn` is where it lands: sparks and iron dust, and the spike stuck in the target for half a second before it drops away.
 
 ## Death

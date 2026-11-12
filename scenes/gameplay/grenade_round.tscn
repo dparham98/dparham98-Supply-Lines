@@ -6,7 +6,7 @@
 
 [node name="GrenadeRound" type="Node3D"]
 script = ExtResource("projectile")
-speed = 11.0
+speed = 20.0
 half_length = 0.1
 keep_body_material = true
 impact_scene = ExtResource("impact")
