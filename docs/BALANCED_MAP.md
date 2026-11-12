@@ -133,7 +133,8 @@ godot --path . --script res://scripts/tools/draw_map_preview.gd
 - `terrain_grid.gd` has an exported `cells_path`; the original terrain scene keeps the default. `terrain_assets.gd` bakes from that path into its own `landmarks_path`, and has slots for `coal_scene` and `forest_chunk_metres`.
 - The map tools take their files after `--` (`scripts/tools/tool_args.gd`): `--cells`, `--mesh`, `--material`, `--output`, `--terrain`. Without arguments each does what it did before; rebuilding the original map's scenery gives the same batches as before.
 - Forest batches on this map are split into 50 m squares so the renderer skips the ones off screen. The original map is left as one batch per patch scene.
-- Draft PR #53 changes the same baking code. These changes were kept to added parameters so the two can be reconciled.
+- The sculpted landscape (LANDSCAPE_LOOKDEV.md) does not know coal or per-map files: its baker and shader would treat a Coal cell as plain ground, and it writes the original map's meshes. The balanced terrain leaves its `landscape` slot empty and uses the flat ground, the sculpted mountains and the forest patches.
+- Draft PR #53 changes the same baking code. These changes were kept to added parameters so the two can be reconciled. A trial merge with its head (`6a23008`) had no text conflicts; nothing was run on the merged tree.
 
 ## Needs judging in play
 
