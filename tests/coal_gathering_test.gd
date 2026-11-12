@@ -1,6 +1,6 @@
 extends SceneTree
 # Headless: coal on the balanced map (docs/BALANCED_MAP.md). Coal cells block walking and building, hold a finite
-# shared amount, cannot be reached through their forest, and once a way is cut an Infantry digs coal, carries it to
+# shared amount, cannot be dug through their forest, and once a way is cut an Infantry digs coal, carries it to
 # a Depot and moves on through the field cell by cell. A Generator then burns the delivered coal.
 const SCENE := "res://scenes/maps/balanced_skirmish.tscn"
 var game: Node3D
@@ -42,12 +42,15 @@ func run() -> void:
 	if not check(shared.extract(5, "player") == 5 and shared.extract(5, "enemy") == 5 and shared.remaining == rules.coal_per_tile-10 and ground.get_terrain(far) == 6, "Coal sharing or partial digging failed"): return
 	if not check(shared.field_remaining() == 990, "Field total did not follow the cell"): return
 
-	# Enclosed: the starting Infantry is refused, and nothing is dug.
+	# Enclosed: nothing can be dug until a way is cut. The starting Infantry, far off in the main, is no longer
+	# refused: it sets out to fell the first tree in its way (docs/STALL_FIXES.md), and another order calls it off.
 	var first_worker: Node3D = game.get_node("Entities/Units/Infantry")
 	first_worker.command_gather(shared)
-	step(first_worker, 240, func(): return first_worker.state == "Coal unreachable")
-	if not check(first_worker.state == "Coal unreachable" and first_worker.cargo == 0, "Coal inside uncut forest should be unreachable, state was '%s'" % first_worker.state): return
+	step(first_worker, 240, func(): return is_instance_valid(first_worker._dig_source))
+	if not check(is_instance_valid(first_worker._dig_source) and field.cells.has(first_worker._dig_source.cell) and is_instance_valid(first_worker.source) and first_worker.source.resource_kind == &"wood", "A worker sent to coal inside uncut forest should set out to fell its way in, state was '%s'" % first_worker.state): return
+	if not check(first_worker.cargo == 0 and shared.field_remaining() == 990 and ground.cleared_forest.is_empty(), "Nothing should be dug or felled yet"): return
 	first_worker.command_move(first_worker.global_position)
+	if not check(first_worker._dig_source == null and first_worker.source == null, "Another order should call off the way being cut"): return
 
 	# A second Depot at the safe expansion brings its own Infantry.
 	var before := get_nodes_in_group("units")

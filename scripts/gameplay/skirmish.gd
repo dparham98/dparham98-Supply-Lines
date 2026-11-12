@@ -287,7 +287,7 @@ func issue_order(screen: Vector2, queued := false) -> void:
 	elif plan: notify("Build site: Cargo vehicles fetch exactly the materials it lacks; Infantry construct from the pile.")
 	elif crate: notify("Crate order: vehicles load it; workers deliver into it or gather from it.")
 	elif forest_ordered: notify("Harvest wood from the forest tile and deliver it to a friendly Depot.")
-	elif is_instance_valid(coal_ordered): notify("Dig coal and deliver it to a friendly Depot. %d left in this field; workers move on through it cell by cell." % coal_ordered.field_remaining())
+	elif is_instance_valid(coal_ordered): notify("Dig coal and deliver it to a friendly Depot. %d left in this field; workers fell any trees in their way and move on through it cell by cell." % coal_ordered.field_remaining())
 	elif resource: notify("Gather %s and deliver to a friendly Depot." % resource.resource_kind)
 	elif dropoff: notify("Return carried resources or repair this Depot.")
 func show_shot(start: Vector3, end: Vector3, team: String, projectile: PackedScene = null) -> void:

@@ -67,7 +67,7 @@ The first Tank needs 130 iron with the truck and factory, which one Infantry min
 - **Amount.** Each Coal cell holds `coal_per_tile` (50) from `assets/economy/harvesting_rules.tres`. Fields are drawn 20 cells large, so they hold 1,000; contested fields are 40 cells and hold 2,000.
 - **Digging.** Infantry take coal straight from a cell, the way they take wood from a Forest cell: right-click a Coal cell, or use Gather and click it. They carry 10, dig 5 per 1.2 s and deliver to a friendly Depot, deployed Cargo vehicle or crate. Both teams draw on the same cell.
 - **Field.** A cell that runs out is dug out to bare open ground, and the worker moves on to the nearest cell of the same field that still holds coal. It stops when the field is empty.
-- **Reach.** A worker must stand within its 4 m reach of the cell. Inside uncut forest it reports "Coal unreachable".
+- **Reach.** A worker must stand within its 4 m reach of the cell. When uncut forest is in the way it fells the fewest trees that let it in, one at a time, carrying the wood home, and then digs (docs/STALL_FIXES.md). It reports "Coal unreachable" only when no way through forest exists.
 - **Drawn.** The ground shader draws Coal cells as dark seam, and two lumps stand on each cell and shrink away when it is dug out. The minimap marks every field that still holds coal and shows dug-out cells. Pointing at a Coal cell shows what it and its field hold.
 - **No coal mine building.** Whether coal should need one is undecided; see below.
 - **Start conditions on this map.** `testing_coal_amount` is 0, so there is no testing coal pile. The pile still works in the scenes that set an amount. `testing_iron_grant` is off, so Depots here do not take the 500-iron testing grant; every other scene keeps it.
@@ -76,7 +76,7 @@ The first Tank needs 130 iron with the truck and factory, which one Infantry min
 
 1. Should coal need a mine building, as iron does, or stay directly dug?
 2. Should a dug-out Coal cell become open ground? Ore cells stay blocked when exhausted. Coal follows Forest here because otherwise the middle of a field is out of reach.
-3. Should workers move on through a field by themselves? Wood has no such chaining; without it coal needs a new order every five loads.
+3. Should workers move on through a field by themselves? Wood has no such chaining; without it coal needs a new order every five loads. They now also fell the trees between one cell and the next (docs/STALL_FIXES.md).
 4. Are 50 a cell and 1,000 a field right, and should contested fields be twice a side field?
 5. Should new vehicles start empty on this map (`FuelRules.testing_full_tanks` off)? That is what makes coal limit the first Tank.
 6. Water-adjacent generation and crates costing wood are still deferred and not part of this.
@@ -150,5 +150,5 @@ godot --path . --script res://scripts/tools/draw_map_preview.gd
 ## Checks
 
 - `tests/balanced_map_test.gd` (headless): the cells match the layout PNG and `terrain_data.png`; the layout is symmetric; category counts; the start is 500 energy and no iron with one Infantry and a fuelled truck; no testing pile; starts, sites and mines mirror each other; Depot footprints and the ground round each start are buildable; iron inside 35 m of every site; no coal inside 35 m of a start; every coal field enclosed, with its depth; 3 to 5 fields a side and 1 or 2 richer contested ones; the safe expansion unreachable without the main; at least two separate routes; and every metric equal for both sides. Prints the tables above.
-- `tests/coal_gathering_test.gd` (headless): Coal cells block walking and building; a cell is finite and shared; enclosed coal is refused; a new Depot's Infantry digs, delivers 60 coal and moves on to the next cell; the dug-out cell opens and loses its lumps; the right-click order and hover card; the field running out; and a Generator burning the delivered coal.
+- `tests/coal_gathering_test.gd` (headless): Coal cells block walking and building; a cell is finite and shared; a worker sent to enclosed coal sets out to fell its way in and another order calls it off; a new Depot's Infantry digs, delivers 60 coal and moves on to the next cell; the dug-out cell opens and loses its lumps; the right-click order and hover card; the field running out; and a Generator burning the delivered coal.
 - `tests/balanced_map_runtime_check.gd` (rendered): the map draws, coal reads dark, the minimap marks coal, and it saves an overview, the start, a coal field and a contested field.

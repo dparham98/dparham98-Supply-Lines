@@ -353,10 +353,14 @@ func load_crates(node: Node3D, point: Vector3) -> int:
 		crate.queue_free()
 		count += 1
 	return count
+## Loose units moved by the last Unload at a Depot or deployed vehicle, for the state line.
+var loose_unloaded := 0
 ## Unpacks into a Depot or deployed vehicle (crates that don't fit stay aboard, partly emptied), or
-## sets crates down on free tiles around a ground point.
+## sets crates down on free tiles around a ground point. At a Depot or deployed vehicle the loose cargo
+## goes in too: what workers delivered while this vehicle stood deployed beside a mine, a wood or coal.
 func unload_crates(node: Node3D, point: Vector3) -> int:
 	var count := 0
+	loose_unloaded = 0
 	if _site_stop(node):
 		# Loose cargo first, then crates; the site takes only what the build still lacks.
 		for kind in ResourceStockpile.KINDS:
@@ -375,6 +379,12 @@ func unload_crates(node: Node3D, point: Vector3) -> int:
 			crate.amount -= accepted
 			if accepted > 0: moved[crate.kind] = moved.get(crate.kind,0)+accepted
 			if crate.amount == 0: crates.erase(crate); count += 1
+		# Loose cargo as far as it fits; the rest stays aboard.
+		for kind in ResourceStockpile.KINDS:
+			var loose: int = ResourceStockpile.transfer(stockpile,node.stockpile,kind,stockpile.amount(kind))
+			if loose > 0:
+				moved[kind] = moved.get(kind,0)+loose
+				loose_unloaded += loose
 		for kind in moved: game.delivered(node,kind,moved[kind])
 	else:
 		while not crates.is_empty():
@@ -425,7 +435,11 @@ func _crate_job(delta: float) -> void:
 		var unloaded := unload_crates(job_target,job_point)
 		order = "idle"; job_target = null
 		if site: state = "Materials delivered to the build site"+(" · %d crate%s retained" % [crates.size(),"" if crates.size() == 1 else "s"] if not crates.is_empty() else "")
-		else: state = ("Unloaded %d crate%s" % [unloaded,"" if unloaded == 1 else "s"])+(" · %d retained, no space" % crates.size() if not crates.is_empty() else "")
+		else:
+			state = "Unloaded %d crate%s" % [unloaded,"" if unloaded == 1 else "s"]
+			if loose_unloaded > 0: state += " and %d loose" % loose_unloaded
+			if not crates.is_empty(): state += " · %d retained, no space" % crates.size()
+			if stockpile.total() > 0: state += " · %d loose retained, no space" % stockpile.total()
 		# Trips: return to the last pickup while it has crates (all) or forever (repeat).
 		if trips != "once" and order_queue.is_empty() and not _trip_pickup.is_empty() and (not _trip_pickup.get("requires_target",false) or shipment_endpoint(_trip_pickup.target)):
 			var pickup_target: Node3D = _trip_pickup.target if is_instance_valid(_trip_pickup.target) else null
@@ -434,9 +448,9 @@ func _crate_job(delta: float) -> void:
 				order_queue.append({kind = "unload", target = stop.target, point = stop.point, requires_target = stop.requires_target})
 	_update_display()
 func command_return(target: Node3D = null) -> void:
-	# Right-click: Load a crate; at a Depot or deployed vehicle, unload when carrying crates, else load.
+	# Right-click: Load a crate; at a Depot or deployed vehicle, unload when carrying crates or loose cargo, else load.
 	if _crate_stop(target) and not is_in_group("rail_trains"): _start_job("load",target)
-	elif shipment_endpoint(target): _start_job("unload" if not crates.is_empty() else "load",target)
+	elif shipment_endpoint(target): _start_job("unload" if not crates.is_empty() or stockpile.total() > 0 else "load",target)
 	elif _site_stop(target) and not is_in_group("rail_trains"): command_fetch(target)
 	else: game.notify("Load a crate, or unload at a friendly Depot, a build site or on open ground.")
 
