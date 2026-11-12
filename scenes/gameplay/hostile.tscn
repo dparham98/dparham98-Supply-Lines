@@ -21,7 +21,7 @@ script = ExtResource("agent")
 team = "enemy"
 max_health = 120
 attack_damage = 6
-attack_range = 20.0
+attack_range = 15.0
 shot_interval = 1.2
 
 [node name="Visuals" type="Node3D" parent="."]

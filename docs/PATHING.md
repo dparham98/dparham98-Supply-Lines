@@ -36,20 +36,20 @@ An attack order now plans toward the nearest open cell to the target (`_route_to
 
 ## Ranges and vision
 
-Attack ranges were about four times what fits the map: the camera sits 95 m out, and a 5 m rifle shot was nearly point blank. At the user's request they were scaled up about 4x. Vision is 1.3 to 2 times the range, and Scout and Drone see farthest. Vision is still a number on the HUD only; there is no fog of war or spotting.
+Attack ranges were far short of what fits the map: the camera sits 95 m out, and a 5 m rifle shot was nearly point blank. At the user's request they were scaled up about 3x (a first pass at 4x was tuned down before play). Vision was scaled with the 4x pass and kept when ranges came down, so it is 2 to 5 times the range; Scout and Drone see farthest. Vision is still a number on the HUD only; there is no fog of war or spotting.
 
 | Unit | Range (was) | Vision (was) |
 |---|---|---|
-| Infantry | 20 (5) | 30 (7) |
-| Grenadier | 24 (6) | 32 (5) |
-| Scout | 14 (3) | 50 (8) |
-| Motorcycle | 16 (3) | 30 (7) |
-| Tank | 40 (10) | 52 (7) |
-| Übermech | 28 (6) | 36 (8) |
+| Infantry | 15 (5) | 30 (7) |
+| Grenadier | 18 (6) | 32 (5) |
+| Scout | 10 (3) | 50 (8) |
+| Motorcycle | 12 (3) | 30 (7) |
+| Tank | 30 (10) | 52 (7) |
+| Übermech | 20 (6) | 36 (8) |
 | Drone | unspecified | 60 (9) |
-| Hostile (scene value) | 20 (10) | none |
+| Hostile (scene value) | 15 (10) | none |
 
-- The Tank shell flies at 40 m/s (was 20) and the grenade at 20 m/s (was 11), so their flights stay about a second at the new ranges. Damage still lands when the shot is fired.
+- The Tank shell flies at 40 m/s (was 20) and the grenade at 20 m/s (was 11), so their flights stay under a second at the new ranges. Damage still lands when the shot is fired.
 - Splash radius (3) and the Depot's radii are unchanged.
 
 ## Checks

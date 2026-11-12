@@ -6,7 +6,7 @@ func _initialize() -> void:
 		assert(stats.has_resolved_attack() == (id != "drone"))
 	var unit = load("res://scenes/gameplay/infantry.tscn").instantiate()
 	unit.apply_unit_stats()
-	assert(unit.max_health == 55 and unit.move_speed == 2 and unit.attack_range == 20 and unit.turn_rate == 540)
+	assert(unit.max_health == 55 and unit.move_speed == 2 and unit.attack_range == 15 and unit.turn_rate == 540)
 	assert(unit.attack_damage == 8 and unit.shot_interval == 1.0)
 	assert(unit.vision == 30 and unit.energy_cost == 100 and unit.iron_cost == 20)
 	unit.use_prototype_combat_for_unresolved_stats = false
