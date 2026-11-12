@@ -1,6 +1,7 @@
 extends SceneTree
 # Rendered: the Tank Factory (docs/TANK_FACTORY_MODEL.md) at the game's camera and close up: a site going
-# up, the finished plant, a vehicle being assembled and driving out of the open door, and the collapse.
+# up, the finished plant, a Tank, a Motorcycle and a Drone each formed on the lift in their own shape, the Drone
+# flying out of the roof, the Tank at the open door, and the collapse.
 # Saves tank_factory_*.png. Also checks the finished Tank Factory is pickable on its roof. Pictures only;
 # judge them by eye.
 const Bounds = preload("res://scripts/units/selection_bounds.gd")
@@ -62,11 +63,30 @@ func run() -> void:
 	var screen: Vector2 = rig.camera.unproject_position(building.global_position+Vector3(2.0,4.1,1.5))
 	if not check(Bounds.hit_distance(building,rig.camera,screen) < INF,"Tank Factory not pickable on its roof"): return
 	await shot(building.global_position+Vector3(0,0,1),15,"tank_factory_close")
-	# Producing: half way the crane is lowering parts onto the hull; then the vehicle drives out of the open door.
+	# Producing: each unit forms in its own shape under the weld seam while the crane brings plates; then the
+	# finished Tank drives out of the open door.
+	depot.energy = 9000; depot.iron = 9000
+	var print_seconds: float = building.stats.print_seconds
+	for id in ["motorcycle","drone"]:
+		building.request_unit(StringName(id))
+		building._process(print_seconds*0.45)
+		await shot(building.global_position,13,"tank_factory_producing_%s" % id)
+		if id == "drone":
+			# It flies out of the roof well, up to its flying height.
+			building._process(print_seconds*0.35)
+			await shot(building.global_position,22,"tank_factory_drone_rising")
+			building._process(print_seconds*0.15)
+			await shot(building.global_position,30,"tank_factory_drone_out")
+		building.pending.clear()
+		building.progress = 0
+		building._process(0.01)
+		await process_frame
 	building.request_unit(&"tank")
-	building._process(building.stats.print_seconds*0.5)
+	building._process(print_seconds*0.45)
 	await shot(building.global_position,13,"tank_factory_producing")
-	building._process(building.stats.print_seconds*0.49)
+	building._process(print_seconds*0.25)
+	await shot(building.global_position,13,"tank_factory_formed")
+	building._process(print_seconds*0.29)
 	await shot(building.global_position+Vector3(0,0,2.5),13,"tank_factory_door")
 	# The collapse, part way and as a wreck.
 	building.take_damage(building.max_health)

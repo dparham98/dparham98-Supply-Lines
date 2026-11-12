@@ -3,10 +3,17 @@
 [ext_resource type="Script" path="res://scripts/components/production_rig.gd" id="rig_script"]
 [ext_resource type="PackedScene" path="res://assets/models/buildings/tank_factory.glb" id="rig"]
 [ext_resource type="PackedScene" path="res://scenes/models/tank_factory_death_fx.tscn" id="death_fx"]
+[ext_resource type="Shader" path="res://assets/shaders/factory_weld.gdshader" id="weld"]
+
+[sub_resource type="ShaderMaterial" id="weld_material"]
+shader = ExtResource("weld")
 
 [node name="TankFactoryModel" type="Node3D"]
 script = ExtResource("rig_script")
 print_clip = &"Produce"
 death_fx_scene = ExtResource("death_fx")
+vehicle_node = &"vehicle"
+door_node = &"bay_door"
+build_material = SubResource("weld_material")
 
 [node name="Rig" parent="." instance=ExtResource("rig")]
