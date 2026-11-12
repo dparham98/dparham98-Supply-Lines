@@ -137,7 +137,7 @@ func run() -> void:
 	var pile = get_nodes_in_group("material_piles")[0]
 	await shot("mobile_supply_pile")
 	# Picking intersects the visible mesh, not the Label3D above it.
-	var pile_mesh: MeshInstance3D = pile.get_node("Visuals/Crate")
+	var pile_mesh: MeshInstance3D = pile.get_node("Visuals/Model").find_children("*_base","MeshInstance3D",true,false)[0]
 	await click(hud.card.get_node("Gather")); await click_at(rig.camera.unproject_position(pile_mesh.global_transform*pile_mesh.get_aabb().get_center()))
 	for frame in range(3600):
 		forester._process(1.0/60)

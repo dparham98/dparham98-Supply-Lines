@@ -3,6 +3,7 @@ extends Node3D
 ## Change these reusable prop scenes, then rebuild to update both editor and game scenery.
 var forest_state: ForestStateVisuals
 var coal_state: ForestStateVisuals
+var ore_state: OreStateVisuals
 
 func _ready() -> void:
 	if Engine.is_editor_hint():
@@ -28,6 +29,14 @@ func _ready() -> void:
 				copies[batch.material_override] = batch.material_override.duplicate()
 				copies[batch.material_override].set_shader_parameter("cleared_cells",$Ground.material_override.get_shader_parameter("cleared_cells"))
 			batch.material_override = copies[batch.material_override]
+	# Ore rocks, old and sculpted, are hidden under mines and mine sites.
+	ore_state = OreStateVisuals.new()
+	var ore_batches: Array = []
+	var old_ore := get_node_or_null("Landmarks/OreDeposits")
+	if old_ore != null: ore_batches.append_array(old_ore.get_children())
+	var scatter := get_node_or_null("Landmarks/Landscape/Scatter")
+	if scatter != null: ore_batches.append_array(scatter.get_children().filter(func(n): return str(n.name).begins_with("Mesh_ore_")))
+	if $Ground.has_signal("ore_cover_changed"): ore_state.bind($Ground,ore_batches)
 	var sculpted := get_node_or_null("Landmarks/Landscape/Ground") as MeshInstance3D
 	if sculpted != null and $Ground.material_override is ShaderMaterial and sculpted.mesh.surface_get_material(0) is ShaderMaterial:
 		sculpted.material_override = sculpted.mesh.surface_get_material(0).duplicate()

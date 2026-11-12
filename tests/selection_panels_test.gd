@@ -54,7 +54,7 @@ func run() -> void:
 	var worker = game.get_node("Entities/Units/Infantry")
 	worker.cargo = 4; worker.cargo_kind = &"iron"
 	select(worker)
-	if not check(hud.bars.get_node("CargoValue").text == "4 / 10 iron" and stat("Range") == "5.0" and stat("Cost") != "" and "Nearest Depot" in info.get_node("Details").text,"Infantry panel wrong"): return
+	if not check(hud.bars.get_node("CargoValue").text == "4 / 10 iron" and stat("Range") == "15.0" and stat("Cost") != "" and "Nearest Depot" in info.get_node("Details").text,"Infantry panel wrong"): return
 	if not check(not shown("Storage") and hud.context.get_node("Stats").visible,"Infantry shows storage or lacks stats"): return
 	worker.cargo = 0
 	# Tank: fuel value, stats incl. heavy-target pairs, abilities line, unboxed.

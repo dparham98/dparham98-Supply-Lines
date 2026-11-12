@@ -123,7 +123,7 @@ VENTS = ["vent_01", "vent_02"]
 FANS = ["vent_fan_01", "vent_fan_02"]
 CAPS = ["stack_cap_01", "stack_cap_02"]
 BEACONS = ["beacon_01", "beacon_02"]
-VEH = ["veh_hull", "veh_track_l", "veh_track_r", "veh_deck", "veh_turret"]
+VEH = ["veh_plate_1", "veh_plate_2", "veh_plate_3"]
 RTOP = 4.05
 TT = HOME["turntable"].translation.copy()
 PARK_Y = HOME["gantry"].translation.y
@@ -248,10 +248,11 @@ SPAWN_AT = 4.0
 LIFT_H = 2.4
 DRIVE = -(3.05 + 0.3) - TT.y           # from the turntable to just outside the door
 # (parts, shown at the park, carried over, lowered, released, back at the park)
-CYCLES = [(("veh_track_l", "veh_track_r"), 0.3, (0.35, 0.65), (0.65, 0.85), (0.95, 1.2)),
-          (("veh_deck",), 1.15, (1.2, 1.45), (1.45, 1.62), (1.72, 1.95)),
-          (("veh_turret",), 1.9, (1.95, 2.2), (2.2, 2.36), (2.46, 2.7))]
-TOPS = {"veh_track_l": 0.63, "veh_track_r": 0.63, "veh_deck": 1.01, "veh_turret": 1.33}   # above the turntable
+CYCLES = [(("veh_plate_1",), 0.3, (0.35, 0.65), (0.65, 0.85), (0.95, 1.2)),
+          (("veh_plate_2",), 1.15, (1.2, 1.45), (1.45, 1.62), (1.72, 1.95)),
+          (("veh_plate_3",), 1.9, (1.95, 2.2), (2.2, 2.36), (2.46, 2.7))]
+TOPS = {"veh_plate_1": 0.35, "veh_plate_2": 0.6, "veh_plate_3": 0.85}   # above the turntable
+MERGE = 0.3                            # seconds for a set plate to weld into the unit and vanish
 
 
 def lift(t):
@@ -293,7 +294,8 @@ def carried(name):
                     return hidden(name)
                 s = sm((t - shown) / 0.08)
                 if t >= release:
-                    return HOME[name]
+                    k = (t - release) / MERGE
+                    return hidden(name) if k >= 1 else HOME[name] @ Sc((1 - sm(k), 1 - sm(k), max(1 - sm(k), 0.001)))
                 w = V((0.0, (PARK_Y - TT.y) * (1 - travel(t)), dp - drop(t)))     # from its seat, in world axes
                 local = Rz(-turn(t)).to_3x3() @ w                                     # in the turned vehicle's axes
                 return Tm(local) @ HOME[name] @ Sc(ONE * max(s, 0.001))
@@ -303,12 +305,6 @@ def carried(name):
 def vehicle(t):
     k = ramp(t, 3.1, SPAWN_AT)
     return Tm(Y * DRIVE * k + Z * lift(t)) @ yaw_about(TT, turn(t)) @ HOME["vehicle"]
-
-
-def hull(t):
-    if t < 0.3 or t >= SPAWN_AT:
-        return hidden("veh_hull")
-    return HOME["veh_hull"] @ Sc((1, 1, max(sm((t - 0.3) / 0.4), 0.001)))
 
 
 def door(t):
@@ -323,8 +319,7 @@ bake(OB["trolley"], "Produce", PRODUCE_FRAMES, lambda t: HOME["trolley"])
 bake(OB["turntable"], "Produce", PRODUCE_FRAMES, lambda t: Tm(Z * lift(t)) @ yaw_about(TT, turn(t)) @ HOME["turntable"])
 bake(OB["lift_ram"], "Produce", PRODUCE_FRAMES, lambda t: ram(lift(t)))
 bake(OB["vehicle"], "Produce", PRODUCE_FRAMES, vehicle)
-bake(OB["veh_hull"], "Produce", PRODUCE_FRAMES, hull)
-for v in VEH[1:]:
+for v in VEH:
     bake(OB[v], "Produce", PRODUCE_FRAMES, carried(v))
 bake(OB["bay_door"], "Produce", PRODUCE_FRAMES, door)
 for i, fan in enumerate(FANS):         # the plant runs harder while it works

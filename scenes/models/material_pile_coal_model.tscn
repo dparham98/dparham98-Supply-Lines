@@ -1,0 +1,9 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/pile_rig.gd" id="rig_script"]
+[ext_resource type="PackedScene" path="res://assets/models/props/material_pile_coal.glb" id="rig"]
+
+[node name="MaterialPileCoalModel" type="Node3D"]
+script = ExtResource("rig_script")
+
+[node name="Rig" parent="." instance=ExtResource("rig")]

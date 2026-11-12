@@ -20,6 +20,11 @@ var dropoff_range := 3.0
 const TINT_WAITING := Color(1,0.72,0.12,0.65)
 const TINT_READY := Color(0.35,0.95,0.5,0.7)
 const TINT_BUILDING := Color(0.45,0.8,1,0.7)
+## The fenced site model for each square footprint size (docs/CONSTRUCTION_SITE_MODEL.md). Sizes without one
+## (rails) show only the grid.
+@export var site_scenes: Dictionary[int, PackedScene] = {}
+## The grid's opacity while a site model stands round it, so the fence carries the look.
+@export_range(0,1,0.05) var grid_opacity_with_site := 0.5
 @onready var network = get_tree().get_first_node_in_group("skirmish").get_node("DepotNetwork")
 func _ready() -> void:
 	add_to_group("construction_plans")
@@ -30,8 +35,21 @@ func _ready() -> void:
 	$Visuals/Grid.material_override.set_shader_parameter("cells",Vector2(size))
 	$Label.position = $Visuals/Grid.position+Vector3(0,1.5,0)
 	dropoff_range = maxi(size.x,size.y)*0.5+2.5
+	_add_site_fence()
 	_add_site_model()
+	# A mine site clears the ore rocks on its footprint so the pithead can be seen going up.
+	if kind == &"iron_mine" and network.game.ground.has_method("cover_ore"): network.game.ground.cover_ore(_ore_key(),_footprint_cells())
 	refresh_label()
+func _exit_tree() -> void:
+	if kind == &"iron_mine" and is_instance_valid(network) and is_instance_valid(network.game.ground) and network.game.ground.has_method("uncover_ore"): network.game.ground.uncover_ore(_ore_key())
+func _ore_key() -> String:
+	return "mine_plan_%s" % get_instance_id()
+func _footprint_cells() -> Array[Vector2i]:
+	var size: Vector2i = spec.size
+	var cells: Array[Vector2i] = []
+	for z in range(start.y,start.y+size.y):
+		for x in range(start.x,start.x+size.x): cells.append(Vector2i(x,z))
+	return cells
 func _process(delta: float) -> void:
 	elapsed += delta
 	if elapsed < 0.25: return
@@ -170,6 +188,19 @@ func _add_site_model() -> void:
 	model.name = "Model"
 	model.position = Vector3($Visuals/Grid.position.x,0,$Visuals/Grid.position.z)
 	$Visuals.add_child(model)
+## The fence, lamps and site board round the footprint: the saved site scene for this footprint size.
+func _add_site_fence() -> void:
+	var size: Vector2i = spec.size
+	if size.x != size.y or not site_scenes.has(size.x): return
+	var site := site_scenes[size.x].instantiate()
+	site.name = "Site"
+	site.position = Vector3($Visuals/Grid.position.x,0,$Visuals/Grid.position.z)
+	$Visuals.add_child(site)
+## The site's state as the grid tint and lamps show it: waiting, ready or building.
+func site_state() -> StringName:
+	if state.begins_with("Constructing"): return &"building"
+	if materials_covered(): return &"ready"
+	return &"waiting"
 ## The stockpile paying energy: the pinned one, or the first covering one able to pay the whole
 ## remaining energy, latched so one payer sees the build through.
 func energy_payer(due: int) -> Node3D:
@@ -234,10 +265,17 @@ func refresh_label() -> void:
 	$Label.text = "PLAN · %s · %d E / %d I\n%s\n%s" % [spec.title,spec.energy,spec.iron,site_text(),state]
 	var model := get_node_or_null("Visuals/Model")
 	if model != null: model.show_construction(progress_fraction())
+	var shown := site_state()
 	var tint := TINT_WAITING
-	if state.begins_with("Constructing"): tint = TINT_BUILDING
-	elif materials_covered(): tint = TINT_READY
-	$Visuals/Grid.material_override.set_shader_parameter("tint",tint)
+	if shown == &"building": tint = TINT_BUILDING
+	elif shown == &"ready": tint = TINT_READY
+	var site := get_node_or_null("Visuals/Site")
+	if site != null:
+		site.show_state(shown)
+		site.show_progress(progress_fraction())
+	var grid_tint := tint
+	if site != null: grid_tint.a *= grid_opacity_with_site
+	$Visuals/Grid.material_override.set_shader_parameter("tint",grid_tint)
 	$Label.modulate = Color(tint.r,tint.g,tint.b,1)
 func cancel() -> void:
 	if finished: return

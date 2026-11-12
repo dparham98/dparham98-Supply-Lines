@@ -16,4 +16,4 @@ build_initial_scenes.gd is a one-time bootstrap source, not a normal editor work
 
 Camera behavior lives on the CameraRig root, with YawPivot/PitchPivot/Camera children. Inspector settings, flat-ground targeting, input actions and validation are described in CAMERA_RIG.md.
 
-First Contact adds a separate resource_skirmish.tscn playable entry and scripts/gameplay state machines. The earlier review world and actor scripts are preserved. See FIRST_CONTACT.md for ownership, grid claims, orders, production, limitations and tests, and RECOVERED_DESIGN.md for confirmed versus provisional rules.
+First Contact adds a separate resource_skirmish.tscn playable entry and scripts/gameplay state machines. The earlier review world and actor scripts are preserved. PATHING.md covers how units follow routes, turn, and their ranges. See FIRST_CONTACT.md for ownership, grid claims, orders, production, limitations and tests, and RECOVERED_DESIGN.md for confirmed versus provisional rules.

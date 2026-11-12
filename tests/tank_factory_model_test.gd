@@ -2,8 +2,9 @@ extends SceneTree
 # Headless: the Tank Factory's model (assets/models/buildings/tank_factory.glb via
 # scenes/models/tank_factory_model.tscn) fits its 8 x 8 footprint with the vehicle door toward +Z, its clips
 # start at frame 0, a construction plan shows the plant going up with the work, production plays Produce
-# with the vehicle assembled on the raised lift and driven out as the door opens, and a destroyed Tank Factory leaves a wreck
-# that plays Die, sinks and removes itself.
+# with the queued unit's own model formed on the raised lift (the crane lowering plates onto it) and driven out as
+# the door opens, a mixed queue swaps the model between units, and a destroyed Tank Factory leaves a wreck that
+# plays Die, sinks and removes itself.
 const Bounds = preload("res://scripts/units/selection_bounds.gd")
 const Burst = preload("res://scripts/components/burst_effect.gd")
 const HALL := "Rig/tank_factory_root/"
@@ -102,28 +103,78 @@ func run() -> void:
 	var door := part(model,"bay_door")
 	if not check(building.to_local(door.global_position).z > 2.9,"The vehicle door should face +Z"): return
 	var vehicle := part(model,"vehicle")
-	var hull := part(model,"vehicle/veh_hull")
-	var deck := part(model,"vehicle/veh_deck")
-	var turret := part(model,"vehicle/veh_turret")
-	if not check(hull.scale.x < 0.01 and turret.scale.x < 0.01 and door.scale.is_equal_approx(Vector3.ONE),"Rest pose: no vehicle and door closed"): return
-	var turret_seat := turret.position
+	var plates: Array[Node3D] = [part(model,"vehicle/veh_plate_1"),part(model,"vehicle/veh_plate_2"),part(model,"vehicle/veh_plate_3")]
+	if not check(plates.all(func(p): return p.scale.x < 0.01) and model.unit_model == null and door.scale.is_equal_approx(Vector3.ONE),"Rest pose: no unit, no plates and door closed"): return
+	var last_seat := plates[2].position
 	if not check(model.player.is_playing() and model.player.assigned_animation == &"Idle","A Tank Factory with nothing queued should idle"): return
-	# Production: Produce follows the queue, the vehicle is assembled, then it drives out as the door opens.
+	# The factory reads each unit's model from its scene.
+	for id in ["tank","motorcycle","drone"]:
+		var unit_scene: PackedScene = load("res://scenes/gameplay/%s.tscn" % id)
+		if not check(building.unit_model_scene(unit_scene).resource_path == "res://scenes/models/%s_model.tscn" % id,"The %s's model should be read from its scene" % id): return
+	# Production: Produce follows the queue, the Tank's own model forms on the lift, then drives out of the door.
 	if not check(building.request_unit(&"tank"),"Tank not queued"): return
 	var print_seconds: float = building.stats.print_seconds
 	var units_before := get_nodes_in_group("units").size()
 	building._process(print_seconds*0.5)
 	if not check(model.player.assigned_animation == &"Produce" and not model.player.is_playing(),"Produce should be posed by production progress"): return
-	if not check(part(model,"turntable").position.y > 2.0,"The lift should hold the vehicle up near the roof while it is assembled"): return
-	if not check(hull.scale.y > 0.99 and deck.scale.x > 0.99 and turret.position.distance_to(turret_seat) > 0.3 and door.scale.y > 0.99,"Half made: hull and deck on, turret still on the crane, door closed (hull %.2f deck %.2f turret %.2f m from its seat, door %.2f)" % [hull.scale.y,deck.scale.x,turret.position.distance_to(turret_seat),door.scale.y]): return
+	if not check(part(model,"turntable").position.y > 2.0,"The lift should hold the unit up near the roof while it is made"): return
+	if not check(model.unit_model != null and model.unit_model.scene_file_path == "res://scenes/models/tank_model.tscn" and model.unit_model.get_parent() == vehicle,"The Tank's own model should stand on the turntable"): return
+	if not check(model.unit_model.process_mode == Node.PROCESS_MODE_DISABLED,"The unit model in the factory is scenery only"): return
+	var cut: float = model._unit_material.get_shader_parameter(&"cut_height")
+	if not check(model.unit_forming() and cut > model.unit_model.global_position.y+0.05 and cut < model.unit_model.global_position.y+model._unit_height*vehicle.global_basis.get_scale().y-0.05,"Half made: the Tank should be part formed below the weld seam"): return
+	if not check(plates[2].scale.x > 0.5 and plates[2].position.distance_to(last_seat) > 0.3 and door.scale.y > 0.99,"Half made: the last plate still on the crane, door closed"): return
 	building._process(print_seconds*0.49)
-	if not check(door.scale.y < 0.2 and turret.scale.x > 0.5 and building.to_local(vehicle.global_position).z > 2.5,"Nearly made: the vehicle should be at the open door (z %.2f door %.2f)" % [building.to_local(vehicle.global_position).z,door.scale.y]): return
+	if not check(not model.unit_forming() and door.scale.y < 0.2 and building.to_local(vehicle.global_position).z > 2.5,"Nearly made: the finished Tank should be at the open door (z %.2f door %.2f)" % [building.to_local(vehicle.global_position).z,door.scale.y]): return
+	if not check(plates.all(func(p): return p.scale.x < 0.01),"The plates should have merged into the unit"): return
 	building._process(print_seconds*0.02)
 	if not check(get_nodes_in_group("units").size() == units_before+1,"The unit was not produced"): return
-	if not check(model.closing() and model.player.is_playing() and hull.scale.x < 0.01,"The vehicle should be gone and the door closing"): return
+	await process_frame
+	if not check(model.closing() and model.player.is_playing() and model.unit_model == null,"The model should go with the unit and the door close"): return
 	model.player.advance(model.player.get_animation(&"Produce").length)
 	await process_frame
 	if not check(not model.closing() and model.player.assigned_animation == &"Idle" and door.scale.y > 0.99,"After the unit leaves the door closes and the plant idles"): return
+	# A mixed queue: each unit's own model, in turn.
+	depot.energy = 5000; depot.iron = 5000
+	if not check(building.request_unit(&"motorcycle") and building.request_unit(&"drone"),"Motorcycle and Drone not queued"): return
+	building._process(print_seconds*0.3)
+	if not check(model.unit_model != null and model.unit_model.scene_file_path == "res://scenes/models/motorcycle_model.tscn","A Motorcycle should be made on the turntable, not a Tank"): return
+	building._process(print_seconds*0.71)
+	await process_frame
+	if not check(model.closing() and model.unit_model == null,"The Motorcycle should have left"): return
+	building._process(print_seconds*0.1)
+	if not check(model.unit_model == null,"The next unit waits for the door to close"): return
+	model.player.advance(model.player.get_animation(&"Produce").length)
+	await process_frame
+	building._process(print_seconds*0.05)
+	if not check(model.unit_model != null and model.unit_model.scene_file_path == "res://scenes/models/drone_model.tscn","Then a Drone should be made"): return
+	if not check(model.unit_model.get_parent() == vehicle and not model.unit_model.top_level,"The Drone is formed on the turntable"): return
+	# A flyer leaves through the roof: once formed it lifts off and rises to where the real Drone will hover.
+	# Progress carried on while the door closed behind the Motorcycle (0.1 + 0.05 so far).
+	building._process(print_seconds*0.7)
+	var drone_model: Node3D = model.unit_model
+	if not check(drone_model != null and drone_model.top_level and drone_model.process_mode == Node.PROCESS_MODE_INHERIT,"The finished Drone should lift off the turntable under its own power"): return
+	if not check(drone_model.global_position.y > building.global_position.y+4.5 and absf(building.to_local(drone_model.global_position).z) < 2.0,"The Drone should be rising out of the roof well (%s)" % building.to_local(drone_model.global_position)): return
+	if not check(door.scale.y > 0.99,"The door stays shut for a flyer"): return
+	building._process(print_seconds*0.14)
+	var hover: Vector3 = model._flight_to.origin
+	if not check(drone_model.global_position.distance_to(hover) < 0.3 and hover.y > building.global_position.y+10.0,"Nearly made: the Drone should be up at its flying height (%.2f m off)" % drone_model.global_position.distance_to(hover)): return
+	if not check(absf(drone_model.global_basis.get_scale().x-1.0) < 0.05 and door.scale.y > 0.99,"At full size, with the door still shut"): return
+	var drones_before := get_nodes_in_group("units").filter(func(u): return u.scene_file_path == "res://scenes/gameplay/drone.tscn").size()
+	building._process(print_seconds*0.02)
+	var drones := get_nodes_in_group("units").filter(func(u): return u.scene_file_path == "res://scenes/gameplay/drone.tscn")
+	if not check(drones.size() == drones_before+1,"The Drone was not produced"): return
+	var real: Node3D = drones.back().get_node("Visuals/Model")
+	if not check(real.global_position.distance_to(hover) < 0.05,"The real Drone should appear where the factory flew its model (%.2f m off)" % real.global_position.distance_to(hover)): return
+	await process_frame
+	if not check(model.unit_model == null and not model.closing() and model.player.assigned_animation == &"Idle" and door.scale.y > 0.99,"After a flyer leaves the plant idles with the door shut"): return
+	# Clearing the queue part way empties the turntable.
+	if not check(building.request_unit(&"motorcycle"),"Motorcycle not queued"): return
+	building._process(print_seconds*0.3)
+	if not check(model.unit_model != null,"The Motorcycle should be on the turntable"): return
+	building.pending.clear()
+	building._process(0.1)
+	await process_frame
+	if not check(model.unit_model == null,"With the queue gone the turntable should be empty"): return
 	# Destroyed: the building goes at once, its model stays behind as a wreck and removes itself.
 	building.take_damage(building.max_health)
 	if not check(not building.is_in_group("selectable_buildings") and not building.is_in_group("production_buildings"),"Destroyed Tank Factory still selectable"): return

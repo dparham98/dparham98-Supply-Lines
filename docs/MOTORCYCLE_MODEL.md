@@ -33,7 +33,7 @@ The gun is on the centre line behind the rider, raised so the barrel clears the 
 `scripts/components/motorcycle_rig.gd` sits on the model scene's root and extends `turret_aim.gd`. `unit_agent.gd` calls it as it calls any vehicle rig and needed no changes. Everything below is done in code on the model's own nodes; only the death is a baked clip.
 
 - **Wheels** roll with the ground distance covered.
-- **Steering and lean.** The unit turns in a frame or two, so heading changes are gathered into one swing, in degrees turned lately, that fades over `steer_hold` (0.4 s). A swing of 40 degrees steers the fork to its 15 degree limit and one of 60 degrees leans the bike to its 18 degree limit. A jink one way then the other cancels out, which matters because every move order starts with one. The lean turns `bike_root`, so it pivots at the tyres.
+- **Steering and lean.** The unit turns at 240 degrees a second (docs/PATHING.md), so heading changes are gathered into one swing, in degrees turned lately, that fades over `steer_hold` (0.4 s). A swing of 40 degrees steers the fork to its 15 degree limit and one of 60 degrees leans the bike to its 18 degree limit. A jink one way then the other cancels out, which matters because every move order starts with one. The lean turns `bike_root`, so it pivots at the tyres.
 - **Handlebars** follow 35% of the steer (`bar_follow`). The rider's arms are rigid, and a full 15 degrees would move each grip 9 cm out of the hand; at 35% the hand stays within 5 cm.
 - **Stand.** It folds away when the bike moves and comes down 0.2 s after it stops, and the bike settles 5 degrees onto it toward its left.
 - **Rumble and sway.** The frame shakes a few millimetres and the rider sways slowly, so a parked bike is not frozen.
@@ -43,7 +43,7 @@ The gun is on the centre line behind the rider, raised so the barrel clears the 
 ## The shot
 
 - `scenes/models/motorcycle_muzzle_fx.tscn` is the steam, on the `muzzle` node: a jet from the muzzle, two jets from the brass cylinder, puffs from the valve, then a wisp that tapers off over the 2 s reload. Its `Fire` clip is the length of the reload.
-- `scenes/gameplay/rail_spike.tscn` is the spike, `projectile_scene` on `motorcycle.tscn`, flying at 38 m/s at 1.5 times its modelled size. With an attack range of 3 the flight lasts only two or three frames.
+- `scenes/gameplay/rail_spike.tscn` is the spike, `projectile_scene` on `motorcycle.tscn`, flying at 38 m/s at 1.5 times its modelled size. With an attack range of 12 (see PATHING.md) the flight lasts about a third of a second.
 - `scenes/gameplay/rail_spike_impact.tscn` is where it lands: sparks and iron dust, and the spike stuck in the target for half a second before it drops away.
 
 ## Death
