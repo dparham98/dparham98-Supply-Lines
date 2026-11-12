@@ -12,6 +12,8 @@ const MARGIN := 8
 const RANGE := 8.0
 ## Ground vertices per metre.
 const MESH_DENSITY := 2
+## Metres along each side of one ground mesh.
+const TILE := 64
 ## Metres over which heights return to the flat map at the region edge.
 const EDGE_FADE := 4.0
 ## Thickness of one bed of rock, in metres.
@@ -183,6 +185,18 @@ func edge_fade(cx: float, cz: float) -> float:
 	var inside := minf(minf(cx-region.position.x,region.end.x-cx),minf(cz-region.position.y,region.end.y-cz))
 	return smoothstep(0.0,EDGE_FADE,inside)
 
+## Like edge_fade, but only along sides that meet the flat map. The shaders use it to turn into the flat map's look
+## so the two meet; at the map's own border there is nothing to meet, so the landscape keeps its look right up to it.
+## Heights still use edge_fade there, because a ground or water mesh with height at its open side shows through.
+func edge_blend(cx: float, cz: float) -> float:
+	var region := settings.region
+	var inside := INF
+	if region.position.x > 0: inside = minf(inside,cx-region.position.x)
+	if region.end.x < MAP: inside = minf(inside,region.end.x-cx)
+	if region.position.y > 0: inside = minf(inside,cz-region.position.y)
+	if region.end.y < MAP: inside = minf(inside,region.end.y-cz)
+	return smoothstep(0.0,EDGE_FADE,inside)
+
 func water_height(cx: float, cz: float) -> float:
 	return settings.water_level*edge_fade(cx,cz)
 
@@ -256,8 +270,10 @@ func build_fields_image() -> Image:
 		bytes[i*4+3] = int(round(clampf(ore[i],0.0,1.0)*255.0))
 	return Image.create_from_data(width,height,false,Image.FORMAT_RGBA8,bytes)
 
-## The ground of the whole region. Vertex colour: R hollows, G height from 0 to 1, B 0 at the region edge.
-func build_ground_mesh() -> ArrayMesh:
+## The ground of the whole region in squares of TILE metres, each its own mesh so squares off screen are not
+## drawn, with coarser levels of detail for distant views. Neighbouring squares share their edge vertices exactly.
+## Vertex colour: R hollows, G height from 0 to 1, B 0 at the region edge.
+func build_ground_tiles() -> Array[ArrayMesh]:
 	var region := settings.region
 	var step := 1.0/MESH_DENSITY
 	const PAD := 3
@@ -269,25 +285,35 @@ func build_ground_mesh() -> ArrayMesh:
 	for gz in range(-PAD,rows+PAD):
 		for gx in range(-PAD,columns+PAD):
 			heights[(gz+PAD)*wide+gx+PAD] = height_at(region.position.x+gx*step,region.position.y+gz*step)
+	var tiles: Array[ArrayMesh] = []
+	var span := TILE*MESH_DENSITY
+	for tz in range(0,rows-1,span):
+		for tx in range(0,columns-1,span):
+			tiles.append(_ground_tile(heights,wide,PAD,step,tx,tz,mini(tx+span,columns-1),mini(tz+span,rows-1)))
+	return tiles
+
+func _ground_tile(heights: PackedFloat32Array, wide: int, pad: int, step: float, x0: int, z0: int, x1: int, z1: int) -> ArrayMesh:
+	var region := settings.region
+	var columns := x1-x0+1
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var colors := PackedColorArray()
 	var uvs := PackedVector2Array()
 	var uv2s := PackedVector2Array()
 	var indices := PackedInt32Array()
-	for gz in range(rows):
-		for gx in range(columns):
+	for gz in range(z0,z1+1):
+		for gx in range(x0,x1+1):
 			var cx := region.position.x+gx*step
 			var cz := region.position.y+gz*step
-			var i := (gz+PAD)*wide+gx+PAD
+			var i := (gz+pad)*wide+gx+pad
 			var h: float = heights[i]
 			vertices.append(Vector3(cx-MAP*0.5,h,cz-MAP*0.5))
 			normals.append(Vector3(heights[i-1]-heights[i+1],2.0*step,heights[i-wide]-heights[i+wide]).normalized())
-			var around: float = (heights[i-PAD]+heights[i+PAD]+heights[i-PAD*wide]+heights[i+PAD*wide])*0.25
-			colors.append(Color(clampf(0.5+(h-around)*0.9,0.0,1.0),clampf(h/settings.peak,0.0,1.0),edge_fade(cx,cz),1.0))
+			var around: float = (heights[i-pad]+heights[i+pad]+heights[i-pad*wide]+heights[i+pad*wide])*0.25
+			colors.append(Color(clampf(0.5+(h-around)*0.9,0.0,1.0),clampf(h/settings.peak,0.0,1.0),edge_blend(cx,cz),1.0))
 			uvs.append(Vector2(cx/MAP,cz/MAP))
 			uv2s.append(field_uv(cx,cz))
-	for gz in range(rows-1):
+	for gz in range(z1-z0):
 		for gx in range(columns-1):
 			var a := gz*columns+gx
 			var b := a+1
@@ -296,7 +322,19 @@ func build_ground_mesh() -> ArrayMesh:
 			# Split each square along its flatter diagonal, which keeps cliff edges clean.
 			if absf(vertices[a].y-vertices[d].y) < absf(vertices[b].y-vertices[c].y): indices.append_array([a,b,d,a,d,c])
 			else: indices.append_array([a,b,c,b,d,c])
-	return _mesh(vertices,normals,colors,uvs,uv2s,indices)
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_COLOR] = colors
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_TEX_UV2] = uv2s
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var importer := ImporterMesh.new()
+	# 16-bit positions, normals and UVs: plenty inside one square, and smaller on disk.
+	importer.add_surface(Mesh.PRIMITIVE_TRIANGLES,arrays,[],{},null,"",Mesh.ARRAY_FLAG_COMPRESS_ATTRIBUTES)
+	importer.generate_lods(25.0,60.0,[])
+	return importer.get_mesh()
 
 ## Flat water over every part of the region within reach of the shore.
 func build_water_mesh() -> ArrayMesh:
@@ -321,7 +359,7 @@ func build_water_mesh() -> ArrayMesh:
 					index_of[key] = vertices.size()
 					vertices.append(Vector3(key.x-MAP*0.5,water_height(key.x,key.y),key.y-MAP*0.5))
 					normals.append(Vector3.UP)
-					colors.append(Color(edge_fade(key.x,key.y),0.0,0.0,1.0))
+					colors.append(Color(edge_blend(key.x,key.y),0.0,0.0,1.0))
 					uvs.append(Vector2(key.x,key.y)/MAP)
 					uv2s.append(field_uv(key.x,key.y))
 				corners.append(index_of[key])

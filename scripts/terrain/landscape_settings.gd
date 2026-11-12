@@ -18,7 +18,8 @@ extends Resource
 ## Highest rock. Drones fly at 12 m.
 @export var peak: float = 10.6
 @export_group("Built meshes")
-@export var ground_mesh: Mesh
+## The ground in squares (landscape_builder.gd TILE), so squares off screen are not drawn.
+@export var ground_tiles: Array[Mesh] = []
 @export var water_mesh: Mesh
 @export_group("Kit scenes")
 ## Rock faces set into the mountain edge, facing outwards along local +Z.

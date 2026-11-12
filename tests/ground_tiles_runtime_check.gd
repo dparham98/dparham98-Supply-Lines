@@ -1,5 +1,5 @@
 extends SceneTree
-# Rendered check: grass and desert show tile detail up close, open grass has no black spots from an invalid normal, and the noise behind the ground has no jumps. Saves ground_tiles_close, _play, _map, _forest and _water.
+# Rendered check: grass and desert show tile detail up close, open grass has no black spots from an invalid normal, and the noise behind the ground has no jumps. Saves ground_tiles_close, _play_bare, _play, _map, _forest and _water.
 const TestOutput = preload("res://tests/test_output.gd")
 var game: Node3D
 func _initialize() -> void: call_deferred("run")
@@ -24,19 +24,22 @@ func detail(image: Image, area: Rect2i) -> float:
 # Draws the relief height itself over open grass. It is a smooth field, so any sharp step between neighbouring
 # pixels is a seam in the noise, which shows in the game as a dark streak. This view holds a seam the old hash made.
 func check_noise_is_continuous(rig: Node) -> bool:
-	var material: ShaderMaterial = game.get_node("Terrain/Ground").material_override
-	var marker := "  float height = layered_noise(relief_uv, 3);
-"
-	if not check(material.shader.code.contains(marker),"Shader changed: the noise check cannot find the relief height"): return false
+	# Where the sculpted landscape covers the map it draws the ground, with the same relief noise; its plants and
+	# stones are hidden so only the ground is measured.
+	var tiles: Array = []
+	var landscape := game.get_node_or_null("Terrain/Landmarks/Landscape")
+	if landscape != null and game.get_node("Terrain/Ground").material_override.get_shader_parameter("landscape_region").z > 0.0:
+		tiles = landscape.get_node("Ground").get_children()
+		for part in ["Scatter","Forest"]: landscape.get_node(part).visible = false
+	var material: ShaderMaterial = tiles[0].material_override if not tiles.is_empty() else game.get_node("Terrain/Ground").material_override
+	var indent := " " if not tiles.is_empty() else "  "
+	var marker := indent+"float height = layered_noise(relief_uv, 3);\n"
+	var albedo := " ALBEDO = mix(color, rock, rockiness);\n" if not tiles.is_empty() else " ALBEDO = color;\n"
+	if not check(material.shader.code.contains(marker) and material.shader.code.contains(albedo),"Shader changed: the noise check cannot find the relief height"): return false
 	var debug := Shader.new()
-	debug.code = material.shader.code.replace(marker,marker+"  NOISE_VIEW = vec3(height);
-").replace("void fragment() {
-","void fragment() {
- vec3 NOISE_VIEW = vec3(0.0);
-").replace(" ALBEDO = color;
-"," ALBEDO = vec3(0.0); EMISSION = NOISE_VIEW; ROUGHNESS = 1.0; SPECULAR = 0.0;
-")
+	debug.code = material.shader.code.replace(marker,marker+indent+"NOISE_VIEW = vec3(height);\n").replace("void fragment() {\n","void fragment() {\n vec3 NOISE_VIEW = vec3(0.0);\n").replace(albedo," ALBEDO = vec3(0.0); EMISSION = NOISE_VIEW; ROUGHNESS = 1.0; SPECULAR = 0.0;\n")
 	material.shader = debug
+	for tile in tiles: tile.material_override = material
 	var image: Image = await shot(rig,Vector3(128.5,0,100.5),26,"ground_tiles_noise")
 	var step := 0.0
 	for y in range(0,580):
@@ -59,10 +62,15 @@ func run() -> void:
 	print("Detail grass %.4f desert %.4f" % [grass,desert])
 	if not check(grass > 0.012,"Grass shows no tile detail: %.4f" % grass): return
 	if not check(desert > 0.008,"Desert shows no tile detail: %.4f" % desert): return
-	var play: Image = await shot(rig,Vector3(140.5,0,120.5),95,"ground_tiles_play")
+	# The ground alone: the landscape's small plants and stones are dark in their own shade, which is not a fault.
+	var scatter: Node3D = game.get_node_or_null("Terrain/Landmarks/Landscape/Scatter")
+	if scatter: scatter.visible = false
+	var bare: Image = await shot(rig,Vector3(140.5,0,120.5),95,"ground_tiles_play_bare")
+	if scatter: scatter.visible = true
 	var darkest := 1.0
 	for y in range(20,280):
-		for x in range(20,1260): darkest = minf(darkest,play.get_pixel(x,y).get_luminance())
+		for x in range(20,1260): darkest = minf(darkest,bare.get_pixel(x,y).get_luminance())
+	var play: Image = await shot(rig,Vector3(140.5,0,120.5),95,"ground_tiles_play")
 	print("Darkest open grass %.3f" % darkest)
 	if not check(darkest > 0.08,"Open grass has a black spot: %.3f" % darkest): return
 	await shot(rig,Vector3.ZERO,480,"ground_tiles_map")

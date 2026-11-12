@@ -7,8 +7,9 @@ const WATER := 1
 const DESERT := 2
 const FOREST := 3
 const MOUNTAIN := 4
-## Scenery is batched in squares of this many metres so off-screen batches are not drawn.
-const CHUNK := 64
+## Scenery is batched in squares of this many metres so off-screen batches are not drawn. Larger squares mean
+## fewer draw calls over the whole map, at the cost of drawing more pieces just off screen.
+const CHUNK := 128
 ## Height the cliff pieces are modelled at, in metres.
 const CLIFF_HEIGHT := 4.5
 
@@ -32,7 +33,9 @@ func add_to(root_: Node3D, cells_: PackedByteArray, settings_: LandscapeSettings
 	patches.frequency = 0.06
 	patches.seed = settings.scatter_seed
 	var landscape := _group(root,"Landscape")
-	_mesh(landscape,"Ground",settings.ground_mesh,true)
+	var ground := _group(landscape,"Ground")
+	for i in range(settings.ground_tiles.size()): _mesh(ground,"Ground%02d" % i,settings.ground_tiles[i],true)
+	if settings.ground_tiles.is_empty(): push_warning("Landscape ground missing: run scripts/tools/build_landscape.gd first.")
 	_mesh(landscape,"Water",settings.water_mesh,false)
 	_rocks()
 	_ore()
@@ -43,6 +46,10 @@ func add_to(root_: Node3D, cells_: PackedByteArray, settings_: LandscapeSettings
 
 func covers(x: int, z: int) -> bool:
 	return settings.region.has_point(Vector2i(x,z))
+
+## The whole map is sculpted, so the old mountain massif is never drawn.
+func covers_map() -> bool:
+	return settings.region.encloses(Rect2i(0,0,MAP,MAP))
 
 func replaces_ore() -> bool:
 	return not settings.ore_scenes.is_empty()
@@ -215,7 +222,7 @@ func _plants() -> void:
 			# Grass: bushes gather in thickets and along the forest edge, tufts and flowers in the lusher parts.
 			var edge := smoothstep(0.05,0.3,wood)*(1.0-smoothstep(0.3,0.6,wood))
 			var centre := Vector2(x+0.5,z+0.5)
-			var inside: float = builder.edge_fade(centre.x,centre.y)
+			var inside: float = builder.edge_blend(centre.x,centre.y)
 			var clump := smoothstep(0.58,0.7,shader_noise(centre/9.0+Vector2(41.0,7.0),3))*inside
 			var bare := smoothstep(0.72,0.82,shader_noise(centre/6.0+Vector2(3.0,77.0),3))*inside
 			if bare > 0.5:

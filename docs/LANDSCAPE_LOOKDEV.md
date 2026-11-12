@@ -1,8 +1,8 @@
-# Landscape look-development slice
+# Sculpted landscape
 
-One part of the map is drawn as sculpted landscape, as a trial before any rollout: real height, blended ground, a shoreline, rock faces, woodland and scenery. Everything else on the map is drawn as before. Gameplay is not affected. Terrain categories, pathfinding and building rules still come from `assets/maps/terrain_cells.bin` and its flat 1 m grid, and units stay at height 0.
+The whole map is drawn as sculpted landscape: real height, blended ground, a shoreline, rock faces, woodland and scenery. Gameplay is not affected. Terrain categories, pathfinding and building rules still come from `assets/maps/terrain_cells.bin` and its flat 1 m grid, and units stay at height 0.
 
-The slice is map cells 44-166 by 56-128 (122 x 72 m, north-west). No 60 x 60 m square of the map holds grass, desert, water, forest and a mountain foot together, and this is the smallest rectangle that does without cutting the mountain in half. It is the `region` of `assets/terrain/landscape_settings.tres`.
+It began as a trial slice, map cells 44-166 by 56-128 (122 x 72 m, north-west), and now covers all 500 x 500 cells. The covered rectangle is the `region` of `assets/terrain/landscape_settings.tres`. A smaller region still works: outside it the flat ground and the old mountains are drawn as before.
 
 ## How it is made
 
@@ -16,15 +16,16 @@ godot --headless --path . --script res://scripts/tools/rebuild_terrain_scenery.g
 The second command does what **Rebuild terrain scenery** on `scenes/maps/terrain.tscn` does. Nothing is generated while the game runs.
 
 - `scripts/tools/landscape_builder.gd` turns the cells into smooth distance fields (shore, rock edge, forest, ore) at 4 pixels per metre, with the blocky corners rounded and the lines made to wander, and gives a height for every point.
-- `build_landscape.gd` saves the fields (`assets/textures/terrain/landscape_fields.res`), the ground mesh and the water mesh (`assets/models/terrain/landscape_ground.res`, `landscape_water.res`), and sets the `landscape_region` cut-out on the flat ground and old mountain materials so they do not draw inside the region.
-- `scripts/tools/landscape_baker.gd`, called by `terrain_baker.gd`, stands the kit on the ground and saves it in `scenes/maps/terrain_landmarks.tscn` under `Landscape` (`Ground`, `Water`, `Scatter`, `Forest`). Each placement is decided by a hash of its own cell, so changing some cells only changes the scenery around them. Batches are split into 64 m squares so off-screen ones are not drawn.
+- `build_landscape.gd` saves the fields (`assets/textures/terrain/landscape_fields.res`), the ground as 64 m squares (`assets/models/terrain/landscape_ground/ground_NN.res`, each with generated levels of detail and 16-bit vertex attributes) and the water mesh (`landscape_water.res`). It sets the `landscape_region` cut-out on the flat ground and old mountain materials so they do not draw inside the region. The build takes about 20 seconds for the whole map.
+- `scripts/tools/landscape_baker.gd`, called by `terrain_baker.gd`, stands the kit on the ground under `Landscape` (`Ground` with one node per square, `Water`, `Scatter`, `Forest`). Each placement is decided by a hash of its own cell, so changing some cells only changes the scenery around them. Batches are split into 128 m squares so off-screen ones are not drawn; larger squares mean fewer draw calls over the whole map. The rebuild saves `Landscape` as its own compressed binary scene, `scenes/maps/terrain_landscape.scn`, which `terrain_landmarks.tscn` instances, because as text it would be about 13 MB. When the region covers the whole map the old mountain massif is saved hidden.
 
 ## Height
 
 - Walkable grass, desert and forest only dip, by at most 7 cm (`walkable_relief`), so nothing drawn at height 0 is buried and units do not visibly float. The rolling look of open ground comes from the shading it already had.
 - Water: the drawn shoreline sits 0.9 m inside the Water cells (`shore_inset`), so a unit on the last land cell stays dry. The bank drops to 1.7 m below the surface.
 - Rock stays inside the Mountain cells apart from rounding of about 0.4 m at corners: a first wall of 3 to 5 m, a ledge, a second wall where the rock is wide enough, and a stepped top. Where the rock is wide, crests stand up out of the top as peaks. The peak is capped at 10.6 m because Drones fly at 12 m. Snow lies on level rock above 8.1 m (`snow_line` in `landscape_rock.gdshaderinc`), so only the tallest rock carries it.
-- Heights return to 0 over the last 4 m at the region edge, so the slice meets the flat map.
+- Heights return to 0 over the last 4 m at the region edge, including the map's own border. The ground is a one-sided height field, so rock left standing at an open side would let the camera see through it.
+- The look of the ground and water blends into the flat map's look over the same 4 m, but only where the region meets the flat map (`edge_blend`). At the map's own border there is nothing to meet, so the landscape keeps its look to the edge.
 
 ## Ground and water
 
@@ -60,30 +61,35 @@ The tree shaders read that mask too: whatever would hide a cleared cell from the
 
 ## Lighting (`scenes/maps/lighting.tscn`, all maps)
 
-Sun from the west-south-west at 38 degrees, so shadows fall to the right and show relief; softer shadows over a 340 m range; ambient occlusion; light fog; ACES tone mapping with a small contrast and saturation adjustment. This changes the whole game's look, not only the slice.
+Sun from the west-south-west at 38 degrees, so shadows fall to the right and show relief; softer shadows over a 340 m range; ambient occlusion; light fog; ACES tone mapping with a small contrast and saturation adjustment. This changes the whole game's look.
 
 ## Cost
 
-Measured with `tests/landscape_lookdev_runtime_check.gd` at 1600 x 900, close view of the wood:
+The whole map is 8.65 million triangles at full detail: 2 million ground in 64 squares, 51,000 water, the rest scenery. Only the squares and batches on screen are drawn, and distant ground uses its coarser levels of detail. On disk the ground squares are 29 MB, the landscape scene 3.5 MB and the fields 2 MB.
 
-| | Draw calls | Primitives in frame |
-| --- | --- | --- |
-| Before | 20 | 566,000 |
-| With the slice | 141 | 858,000 |
-| With the slice, mountain close-up | 174 | 1,040,000 |
-| With the slice and the old-growth wood | 213 | 864,000 |
+Average frame time with vsync off, 1600 x 900, HUD hidden, after a warm-up, on the development PC. The slice alone (before) against the whole map (after):
 
-The slice is 430,000 triangles over 8,784 square metres: 70,000 ground, 1,200 water, the rest scenery.
+| View | Before ms | After ms | Draw calls before | Draw calls after |
+| --- | --- | --- | --- | --- |
+| Play zoom over the first slice | 1.39 | 1.95 | 340 | 318 |
+| Play zoom, map centre | 1.07 | 2.26 | 166 | 744 |
+| Play zoom, north-east | 1.02 | 1.90 | 217 | 558 |
+| Play zoom, south-west | 0.95 | 1.88 | 28 | 382 |
+| Play zoom, player base | 1.22 | 1.91 | 912 | 1,536 |
+| Whole-map overview | 1.46 | 2.80 | 1,514 | 3,192 |
+
+Earlier slice measurements, close view of the wood: 20 draw calls before the slice, 141 with it, 213 with the old-growth wood.
 
 ## Checks
 
-- `tests/landscape_lookdev_test.gd` (headless): the slice is saved in the scenery, walkable ground stays within the relief limit, rock stays under Drone height, the edge meets the flat map, forest pieces stand on Forest cells, boulders stand on Mountain cells, the triangle budget holds, and clearing a cell opens it.
-- `tests/landscape_lookdev_runtime_check.gd` (rendered): saves play-zoom, wide and close views, and a view with a lane cleared through the wood.
+- `tests/landscape_lookdev_test.gd` (headless): the landscape is saved in the scenery with its ground squares covering the region, walkable ground stays within the relief limit, rock stays under Drone height, the edge meets the flat map, forest pieces stand on Forest cells, boulders stand on Mountain cells, the triangle budget holds, the old massif is hidden under a whole-map landscape, and clearing a cell opens it.
+- `tests/landscape_lookdev_runtime_check.gd` (rendered): saves play-zoom, wide and close views of the first slice, play-zoom views across the rest of the map and at its corner, the whole-map overview, and a view with a lane cleared through the wood. It prints draw calls and primitives for each view.
 
 ## Known limits
 
 - Scenery on walkable cells (grass, bushes, stones) does not move aside for buildings or rails.
 - A Scout inside standing forest is hidden by the trees; only cleared cells are opened to view.
-- The slice edge shows where the new shore meets the old blocky water.
+- From far away the water at the south-west corner shows a bright sun glint. The flat map's water did the same there, more strongly.
+- Each rebuild of the ground adds about 35 MB of binary files to the repository history.
 - Rock pieces are scripted: blocks fused, cut into beds, cracked and thinned in `erode()`. The 3D generator was not available when they were made.
 - The whole-map view is hazier than before, because fog grows with camera distance.

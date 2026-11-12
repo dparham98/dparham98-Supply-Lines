@@ -135,6 +135,7 @@ func build(tree_scene: PackedScene, mountain_scene: PackedScene, ore_scene: Pack
 		var massif := MeshInstance3D.new()
 		massif.name = "Massif"
 		massif.mesh = mountain_mesh
+		if sculpted != null and sculpted.covers_map(): massif.visible = false
 		mountains.add_child(massif)
 		massif.owner = root
 	_scatter(root, "OreDeposits", ore_scene, ores, ore_colors)
