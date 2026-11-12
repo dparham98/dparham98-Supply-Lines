@@ -21,6 +21,10 @@ extends Node3D
 @export_range(0.1,20,0.1) var steer_speed := 6.0
 ## How long the wheels hold a steer after a heading change; RTS turns happen in a frame or two.
 @export_range(0,2,0.05) var steer_hold := 0.4
+## Added when the vehicle is destroyed (the Depot Truck): its death on stand-ins
+## (scripts/components/driven_death.gd). Vehicles without one vanish as before.
+@export var death_scene: PackedScene
+var _dying := false
 var _speed := 0.0
 var _turn := 0.0
 var _drive_frame := -2
@@ -65,7 +69,16 @@ func wheel_roll() -> float: return _roll
 func steer_angle() -> float: return _steer
 func lid_angle() -> float: return _lid
 func ramp_angle() -> float: return _ramp
+func has_death_clip() -> bool:
+	return death_scene != null
+func dying() -> bool:
+	return _dying
+## The wreck plays out on its own from here; the effect moves the parts and removes this model.
+func play_death() -> void:
+	_dying = true
+	add_child(death_scene.instantiate())
 func _process(delta: float) -> void:
+	if _dying: return
 	# Wheels: roll by the ground distance covered; the wrapper's scale turns world metres into model units.
 	var scale_factor: float = maxf(global_transform.basis.get_scale().x,0.001)
 	var speed := _speed if driving() else 0.0

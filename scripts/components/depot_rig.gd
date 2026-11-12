@@ -11,11 +11,14 @@ extends Node3D
 @export var truck_side := AABB(Vector3(5.4,0,-6.7),Vector3(3.2,0,15.4))
 ## Time for the truck to swing onto the Depot's heading and pull up to the site before unfolding.
 @export_range(0.1,5,0.05) var line_up_seconds := 1.2
+## Added when the Depot is destroyed: the collapse, on stand-ins (scripts/components/driven_death.gd).
+@export var death_scene: PackedScene
 @onready var player: AnimationPlayer = get_node(player_path)
 @onready var tractor: Node3D = get_node(tractor_path)
 @onready var assembly: Node3D = get_node(assembly_path)
 @onready var assembly_player: AnimationPlayer = assembly.get_node("Rig/AnimationPlayer")
 var _line_up: Tween
+var _dying := false
 ## Start from the closed truck: `from_world` is where the trailer stands now, `from_yaw` how far the
 ## truck is turned off the Depot's heading. Lines up with the Depot, then folds out.
 func play_deploy(from_world: Vector3, from_yaw: float) -> void:
@@ -45,6 +48,19 @@ func show_truck(seconds: float) -> void:
 func finish_truck() -> void:
 	show_truck(0.0)
 	tractor.visible = false
+func has_death_clip() -> bool:
+	return death_scene != null
+func dying() -> bool:
+	return _dying
+## The wreck plays out on its own from here; the effect removes this model when it ends. Whatever the
+## Depot was doing stops where it is: the fold-out, the tractor pulling out, a truck half built.
+func play_death() -> void:
+	_dying = true
+	if is_instance_valid(_line_up): _line_up.kill()
+	player.pause()
+	assembly_player.pause()
+	assembly.visible = false
+	add_child(death_scene.instantiate())
 func _exit_seconds() -> float:
 	return player.get_animation(exit_animation).length
 func _pose(clip_player: AnimationPlayer, clip: StringName, seconds: float) -> void:

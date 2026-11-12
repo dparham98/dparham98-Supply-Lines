@@ -255,7 +255,15 @@ func take_damage(amount: int) -> void:
 	if health <= 0:
 		set_process(false)
 		for group in get_groups(): remove_from_group(group)
+		_leave_wreck()
 		queue_free()
+## The model stays behind to play its collapse, as units leave their corpses. The Depot itself is gone at
+## once, so the wreck cannot be selected or targeted.
+func _leave_wreck() -> void:
+	var model := get_node_or_null("Visuals/Model")
+	if model == null or not model.has_method("has_death_clip") or not model.has_death_clip(): return
+	model.reparent(game if is_instance_valid(game) else get_parent())
+	model.play_death()
 
 func try_construction_infantry() -> bool:
 	if not construction_infantry_pending or construction_infantry_spawned or team != "player" or health <= 0: return false
