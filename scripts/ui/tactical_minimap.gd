@@ -4,6 +4,7 @@ extends Control
 @onready var game = get_tree().get_first_node_in_group("skirmish")
 const Overlay = preload("res://scripts/ui/map_overlay.gd")
 const EDGE := Color(0.05,0.055,0.047,0.9)
+const COAL_MARK := Color(0.93,0.9,0.82)
 const ALERT_PULSE_SECONDS := 6.0
 func _process(_delta: float) -> void:
 	queue_redraw()
@@ -33,9 +34,16 @@ func stop_at(point: Vector2) -> Node3D:
 	return best
 func _draw() -> void:
 	if not is_instance_valid(game): return
-	for cell in game.ground.cleared_forest:
-		var top_left := world_to_map(game.ground.tile_to_world(cell))-size/500.0*0.5
-		draw_rect(Rect2(top_left,size/500.0),Color(0.45,0.35,0.18))
+	for cleared in [game.ground.cleared_forest,game.ground.cleared_coal]:
+		for cell in cleared:
+			var top_left := world_to_map(game.ground.tile_to_world(cell))-size/500.0*0.5
+			draw_rect(Rect2(top_left,size/500.0),Color(0.45,0.35,0.18))
+	# Coal fields are a few pixels across at this scale, so each one that still holds coal gets a marker.
+	for field in game.ground.coal_fields:
+		if game.ground.coal_field_remaining(field) <= 0: continue
+		var at := world_to_map(field.center)
+		draw_colored_polygon(PackedVector2Array([at+Vector2(0,-5),at+Vector2(5,0),at+Vector2(0,5),at+Vector2(-5,0)]),EDGE)
+		draw_colored_polygon(PackedVector2Array([at+Vector2(0,-3.5),at+Vector2(3.5,0),at+Vector2(0,3.5),at+Vector2(-3.5,0)]),COAL_MARK)
 	for rail in get_tree().get_nodes_in_group("rails"):
 		var colour := Color(0.4,0.8,0.85) if game.get_node("RailNetwork").friendly_piece(rail,"player") else Color(0.85,0.3,0.25)
 		var total: float = rail.length()

@@ -29,4 +29,6 @@ Edit mine cost, health and footprint in assets/economy/engineering_rules.tres. E
 
 Coal deposits, mobile supply deployment, dropped piles, generator fuel/water operation and vehicle fuel consumption remain later stages. Wood still has no burning/spending behavior until the generator stage. Broader forest/resource redistribution and map tiling are not part of this change.
 
+Later update: coal deposits exist on the balanced map and are dug directly by Infantry; see BALANCED_MAP.md. `harvesting_rules.tres` gains `coal_per_tile`.
+
 Later update: wood/coal generator burning is now implemented; see GENERATOR_BATCH.md. Earlier descriptions of free generator output or wood having no energy use are historical and superseded. Water/vehicle operating fuel and coal extraction remain pending.

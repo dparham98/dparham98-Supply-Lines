@@ -1,5 +1,7 @@
 # Supply Lines — start here
 
+Balanced two-player map with coal in the ground: open **scenes/maps/balanced_skirmish.tscn** and press **F6**. See [layout, coal rules and how to regenerate it](docs/BALANCED_MAP.md). Nobody has played it yet.
+
 Latest engineering batch: [wood harvesting, capturable iron mines and local building repair](docs/ENGINEERING_BATCH.md). Open **scenes/maps/engineering_exercise.tscn** and press **F6** for a damaged-building test.
 
 Latest building/production batch: [Barracks, Tank Factory, original Depot cost and free construction infantry](docs/PRODUCTION_BATCH.md).
@@ -12,7 +14,7 @@ For Milestone 3 power and cargo deliveries, open **scenes/maps/supply_routes.tsc
 
 **Authoritative source:** GitHub repository dparham98/dparham98-Supply-Lines. **Primary local Windows checkout:** C:\Dev\Supply-Lines for Godot editor, rendering and gameplay acceptance. Cloud development uses fresh clones, feature branches and pull requests; the OneDrive project is an older preserved copy. CI/headless tests do not replace human visual/input verification.
 
-Press **F5** to play First Contact: gather Ore, print infantry, defeat the hostile. Open **scenes/maps/resource_skirmish.tscn** to arrange this playable scenario. [Play instructions and edit guide](docs/FIRST_CONTACT.md).
+Press **F5** to play the balanced two-player map with coal, **scenes/maps/balanced_skirmish.tscn** ([layout and rules](docs/BALANCED_MAP.md)): gather iron, print units, defeat a hostile. The original First Contact map, **scenes/maps/resource_skirmish.tscn**, is still playable with **F6**. [Play instructions and edit guide](docs/FIRST_CONTACT.md).
 
 Open **scenes/maps/supply_lines_world.tscn** for the preserved terrain/legacy combat review. Terrain, trees, mountains, ore, lighting and actor models are saved scenes and are visible without running the game. If the 3D view is too close, select Terrain and press F to frame it, or use the CameraRig camera preview for the saved central-lake view.
 
@@ -79,7 +81,7 @@ The baker uses static MeshInstance3D parts from the assigned scene and preserves
 - tests: terrain/navigation and saved-scene/asset-slot regression checks.
 - docs: implementation and maintenance notes.
 
-Camera.tscn at the root is a small compatibility entry that instances the main world; the project starts resource_skirmish.tscn. SelectionManager is one autoload, with no duplicate scene copy. Unit selection supports point/box selection and a visible selection ring. Camera controls: arrows/edges pan, Shift faster, middle-drag grab terrain, wheel zoom toward cursor, Q/E rotate, Backspace HQ, Home selected units, O overview/return. Select the CameraRig root to tune the Inspector settings. See docs/CAMERA_RIG.md. Godot editor F means frame selection. In game, command card buttons have letter hotkeys (docs/HUD_HOTKEYS.md), and F10 opens the development-only playtest panel (docs/PLAYTEST_TOOLS.md).
+Camera.tscn at the root is a small compatibility entry that instances the main world; the project starts balanced_skirmish.tscn. SelectionManager is one autoload, with no duplicate scene copy. Unit selection supports point/box selection and a visible selection ring. Camera controls: arrows/edges pan, Shift faster, middle-drag grab terrain, wheel zoom toward cursor, Q/E rotate, Backspace HQ, Home selected units, O overview/return. Select the CameraRig root to tune the Inspector settings. See docs/CAMERA_RIG.md. Godot editor F means frame selection. In game, command card buttons have letter hotkeys (docs/HUD_HOTKEYS.md), and F10 opens the development-only playtest panel (docs/PLAYTEST_TOOLS.md).
 
 The rebuild and refresh controls use Godot's supported [Inspector tool buttons](https://docs.godotengine.org/en/4.6/tutorials/scripting/gdscript/gdscript_exports.html#export-tool-button).
 
@@ -100,3 +102,5 @@ Shared buildable iron mines and every-tile forestry: [harvesting batch](docs/HAR
 Mobile supply deployment, Infantry delivery and physical material piles: [guide and exercise](docs/MOBILE_SUPPLY.md).
 
 Wood/coal-powered generators: [rules and editor exercise](docs/GENERATOR_BATCH.md).
+
+Coal deposits, the balanced map and per-map terrain data: [balanced map](docs/BALANCED_MAP.md).

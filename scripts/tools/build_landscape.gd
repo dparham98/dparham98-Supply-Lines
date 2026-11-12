@@ -4,6 +4,9 @@ extends SceneTree
 # ground and the old mountains drawing inside the region. Run after changing the map cells, the region or the shape
 # settings, then press Rebuild terrain scenery on terrain.tscn:
 #   godot --headless --path . --script res://scripts/tools/build_landscape.gd
+# Another map passes its cells after "--": --cells=<cells .bin>. The settings, meshes and materials it writes are
+# still the original map's, so a second sculpted map also needs its own copies of those.
+const ToolArgs := preload("res://scripts/tools/tool_args.gd")
 const SETTINGS := "res://assets/terrain/landscape_settings.tres"
 const FIELDS := "res://assets/textures/terrain/landscape_fields.res"
 const GROUND_MESH := "res://assets/models/terrain/landscape_ground.res"
@@ -15,7 +18,7 @@ const MASSIF_MATERIAL := "res://assets/materials/terrain/mountain_massif.tres"
 
 func _initialize() -> void:
 	var settings: LandscapeSettings = load(SETTINGS)
-	var cells := FileAccess.get_file_as_bytes("res://assets/maps/terrain_cells.bin")
+	var cells := FileAccess.get_file_as_bytes(ToolArgs.value("cells",ToolArgs.DEFAULT_CELLS))
 	if settings == null or cells.size() != 250000:
 		push_error("Landscape settings or map cells missing"); quit(1); return
 	var builder = load("res://scripts/tools/landscape_builder.gd").new()

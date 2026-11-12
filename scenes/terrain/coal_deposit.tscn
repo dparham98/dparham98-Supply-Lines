@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="coal"]
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.045, 0.045, 0.055, 1)
+metallic = 0.15
+roughness = 0.42
+
+[sub_resource type="SphereMesh" id="lump"]
+material = SubResource("coal")
+radius = 0.62
+height = 1.3
+radial_segments = 6
+rings = 3
+
+[node name="CoalDeposit" type="Node3D"]
+editor_description = "One lump of coal. The terrain baker stands two on every Coal cell (Terrain root, Coal Scene slot)."
+
+[node name="CoalLump" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+mesh = SubResource("lump")

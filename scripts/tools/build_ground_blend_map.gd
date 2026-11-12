@@ -3,8 +3,11 @@ extends SceneTree
 # between desert and grass ground (forest floor counts as grass). The terrain shader reads it to draw that border
 # as a soft, irregular line instead of 1 m steps. It is art only; gameplay keeps reading terrain_cells.bin.
 # Run after the map cells change: godot --headless --path . --script res://scripts/tools/build_ground_blend_map.gd
-const CELLS := "res://assets/maps/terrain_cells.bin"
-const OUTPUT := "res://assets/textures/terrain/ground_blend.png"
+# Another map passes its own files after "--": --cells=<cells .bin> --output=<blend .png>. Coal and ore count as
+# neither kind of ground, as before.
+const ToolArgs := preload("res://scripts/tools/tool_args.gd")
+var CELLS := ToolArgs.value("cells",ToolArgs.DEFAULT_CELLS)
+var OUTPUT := ToolArgs.value("output","res://assets/textures/terrain/ground_blend.png")
 const SIZE := 500
 const GRASS := 0
 const DESERT := 2

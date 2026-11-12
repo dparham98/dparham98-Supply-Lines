@@ -2,6 +2,7 @@
 extends Node3D
 ## Change these reusable prop scenes, then rebuild to update both editor and game scenery.
 var forest_state: ForestStateVisuals
+var coal_state: ForestStateVisuals
 var ore_state: OreStateVisuals
 
 func _ready() -> void:
@@ -12,6 +13,12 @@ func _ready() -> void:
 	forest_state.bind($Ground,get_node_or_null("Landmarks/Forests"),2)
 	# The sculpted landscape keeps one tree per cell and draws cleared ground from the same match-local mask.
 	forest_state.bind($Ground,get_node_or_null("Landmarks/Landscape/Forest"),1)
+	# Coal lumps stand one cell each and shrink away when their cell is dug out. They keep their own state, so
+	# digging coal never touches a tree patch that shares the cell's 2 x 2 square.
+	if has_node("Landmarks/CoalDeposits"):
+		coal_state = ForestStateVisuals.new()
+		coal_state.bind($Ground,$Landmarks/CoalDeposits,1)
+		$Ground.coal_depleted.connect(coal_state.clear_cell)
 	# Trees get the same mask, so they can be cut away in front of a cleared cell. One copy of each material.
 	var forest := get_node_or_null("Landmarks/Landscape/Forest")
 	if forest != null and $Ground.material_override is ShaderMaterial:
@@ -38,6 +45,7 @@ func _ready() -> void:
 # Felled trees topple over a second or two; this only moves saved batch instances.
 func _process(delta: float) -> void:
 	if forest_state != null and forest_state.is_felling(): forest_state.advance(delta)
+	if coal_state != null and coal_state.is_felling(): coal_state.advance(delta)
 
 @export_category("Terrain Asset Slots")
 @export var tree_scene: PackedScene
@@ -49,6 +57,13 @@ func _process(delta: float) -> void:
 @export var mountain_mesh: Mesh
 ## When set, its region is drawn as sculpted landscape (docs/LANDSCAPE_LOOKDEV.md).
 @export var landscape: LandscapeSettings
+## Lumps standing on Coal cells. Maps without coal leave this empty.
+@export var coal_scene: PackedScene
+## When above zero, forest batches are split into squares this many metres across, so the renderer can skip the
+## ones off screen. Maps with a lot of forest need it; 0 keeps one batch per patch scene.
+@export_range(0, 250, 1) var forest_chunk_metres: int = 0
+## The scenery scene Rebuild writes and the Landmarks child shows. Each map's terrain scene has its own.
+@export_file("*.tscn") var landmarks_path := "res://scenes/maps/terrain_landmarks.tscn"
 @export var scatter_seed: int = 2817
 @export_tool_button("Rebuild terrain scenery", "Reload") var rebuild_action: Callable = rebuild_scenery
 
@@ -57,7 +72,9 @@ func rebuild_scenery() -> void:
 		push_warning("Assign all three terrain asset scenes before rebuilding.")
 		return
 	var baker = load("res://scripts/tools/terrain_baker.gd").new()
-	var output: Node3D = baker.build(tree_scene, mountain_scene, ore_scene, scatter_seed, forest_tile_scenes, mountain_mesh, landscape)
+	# The scenery is baked from the same cells the Ground node plays on.
+	var cells_path = $Ground.get("cells_path")
+	var output: Node3D = baker.build(tree_scene, mountain_scene, ore_scene, scatter_seed, forest_tile_scenes, mountain_mesh, landscape, cells_path if cells_path else baker.DEFAULT_CELLS, coal_scene, forest_chunk_metres)
 	if output.get_child_count() == 0:
 		output.free()
 		return
@@ -69,8 +86,8 @@ func rebuild_scenery() -> void:
 			return
 	var packed := PackedScene.new()
 	if packed.pack(output) != OK: return
-	if ResourceSaver.save(packed, "res://scenes/maps/terrain_landmarks.tscn") != OK: return
-	packed = ResourceLoader.load("res://scenes/maps/terrain_landmarks.tscn", "PackedScene", ResourceLoader.CACHE_MODE_IGNORE)
+	if ResourceSaver.save(packed, landmarks_path) != OK: return
+	packed = ResourceLoader.load(landmarks_path, "PackedScene", ResourceLoader.CACHE_MODE_IGNORE)
 	output.free()
 	var old := get_node_or_null("Landmarks")
 	if old:

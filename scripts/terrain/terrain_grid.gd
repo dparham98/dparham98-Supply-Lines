@@ -1,14 +1,25 @@
 extends MeshInstance3D
 
-enum Terrain { GRASS, WATER, DESERT, FOREST, MOUNTAIN, ORE }
-const TERRAIN_NAMES = ["Grass", "Water", "Desert", "Forest", "Mountains", "Ore deposit (unassigned)"]
+enum Terrain { GRASS, WATER, DESERT, FOREST, MOUNTAIN, ORE, COAL }
+const TERRAIN_NAMES = ["Grass", "Water", "Desert", "Forest", "Mountains", "Ore deposit (unassigned)", "Coal deposit"]
 var grid_size := Vector2i(500, 500)
 var tile_size := 1.0
+## The map this grid plays on: one category byte per cell, row by row. Each map has its own file
+## (docs/BALANCED_MAP.md); the terrain scene's material, mountains and scenery must be baked from the same file.
+@export_file("*.bin") var cells_path := "res://assets/maps/terrain_cells.bin"
 @export var harvesting_rules: HarvestingRules
 var forest_reserves: Dictionary = {}
 var iron_reserves: Dictionary = {}
 var forest_sources: Dictionary = {}
 var iron_mines: Dictionary = {}
+var coal_reserves: Dictionary = {}
+var coal_sources: Dictionary = {}
+## Coal cells dug out this match. They are open ground from then on.
+var cleared_coal: Dictionary = {}
+## Each connected group of Coal cells: {cells: Array[Vector2i], center: Vector3}.
+var coal_fields: Array[Dictionary] = []
+var _coal_field_of: Dictionary = {}
+signal coal_depleted(cell: Vector2i)
 var tiles: Array = []
 var terrain_cells: PackedByteArray
 var navigation_grid := AStarGrid2D.new()
@@ -27,8 +38,9 @@ var _clearing_texture: ImageTexture
 var _mask_dirty := false
 
 func _ready() -> void:
-	terrain_cells = FileAccess.get_file_as_bytes("res://assets/maps/terrain_cells.bin")
+	terrain_cells = FileAccess.get_file_as_bytes(cells_path)
 	assert(terrain_cells.size() == grid_size.x * grid_size.y)
+	_find_coal_fields()
 	navigation_grid.region = Rect2i(Vector2i.ZERO, grid_size)
 	navigation_grid.cell_size = Vector2.ONE
 	navigation_grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
@@ -161,19 +173,22 @@ func nearest_actor_cell(origin: Vector2i, layer: int, owner: String = "") -> Vec
 	return Vector2i(-1,-1)
 func clear_forest(pos: Vector2i) -> bool:
 	if get_terrain(pos) != Terrain.FOREST: return false
+	forest_reserves[pos] = 0
+	cleared_forest[pos] = true
+	_open_cell(pos)
+	forest_cleared.emit(pos)
+	return true
+# Turns a cell into bare open ground for the rest of the match: navigation, building and the drawn surface.
+func _open_cell(pos: Vector2i) -> void:
 	var tile: Dictionary = tiles[pos.y*grid_size.x+pos.x]
 	tile.terrain = Terrain.GRASS
 	tile.terrain_buildable = true
 	tile.walkable = true
 	tile.buildable = true
-	forest_reserves[pos] = 0
-	cleared_forest[pos] = true
 	_sync_navigation(pos)
 	if _clearing_mask != null:
 		_clearing_mask.set_pixel(pos.x,pos.y,Color.WHITE)
 		_mask_dirty = true
-	forest_cleared.emit(pos)
-	return true
 ## Hides the ore rocks on `footprint` and `margin` cells around it until uncover_ore(key). Covers may overlap.
 func cover_ore(key: String, footprint: Array, margin := 1) -> void:
 	uncover_ore(key)
@@ -225,6 +240,68 @@ func forest_source(cell: Vector2i) -> Node3D:
 	add_child(source)
 	source.global_position = tile_to_world(cell)
 	forest_sources[cell] = source
+	return source
+## Coal (docs/BALANCED_MAP.md): every Coal cell holds harvesting_rules.coal_per_tile. Workers take it straight from
+## the cell, as they take wood from a Forest cell, and a cell that runs out is dug out to open ground.
+func _find_coal_fields() -> void:
+	var at := terrain_cells.find(Terrain.COAL)
+	while at >= 0:
+		var first := Vector2i(at%grid_size.x,at/grid_size.x)
+		if not _coal_field_of.has(first):
+			var field := {"cells": [] as Array[Vector2i], "center": Vector3.ZERO}
+			var open: Array[Vector2i] = [first]
+			_coal_field_of[first] = coal_fields.size()
+			while not open.is_empty():
+				var cell: Vector2i = open.pop_back()
+				field.cells.append(cell)
+				field.center += tile_to_world(cell)
+				for dz in range(-1,2):
+					for dx in range(-1,2):
+						var next := cell+Vector2i(dx,dz)
+						if is_tile_in_bounds(next) and not _coal_field_of.has(next) and terrain_cells[next.y*grid_size.x+next.x] == Terrain.COAL:
+							_coal_field_of[next] = coal_fields.size()
+							open.append(next)
+			field.center /= field.cells.size()
+			coal_fields.append(field)
+		at = terrain_cells.find(Terrain.COAL,at+1)
+func coal_amount(cell: Vector2i) -> int:
+	if get_terrain(cell) != Terrain.COAL: return 0
+	return coal_reserves.get(cell,harvesting_rules.coal_per_tile)
+func harvest_coal(cell: Vector2i, requested: int) -> int:
+	var taken := mini(maxi(0,requested),coal_amount(cell))
+	if taken <= 0: return 0
+	coal_reserves[cell] = coal_amount(cell)-taken
+	if coal_reserves[cell] == 0:
+		cleared_coal[cell] = true
+		_open_cell(cell)
+		coal_depleted.emit(cell)
+	return taken
+## The field a Coal cell belongs to, also after it has been dug out. Empty for any other cell.
+func coal_field_at(cell: Vector2i) -> Dictionary:
+	return coal_fields[_coal_field_of[cell]] if _coal_field_of.has(cell) else {}
+func coal_field_remaining(field: Dictionary) -> int:
+	var total := 0
+	for cell in field.get("cells",[]): total += coal_amount(cell)
+	return total
+## The cell of the same field to work after `cell` runs out: the nearest one that still holds coal.
+func next_coal_cell(cell: Vector2i, near: Vector3) -> Vector2i:
+	var best := Vector2i(-1,-1)
+	var best_distance := INF
+	for other in coal_field_at(cell).get("cells",[]):
+		if coal_amount(other) <= 0: continue
+		# Nearest to the dug-out cell, which is open ground a worker can stand on; ties go to the worker's side.
+		var d: float = cell.distance_squared_to(other)+tile_to_world(other).distance_to(near)*0.001
+		if d < best_distance: best = other; best_distance = d
+	return best
+func coal_source(cell: Vector2i) -> Node3D:
+	if coal_amount(cell) <= 0: return null
+	if coal_sources.has(cell): return coal_sources[cell]
+	var source = load("res://scripts/economy/coal_harvest_source.gd").new()
+	source.ground = self; source.cell = cell
+	source.name = "Coal_%d_%d" % [cell.x,cell.y]
+	add_child(source)
+	source.global_position = tile_to_world(cell)
+	coal_sources[cell] = source
 	return source
 func iron_amount(cell: Vector2i) -> int:
 	return iron_reserves.get(cell,harvesting_rules.iron_per_tile) if get_terrain(cell) == Terrain.ORE else 0

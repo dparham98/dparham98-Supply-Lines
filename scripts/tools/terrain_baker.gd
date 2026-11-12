@@ -57,11 +57,15 @@ func _batches(root: Node3D, group: Node3D, scene: PackedScene, placements: Array
 		group.add_child(item)
 		item.owner = root
 
+const DEFAULT_CELLS := "res://assets/maps/terrain_cells.bin"
+
 ## With forest_tiles, each forest spot takes one of those scenes in place of tree_scene.
 ## With mountain_mesh, that sculpted mesh replaces the scattered mountain_scene props.
 ## With landscape, its region gets the sculpted ground, water and scenery of docs/LANDSCAPE_LOOKDEV.md.
-func build(tree_scene: PackedScene, mountain_scene: PackedScene, ore_scene: PackedScene, seed_: int = 2817, forest_tiles: Array = [], mountain_mesh: Mesh = null, landscape: LandscapeSettings = null) -> Node3D:
-	var cells := FileAccess.get_file_as_bytes("res://assets/maps/terrain_cells.bin")
+## cells_path is the map baked. With coal_scene, every Coal cell gets lumps of it. With forest_chunk above zero,
+## the forest_tiles batches are split into squares that many metres across.
+func build(tree_scene: PackedScene, mountain_scene: PackedScene, ore_scene: PackedScene, seed_: int = 2817, forest_tiles: Array = [], mountain_mesh: Mesh = null, landscape: LandscapeSettings = null, cells_path: String = DEFAULT_CELLS, coal_scene: PackedScene = null, forest_chunk: int = 0) -> Node3D:
+	var cells := FileAccess.get_file_as_bytes(cells_path)
 	assert(cells.size() == 250000)
 	var sculpted = load("res://scripts/tools/landscape_baker.gd").new() if landscape != null else null
 	if sculpted != null: sculpted.settings = landscape
@@ -124,7 +128,22 @@ func build(tree_scene: PackedScene, mountain_scene: PackedScene, ore_scene: Pack
 		for i in range(forest_tiles.size()):
 			var typed_trees: Array[Transform3D] = tile_trees[i]
 			var typed_colors: Array[Color] = tile_colors[i]
-			_batches(root, forests, forest_tiles[i], typed_trees, typed_colors, "%02d" % (i+1))
+			if forest_chunk <= 0:
+				_batches(root, forests, forest_tiles[i], typed_trees, typed_colors, "%02d" % (i+1))
+				continue
+			# One batch per square of the map, so only the squares in view are drawn.
+			var squares := {}
+			for j in range(typed_trees.size()):
+				var square := Vector2i(floori((typed_trees[j].origin.x+250.0)/forest_chunk),floori((typed_trees[j].origin.z+250.0)/forest_chunk))
+				if not squares.has(square): squares[square] = [[] as Array[Transform3D],[] as Array[Color]]
+				squares[square][0].append(typed_trees[j])
+				squares[square][1].append(typed_colors[j])
+			var order := squares.keys()
+			order.sort()
+			for square in order:
+				var square_trees: Array[Transform3D] = squares[square][0]
+				var square_colors: Array[Color] = squares[square][1]
+				_batches(root, forests, forest_tiles[i], square_trees, square_colors, "%02d_%d_%d" % [i+1,square.x,square.y])
 	if mountain_mesh == null:
 		_scatter(root, "Mountains", mountain_scene, rocks, rock_colors)
 	else:
@@ -138,5 +157,21 @@ func build(tree_scene: PackedScene, mountain_scene: PackedScene, ore_scene: Pack
 		mountains.add_child(massif)
 		massif.owner = root
 	_scatter(root, "OreDeposits", ore_scene, ores, ore_colors)
+	# Coal: two lumps on every Coal cell, from their own generator so nothing above moves on a map that gains coal.
+	if coal_scene != null and cells.find(6) >= 0:
+		var coal_rng := RandomNumberGenerator.new()
+		coal_rng.seed = seed_+2
+		var lumps: Array[Transform3D] = []
+		var lump_colors: Array[Color] = []
+		var at := cells.find(6)
+		while at >= 0:
+			var centre := Vector3(at%500+0.5-250, 0, at/500+0.5-250)
+			for j in range(2):
+				var lb := Basis(Vector3.UP, coal_rng.randf_range(0, TAU)).scaled(Vector3(coal_rng.randf_range(0.7, 1.1), coal_rng.randf_range(0.6, 1.35), coal_rng.randf_range(0.7, 1.1)))
+				lumps.append(Transform3D(lb, centre + Vector3(coal_rng.randf_range(-0.3, 0.3), 0, coal_rng.randf_range(-0.3, 0.3))))
+				var shade := coal_rng.randf_range(0.75, 1.2)
+				lump_colors.append(Color(shade, shade, shade))
+			at = cells.find(6, at+1)
+		_scatter(root, "CoalDeposits", coal_scene, lumps, lump_colors)
 	if sculpted != null: sculpted.add_to(root, cells, landscape, self)
 	return root

@@ -215,6 +215,7 @@ func _order_process(delta: float) -> void:
 		return
 	if order == "return" and return_explicit and not _crate_receiver(return_depot) and not SupplySource.can_receive(return_depot,team):
 		_stop_route(); state = "Delivery paused · selected supply source unavailable"; _update_display(); return
+	if order == "gather": _source_left()
 	if order == "gather" and is_instance_valid(source) and not source.can_extract(team):
 		_stop_route()
 		_gather(delta)
@@ -459,7 +460,16 @@ func _turn_toward(point: Vector3, delta: float) -> float:
 ## Full speed within 20 degrees of the heading, slowing to a turn on the spot at 90 degrees or more.
 func _turn_speed(error: float) -> float:
 	return clampf((PI*0.5-error)/(PI*0.5-deg_to_rad(20.0)),0.0,1.0)
+## Whether the gather source still holds anything. A dug-out coal cell hands the worker on to the next cell of
+## its field (docs/BALANCED_MAP.md); wood and iron sources have no next cell, so they end as before.
+func _source_left() -> bool:
+	if not is_instance_valid(source): return false
+	if source.remaining <= 0 and source.has_method("next_source"):
+		var next: Node3D = source.next_source(global_position)
+		if next != null: source = next; order_target = next
+	return source.remaining > 0
 func _gather(delta: float) -> void:
+	_source_left()
 	if not is_instance_valid(source) or source.remaining <= 0:
 		if cargo > 0: order = "return"
 		else: order = "idle"; state = str(source.resource_kind).capitalize()+" depleted" if is_instance_valid(source) else "Source unavailable"
@@ -502,7 +512,7 @@ func _deliver_to_crate(crate: Node3D) -> void:
 			for other in CrateYard.crates_near(get_tree(),crate.global_position,CrateYard.CLUSTER_RADIUS,team):
 				if other.accepts(cargo_kind): return_depot = other; return
 			state = "Crate full · carrying remainder"; return
-	order = "gather" if is_instance_valid(source) and source.remaining > 0 else "idle"
+	order = "gather" if _source_left() else "idle"
 	if order == "idle": state = "Delivered to crate"
 func _return_cargo() -> void:
 	var depot = return_depot
@@ -532,7 +542,7 @@ func _return_cargo() -> void:
 		elif cargo_kind == &"iron": game.ore_delivered += accepted
 		cargo -= accepted
 		if cargo > 0: state = "Stockpile full · carrying remainder"; return
-	order = "gather" if is_instance_valid(source) and source.remaining > 0 else "idle"
+	order = "gather" if _source_left() else "idle"
 func _attack_order() -> void:
 	if not _attack_enabled:
 		order = "idle"

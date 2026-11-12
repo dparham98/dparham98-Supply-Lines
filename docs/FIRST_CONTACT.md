@@ -1,6 +1,6 @@
 # First Contact — playable resource loop
 
-Press F6 with scenes/maps/resource_skirmish.tscn open, or F5 to run the project. Restart Scenario resets the map and bank. F / Focus Depot returns the camera; the existing edge/arrow/zoom/rotation controls are shared.
+Press F6 with scenes/maps/resource_skirmish.tscn open. F5 now runs the balanced map (BALANCED_MAP.md). Restart Scenario resets the map and bank. F / Focus Depot returns the camera; the existing edge/arrow/zoom/rotation controls are shared.
 
 1. Left-click the cyan infantry below the Depot. A green ring marks selection. Drag a box to select several infantry.
 2. Right-click the marked orange Ore deposit to the left. Infantry approach on valid land, extract Ore, carry it to the Depot and repeat. Only delivered cargo becomes spendable; deselecting does not cancel work.

@@ -6,7 +6,7 @@ Grass, desert, water and forests are drawn with the tiles from `Blender/Terrain/
 
 - `scripts/tools/build_ground_tile_arrays.gd` packs the sources into `assets/textures/terrain/ground_tiles_albedo.png` and `_normal.png`, imported as twelve-layer texture arrays (layers 0-3 grass, 4-7 desert, 8-11 water). Run it after editing a tile.
 - `assets/shaders/terrain_surface.gdshader` picks a variant for each tile position from a fixed hash, so the pattern is the same every match. All tiles of a set share identical borders, so any variant can sit beside any other. Tiles are not rotated, because that would break those borders.
-- Forest floor uses the grass tiles. Water keeps its animated ripple on top of the tiles. Ground around the mountains uses the desert tiles darkened to stony earth (see [MOUNTAINS.md](MOUNTAINS.md)). Ore and cleared forest draw as before.
+- Forest floor uses the grass tiles. Water keeps its animated ripple on top of the tiles. Ground around the mountains uses the desert tiles darkened to stony earth (see [MOUNTAINS.md](MOUNTAINS.md)). Ore and cleared forest draw as before. Coal cells (category 6, balanced map only) draw as the desert tiles with their colour taken out and darkened by `coal_shade`.
 
 ## Settings (`assets/shaders/terrain_surface.gdshader`, overridable on the material)
 
@@ -22,7 +22,7 @@ The tint divides `terrain_surface.png` by its mean colour for that ground type (
 
 Open ground (grass, forest floor and desert) gets four layers on top of the tiles, all in `terrain_surface.gdshader` and all drawing only. Gameplay still reads `terrain_cells.bin`, so the drawn line can differ from the real cell border by about a metre.
 
-- **Soft border:** `assets/textures/terrain/ground_blend.png` holds each cell's distance from the desert and grass border, slightly blurred to round off the steps. Noise makes the line wander. Rebuild it after the map cells change: `godot --headless --path . --script res://scripts/tools/build_ground_blend_map.gd`. It stays lossless (`detect_3d/compress_to=0` in its `.import`).
+- **Soft border:** `assets/textures/terrain/ground_blend.png` holds each cell's distance from the desert and grass border, slightly blurred to round off the steps. Noise makes the line wander. Rebuild it after the map cells change: `godot --headless --path . --script res://scripts/tools/build_ground_blend_map.gd`. It stays lossless (`detect_3d/compress_to=0` in its `.import`). Another map passes `-- --cells=... --output=...` ([BALANCED_MAP.md](BALANCED_MAP.md)).
 - **Colour patches:** broad drifts about 64 m across and smaller dry patches about 17 m across, plus dry straw on the grass beside desert.
 - **Breakup:** a larger copy of the tile pattern at a scale that never lines up with the 4 m tiles.
 - **Relief:** gentle slopes lit by the sun. The bent normal is length-limited, because past that limit the surface renders black.

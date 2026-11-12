@@ -340,7 +340,7 @@ func update_unit_sections(node: Node3D) -> void:
 	if node.is_cargo_vehicle: cost_energy = node.supply_rules.cargo_energy_cost; cost_iron = node.supply_rules.cargo_iron_cost
 	elif node.is_depot_truck:
 		cost_energy = node.deployment_rules.truck_energy_cost; cost_iron = node.deployment_rules.truck_iron_cost
-		pairs.append(["Deploys","%d E · %d I" % [node.deployment_rules.deployed_energy,node.deployment_rules.testing_starting_iron if node.deployment_rules.testing_starting_iron >= 0 else node.deployment_rules.deployed_iron]])
+		pairs.append(["Deploys","%d E · %d I" % [node.deployment_rules.deployed_energy,node.deployment_rules.testing_starting_iron if node.deployment_rules.testing_starting_iron >= 0 and game.get("testing_iron_grant") != false else node.deployment_rules.deployed_iron]])
 	pairs.append(["Cost","%d E · %d I" % [cost_energy,cost_iron]])
 	set_stats(pairs.slice(0,6))
 	var line = context.get_node("Abilities")
