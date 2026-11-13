@@ -28,7 +28,7 @@ These replace the crate reservation described in `CRATE_SHIPMENTS.md`. The user 
   - **Crate:** click one to drive to it and take it (even when empty), plus any filled crates within 4 units of it, until the 4 slots are full.
   - **Depot or deployed Cargo vehicle:** clicking one takes the filled crates beside it.
 - **Unload (U):**
-  - **Depot or deployed Cargo vehicle:** unpacks into its storage. A crate that doesn't fit stays aboard, partly emptied.
+  - **Depot or deployed Cargo vehicle:** unpacks into its storage. A crate that doesn't fit stays aboard, partly emptied. Loose cargo aboard goes in too, as far as it fits (docs/STALL_FIXES.md).
   - **Open ground:** sets the crates down on free tiles around the point. The point must have open land within 2 tiles.
 - **Cargo space:** each crate fills one 25-unit slot of the vehicle's cargo space (4 on a truck, 12 on a Train), so loose cargo can't use the same space.
 - **Trips (C):** they work as before. The pickup is remembered as a point (or a Depot), so "all available" checks for crates still near it, and "repeat" waits there for new ones.

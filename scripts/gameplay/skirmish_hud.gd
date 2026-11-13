@@ -683,7 +683,8 @@ func return_units() -> void:
 		if not unit.is_cargo_vehicle and not unit.is_depot_truck:
 			unit.order_queue.clear()
 			unit.command_return(unit.supply_payer if unit.supply_payer_explicit else nearest_depot(unit))
-			if unit.supply_payer_explicit: unit.return_explicit = true
+			# Only a stockpile the player chose stays the drop-off for later trips.
+			unit.return_explicit = unit.supply_payer_explicit
 # The Load page: a manifest of crates for the selected vehicles (docs/CRATE_MANIFESTS.md).
 func edit_manifest(kind: StringName, fill := false) -> void:
 	var changed := false
