@@ -501,10 +501,11 @@ func update_contents() -> void:
 			var kind: String = node.pending[0] if not node.pending.is_empty() else ""
 			show_progress("Producing · "+DEPOT_PRODUCTS.get(kind,kind.capitalize()),"%d%%%s" % [roundi(node.progress/node.current_seconds()*100)," · %d more queued" % (node.queue-1) if node.queue > 1 else ""],node.progress/node.current_seconds())
 		info.get_node("Details").text = "Queue %d / %d%s" % [node.queue,node.queue_limit," · capture %d%%" % roundi(node.capture_progress/node.rules.capture_seconds*100) if node.capture_progress > 0 else ""]
-		set_stats([["Energy ceiling","%d E" % node.energy_ceiling],["Coal kept","%d" % node.coal_reserve]])
 		if node.team == "player":
+			var ceiling: String = "none (full storage)" if node.energy_ceiling >= node.storage_capacity else "%d E" % node.energy_ceiling
+			set_stats([["Energy ceiling",ceiling],["Coal kept","%d" % node.coal_reserve]])
 			show_button("MakeCrates","Make crates")
-			show_button("EnergyCeiling","Generator energy ceiling: %d E" % node.energy_ceiling)
+			show_button("EnergyCeiling","Generator energy ceiling: %s" % ceiling)
 			show_button("CoalReserve","Coal kept for vehicles: %d" % node.coal_reserve)
 			if node.can_cancel(): show_button("CancelPlan","Cancel production")
 			show_production("PrintTruck","Depot truck",node.rules.truck_energy_cost,node.rules.truck_iron_cost,node)

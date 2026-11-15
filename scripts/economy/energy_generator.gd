@@ -32,10 +32,13 @@ func usable_fuel(kind: StringName) -> int:
 	if not source_valid(): return 0
 	var kept: int = assigned_depot.coal_reserve if kind == &"coal" else 0
 	return maxi(0,assigned_depot.stockpile.amount(kind)-kept)
-## Energy the Depot can still take: free storage, up to its energy ceiling.
+## Energy the Depot can still take: its free storage while it is below its energy ceiling, else none. A
+## cycle started below the ceiling finishes, so the Depot reaches the ceiling and may pass it by under a cycle.
 func energy_room() -> int:
-	if not source_valid(): return 0
-	return mini(assigned_depot.stockpile.space(),maxi(0,assigned_depot.energy_ceiling-assigned_depot.energy))
+	if not source_valid() or at_ceiling(): return 0
+	return assigned_depot.stockpile.space()
+func at_ceiling() -> bool:
+	return source_valid() and assigned_depot.energy >= assigned_depot.energy_ceiling
 func set_fuel_preference(value: String) -> void:
 	if value in ["wood","coal","either"]: fuel_preference = value
 func output_rate() -> float:
@@ -53,19 +56,22 @@ func fuel_left_text() -> String:
 		seconds += amount*fuel_rules.seconds(kind)
 	return "%s · %ds" % [" + ".join(parts),roundi(seconds)]
 func cycle_ready() -> bool:
-	return source_valid() and usable_fuel(cycle_kind) >= 1 and energy_room() >= cycle_output
+	return source_valid() and usable_fuel(cycle_kind) >= 1 and (assigned_depot.stockpile.space() >= cycle_output if cycle_elapsed > 0 else energy_room() >= cycle_output)
 func describe_state() -> String:
 	if health <= 0: return "Destroyed"
 	if not source_valid(): return "Paused · assigned Depot unavailable"
 	if not enabled: return "Paused by player"
 	var kind := cycle_kind if not cycle_kind.is_empty() else choose_fuel()
 	if kind.is_empty() or usable_fuel(kind) < 1:
-		var held: bool = fuel_preference != "wood" and assigned_depot.coal > 0
-		if held: return "Waiting · %d coal kept for vehicles" % assigned_depot.coal_reserve
+		# With no fuel chosen, Either and Coal are short of coal; a latched cycle waits for its own fuel.
+		var wanted: StringName = kind if not kind.is_empty() else (&"wood" if fuel_preference == "wood" else &"coal")
+		if wanted == &"coal" and assigned_depot.coal > 0: return "Waiting · %d coal kept for vehicles" % assigned_depot.coal_reserve
 		return "Waiting for "+(str(kind) if not kind.is_empty() else fuel_preference)+" fuel"
 	var output: int = cycle_output if not cycle_kind.is_empty() else fuel_rules.output(kind)
-	if assigned_depot.energy+output > assigned_depot.energy_ceiling: return "Paused · Depot at its %d E ceiling" % assigned_depot.energy_ceiling
-	if assigned_depot.stockpile.space() < output: return "Paused · need %d free storage for full output" % output
+	var blocked: bool = (not cycle_ready()) if not cycle_kind.is_empty() else (energy_room() < output)
+	if blocked:
+		if at_ceiling() and cycle_elapsed <= 0: return "Paused · Depot at its %d E ceiling" % assigned_depot.energy_ceiling
+		return "Paused · need %d free storage for full output" % output
 	return "Burning %s · %d%%" % [kind,roundi(cycle_elapsed/cycle_seconds*100) if cycle_seconds > 0 else 0]
 
 @onready var ground = get_tree().get_first_node_in_group("terrain_grid")

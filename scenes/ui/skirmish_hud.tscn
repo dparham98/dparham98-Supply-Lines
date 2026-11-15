@@ -1723,15 +1723,15 @@ theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="EnergyCeiling" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
-tooltip_text = "Steps the energy ceiling: 300, 600, 1000, 2000."
+tooltip_text = "Steps the energy ceiling: 300, 600, 1000, then none."
 shortcut = SubResource("shortcut_command_energy_ceiling")
 layout_mode = 0
 custom_minimum_size = Vector2(46,46)
 text = ""
-icon = ExtResource("card_crate_resource_energy")
+icon = ExtResource("card_generator_pause")
 expand_icon = true
 icon_alignment = 1
-metadata/detail = "Generators assigned to this Depot stop once it holds this much energy. Press to step through 300, 600, 1000 and 2000."
+metadata/detail = "Generators assigned to this Depot stop once it holds this much energy. Press to step through 300, 600, 1000, and no ceiling (full storage)."
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/EnergyCeiling"]
 layout_mode = 1
 anchors_preset = 1
@@ -1754,7 +1754,7 @@ shortcut = SubResource("shortcut_command_coal_reserve")
 layout_mode = 0
 custom_minimum_size = Vector2(46,46)
 text = ""
-icon = ExtResource("card_crate_resource_coal")
+icon = ExtResource("card_auto_refuel_on")
 expand_icon = true
 icon_alignment = 1
 metadata/detail = "Generators assigned to this Depot never burn its coal below this, so vehicles can refuel. Press to step through 0, 30, 60 and 120."
