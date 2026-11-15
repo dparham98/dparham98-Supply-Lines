@@ -18,6 +18,8 @@ func run() -> void:
 	game = load("res://scenes/maps/resource_skirmish.tscn").instantiate()
 	root.add_child(game)
 	for i in range(3): await process_frame
+	# These checks place Depots close together; spacing has its own test (depot_spacing_test.gd).
+	load("res://assets/economy/depot_rules.tres").min_depot_spacing = 0.0
 	network = game.get_node("DepotNetwork")
 	game.set_process(false)
 	for unit in get_nodes_in_group("units"): unit.set_process(false)

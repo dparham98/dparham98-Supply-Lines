@@ -15,6 +15,8 @@ func near(unit: Node3D, target: Node3D, offset: Vector3) -> void:
 func run() -> void:
 	game = load("res://scenes/maps/mobile_supply_exercise.tscn").instantiate()
 	root.add_child(game); await process_frame
+	# These checks place Depots close together; spacing has its own test (depot_spacing_test.gd).
+	load("res://assets/economy/depot_rules.tres").min_depot_spacing = 0.0
 	game.set_process(false)
 	for group in ["units","depots","mines"]:
 		for node in get_nodes_in_group(group): node.set_process(false)

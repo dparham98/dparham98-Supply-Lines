@@ -37,3 +37,5 @@ A new Depot must stand at least 70 m, centre to centre, from every other friendl
 - A Depot truck can't deploy inside 70 m and keeps its place; it can deploy beyond.
 - The new Depot then keeps 70 m around itself.
 - Setting the spacing to 0 turns the rule off.
+
+Older checks that place Depots close together for other reasons (`depot_test`, `construction_site_model_test`, `hud_click_test`, `mobile_supply_test`, `pending_construction_test`, `playtest_fixes_test`, `production_batch_test`) set the spacing to 0 at their start. A truck deploy refused for spacing says both rules: "Can't deploy there: the Depot footprint must be empty buildable land, at least 70 m from every other friendly Depot."

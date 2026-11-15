@@ -19,6 +19,8 @@ func click_at(point: Vector2) -> void:
 	event.pressed = true
 	root.push_input(event,true)
 	for frame in range(5): await process_frame
+	# These checks place Depots close together; spacing has its own test (depot_spacing_test.gd).
+	load("res://assets/economy/depot_rules.tres").min_depot_spacing = 0.0
 	event = InputEventMouseButton.new()
 	event.position = point
 	event.button_index = MOUSE_BUTTON_LEFT
