@@ -6,6 +6,8 @@
 [ext_resource type="PackedScene" path="res://scenes/gameplay/infantry.tscn" id="infantry"]
 
 [ext_resource type="Resource" path="res://assets/economy/depot_rules.tres" id="rules"]
+[ext_resource type="Material" path="res://assets/materials/units/team_marker.tres" id="team_marker"]
+
 [sub_resource type="StandardMaterial3D" id="territory_mat"]
 shading_mode = 0
 albedo_color = Color(0.2,0.8,1,0.6)
@@ -16,6 +18,11 @@ outer_radius = 1.0
 rings = 96
 ring_segments = 4
 material = SubResource("territory_mat")
+
+[sub_resource type="PlaneMesh" id="team_marker_mesh"]
+material = ExtResource("team_marker")
+size = Vector2(23.0, 23.0)
+
 [node name="Depot" type="Node3D"]
 script = ExtResource("depot")
 rules = ExtResource("rules")
@@ -31,6 +38,13 @@ script = ExtResource("slot")
 model_scene = ExtResource("model")
 
 [node name="Model" parent="Visuals" instance=ExtResource("model")]
+[node name="TeamMarker" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(1.45, 0.06, 0.95)
+visible = false
+cast_shadow = 0
+mesh = SubResource("team_marker_mesh")
+instance_shader_parameters/half_size = Vector2(11.5, 11.5)
+metadata/not_selectable = true
 
 [node name="Progress" type="Label3D" parent="."]
 position = Vector3(0,7.5,0)

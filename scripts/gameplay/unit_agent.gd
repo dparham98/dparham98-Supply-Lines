@@ -89,14 +89,17 @@ func _ready() -> void:
 	_paint_team()
 	_update_display()
 ## The marker on the ground under the unit and the team paint on its model (docs/TEAM_MARKERS.md)
-## take its side's colour.
+## take its side's colour. The marker shows only while the unit is selected.
 func _paint_team() -> void:
 	var marker := get_node_or_null("Visuals/TeamMarker") as GeometryInstance3D
-	if marker: marker.set_instance_shader_parameter(&"team_color",preload("res://scripts/units/team_colors.gd").of(team))
+	if marker:
+		marker.set_instance_shader_parameter(&"team_color",preload("res://scripts/units/team_colors.gd").of(team))
+		marker.visible = is_selected
 	preload("res://scripts/components/team_paint.gd").apply(get_node_or_null("Visuals/Model"),team)
 func set_selected(value: bool) -> void:
 	is_selected = value and team == "player"
-	$SelectionRing.visible = is_selected
+	var marker := get_node_or_null("Visuals/TeamMarker") as Node3D
+	if marker: marker.visible = is_selected
 func _owner_key() -> String:
 	return "agent_%s" % get_instance_id()
 func _is_ours(cell: Vector2i) -> bool:

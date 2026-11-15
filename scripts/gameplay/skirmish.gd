@@ -30,7 +30,12 @@ var ore: int:
 	set(value):
 		if is_instance_valid(depot): depot.iron = value
 var global_plan_kind: StringName = &""
-var selected_building: Node3D
+## The selected building shows its team marker (docs/TEAM_MARKERS.md).
+var selected_building: Node3D:
+	set(value):
+		_show_team_marker(selected_building,false)
+		selected_building = value
+		_show_team_marker(value,true)
 var pending_unit_command := ""
 var placing_rail := false
 ## Maglev piece being laid (docs/MAGLEV_TRACKS.md): straight, left or right curve, and the free-placement heading.
@@ -428,3 +433,9 @@ func issue_card_order(screen, queued := false) -> void:
 	# Shift keeps the command armed so several targets can be queued.
 	notify(pending_unit_command.capitalize()+(" order queued. Shift-click adds more; Esc stops." if queued else " order issued."))
 	if not queued: pending_unit_command = ""
+func _show_team_marker(building: Node3D, shown: bool) -> void:
+	if not is_instance_valid(building): return
+	var marker := building.get_node_or_null("Visuals/TeamMarker") as GeometryInstance3D
+	if marker == null: return
+	marker.set_instance_shader_parameter(&"team_color",preload("res://scripts/units/team_colors.gd").of(str(building.get("team"))))
+	marker.visible = shown
