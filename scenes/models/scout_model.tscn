@@ -23,6 +23,7 @@ flash_light_path = NodePath("Rig/Skater rig/Skeleton3D/gun/Muzzle light")
 flash_light_energy = 2.0
 death_clip = &"die"
 death_fx_scene = ExtResource("death_fx")
+metadata/team_materials = PackedStringArray("Scout red trim")
 [node name="Rig" parent="." instance=ExtResource("rig")]
 transform = Transform3D(-1,0,0,0,1,0,0,0,-1,0,0,0)
 [node name="Muzzle light" parent="Rig/Skater rig/Skeleton3D/gun" index="0"]

@@ -31,12 +31,35 @@ Every unit now stands on a flat rounded marker on the ground, in its side's colo
 
 The legacy scenes in `scenes/units` (used only by `supply_lines_world.tscn`) are unchanged.
 
+## Team paint on the models
+
+Some surfaces of the models are painted in the unit's side colour too. The paint is darker than the marker colour, so it sits with the rest of the model: green `team_paint_player.tres`, red `team_paint_enemy.tres` and grey `team_paint_neutral.tres` in `assets/materials/units`.
+
+- `scripts/components/team_paint.gd` finds every surface whose imported material is named `team_color`. It also takes the names listed in the model root's `team_materials` metadata. It sets the side's saved paint as that surface's override; nothing else on the model changes.
+- `unit_agent.gd` calls it with the marker, so the paint follows the side in the same way. A corpse keeps the paint it died with.
+- The player's units were trimmed in oxblood red, the colour that marks the enemy everywhere else. Those trims are now team paint.
+
+| Model | Painted surfaces |
+| --- | --- |
+| Cargo vehicle, Depot Truck, Train | `team_color` (truck cab, bed and lid; Depot Truck bulkhead and floors; train body) |
+| Motorcycle | `team_color` (faction fangs) and `moto_oxblood` (frame and rider's jacket) |
+| Drone | `team_color` (faction fang) and `Oxide red` (arms and ducts) |
+| Scout | `Scout red trim` (armour and skates) |
+| Grenadier | `Oxblood trim` |
+| Infantry, Tank, Ubermech, Hostile | None: there is no team surface to paint |
+
+At play zoom the paint reads clearly on the Cargo vehicle, Depot Truck and Motorcycle, and less on the Drone. On the Scout and Grenadier the trims are too small to tell apart, so the ground marker still does most of the work there.
+
 ## Health bars
 
 Health bars already exist in `MapOverlay` (`docs/UI_PHASE_C.md`) and are drawn in the team colour. They show while a unit is damaged, selected or hovered, or while **Alt** is held, so a fresh army shows none. This change does not alter that rule.
 
 ## Checks
 
+- `tests/team_paint_test.gd` (headless) checks:
+  - each painted model, on both sides, has its team surfaces in the side's paint and no other surface overridden;
+  - the unpainted models are left alone;
+  - an unknown side is painted neutral.
 - `tests/team_marker_test.gd` (headless) checks every unit scene:
   - it has the marker, with the shared material;
   - the marker's size matches its mesh;
@@ -47,6 +70,7 @@ Health bars already exist in `MapOverlay` (`docs/UI_PHASE_C.md`) and are drawn i
 
 ## Not yet done
 
-- Models carry no team colour of their own: no tinted panels, flags or trim. That needs a team mask in each model's material, made in Blender.
+- Infantry and the Tank carry no team paint. The Infantry has no accent material to give it, and the Tank's look is one baked texture. Both need team surfaces made in Blender: a separate `team_color` material for the Infantry, and a team mask for the Tank.
+- The Scout's and Grenadier's trims could be made larger in Blender to read at play zoom.
 - Buildings have no marker.
 - Markers are hidden under trees and rock like everything else at ground level.

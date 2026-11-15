@@ -11,6 +11,7 @@ turret_path = NodePath("Rig/bike_root/gun_swivel")
 muzzle_path = NodePath("Rig/bike_root/gun_swivel/gun_body/gun_barrel/muzzle/MuzzleFx")
 turn_speed_degrees = 540.0
 death_fx_scene = ExtResource("death_fx")
+metadata/team_materials = PackedStringArray("moto_oxblood")
 
 [node name="Rig" parent="." instance=ExtResource("rig")]
 transform = Transform3D(-1,0,0,0,1,0,0,0,-1,0,0,0)
