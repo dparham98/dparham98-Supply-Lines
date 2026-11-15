@@ -790,7 +790,7 @@ func begin_global_placement(kind: StringName) -> void:
 		game.placing_rail = true
 		game.rail_piece = "straight"
 		var rails = game.get_node("RailNetwork")
-		game.notify("Click to lay a straight (%d iron) from a free track end or in a Depot's loading range. R switches straight, curves (%d iron) and forks; F turns a free piece; Esc finishes." % [rails.cost("straight"),rails.cost("curve")])
+		game.notify("Click to lay a straight (%d iron) from a free track end or in a Depot's loading range. R switches straight, curves (%d iron) and forks; F turns a free piece. Shift-click keeps laying; Esc finishes." % [rails.cost("straight"),rails.cost("curve")])
 		return
 	game.global_plan_kind = kind
 	game.notify("Click valid terrain to place an unpaid %s plan. Esc cancels placement; existing plans remain." % network.plan_spec(kind).title)

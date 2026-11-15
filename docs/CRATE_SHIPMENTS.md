@@ -13,8 +13,8 @@ This is the logistics redesign approved in `UI_OVERHAUL_PLAN.md`, on branch `fea
   - Depot and deployed-truck `energy`, `iron`, `wood` and `coal` now report spendable (loose) stock, and setting them keeps crates intact.
   - The storage bar shows the crated part of each resource lighter, and the legend counts crates (for example "Iron 500 · 3▢").
 - **Keep stocked:** a panel toggle that records the current crate counts. The Depot (or deployed truck) repacks up to those counts as vehicles collect crates and loose stock allows.
-- **Load (L):** click a friendly Depot or deployed Cargo vehicle. The vehicle drives there, waits the 2 s transfer, and takes crates oldest first up to its capacity.
-- **Unload (U):** unpacks whole crates into loose stock at the stop. Crates that don't fit stay aboard, and the state says so.
+- **Load (E):** click a friendly Depot or deployed Cargo vehicle. The vehicle drives there, waits the 2 s transfer, and takes crates oldest first up to its capacity.
+- **Unload (V):** unpacks whole crates into loose stock at the stop. Crates that don't fit stay aboard, and the state says so.
 - **Trips (C):** applies after each Unload:
   - **Once** stops there.
   - **All available** queues the same Load/Unload pair again while the pickup still has crates.
