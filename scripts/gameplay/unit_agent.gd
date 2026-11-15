@@ -309,7 +309,7 @@ func order_point(entry: Dictionary) -> Variant:
 	if entry.kind in ["move","attack_move","deploy"]: return entry.point
 	var target = entry.get("target")
 	return target.global_position if is_instance_valid(target) else entry.get("point")
-# Destinations for the current order, then each queued order, for waypoint markers.
+# Destinations for the current order, then each queued order, for the dashed queue path (map_overlay.gd).
 func waypoint_points() -> Array[Vector3]:
 	var points: Array[Vector3] = []
 	var current = null

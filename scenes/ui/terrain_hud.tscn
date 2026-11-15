@@ -128,4 +128,4 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "M: map / return · F: HQ · Home: selection
 Arrows / edges: pan · Shift: faster
-Middle-drag: move · Wheel: zoom · Q/E: rotate"
+Middle-drag: move · Wheel: zoom"

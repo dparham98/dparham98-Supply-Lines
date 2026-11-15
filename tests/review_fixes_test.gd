@@ -67,7 +67,7 @@ func run() -> void:
 	var first := stop.tooltip_text
 	hud._process(0); hud._process(0)
 	if not check(hud.label_of(stop) == "Stop" and stop.text.is_empty() and stop.tooltip_text == first and stop.get_node("Key").text == "S","Stop label unstable or badge wrong: %s / %s" % [first,stop.tooltip_text]): return
-	if not check(hud.card.get_node("Load/Key").text == "L" and hud.card.get_node("Unload/Key").text == "U","Cargo tile key badges wrong"): return
+	if not check(hud.card.get_node("Load/Key").text == "E" and hud.card.get_node("Unload/Key").text == "V","Cargo tile key badges wrong"): return
 	# 7. One Auto-refuel button: the route panel and its copy are gone.
 	if not check(not hud.has_node("Bottom/Body/Row/Commands/Supply"),"Route panel still present"): return
 	# 8. Alert throttle times are pruned once they expire.

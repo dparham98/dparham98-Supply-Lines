@@ -7,7 +7,7 @@ func _initialize() -> void: call_deferred("run")
 func check(value: bool, message: String) -> bool:
 	if value: return true
 	push_error(message); quit(1); return false
-func click_at(point: Vector2) -> void:
+func click_at(point: Vector2, shifted := false) -> void:
 	var motion := InputEventMouseMotion.new()
 	motion.position = point
 	root.push_input(motion,true)
@@ -15,6 +15,7 @@ func click_at(point: Vector2) -> void:
 	event.position = point
 	event.button_index = MOUSE_BUTTON_LEFT
 	event.pressed = true
+	event.shift_pressed = shifted
 	root.push_input(event,true)
 	# A human click spans multiple process frames. Do not emit button signals directly.
 	for frame in range(5): await process_frame
@@ -69,15 +70,16 @@ func run() -> void:
 	await click(hud.build_menu.get_node("Actions/Rail"))
 	if not check(game.placing_rail and game.rail_piece == "straight","Rail Build button did not start laying track"): return
 	# A free straight north of the Depot, then a second one snapped onto its free end; the Depot pays by length.
+	# Shift-clicks keep track laying armed between pieces.
 	var iron_before: int = source.iron
 	var pieces_before: int = rails.pieces.size()
 	var free_point: Vector3 = source.global_position+Vector3(-6,0,-7)
-	await click_at(rig.camera.unproject_position(free_point))
+	await click_at(rig.camera.unproject_position(free_point),true)
 	if not check(rails.pieces.size() == pieces_before+1 and source.iron == iron_before-rails.cost("straight"),"First straight not laid or not paid"): return
 	var laid = rails.pieces[rails.pieces.size()-1]
 	# Its west end, where the Depot does not hide the ground from the click.
 	var free_end: Vector3 = laid.ends()[0].position
-	await click_at(rig.camera.unproject_position(free_end+Vector3(-1.0,0,0.5)))
+	await click_at(rig.camera.unproject_position(free_end+Vector3(-1.0,0,0.5)),true)
 	if not check(rails.pieces.size() == pieces_before+2 and not rails.connection(laid,0).is_empty() and source.iron == iron_before-2*rails.cost("straight") and game.placing_rail,"Snapped straight or payer debit failed"): return
 	await shot("rail_construction")
 	# A curve from the free end, shown for art review; its cost is refunded so later payment checks hold.
