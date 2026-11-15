@@ -102,14 +102,17 @@ func _ready() -> void:
 		for x in range(start.x,start.x+footprint.x):
 			var cell := Vector2i(x,z)
 			cells.append(cell)
-			ground.set_tile_feature(cell,"occupied_by","depot_%s" % get_instance_id())
+			ground.set_tile_feature(cell,"occupied_by",_key())
 	_reserve_apron()
+## The value this Depot leaves on the tiles it holds.
+func _key() -> String:
+	return "depot_%s" % get_instance_id()
 ## Marks the truck strip as unbuildable. The model's heading is set before the Depot enters the tree.
 func _reserve_apron() -> void:
 	for cell in truck_side_cells():
 		var tile: Dictionary = ground.tiles[cell.y*ground.grid_size.x+cell.x]
 		if tile.has("apron"): continue
-		tile["apron"] = "depot_%s" % get_instance_id()
+		tile["apron"] = _key()
 		apron_cells.append(cell)
 ## The DepotRules testing iron grant applies unless this map's skirmish switches it off (testing_iron_grant).
 func testing_iron_granted() -> bool:
@@ -128,7 +131,7 @@ func _process(delta: float) -> void:
 	var seconds := current_seconds()
 	if truck and truck_cells.is_empty():
 		if $Visuals/Model.deploying(): $Progress.text = "Depot unfolding · truck waiting"; return
-		if not _begin_truck(): $Progress.text = "Exit blocked · waiting"; return
+		if not _begin_truck(): _clear_idle_units(); $Progress.text = "Exit blocked · waiting"; return
 	progress = minf(seconds,progress+delta)
 	if truck: $Visuals/Model.show_truck(progress)
 	$Progress.text = "Printing %s · %d%%" % [pending[0],roundi(progress/seconds*100)]
@@ -138,7 +141,7 @@ func _process(delta: float) -> void:
 		var spawn := Vector2i(-1,-1)
 		for radius in range(6,16):
 			for offset in [Vector2i(0,radius),Vector2i(radius,0),Vector2i(-radius,0),Vector2i(0,-radius)]:
-				if ground.is_tile_valid(center+offset): spawn = center+offset; break
+				if ground.is_tile_valid(center+offset) and not ground.is_apron(center+offset): spawn = center+offset; break
 			if spawn.x >= 0: break
 		if pending[0] != "train" and spawn.x < 0: $Progress.text = "Exit blocked · waiting"; return
 		var train_stop := {}
@@ -176,12 +179,22 @@ func _begin_truck() -> bool:
 	if side.is_empty(): return false
 	for cell in side:
 		if not ground.is_tile_valid(cell): return false
-	for cell in side: ground.set_tile_feature(cell,"occupied_by","depot_%s" % get_instance_id())
+	for cell in side: ground.set_tile_feature(cell,"occupied_by",_key())
 	truck_cells = side
 	return true
+## A truck waiting on idle units of this side standing on its strip sends them to the nearest open ground.
+func _clear_idle_units() -> void:
+	for cell in truck_side_cells():
+		if not ground.is_tile_in_bounds(cell): continue
+		var owner = ground.tiles[cell.y*ground.grid_size.x+cell.x].occupied_by
+		if owner == null or not str(owner).begins_with("agent_"): continue
+		var unit = instance_from_id(int(str(owner).trim_prefix("agent_")))
+		if not is_instance_valid(unit) or unit.get("team") != team or unit.get("order") != "idle": continue
+		var free_cell: Vector2i = ground.find_nearest_open_tile(cell)
+		if free_cell.x >= 0: unit.command_move(ground.tile_to_world(free_cell))
 func _release_truck_side() -> void:
 	for cell in truck_cells:
-		if ground.tiles[cell.y*ground.grid_size.x+cell.x].occupied_by == "depot_%s" % get_instance_id(): ground.set_tile_feature(cell,"occupied_by",null)
+		if ground.tiles[cell.y*ground.grid_size.x+cell.x].occupied_by == _key(): ground.set_tile_feature(cell,"occupied_by",null)
 	truck_cells.clear()
 ## The chassis and trailer on the side become the real truck, on the same spot.
 func _complete_truck() -> void:
@@ -281,10 +294,10 @@ func _exit_tree() -> void:
 	if not is_instance_valid(ground): return
 	_release_truck_side()
 	for cell in cells:
-		if ground.tiles[cell.y*500+cell.x].occupied_by == "depot_%s" % get_instance_id(): ground.set_tile_feature(cell,"occupied_by",null)
+		if ground.tiles[cell.y*500+cell.x].occupied_by == _key(): ground.set_tile_feature(cell,"occupied_by",null)
 	for cell in apron_cells:
 		var tile: Dictionary = ground.tiles[cell.y*ground.grid_size.x+cell.x]
-		if tile.get("apron") == "depot_%s" % get_instance_id(): tile.erase("apron")
+		if tile.get("apron") == _key(): tile.erase("apron")
 	apron_cells.clear()
 
 func take_damage(amount: int) -> void:

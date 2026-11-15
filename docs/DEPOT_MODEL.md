@@ -30,10 +30,13 @@ A Depot Truck takes the length of both clips, about 14.2 s. Other Depot jobs sti
 - `TruckAssembly` in `depot_model.tscn` is placed where `tractor_exit` ends. The finished truck replaces it on the same spot, and the Depot then has no tractor. One appears at home when the next truck starts.
 - Before starting, all the ground in `truck_side`, about 15 m by 3 m beside the Depot, must be free. If not, the job waits with "Exit blocked · waiting". Those tiles are reserved during the build, so units path around them. Terrain counts, so a Depot built against forest or water on that side cannot build trucks.
 - **No building on the truck strip.** A playtest found that a building placed on `truck_side` stalled every truck build there for good. Each Depot now reserves the strip (4 by 16 tiles at the authored size) as unbuildable for as long as it stands, stored on each tile as `apron`.
-  - Depot, Generator, Barracks, Tank Factory and Iron Mine placement and plans all refuse it.
-  - Units still cross it outside a build, and rail can still be laid on it.
-  - The strip follows the Depot's heading, and is freed when the Depot is removed. Check: `tests/depot_apron_test.gd`.
-  - Still possible: a Depot deployed so that its strip lands on an existing building, forest or water. It cannot build trucks until that is cleared.
+  - Depot, Generator, Barracks, Tank Factory and Iron Mine placement and plans all refuse it, and say why: "Keep the strip beside a Depot clear: Depot Trucks are built there." The placement preview says "keep the Depot Truck strip clear".
+  - A new Depot, built, planned or deployed, also needs its own strip free of buildings, plans and other Depots' strips. A Depot plan's strip is held for it, so no other plan can go there while it waits.
+  - `DepotNetwork.strip_cells` predicts the strip from the Depot scene for a given heading: east for Infantry-built Depots and plans, the truck's nearest 90 degrees for a deployed one.
+  - Units still cross it, and rail can still be laid on it. Units are not set down on it: Depot and production building exits skip it.
+  - An idle unit of the Depot's side standing on the strip when a truck is waiting is sent to the nearest open ground.
+  - It is freed when the Depot is removed. Check: `tests/depot_apron_test.gd`.
+  - Terrain is not checked at placement: a Depot against forest or water on that side still can't build trucks until the forest is cut.
 - A truck will not start until the Depot has finished unfolding.
 - The Cancel tile on a Depot cancels the job in progress for a full refund. A truck plays its animation backwards at `cancel_speed`, 2x by default, and the tractor ends at home.
 - Capturing the Depot cancels the queue without a refund, as before, and resets the tractor to home.

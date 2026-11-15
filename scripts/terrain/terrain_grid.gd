@@ -89,6 +89,10 @@ func is_tile_valid(pos: Vector2i) -> bool:
 	var tile: Dictionary = tiles[pos.y * grid_size.x + pos.x]
 	return bool(tile["terrain_buildable"]) and bool(tile["buildable"]) and tile["occupied_by"] == null
 
+## Kept clear beside a Depot for building trucks (depot.gd): no building, and no unit is set down there.
+func is_apron(pos: Vector2i) -> bool:
+	return is_tile_in_bounds(pos) and tiles[pos.y * grid_size.x + pos.x].has("apron")
+
 func is_footprint_valid(pos: Vector2i, size: Vector2i) -> bool:
 	if not is_tile_in_bounds(pos) or not is_tile_in_bounds(pos + size - Vector2i.ONE): return false
 	for z in range(pos.y, pos.y + size.y):

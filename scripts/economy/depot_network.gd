@@ -24,8 +24,62 @@ func owned_selected() -> bool:
 func footprint_start(point: Vector3, size: Vector2i) -> Vector2i:
 	var cell = game.ground.get_tile_at_position(point)
 	return Vector2i(-1,-1) if cell == null else cell-size/2
-func can_place(point: Vector3, payer: Node3D, expansion := false, team := "player", ignore: Node = null) -> bool:
-	return can_place_size(point,payer,depot_size(),expansion) and depot_spacing_ok(point,team,ignore)
+## `model_yaw` is the turn of the new Depot's model: 0 faces east, as built by Infantry; a deployed truck's
+## Depot takes the truck's heading (deploy_yaw).
+func can_place(point: Vector3, payer: Node3D, expansion := false, team := "player", ignore: Node = null, model_yaw := 0.0) -> bool:
+	return can_place_size(point,payer,depot_size(),expansion) and depot_spacing_ok(point,team,ignore) and strip_clear(point,model_yaw)
+const STRIP_NOTICE := "Keep the strip beside a Depot clear: Depot Trucks are built there."
+var _strip := []
+## The tiles a Depot centred on `point` keeps clear for building trucks (Depot.truck_side_cells), read from
+## the Depot scene once.
+func strip_cells(point: Vector3, model_yaw := 0.0) -> Array[Vector2i]:
+	if _strip.is_empty():
+		var preview = depot_scene.instantiate()
+		var model: Node3D = preview.get_node("Visuals/Model")
+		_strip = [model.transform,model.truck_side]
+		preview.free()
+	var centre := depot_centre(point)
+	var place := Transform3D(Basis(Vector3.UP,model_yaw),Vector3(centre.x,point.y,centre.y))*(_strip[0] as Transform3D)
+	var side: AABB = _strip[1]
+	var result: Array[Vector2i] = []
+	var a = game.ground.get_tile_at_position(place*side.position)
+	var b = game.ground.get_tile_at_position(place*side.end)
+	if a == null or b == null: return result
+	for z in range(mini(a.y,b.y),maxi(a.y,b.y)+1):
+		for x in range(mini(a.x,b.x),maxi(a.x,b.x)+1): result.append(Vector2i(x,z))
+	return result
+## Whether a new Depot's truck strip is free of buildings, plans and another Depot's strip. Units, terrain and
+## rail are left to the truck build itself ("Exit blocked · waiting").
+func strip_clear(point: Vector3, model_yaw := 0.0, ignore: Node = null) -> bool:
+	var plans := get_tree().get_nodes_in_group("construction_plans").filter(func(p): return p != ignore and not p.finished)
+	for cell in strip_cells(point,model_yaw):
+		var tile: Dictionary = game.ground.tiles[cell.y*game.ground.grid_size.x+cell.x]
+		if tile.has("apron"): return false
+		if tile.occupied_by != null and not str(tile.occupied_by).begins_with("agent_"): return false
+		for plan in plans:
+			if Rect2i(plan.start,plan.spec.size).has_point(cell): return false
+	return true
+## Whether any tile of a footprint lies on a Depot's truck strip, standing or planned.
+func on_strip(start: Vector2i, size: Vector2i) -> bool:
+	var rect := Rect2i(start,size)
+	for z in range(start.y,start.y+size.y):
+		for x in range(start.x,start.x+size.x):
+			if game.ground.is_tile_in_bounds(Vector2i(x,z)) and game.ground.tiles[z*game.ground.grid_size.x+x].has("apron"): return true
+	for plan in get_tree().get_nodes_in_group("construction_plans"):
+		if plan.finished or plan.kind != &"depot": continue
+		for cell in strip_cells(plan.global_position):
+			if rect.has_point(cell): return true
+	return false
+## Why a building can't go at `start`, when the reason is a Depot's truck strip: its own footprint on one,
+## or, for a Depot, a building or plan on the strip it would keep clear.
+func strip_notice(point: Vector3, size: Vector2i, kind: StringName, model_yaw := 0.0) -> String:
+	var start := footprint_start(point,size)
+	if on_strip(start,size): return STRIP_NOTICE
+	if kind == &"depot" and game.ground.is_footprint_valid(start,size) and not strip_clear(point,model_yaw): return STRIP_NOTICE
+	return ""
+## The heading a truck's Depot would take if it deployed now: its nearest 90 degrees.
+func deploy_yaw(unit: Node3D) -> float:
+	return snappedf(unit.get_node("Visuals").rotation.y,PI/2)+PI/2
 var _depot_size := Vector2i.ZERO
 ## The Depot footprint, read once from the Depot scene.
 func depot_size() -> Vector2i:
@@ -87,6 +141,7 @@ func construct(point: Vector3) -> bool:
 	if not builder_valid(): game.notify("Builder must remain selected, alive and inside the paying stockpile range."); return false
 	if not owned_selected() or not can_place(point,selected):
 		var spaced := spacing_notice(point)
+		if spaced.is_empty(): spaced = strip_notice(point,depot_size(),&"depot")
 		game.notify(spaced if not spaced.is_empty() else "Select a friendly stockpile; all construction corners must be in its range on empty land."); return false
 	var rules = depot_rules()
 	if not selected.spend_local(rules.depot_energy_cost,rules.depot_iron_cost):
@@ -115,15 +170,16 @@ func deploy_selected_truck() -> bool:
 func can_deploy_at(unit: Node3D, point: Vector3) -> bool:
 	var claimed: Array = unit._claimed.duplicate()
 	for cell in claimed: unit._release(cell)
-	var valid := can_place(point,null,true,unit.team,unit)
+	var valid := can_place(point,null,true,unit.team,unit,deploy_yaw(unit))
 	for cell in claimed: unit._claim(cell)
 	return valid
 func deploy_truck(unit: Node3D, point: Vector3) -> bool:
 	unit._stop_route()
 	for cell in unit._claimed.duplicate(): unit._release(cell)
-	if not can_place(point,null,true,unit.team,unit):
+	if not can_place(point,null,true,unit.team,unit,deploy_yaw(unit)):
 		unit._claim(unit.grid_position)
 		var spaced := spacing_notice(point,unit.team,unit)
+		if spaced.is_empty(): spaced = strip_notice(point,depot_size(),&"depot",deploy_yaw(unit))
 		game.notify(spaced if not spaced.is_empty() else "Truck needs an empty Depot footprint on buildable land."); return false
 	var rules = unit.deployment_rules
 	# The Depot takes the truck's nearest 90 degree heading; its model turns and pulls up from where the truck stood.
@@ -143,7 +199,8 @@ func deploy_truck(unit: Node3D, point: Vector3) -> bool:
 func construct_generator(point: Vector3) -> bool:
 	if not builder_valid(): game.notify("Builder must remain selected, alive and inside the paying stockpile range."); return false
 	if not owned_selected() or not can_place_size(point,selected,supply_rules.generator_footprint):
-		game.notify("Generator requires empty land entirely in the selected stockpile range.")
+		var strip := strip_notice(point,supply_rules.generator_footprint,&"generator")
+		game.notify(strip if not strip.is_empty() else "Generator requires empty land entirely in the selected stockpile range.")
 		return false
 	if not selected.spend_local(supply_rules.generator_energy_cost,supply_rules.generator_iron_cost):
 		game.notify("Selected stockpile lacks local generator resources.")
@@ -224,7 +281,9 @@ func construct_production(point: Vector3, kind: StringName) -> bool:
 	var preview = scene.instantiate()
 	var stats: ProductionBuildingStats = preview.stats
 	preview.free()
-	if not can_place_size(point,selected,stats.footprint): game.notify("Production building needs empty land inside the paying stockpile range."); return false
+	if not can_place_size(point,selected,stats.footprint):
+		var strip := strip_notice(point,stats.footprint,kind)
+		game.notify(strip if not strip.is_empty() else "Production building needs empty land inside the paying stockpile range."); return false
 	if not selected.spend_local(stats.energy_cost,stats.iron_cost): game.notify("Paying stockpile lacks local construction resources."); return false
 	var building = scene.instantiate()
 	building.position = point
@@ -243,7 +302,9 @@ func can_place_mine(point: Vector3, payer: Node3D) -> bool:
 		if game.ground.tile_to_world(start+offset).distance_to(payer.global_position) > SupplySource.radius(payer): return false
 	return true
 func construct_mine(point: Vector3) -> bool:
-	if not builder_valid() or not can_place_mine(point,selected): game.notify("Mine requires a complete empty iron-deposit footprint inside the paying stockpile range."); return false
+	if not builder_valid() or not can_place_mine(point,selected):
+		var strip := strip_notice(point,engineering_rules.mine_footprint,&"iron_mine")
+		game.notify(strip if not strip.is_empty() else "Mine requires a complete empty iron-deposit footprint inside the paying stockpile range."); return false
 	if not selected.spend_local(engineering_rules.mine_energy_cost,engineering_rules.mine_iron_cost): game.notify("Paying stockpile lacks local mine resources."); return false
 	var mine = mine_scene.instantiate()
 	mine.rules = engineering_rules; mine.position = point
@@ -286,12 +347,20 @@ func _model_scene(scene: PackedScene) -> PackedScene:
 		_model_scenes[scene] = visuals.model_scene if visuals != null and "model_scene" in visuals else null
 		preview.free()
 	return _model_scenes[scene]
-func plan_terrain_valid(start: Vector2i, size: Vector2i, kind: StringName) -> bool:
-	return game.ground.ore_footprint_valid(start,size) if kind == &"iron_mine" else game.ground.is_footprint_valid(start,size)
+## A Depot plan also needs the strip it will keep clear to be free (strip_clear).
+func plan_terrain_valid(start: Vector2i, size: Vector2i, kind: StringName, ignore: Node = null) -> bool:
+	if kind == &"iron_mine": return game.ground.ore_footprint_valid(start,size)
+	if not game.ground.is_footprint_valid(start,size): return false
+	return kind != &"depot" or strip_clear(game.ground.tile_to_world(start+size/2),0.0,ignore)
+## Whether a footprint overlaps another unfinished plan, or the strip a planned Depot will keep clear.
 func plan_overlaps(start: Vector2i, size: Vector2i) -> bool:
 	var rect := Rect2i(start,size)
 	for plan in get_tree().get_nodes_in_group("construction_plans"):
-		if not plan.finished and rect.intersects(Rect2i(plan.start,plan.spec.size)): return true
+		if plan.finished: continue
+		if rect.intersects(Rect2i(plan.start,plan.spec.size)): return true
+		if plan.kind == &"depot":
+			for cell in strip_cells(plan.global_position):
+				if rect.has_point(cell): return true
 	return false
 func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_payer := false) -> Node3D:
 	var spec := plan_spec(kind)
@@ -299,7 +368,8 @@ func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_paye
 	if kind == &"rail": game.notify("Maglev track is laid piece by piece from the Build page, not planned."); return null
 	var start := footprint_start(point,spec.size)
 	if not plan_terrain_valid(start,spec.size,kind) or plan_overlaps(start,spec.size):
-		game.notify("Plan needs valid empty terrain and cannot overlap another plan. Mines require iron deposits.")
+		var strip := strip_notice(point,spec.size,kind)
+		game.notify(strip if not strip.is_empty() else "Plan needs valid empty terrain and cannot overlap another plan. Mines require iron deposits.")
 		return null
 	if kind == &"depot" and not depot_spacing_ok(point):
 		game.notify(spacing_notice(point))
@@ -325,7 +395,7 @@ func plan_payer(plan: Node3D) -> Node3D:
 	return null
 func complete_plan(plan: Node3D, payer: Node3D) -> Node3D:
 	# Revalidate immediately before one atomic local payment; no awaiting or pooled balance.
-	if plan.finished or not plan_terrain_valid(plan.start,plan.spec.size,plan.kind) or not plan_source_valid(plan,payer): return null
+	if plan.finished or not plan_terrain_valid(plan.start,plan.spec.size,plan.kind,plan) or not plan_source_valid(plan,payer): return null
 	if not plan_spacing_ok(plan): return null
 	var building = plan.spec.scene.instantiate()
 	if plan.kind == &"depot":
@@ -357,6 +427,7 @@ func update_global_preview(point: Vector3) -> bool:
 	preview_material.albedo_color = (Color(0.35,0.95,0.5,0.55) if covered else Color(1,0.75,0.1,0.5)) if valid else Color(1,0.15,0.1,0.45)
 	var site_line := "" if game.global_plan_kind == &"rail" else " · iron on site %d/%d%s" % [on_site.get(&"iron",0),spec.iron," · READY" if covered else ""]
 	if not spaced: site_line = " · "+spacing_reason()
+	elif not valid and not strip_notice(point,spec.size,game.global_plan_kind).is_empty(): site_line = " · keep the Depot Truck strip clear"
 	ghost.get_node("Status").text = "%s · %s · %d E / %d I%s" % ["PLAN" if valid else "BLOCKED",spec.title,spec.energy,spec.iron,site_line]
 	return valid
 ## Piles and crates inside a footprint that still hold something (docs/SITE_CONSTRUCTION.md).
@@ -385,7 +456,7 @@ func plan_energy_source_valid(plan: Node3D, source, due: int) -> bool:
 ## Stands the building up once a site's work is done. Nothing is spent here: the materials came off
 ## the site and the energy was charged tick by tick.
 func finish_plan(plan: Node3D) -> Node3D:
-	if plan.finished or not plan_terrain_valid(plan.start,plan.spec.size,plan.kind) or not plan_spacing_ok(plan): return null
+	if plan.finished or not plan_terrain_valid(plan.start,plan.spec.size,plan.kind,plan) or not plan_spacing_ok(plan): return null
 	var payer = plan.payer if is_instance_valid(plan.payer) and plan.payer.is_in_group("depots") else null
 	var building = plan.spec.scene.instantiate()
 	if plan.kind == &"depot":
