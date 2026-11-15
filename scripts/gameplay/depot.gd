@@ -69,6 +69,9 @@ var queue := 0
 var cancelling := false
 ## Tiles reserved beside the Depot while a truck is being built there.
 var truck_cells: Array[Vector2i] = []
+## The same strip, kept free of buildings for as long as the Depot stands, so a truck build never stalls
+## behind one (docs/DEPOT_MODEL.md). Units still cross it. Stored on each tile as "apron".
+var apron_cells: Array[Vector2i] = []
 var progress := 0.0
 var cells: Array[Vector2i] = []
 @onready var game = get_tree().get_first_node_in_group("skirmish")
@@ -100,6 +103,14 @@ func _ready() -> void:
 			var cell := Vector2i(x,z)
 			cells.append(cell)
 			ground.set_tile_feature(cell,"occupied_by","depot_%s" % get_instance_id())
+	_reserve_apron()
+## Marks the truck strip as unbuildable. The model's heading is set before the Depot enters the tree.
+func _reserve_apron() -> void:
+	for cell in truck_side_cells():
+		var tile: Dictionary = ground.tiles[cell.y*ground.grid_size.x+cell.x]
+		if tile.has("apron"): continue
+		tile["apron"] = "depot_%s" % get_instance_id()
+		apron_cells.append(cell)
 ## The DepotRules testing iron grant applies unless this map's skirmish switches it off (testing_iron_grant).
 func testing_iron_granted() -> bool:
 	return rules.testing_starting_iron >= 0 and (not is_instance_valid(game) or game.get("testing_iron_grant") != false)
@@ -271,6 +282,10 @@ func _exit_tree() -> void:
 	_release_truck_side()
 	for cell in cells:
 		if ground.tiles[cell.y*500+cell.x].occupied_by == "depot_%s" % get_instance_id(): ground.set_tile_feature(cell,"occupied_by",null)
+	for cell in apron_cells:
+		var tile: Dictionary = ground.tiles[cell.y*ground.grid_size.x+cell.x]
+		if tile.get("apron") == "depot_%s" % get_instance_id(): tile.erase("apron")
+	apron_cells.clear()
 
 func take_damage(amount: int) -> void:
 	health = maxi(0,health-maxi(0,amount))

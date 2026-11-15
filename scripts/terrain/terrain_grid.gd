@@ -93,7 +93,7 @@ func is_footprint_valid(pos: Vector2i, size: Vector2i) -> bool:
 	if not is_tile_in_bounds(pos) or not is_tile_in_bounds(pos + size - Vector2i.ONE): return false
 	for z in range(pos.y, pos.y + size.y):
 		for x in range(pos.x, pos.x + size.x):
-			if not is_tile_valid(Vector2i(x, z)) or tiles[z*grid_size.x+x].has("rail"): return false
+			if not is_tile_valid(Vector2i(x, z)) or tiles[z*grid_size.x+x].has("rail") or tiles[z*grid_size.x+x].has("apron"): return false
 	return true
 
 func find_buildable_footprint(origin: Vector2i, size: Vector2i) -> Vector2i:
@@ -315,6 +315,6 @@ func ore_footprint_valid(start: Vector2i, size: Vector2i) -> bool:
 	for z in range(start.y,start.y+size.y):
 		for x in range(start.x,start.x+size.x):
 			var cell := Vector2i(x,z)
-			if get_terrain(cell) != Terrain.ORE or tiles[z*500+x].occupied_by != null or tiles[z*500+x].has("rail"): return false
+			if get_terrain(cell) != Terrain.ORE or tiles[z*500+x].occupied_by != null or tiles[z*500+x].has("rail") or tiles[z*500+x].has("apron"): return false
 			reserves += iron_amount(cell)
 	return reserves > 0
