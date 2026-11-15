@@ -22,6 +22,8 @@ func run() -> void:
 	# price is checked in generator_limits_test.gd.
 	var priced: SupplyRules = load("res://assets/economy/supply_rules.tres")
 	priced.generator_energy_cost = 100; priced.generator_iron_cost = 20
+	# These checks place Depots close together; spacing has its own test (depot_spacing_test.gd).
+	load("res://assets/economy/depot_rules.tres").min_depot_spacing = 0.0
 	network = game.get_node("DepotNetwork")
 	game.set_process(false)
 	for unit in get_nodes_in_group("units"): unit.set_process(false)

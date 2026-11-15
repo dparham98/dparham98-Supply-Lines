@@ -31,6 +31,8 @@ func run() -> void:
 	root.size = Vector2i(1280,900)
 	game = load("res://scenes/maps/resource_skirmish.tscn").instantiate()
 	root.add_child(game); await process_frame
+	# These checks place Depots close together; spacing has its own test (depot_spacing_test.gd).
+	load("res://assets/economy/depot_rules.tres").min_depot_spacing = 0.0
 	game.set_process(false)
 	hud = game.get_node("Interface"); hud.set_process(false)
 	overlay = hud.get_node("MapOverlay"); overlay.set_process(false)

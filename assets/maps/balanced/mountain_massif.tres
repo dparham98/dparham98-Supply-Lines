@@ -9,3 +9,6 @@ render_priority = 0
 shader = ExtResource("1")
 shader_parameter/rock_detail = ExtResource("2")
 shader_parameter/rock_normal = ExtResource("3")
+shader_parameter/rock_light = Color(0.47, 0.46, 0.45, 1)
+shader_parameter/rock_warm = Color(0.41, 0.37, 0.33, 1)
+shader_parameter/snow = Color(0.7, 0.72, 0.76, 1)

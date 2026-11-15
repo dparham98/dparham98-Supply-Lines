@@ -11,6 +11,9 @@ extends Node3D
 ## Whether Depots take the DepotRules testing iron grant. The balanced map turns it off so a match starts
 ## with no iron (docs/BALANCED_MAP.md).
 @export var testing_iron_grant := true
+## Whether vehicles built at Depots and factories, or spawned from the playtest panel, start with a full
+## tank (FuelRules.full_tanks_for). The balanced map turns it off: they start empty and fill from Depot coal.
+@export var testing_full_tanks := true
 func drop_material(unit: Node3D) -> Node3D:
 	if not unit.can_gather or unit.cargo <= 0 or unit.cargo_kind not in [&"iron",&"wood",&"coal"]: return null
 	var pile = pile_scene.instantiate()
@@ -354,7 +357,8 @@ func issue_card_order(screen: Vector2, queued := false) -> void:
 		for unit in get_tree().get_nodes_in_group("units"):
 			if unit.team != "player" or not unit.is_selected or not unit.is_depot_truck: continue
 			if not $DepotNetwork.can_deploy_at(unit,ground_point):
-				notify("Can't deploy there: the Depot footprint must be empty buildable land."); return
+				var spaced: String = "" if $DepotNetwork.depot_spacing_ok(ground_point,unit.team,unit) else ", "+$DepotNetwork.spacing_reason()
+				notify("Can't deploy there: the Depot footprint must be empty buildable land%s." % spaced); return
 			give_order(unit,{kind = "deploy", point = ground_point},queued)
 			accepted += 1
 		if accepted > 0:

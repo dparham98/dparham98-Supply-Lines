@@ -139,7 +139,7 @@ func _process(delta: float) -> void:
 		if kind == "cargo": scene = game.get_node("DepotNetwork").cargo_scene
 		elif kind == "train": scene = game.get_node("RailNetwork").train_scene
 		var unit = scene.instantiate()
-		if "start_fuelled" in unit: unit.start_fuelled = FuelRules.testing_full_tanks
+		if "start_fuelled" in unit: unit.start_fuelled = FuelRules.full_tanks_for(game)
 		unit.position = train_stop.position if not train_stop.is_empty() else ground.tile_to_world(spawn)
 		game.get_node("Entities/Units").add_child(unit,true)
 		queue -= 1
@@ -181,7 +181,7 @@ func _complete_truck() -> void:
 	_release_truck_side()
 	$Visuals/Model.finish_truck()
 	var unit = game.get_node("DepotNetwork").truck_scene.instantiate()
-	unit.start_fuelled = FuelRules.testing_full_tanks
+	unit.start_fuelled = FuelRules.full_tanks_for(game)
 	unit.position = where
 	game.get_node("Entities/Units").add_child(unit,true)
 	unit.global_position = where
