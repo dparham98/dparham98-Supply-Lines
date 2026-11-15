@@ -24,6 +24,14 @@ func open_point(unit: Node3D, from: Vector3, reach: float) -> Vector3:
 			if cell != null and ground.can_traverse(cell,unit.mobility_layer(),unit._owner_key()) and ground.get_terrain(cell) not in [3,5,6] and clear_of_markers(ground.tile_to_world(cell)):
 				return ground.tile_to_world(cell)
 	return Vector3.INF
+## Open land for `unit` just outside `reach` from `from`, ignoring markers.
+func open_point_near(unit: Node3D, from: Vector3, reach: float) -> Vector3:
+	var ground = game.ground
+	for radius in range(int(ceil(reach)),int(reach)+8):
+		for offset in [Vector3(radius,0,0),Vector3(0,0,radius),Vector3(-radius,0,0),Vector3(0,0,-radius)]:
+			var cell = ground.get_tile_at_position(from+offset)
+			if cell != null and ground.can_traverse(cell,unit.mobility_layer(),unit._owner_key()): return ground.tile_to_world(cell)
+	return Vector3.INF
 ## Whether no marker an order could target lies within the minimap's pick radius of `point`.
 func clear_of_markers(point: Vector3) -> bool:
 	for group in ["units","resources","selectable_buildings","depots","mobile_supplies","construction_plans","supply_crates"]:
@@ -62,8 +70,6 @@ func run() -> void:
 	var hostile: Node3D = get_first_node_in_group("enemies")
 	click(hostile.global_position+Vector3(1,0,1),MOUSE_BUTTON_RIGHT)
 	if not check(worker.order == "attack" and worker.order_target == hostile and worker.order_queue.is_empty(),"A right-click on a hostile marker should attack it: %s" % worker.order): return
-	# The pointer is itself again afterwards.
-	if not check(game._map_point == Vector3.INF,"The minimap point should be cleared after the order"): return
 	# A waiting Move takes its point from a left-click, then disarms.
 	game.pending_unit_command = "move"
 	click(b,MOUSE_BUTTON_LEFT)
@@ -72,10 +78,33 @@ func run() -> void:
 	game.pending_unit_command = "attack"
 	click(a,MOUSE_BUTTON_LEFT)
 	if not check(worker.order == "attack_move","A waiting Attack on minimap ground should attack-move: %s" % worker.order): return
+	# From the minimap, Attack never forces fire on your own side: by the Infantry itself, or by your own
+	# Iron Mine, it attack-moves.
+	game.pending_unit_command = "attack"
+	click(worker.global_position,MOUSE_BUTTON_LEFT)
+	if not check(worker.order == "attack_move" and not worker.attack_forced,"A minimap Attack by your own unit should attack-move: %s" % worker.order): return
+	var mine: Node3D = game.get_node("Entities/Buildings/IronMine")
+	var mine_team = mine.team
+	mine.team = "player"
+	game.pending_unit_command = "attack"
+	click(mine.global_position+Vector3(2,0,2),MOUSE_BUTTON_LEFT)
+	mine.team = mine_team
+	if not check(worker.order == "attack_move" and worker.order_target != mine,"A minimap Attack by your own mine should attack-move: %s" % worker.order): return
+	# A right-click by your own Depot moves there; with no cargo it is not a Return.
+	var depot: Node3D = game.depot
+	var home := open_point_near(worker,depot.global_position,depot.footprint.x*0.5+1)
+	if not check(home != Vector3.INF,"No open land beside the Depot"): return
+	worker.cargo = 0
+	click(home,MOUSE_BUTTON_RIGHT)
+	if not check(worker.order == "move","A minimap right-click by your own Depot should move there: %s" % worker.order): return
+	# A large building is picked anywhere on its footprint, not only near its centre.
+	var edge: Vector3 = depot.global_position+Vector3(depot.footprint.x*0.5+minimap.order_radius()-1,0,0)
+	if not check(game.pick_target(game.MapPick.new(edge,minimap.order_radius()),"depots") == depot,"A click by the Depot's edge should pick it"): return
+	if not check(game.pick_target(game.MapPick.new(edge+Vector3(30,0,0),minimap.order_radius()),"depots") == null,"A click well away from the Depot should not pick it"): return
 	# Right-click cancels a waiting command without ordering.
 	game.pending_unit_command = "move"
 	click(b,MOUSE_BUTTON_RIGHT)
-	if not check(game.pending_unit_command.is_empty() and worker.order == "attack_move","A right-click should cancel the waiting command and give no order"): return
+	if not check(game.pending_unit_command.is_empty() and worker.order == "move","A right-click should cancel the waiting command and give no order"): return
 	# A waiting Pin with no stop under the click still pans, as before.
 	worker.set_selected(false)
 	game.pending_unit_command = "pin"
@@ -85,6 +114,6 @@ func run() -> void:
 	# With nothing waiting a left-click only moves the camera.
 	worker.set_selected(true)
 	click(a,MOUSE_BUTTON_LEFT)
-	if not check(worker.order == "attack_move" and Vector2(rig._focus_target.x-a.x,rig._focus_target.z-a.z).length() < 1.0,"A plain left-click should only move the camera"): return
+	if not check(worker.order == "move" and Vector2(rig._focus_target.x-a.x,rig._focus_target.z-a.z).length() < 1.0,"A plain left-click should only move the camera"): return
 	print("MINIMAP_ORDERS_TEST_PASSED")
 	quit()

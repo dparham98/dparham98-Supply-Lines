@@ -25,7 +25,7 @@ func _gui_input(event: InputEvent) -> void:
 	if event.button_index == MOUSE_BUTTON_RIGHT:
 		# Right-click cancels an armed command, as on the map, else orders the selected units there.
 		if game.armed(): game.cancel_armed(); game.notify("Command cancelled.")
-		elif has_selected_units(): game.issue_map_order(map_to_world(event.position),order_radius(),false,event.shift_pressed)
+		elif not game.hud.selected_units().is_empty(): game.issue_map_order(map_to_world(event.position),order_radius(),false,event.shift_pressed)
 		accept_event()
 	elif event.button_index == MOUSE_BUTTON_LEFT:
 		# While Load, Unload or Pin waits for a stop, clicking a pulsing marker picks it. Another waiting unit
@@ -36,13 +36,9 @@ func _gui_input(event: InputEvent) -> void:
 			game.issue_map_order(map_to_world(event.position),order_radius(),true,event.shift_pressed)
 		else: game.get_node("CameraRig").focus_position(map_to_world(event.position))
 		accept_event()
-## ORDER_PICK_RADIUS in world metres at this minimap's scale.
+## ORDER_PICK_RADIUS in world metres at this minimap's scale, by the coarser axis if they differ.
 func order_radius() -> float:
-	return ORDER_PICK_RADIUS*bounds.size.x/maxf(1.0,size.x)
-func has_selected_units() -> bool:
-	for unit in get_tree().get_nodes_in_group("units"):
-		if unit.team == "player" and unit.is_selected: return true
-	return false
+	return ORDER_PICK_RADIUS*maxf(bounds.size.x/maxf(1.0,size.x),bounds.size.y/maxf(1.0,size.y))
 func stop_at(point: Vector2) -> Node3D:
 	var best: Node3D
 	var distance := PICK_RADIUS
