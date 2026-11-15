@@ -12,10 +12,12 @@ static func candidates(ground: Node3D, target: Node3D, radius: float, layer: int
 			if ground.can_traverse(cell,layer,owner) and ground.tile_to_world(cell).distance_squared_to(target.global_position) <= radius*radius+0.00001:
 				result.append(cell)
 	return result
-static func path(unit: Node3D, target: Node3D, radius: float) -> Array[Vector2i]:
+## `keep_off`: cells not to stand on, such as the footprint of the building being built.
+static func path(unit: Node3D, target: Node3D, radius: float, keep_off := Rect2i()) -> Array[Vector2i]:
 	var current = unit.ground.get_tile_at_position(unit.global_position)
 	if current == null: return []
 	var goals := candidates(unit.ground,target,radius,unit.mobility_layer(),unit._owner_key())
+	if keep_off.has_area(): goals = goals.filter(func(cell): return not keep_off.has_point(cell))
 	# Nearest admissible standing cell first, with a stable grid tie-break.
 	goals.sort_custom(func(a,b):
 		var da: int = current.distance_squared_to(a)

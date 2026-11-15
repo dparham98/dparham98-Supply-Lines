@@ -8,11 +8,13 @@ const MARGIN := 32
 ## Cost of felling one Forest cell: more than any walk inside the searched ground.
 const FELL := 100000
 const UNSEEN := 2147483647
-## Border cells tried, nearest first, for a worker that starts outside the searched ground.
-const ENTRY_TRIES := 8
+## Border cells tried, nearest first, for a worker that starts outside the searched ground. Each is a
+## whole-map path search, so only a few: a worker that finds none looks again later (_cut_way_in).
+const ENTRY_TRIES := 3
 const OPEN := 1
 const FOREST := 2
 const CLOSED := 3
+const Grid := preload("res://scripts/terrain/terrain_grid.gd")
 
 ## The way for a unit standing on `from` to the field `cell` belongs to: {coal: the Coal cell to dig, fell: the
 ## Forest cells to cut, in walking order}. `fell` is empty when some coal of the field can be reached as the
@@ -151,5 +153,5 @@ static func way(ground: Node3D, from: Vector2i, cell: Vector2i, reach: float, la
 ## Whether a cell is open to this unit, Forest it would have to fell, or closed. Worked out once a cell.
 static func _kind(ground: Node3D, kind: PackedByteArray, i: int, at: Vector2i, layer: int, owner: String) -> int:
 	if kind[i] == 0:
-		kind[i] = OPEN if ground.can_traverse(at,layer,owner) else (FOREST if ground.get_terrain(at) == 3 else CLOSED)
+		kind[i] = OPEN if ground.can_traverse(at,layer,owner) else (FOREST if ground.get_terrain(at) == Grid.Terrain.FOREST else CLOSED)
 	return kind[i]

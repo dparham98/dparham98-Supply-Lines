@@ -330,8 +330,11 @@ func _plan(goal: Vector2i) -> bool:
 	_route = path
 	return true
 func _route_to_interaction(target: Node3D, radius: float) -> bool:
+	return _route_to_standing(target,radius)
+## To the nearest open cell within `radius` of the target, not standing on `keep_off`.
+func _route_to_standing(target: Node3D, radius: float, keep_off := Rect2i()) -> bool:
 	_retry = 0.5
-	var path: Array[Vector2i] = preload("res://scripts/units/interaction_approach.gd").path(self,target,radius)
+	var path: Array[Vector2i] = preload("res://scripts/units/interaction_approach.gd").path(self,target,radius,keep_off)
 	if path.is_empty():
 		_retry = 1.0
 		return false
@@ -355,8 +358,8 @@ func _route_near(target: Node3D, radius: float) -> bool:
 			if ground.can_traverse(cell,mobility_layer(),_owner_key()) and _plan(cell): return true
 	_retry = 1
 	return false
-## Route cells looked ahead for a straight run, and half the width of the lane a run must keep clear.
 const CoalApproach := preload("res://scripts/terrain/coal_approach.gd")
+## Route cells looked ahead for a straight run, and half the width of the lane a run must keep clear.
 const AIM_LOOKAHEAD := 32
 const LANE_HALF_WIDTH := 0.35
 ## Travel along the route (docs/PATHING.md). `_moving_to` is the cell being headed for: the farthest
@@ -502,7 +505,7 @@ func _gather(delta: float) -> void:
 	if global_position.distance_to(source.global_position) > interaction_range:
 		if _retry <= 0:
 			state = "Felling a way to the coal" if is_instance_valid(_dig_source) else "To "+str(source.resource_kind)
-			if not _route_to_interaction(source,interaction_range) and not _cut_way_in(): state = str(source.resource_kind).capitalize()+" unreachable"
+			if not _route_to_interaction(source,interaction_range) and not _cut_way_in(): state = "Coal unreachable" if is_instance_valid(_dig_source) else str(source.resource_kind).capitalize()+" unreachable"
 		return
 	state = "Gathering"
 	_face(source.global_position)
@@ -515,10 +518,12 @@ func _gather(delta: float) -> void:
 ## back to the coal. One tree at a time, so the way is worked out again as the forest changes. False when
 ## there is nothing to cut: the coal is not behind forest, or no way through exists.
 func _cut_way_in() -> bool:
-	if not is_instance_valid(source) or not source.has_method("field_remaining"): return false
+	# While felling, the source is a tree; the way is still worked out to the coal behind it.
+	var goal: Node3D = _dig_source if is_instance_valid(_dig_source) else source
+	if not is_instance_valid(goal) or not goal.has_method("field_remaining"): return false
 	var here = ground.get_tile_at_position(global_position)
 	if here == null: return false
-	var way: Dictionary = CoalApproach.way(ground,here,source.cell,interaction_range,mobility_layer(),_owner_key())
+	var way: Dictionary = CoalApproach.way(ground,here,goal.cell,interaction_range,mobility_layer(),_owner_key())
 	if way.is_empty():
 		# The search costs some milliseconds: a worker with no way in looks again less often.
 		_retry = 3.0
@@ -535,6 +540,10 @@ func _cut_way_in() -> bool:
 		return true
 	var tree: Node3D = ground.forest_source(way.fell[0])
 	if tree == null: return false
+	if tree == source:
+		# The tree it already cannot reach is still the best way in: wait for the way to clear.
+		_retry = 3.0
+		return false
 	source = tree
 	order_target = tree
 	_dig_source = coal
@@ -776,22 +785,20 @@ func _construct_reach() -> float:
 func _construct(delta: float) -> void:
 	if not is_instance_valid(order_target) or not order_target.is_in_group("construction_plans") or order_target.finished:
 		order = "idle"; state = "Construction complete" if is_instance_valid(order_target) and order_target.finished else "Build site lost"; return
-	if global_position.distance_to(order_target.global_position) > _construct_reach():
+	# Builders stand within reach but off the footprint: one standing on it keeps the site from being clear.
+	var keep_off: Rect2i = order_target.footprint()
+	var here = ground.get_tile_at_position(global_position)
+	var on_site: bool = here != null and keep_off.has_point(here)
+	if on_site or global_position.distance_to(order_target.global_position) > _construct_reach():
 		_work_timer = 0
 		if _retry <= 0:
-			state = "To build site"
-			if not _route_near(order_target,_construct_reach()): state = "Build site unreachable"
+			state = "Stepping off the build site" if on_site else "To build site"
+			if not _route_to_standing(order_target,_construct_reach(),keep_off): state = "No room beside the build site" if on_site else "Build site unreachable"
 		return
 	_face(order_target.global_position)
 	if cargo > 0 and order_target.shortfall(cargo_kind) > 0:
 		cargo -= order_target.receive(cargo_kind,cargo)
 		state = "Materials delivered to site"
-	# A builder standing on the footprint is itself what keeps the site from being clear.
-	var here = ground.get_tile_at_position(global_position)
-	if here != null and order_target.footprint().has_point(here):
-		_work_timer = 0
-		if _retry <= 0 and not _step_off_site(here): state = "No room beside the build site"
-		return
 	_work_timer += delta
 	if _work_timer < harvest_interval:
 		if not state.begins_with("Constructing") and not state.begins_with("Waiting") and state != "Materials delivered to site": state = "Constructing"
@@ -801,27 +808,6 @@ func _construct(delta: float) -> void:
 	if waited == "Built" or order_target.finished: order = "idle"; state = "Construction complete"
 	elif waited.is_empty(): state = "Constructing"
 	else: state = waited
-## Walks to the nearest open cell beside the footprint of the plan being built, still within building reach.
-func _step_off_site(here: Vector2i) -> bool:
-	var keep: Rect2i = order_target.footprint()
-	var reach := _construct_reach()
-	var beside: Array[Vector2i] = []
-	for z in range(keep.position.y-1,keep.end.y+1):
-		for x in range(keep.position.x-1,keep.end.x+1):
-			var cell := Vector2i(x,z)
-			if keep.has_point(cell) or not ground.can_traverse(cell,mobility_layer(),_owner_key()): continue
-			if ground.tile_to_world(cell).distance_to(order_target.global_position) <= reach: beside.append(cell)
-	# Nearest first, with a stable grid tie-break.
-	beside.sort_custom(func(a,b):
-		var da: int = here.distance_squared_to(a)
-		var db: int = here.distance_squared_to(b)
-		return (a.y < b.y if a.y != b.y else a.x < b.x) if da == db else da < db)
-	for cell in beside:
-		if _plan(cell):
-			state = "Stepping off the build site"
-			return true
-	_retry = 1.0
-	return false
 func command_capture(target: Node3D) -> void:
 	if not can_capture_depots or is_depot_truck or is_cargo_vehicle or not is_instance_valid(target) or not target.is_in_group("capturable_buildings"): return
 	_stop_route()

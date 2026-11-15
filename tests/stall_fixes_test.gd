@@ -1,9 +1,11 @@
 extends SceneTree
 # Headless: four stalls in worker and truck behaviour (docs/STALL_FIXES.md), on the balanced map.
-# 1. A builder standing on a plan's footprint steps off before it builds, instead of blocking its own site.
+# 1. Builders stand beside a plan's footprint, never on it, so they cannot block their own site; one already
+#    standing on it steps off first.
 # 2. A worker whose drop-off the player did not choose delivers to the nearest stockpile on each trip; a
 #    stockpile the player chose stays its drop-off.
-# 3. Unload at a Depot also moves a Cargo vehicle's loose cargo, as far as it fits.
+# 3. Unload at a Depot also moves a Cargo vehicle's loose cargo, as far as it fits; a deployed vehicle takes
+#    only crates, and a manifest is still loaded after unloading loose cargo.
 # 4. A worker sent to coal behind uncut forest fells the trees in its way and carries on through the field.
 const SCENE := "res://scenes/maps/balanced_skirmish.tscn"
 const CoalApproach := preload("res://scripts/terrain/coal_approach.gd")
@@ -108,6 +110,21 @@ func run() -> void:
 	if not check(not Rect2i(plan.start,spec.size).has_point(off_site) and worker.order == "idle","The builder should end beside the building, not on it"): return
 	if not check(depot.energy == energy-spec.energy,"The build should charge its energy once: %d" % (energy-depot.energy)): return
 	for generator in get_nodes_in_group("energy_generators"): still(generator)
+	# A builder sent from off the site is routed to stand beside it, and never sets foot on the footprint.
+	var point2 := site(&"generator",depot.global_position,10.0,depot)
+	var plan2: Node3D = network.queue_plan(point2,&"generator") if point2 != Vector3.INF else null
+	if not check(plan2 != null,"Second Generator plan refused"): return
+	still(plan2)
+	plan2.receive(&"iron",spec.iron)
+	var stood_on := [false]
+	generators = get_nodes_in_group("energy_generators").size()
+	worker.command_construct(plan2)
+	built = step([worker],60.0,func():
+		var at = ground.get_tile_at_position(worker.global_position)
+		if at != null and plan2.footprint().has_point(at): stood_on[0] = true
+		return get_nodes_in_group("energy_generators").size() > generators)
+	if not check(built and not stood_on[0],"A builder from off the site should build from beside it: built %s, stood on it %s, '%s'" % [built,stood_on[0],worker.state]): return
+	for generator in get_nodes_in_group("energy_generators"): still(generator)
 
 	# ---- 2. The nearest drop-off each trip, unless the player chose one.
 	worker.command_gather(mine)
@@ -167,6 +184,23 @@ func run() -> void:
 	parked.command_unload(depot)
 	if not check(step([parked],60.0,func(): return parked.order == "idle" and parked.stockpile.total() == 0),"The truck did not bring the loose iron home: '%s'" % parked.state): return
 	if not check(depot.iron == iron+aboard,"Iron was created or lost on the way: Depot +%d, truck had %d" % [depot.iron-iron,aboard]): return
+	# At a deployed vehicle only the crates go in: its small space is left for its own workers.
+	if not check(parked.deploy_supplies() and step([parked],5.0,func(): return parked.supplies_available()),"Truck would not deploy again"): return
+	truck.stockpile.deposit(&"coal",10)
+	truck.crates.append({kind = &"wood", amount = 5})
+	truck._sync_reserved()
+	var parked_wood: int = parked.stockpile.amount(&"wood")
+	var parked_coal: int = parked.stockpile.amount(&"coal")
+	truck.command_unload(parked)
+	if not check(step([truck,parked],60.0,func(): return truck.order == "idle"),"Unload at the deployed truck never finished: '%s'" % truck.state): return
+	if not check(parked.stockpile.amount(&"wood") == parked_wood+5 and parked.stockpile.amount(&"coal") == parked_coal and truck.stockpile.amount(&"coal") == 10,"Only the crate should go into a deployed truck: wood +%d, coal +%d, 10 coal aboard? %d, crates %s, %s, parked deployed %s" % [parked.stockpile.amount(&"wood")-parked_wood,parked.stockpile.amount(&"coal")-parked_coal,truck.stockpile.amount(&"coal"),truck.crates,truck.state,parked.supplies_available()]): return
+	# Right-clicking a Depot with loose cargo and a manifest unloads, then loads the manifest's crates.
+	truck.manifest = {}
+	if not check(truck.manifest_add(&"wood"),"Manifest refused a wood crate"): return
+	truck.command_return(depot)
+	if not check(truck.order == "unload" and not truck.order_queue.is_empty() and truck.order_queue[0].kind == "load","Loose cargo and a manifest should unload, then load: %s, queue %s" % [truck.order,truck.order_queue]): return
+	if not check(step([truck],90.0,func(): return truck.order == "idle" and truck.order_queue.is_empty()),"Unload then load never finished: '%s'" % truck.state): return
+	if not check(truck.stockpile.amount(&"coal") == 0 and truck.crates.size() == 1 and truck.crates[0].kind == &"wood","The truck should leave its coal and take a wood crate: %d coal, crates %s" % [truck.stockpile.amount(&"coal"),truck.crates]): return
 
 	# ---- 4. Coal behind uncut forest: the worker cuts its own way in and through the field.
 	var expansion: Vector3 = game.get_node("Sites/SafeExpansionA").position
