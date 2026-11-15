@@ -96,7 +96,9 @@ func run() -> void:
 	ground = game.ground
 	if not check(ground.cells_path == MAP+"/terrain_cells.bin" and ground.terrain_cells == cells, "Scene does not play on the balanced cells"): return
 	if not check(game.testing_coal_amount == 0 and not game.has_node("Entities/Resources/TestingCoalPile"), "Balanced map should have no testing coal pile"): return
-	if not check(not game.testing_iron_grant and game.depot.iron == 0 and game.depot.energy == game.depot.rules.initial_energy, "Start should be %d energy and no iron" % game.depot.rules.initial_energy): return
+	var stock: Array = [game.depot.energy, game.depot.iron, game.depot.wood, game.depot.coal]
+	if not check(not game.testing_iron_grant and stock == [200, 60, 40, 60], "Start should be 200 energy, 60 iron, 40 wood and 60 coal: %s" % [stock]): return
+	if not check(not game.testing_full_tanks and not FuelRules.full_tanks_for(game), "New vehicles should start empty on this map"): return
 	var minimap: TextureRect = game.get_node("Interface/Bottom/Body/Row/MapColumn/Map/Terrain")
 	if not check(minimap.texture != null and minimap.texture.resource_path == MAP+"/layout.png", "Minimap does not show the balanced layout"): return
 	var players := 0
@@ -412,7 +414,7 @@ func _opening_estimate(from_a: Vector2i, mine_cell: Vector2, safe_a: Vector2i, c
 	var loads := ceili(float(iron_needed)/worker.carry_capacity)
 	var iron_ready := mining_starts+loads*load_seconds+(loads*2-1)*leg/walk
 	# First Tank, built at the main. With new vehicles starting full it only waits for iron. With new vehicles
-	# starting empty (FuelRules.testing_full_tanks off) it also waits for a tank of coal dug at the safe expansion
+	# starting empty (this map's testing_full_tanks off) it also waits for a tank of coal dug at the safe expansion
 	# and brought home by the starter Cargo truck, which is already waiting there.
 	var built_in: float = ceilf(float(factory.iron_cost)/worker.harvest_amount)*worker.harvest_interval
 	var tank_fuelled := iron_ready+built_in+factory.print_seconds

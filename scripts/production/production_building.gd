@@ -90,7 +90,7 @@ func _process(delta: float) -> void:
 		var scene = pending.pop_front()
 		var unit = scene.instantiate()
 		unit.team = team
-		if "start_fuelled" in unit: unit.start_fuelled = FuelRules.testing_full_tanks
+		if "start_fuelled" in unit: unit.start_fuelled = FuelRules.full_tanks_for(game)
 		unit.position = ground.tile_to_world(cell)
 		game.get_node("Entities/Units").add_child(unit,true)
 		if unit.unit_stats.unit_id == &"infantry": game.units_printed += 1

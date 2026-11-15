@@ -28,7 +28,7 @@ func run() -> void:
 	var destination: Node3D = game.get_node("Entities/Buildings/EastDepot")
 	var train: Node3D = game.get_node("Entities/Units/Train")
 	# Testing switch: built vehicles start full.
-	if not check(FuelRules.testing_full_tanks,"Vehicles should start full while testing"): return
+	if not check(FuelRules.full_tanks_for(game),"Vehicles should start full while testing"): return
 	# The train is a single energy-only car with the old capacity.
 	game.vehicle_fuel_required = true
 	if not check(train.get_node("Visuals/Model").cars().size() == 1 and train.fuel_rules == null and not train.fuel_active() and rails.rules.cargo_capacity == 300,"Train should be one fuel-free car carrying 300"): return

@@ -37,6 +37,7 @@ vehicle_fuel_required = true
 testing_coal_amount = 0
 playtest_tools = true
 testing_iron_grant = false
+testing_full_tanks = false
 message = "Send your Infantry to the iron mine south-east of the Depot. Coal lies inside the forests: cut a way in, then dig."
 [node name="DepotNetwork" type="Node" parent="."]
 script = ExtResource("network")
@@ -96,7 +97,10 @@ position = Vector3(-40,0,172)
 [node name="Buildings" type="Node3D" parent="Entities"]
 [node name="Depot" parent="Entities/Buildings" instance=ExtResource("depot")]
 position = Vector3(-166,0,0)
-initial_iron = 0
+initial_energy = 200
+initial_iron = 60
+initial_wood = 40
+initial_coal = 60
 [node name="IronMine" parent="Entities/Buildings" instance=ExtResource("mine")]
 editor_description = "Starter mine on start A's iron field, so the first iron can be gathered before any can be spent."
 position = Vector3(-142,0,13)

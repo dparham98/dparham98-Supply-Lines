@@ -79,6 +79,8 @@ func spawn_at(point: Vector3) -> Node3D:
 	if index < 0 or index >= spawn_scenes.size(): return null
 	var unit = spawn_scenes[index].instantiate()
 	unit.team = "enemy" if $Body/Spawn/Team.selected == 1 else "player"
+	# Spawned like a built vehicle: an empty tank where the map starts new vehicles empty.
+	if "start_fuelled" in unit: unit.start_fuelled = FuelRules.full_tanks_for(game)
 	unit.position = point
 	game.get_node("Entities/Units").add_child(unit,true)
 	report("Spawned %s (%s)." % [unit.name,unit.team])
