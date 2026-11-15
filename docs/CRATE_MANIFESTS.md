@@ -6,7 +6,7 @@ These replace the Depot crate panel and the Generator dropdowns. Crates are stil
 
 A Cargo vehicle or Train keeps a **manifest**: how many crates of each resource to carry.
 
-- **Load (L)** turns the command card into the Load page: Iron (I), Energy (N), Wood (W), Coal (C), Clear (X) and Cancel (Esc). E is not used because it turns the camera.
+- **Load (E)** turns the command card into the Load page: Iron (A), Energy (E), Wood (W), Coal (C), Clear (X) and Cancel (Esc).
 - Each resource tile adds one crate. **Shift** fills every free slot with that resource.
 - The Context column shows the manifest as pips, with the count.
 - The page is armed the whole time. Clicking a Depot or deployed vehicle, on the map or minimap, gives the Load order.
@@ -28,7 +28,7 @@ A Cargo vehicle or Train keeps a **manifest**: how many crates of each resource 
 
 ## Crates on the map
 
-- **Make crates (K)** is a Depot command card tile. Its page sets down full crates of any resource; see `TRUCK_WORKSITES.md`. Depots no longer make empty crates.
+- **Make crates (C)** is a Depot command card tile. Its page sets down full crates of any resource; see `TRUCK_WORKSITES.md`. Depots no longer make empty crates.
 - Unloading on open ground still sets crates down, and workers can still gather from them.
 - Clicking a crate with Load still picks it up, whatever the manifest says.
 - Loading crates set down beside a Depot back into storage needs a truck or worker.
@@ -39,8 +39,8 @@ A Generator burns the fuel in its assigned Depot and adds the energy to that Dep
 
 All control is on the command card:
 
-- **Pause/Resume (P)** and **Focus Depot (F)**.
-- **Burn Wood (W), Burn Coal (C), Burn Either (R)**. The current choice is lit and the others are dark.
+- **Pause/Resume (R)** and **Focus Depot (F)**.
+- **Burn Wood (W), Burn Coal (C), Burn Either (E)**. The current choice is lit and the others are dark.
 - **Assign Depot (A)**. Click a friendly Depot that covers the Generator, on the map or minimap.
 
 The panel's Fuel left row gives the fuel in the Depot for the current setting and how long it burns. Barracks and Tank Factories still choose their Depot from a dropdown.

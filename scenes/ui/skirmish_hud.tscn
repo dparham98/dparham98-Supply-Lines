@@ -1800,7 +1800,7 @@ theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="BurnCoal" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
-tooltip_text = "1 coal makes 50 energy in 5 seconds."
+tooltip_text = "1 coal makes 30 energy in 3 seconds."
 shortcut = SubResource("shortcut_resource_coal")
 layout_mode = 0
 custom_minimum_size = Vector2(46,46)

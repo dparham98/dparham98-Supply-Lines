@@ -54,14 +54,12 @@ func test_camera() -> void:
 	var frame_rate_error := endpoints[0].distance_to(endpoints[1])
 	assert(frame_rate_error < 0.001)
 	rig.set_view(Vector3.ZERO, 95, 0, 50)
-	Input.action_press("camera_rotate_right")
 	for i in range(30):
-		rig.apply_navigation(Vector2.ZERO, Input.get_axis("camera_rotate_left", "camera_rotate_right"), false, 1.0 / 60.0)
+		rig.apply_navigation(Vector2.ZERO, 1.0, false, 1.0 / 60.0)
 		rig.advance_camera(1.0 / 60.0)
-	Input.action_release("camera_rotate_right")
 	var yaw_target: float = rig._yaw_target
 	for i in range(180):
-		rig.apply_navigation(Vector2.ZERO, Input.get_axis("camera_rotate_left", "camera_rotate_right"), false, 1.0 / 60.0)
+		rig.apply_navigation(Vector2.ZERO, 0.0, false, 1.0 / 60.0)
 		rig.advance_camera(1.0 / 60.0)
 	assert(absf(rig._yaw_target - yaw_target) < 0.0001)
 	assert(absf(wrapf(rig._yaw - yaw_target, -PI, PI)) < 0.001)

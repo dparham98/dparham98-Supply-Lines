@@ -88,14 +88,14 @@ func run() -> void:
 	depot.cycle_energy_ceiling()
 	if not check(depot.energy_ceiling == 600 and depot.energy_ceilings() == [300,600],"A 600-unit Depot's ceilings should be 300 and 600: %s" % [depot.energy_ceilings()]): return
 	depot.storage_capacity = 2000
-	# The Depot card: the buttons step the settings, with keys H and J; other sides' Depots do not show them.
+	# The Depot card: the buttons step the settings, with keys E and Q; other sides' Depots do not show them.
 	var hud: CanvasLayer = game.get_node("Interface")
 	hud.set_process(false)
 	game.selected_building = depot
 	hud._process(0)
 	var ceiling_tile: Button = hud.card.get_node("EnergyCeiling")
 	var reserve_tile: Button = hud.card.get_node("CoalReserve")
-	if not check(ceiling_tile.visible and reserve_tile.visible and hud.hotkey_text(ceiling_tile) == "H" and hud.hotkey_text(reserve_tile) == "J","The Depot card should show both settings with keys H and J"): return
+	if not check(ceiling_tile.visible and reserve_tile.visible and hud.hotkey_text(ceiling_tile) == "E" and hud.hotkey_text(reserve_tile) == "Q","The Depot card should show both settings with keys E and Q"): return
 	if not check(hud.context.get_node("Stats/V1").text == "600 E" and hud.context.get_node("Stats/V2").text == "30","The Depot card should show the settings: %s, %s" % [hud.context.get_node("Stats/V1").text,hud.context.get_node("Stats/V2").text]): return
 	ceiling_tile.pressed.emit()
 	reserve_tile.pressed.emit()

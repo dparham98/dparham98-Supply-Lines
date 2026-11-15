@@ -1,5 +1,5 @@
 extends SceneTree
-# Shift-queued orders: ordering, replacement, Stop, completion rules, fuel pause, markers.
+# Shift-queued orders: ordering, replacement, Stop, completion rules, fuel pause, the dashed queue path.
 var game: Node3D
 var hud: CanvasLayer
 func _initialize() -> void: call_deferred("run")
@@ -33,8 +33,7 @@ func run() -> void:
 	var depot = game.depot
 	rig.focus_position(depot.global_position,55)
 	for frame in range(180): rig.advance_camera(1.0/60)
-	var markers = game.get_node("WaypointMarkers")
-	markers.set_process(false)
+	var overlay = hud.get_node("MapOverlay")
 	var worker = game.get_node("Entities/Units/Infantry")
 	for node in get_nodes_in_group("units"): node.set_selected(node == worker)
 	var start: Vector3 = worker.global_position
@@ -48,13 +47,17 @@ func run() -> void:
 	# Shift-right-click goes through the real input path into the queue.
 	game.issue_order(screen(c),true)
 	if not check(worker.order_queue.size() == 2 and worker.move_goal == a and "queued" in game.message,"Shift right-click did not queue"): return
-	markers._process(0)
-	if not check(markers.visible_count() == 3 and markers.markers[0].get_node("Order").text == "1" and markers.markers[2].get_node("Order").text == "3","Waypoint markers wrong: %d" % markers.visible_count()): return
+	# The queue shows as one dashed line from the unit through its three destinations.
+	var lines: Array = overlay.queue_lines()
+	if not check(lines.size() == 1 and lines[0].size() == 4 and lines[0][1] == a and lines[0][3] == c,"Queue path wrong: %s" % [lines]): return
+	if not check(not game.has_node("WaypointMarkers"),"The old numbered markers should be gone"): return
 	if not check(run_until(worker,func(): return worker.move_goal == b,20),"Second order did not start after the first"): return
 	if not check(worker.global_position.distance_to(a) < 2.5,"First move not reached before the second started"): return
 	if not check(run_until(worker,func(): return worker.order == "idle" and worker.order_queue.is_empty(),40) and worker.global_position.distance_to(worker.move_goal) < 1.5,"Queue did not finish at the last waypoint"): return
-	markers._process(0)
-	if not check(markers.visible_count() == 0,"Markers shown for an idle unit"): return
+	if not check(overlay.queue_lines().is_empty(),"A path shown for an idle unit"): return
+	# A single order, with nothing queued, shows the path to its destination.
+	worker.run_order({kind = "move", point = a})
+	if not check(overlay.queue_lines().size() == 1 and overlay.queue_lines()[0].size() == 2 and overlay.queue_lines()[0][1] == a,"A single order should show a path to its destination"): return
 	# A plain order replaces the queue; Stop clears it.
 	worker.queue_order({kind = "move", point = a}); worker.queue_order({kind = "move", point = b})
 	game.issue_order(screen(c))
@@ -62,8 +65,7 @@ func run() -> void:
 	worker.queue_order({kind = "move", point = a})
 	hud.stop_units()
 	if not check(worker.order_queue.is_empty() and worker.order == "idle","Stop did not clear the queue"): return
-	markers._process(0)
-	if not check(markers.visible_count() == 0,"Markers left after Stop"): return
+	if not check(overlay.queue_lines().is_empty(),"A path left after Stop"): return
 	# Attack finishes when the target dies, then the next order runs.
 	var hostile = game.get_node("Entities/Units/Hostile")
 	worker.queue_order({kind = "attack", target = hostile})

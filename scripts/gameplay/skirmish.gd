@@ -138,7 +138,7 @@ func _rail_key(key: int) -> void:
 	if key == KEY_R:
 		rail_piece = {"straight":"left","left":"right","right":"fork_left","fork_left":"fork_right","fork_right":"straight"}[rail_piece]
 		rail_fork_join = 0
-		notify("Laying %s track, %d iron. R switches piece; F turns a free piece; G changes which end of a fork joins; Esc finishes." % [rail_piece.replace("_"," "),$RailNetwork.cost(rail_kind())])
+		notify("Laying %s track, %d iron. R switches piece; F turns a free piece; G changes which end of a fork joins; Shift-click keeps laying; Esc finishes." % [rail_piece.replace("_"," "),$RailNetwork.cost(rail_kind())])
 	elif key == KEY_F:
 		rail_heading = Vector3(-rail_heading.z,0,rail_heading.x)
 		notify("Free piece heading turned. Snapped pieces follow the track they join.")
@@ -161,8 +161,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if placing_rail and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var camera := get_viewport().get_camera_3d()
 		var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(event.position),camera.project_ray_normal(event.position))
-		if point != null:
-			$RailNetwork.place(rail_kind(),point,rail_heading,rail_join(),hud.global_payer if hud.global_pinned and is_instance_valid(hud.global_payer) else null)
+		# A click lays one piece and finishes; with Shift held, track laying stays armed for the next piece.
+		if point != null and $RailNetwork.place(rail_kind(),point,rail_heading,rail_join(),hud.global_payer if hud.global_pinned and is_instance_valid(hud.global_payer) else null) != null and not event.shift_pressed:
+			placing_rail = false
+			notify("Track laid; laying finished. R lays another piece. Hold Shift while clicking to keep laying.")
 		get_viewport().set_input_as_handled()
 		return
 	if (placing_depot or placing_generator or not placing_structure.is_empty()) and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
