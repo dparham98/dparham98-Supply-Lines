@@ -1,0 +1,7 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "team_paint_player"
+albedo_color = Color(0.24,0.55,0.36, 1)
+metallic = 0.1
+roughness = 0.6
