@@ -357,7 +357,8 @@ func issue_card_order(screen: Vector2, queued := false) -> void:
 		for unit in get_tree().get_nodes_in_group("units"):
 			if unit.team != "player" or not unit.is_selected or not unit.is_depot_truck: continue
 			if not $DepotNetwork.can_deploy_at(unit,ground_point):
-				notify("Can't deploy there: the Depot footprint must be empty buildable land."); return
+				var spaced: String = "" if $DepotNetwork.depot_spacing_ok(ground_point,unit.team,unit) else ", "+$DepotNetwork.spacing_reason()
+				notify("Can't deploy there: the Depot footprint must be empty buildable land%s." % spaced); return
 			give_order(unit,{kind = "deploy", point = ground_point},queued)
 			accepted += 1
 		if accepted > 0:
