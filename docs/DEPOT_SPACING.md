@@ -13,10 +13,17 @@ A new Depot must stand at least 70 m, centre to centre, from every other friendl
 - **Every way a new Depot is made:**
   - building one with a selected builder
   - placing a Depot plan from the Build page
-  - finishing a Depot plan, which is checked again
+  - building a Depot plan: checked again before each building step and at completion. A plan that has lost its spacing (for example when an enemy Depot beside it is captured) builds in no material and reads "Blocked · a new Depot must stand at least 70 m from every other friendly Depot". Cancel it to recover its materials.
   - deploying a Depot truck
-- **Checked against:** friendly Depots and other unfinished Depot plans. Enemy and neutral Depots are not counted.
-- **Not checked:** Depots authored in a scene, so maps keep their layouts.
+- **Checked against:**
+  - the asking side's own Depots
+  - other unfinished Depot plans
+  - sites that Depot trucks of that side have been ordered to deploy on, current or Shift-queued, so two trucks can't both be sent to sites too close together
+  - Enemy and neutral Depots are not counted.
+- **Measured from:** the centre where the Depot will actually stand once snapped to its footprint (`depot_centre()`), not the clicked point.
+- **Not checked:**
+  - Depots authored in a scene, so maps keep their layouts.
+  - Captured Depots: a Depot taken from the enemy stays where it is, however close it is to your own. This is the one way to have friendly Depots closer than 70 m.
 - **What the player sees:**
   - The placement ghost turns red.
   - A plan's status line says "70 m from every other Depot".
@@ -26,7 +33,10 @@ A new Depot must stand at least 70 m, centre to centre, from every other friendl
 ## Settings
 
 - `min_depot_spacing` on `assets/economy/depot_rules.tres` (`scripts/economy/depot_rules.gd`). 0 turns the rule off.
-- Code: `depot_network.gd` `depot_spacing_ok()` and `spacing_notice()`, used by `can_place()`, `queue_plan()`, `complete_plan()` and both placement previews.
+- Code: `depot_network.gd`:
+  - `depot_spacing_ok()`, used by `can_place()`, `queue_plan()`, `complete_plan()`, `finish_plan()` and both placement previews
+  - `plan_spacing_ok()`, which construction plans also check while they are built
+  - `spacing_reason()`, the one wording of the rule that every notice and status line uses
 
 ## Checks
 
