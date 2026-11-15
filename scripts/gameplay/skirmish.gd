@@ -11,6 +11,9 @@ extends Node3D
 ## Whether Depots take the DepotRules testing iron grant. The balanced map turns it off so a match starts
 ## with no iron (docs/BALANCED_MAP.md).
 @export var testing_iron_grant := true
+## Whether vehicles built at Depots and factories start with a full tank (FuelRules.testing_full_tanks). The
+## balanced map turns it off: new vehicles start empty and fill from their Depot's coal.
+@export var testing_full_tanks := true
 func drop_material(unit: Node3D) -> Node3D:
 	if not unit.can_gather or unit.cargo <= 0 or unit.cargo_kind not in [&"iron",&"wood",&"coal"]: return null
 	var pile = pile_scene.instantiate()

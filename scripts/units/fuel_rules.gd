@@ -10,3 +10,7 @@ extends Resource
 @export_range(0,1,0.01) var low_fuel_fraction := 0.25
 ## Testing switch: vehicles built at Depots and factories start with a full tank instead of empty.
 static var testing_full_tanks := true
+## Whether a vehicle built now starts with a full tank: the testing switch, unless this map's skirmish
+## turns it off (skirmish testing_full_tanks; the balanced map does, docs/ECONOMY_REPORT.md step 5).
+static func full_tanks_for(game: Node) -> bool:
+	return testing_full_tanks and (not is_instance_valid(game) or game.get("testing_full_tanks") != false)
