@@ -4,5 +4,5 @@
 script = ExtResource("script")
 wood_output = 10
 wood_seconds = 2.0
-coal_output = 50
-coal_seconds = 5.0
+coal_output = 30
+coal_seconds = 3.0

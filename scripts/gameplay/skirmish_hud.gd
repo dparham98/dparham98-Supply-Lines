@@ -27,6 +27,7 @@ var _tip_since := 0.0
 ## Fixed command slots, row-major in the 4 × 3 grid. Commands that never share a card may share a slot.
 const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 4, "Return": 5, "DropMaterials": 6, "Build": 7,
 	"BurnWood": 4, "BurnCoal": 5, "BurnEither": 6, "AssignDepot": 7, "MakeCrates": 3, "Worksite": 7,
+	"EnergyCeiling": 4, "CoalReserve": 5,
 	"Repair": 8, "Capture": 9, "DeployTruck": 10, "CancelPlan": 11,
 	"DeployCargo": 2, "Load": 4, "Unload": 5, "Trips": 6,
 	"PrintTruck": 0, "PrintCargo": 1, "PrintTrain": 2,
@@ -37,7 +38,7 @@ const TRIP_LABELS := {"once": "once", "all": "all available", "repeat": "repeat"
 ## One icon per stat row (assets/ui/icons).
 const STAT_ICONS := {"Speed": "speed", "Range": "focus", "Damage": "damage", "Vision": "scout", "Vs buildings": "depot", "Splash": "splash",
 	"Cost": "cost", "Deploys": "deploy", "Output": "generator", "Burning": "refuel", "Cycle": "cycle", "Mode": "mode",
-	"Energy": "generator", "Iron": "mine", "Queue": "queue", "Fuel left": "cargo"}
+	"Energy": "generator", "Iron": "mine", "Queue": "queue", "Fuel left": "cargo", "Energy ceiling": "generator", "Coal kept": "refuel"}
 const TILE_GAP := 4
 @onready var state_label: Label = $Bottom/Body/Row/Info/Head/Text/State
 const RESOURCE_KINDS := [&"energy",&"iron",&"wood",&"coal"]
@@ -110,6 +111,10 @@ func _ready() -> void:
 			else: edit_manifest(pair[1],Input.is_key_pressed(KEY_SHIFT)))
 	load_tiles.get_node("Clear").pressed.connect(clear_manifest)
 	card.get_node("MakeCrates").pressed.connect(open_crate_page)
+	card.get_node("EnergyCeiling").pressed.connect(func():
+		if is_instance_valid(shown) and shown.is_in_group("depots"): shown.cycle_energy_ceiling(); game.notify("Generators stop at %d energy in %s." % [shown.energy_ceiling,shown.name]))
+	card.get_node("CoalReserve").pressed.connect(func():
+		if is_instance_valid(shown) and shown.is_in_group("depots"): shown.cycle_coal_reserve(); game.notify("Generators leave %d coal in %s for vehicles." % [shown.coal_reserve,shown.name]))
 	card.get_node("Worksite").pressed.connect(open_worksite)
 	for pair in [["BurnWood","wood"],["BurnCoal","coal"],["BurnEither","either"]]:
 		card.get_node(pair[0]).pressed.connect(func():
@@ -497,7 +502,11 @@ func update_contents() -> void:
 			show_progress("Producing · "+DEPOT_PRODUCTS.get(kind,kind.capitalize()),"%d%%%s" % [roundi(node.progress/node.current_seconds()*100)," · %d more queued" % (node.queue-1) if node.queue > 1 else ""],node.progress/node.current_seconds())
 		info.get_node("Details").text = "Queue %d / %d%s" % [node.queue,node.queue_limit," · capture %d%%" % roundi(node.capture_progress/node.rules.capture_seconds*100) if node.capture_progress > 0 else ""]
 		if node.team == "player":
+			var ceiling: String = "none (full storage)" if node.energy_ceiling >= node.storage_capacity else "%d E" % node.energy_ceiling
+			set_stats([["Energy ceiling",ceiling],["Coal kept","%d" % node.coal_reserve]])
 			show_button("MakeCrates","Make crates")
+			show_button("EnergyCeiling","Generator energy ceiling: %s" % ceiling)
+			show_button("CoalReserve","Coal kept for vehicles: %d" % node.coal_reserve)
 			if node.can_cancel(): show_button("CancelPlan","Cancel production")
 			show_production("PrintTruck","Depot truck",node.rules.truck_energy_cost,node.rules.truck_iron_cost,node)
 			show_production("PrintCargo","Cargo vehicle",network.supply_rules.cargo_energy_cost,network.supply_rules.cargo_iron_cost,node)
@@ -530,7 +539,7 @@ func update_contents() -> void:
 		set_stats([["Output","%.1f E/s" % node.output_rate()],["Burning",str(node.cycle_kind).capitalize() if not node.cycle_kind.is_empty() else "Waiting"],["Cycle","%.1f / %.1fs" % [node.cycle_elapsed,node.cycle_seconds]],["Fuel left",node.fuel_left_text()]])
 		if is_instance_valid(source): show_storage("%s storage" % source.name,source.stockpile)
 		info.get_node("Details").text = "Assigned Depot: %s" % (source.name if is_instance_valid(source) else "none")
-		hint_text = "Burns fuel from its assigned Depot. Wood: 1 → %d E / %.1fs. Coal: 1 → %d E / %.1fs. Either uses wood first. Changes apply next cycle; full storage pauses fuel use." % [node.fuel_rules.wood_output,node.fuel_rules.wood_seconds,node.fuel_rules.coal_output,node.fuel_rules.coal_seconds]
+		hint_text = "Burns fuel from its assigned Depot. Wood: 1 → %d E / %.1fs. Coal: 1 → %d E / %.1fs. Either uses wood first. Changes apply next cycle. It pauses at the Depot's energy ceiling or full storage, and leaves the Depot's coal reserve for vehicles." % [node.fuel_rules.wood_output,node.fuel_rules.wood_seconds,node.fuel_rules.coal_output,node.fuel_rules.coal_seconds]
 		if node.team == "player":
 			show_button("ToggleGenerator","Pause" if node.enabled else "Resume")
 			set_card(card.get_node("ToggleGenerator"),"generator_pause" if node.enabled else "generator_resume")

@@ -102,6 +102,7 @@ func run() -> void:
 	# Cold until it burns fuel: no fire, flywheel still.
 	if not building.assigned_depot: building.assign_source(depot)
 	depot.wood = 0; depot.coal = 0
+	depot.energy_ceiling = depot.storage_capacity  # the model is checked, not the ceiling
 	building.reset_cycle()
 	building._process(0.1)
 	if not check(not building.active() and not model.running() and model.player.assigned_animation == &"Idle","A Generator without fuel should stand cold"): return
