@@ -8,6 +8,8 @@
 
 [ext_resource type="Resource" path="res://assets/economy/fuel_ubermech.tres" id="fuel"]
 
+[ext_resource type="Material" path="res://assets/materials/units/team_marker.tres" id="team_marker"]
+
 [sub_resource type="StandardMaterial3D" id="r1"]
 albedo_color = Color(0.2,1,0.6,1)
 roughness = 0.85
@@ -19,6 +21,10 @@ outer_radius = 0.96
 rings = 20
 ring_segments = 6
 material = SubResource("r1")
+
+[sub_resource type="PlaneMesh" id="team_marker_mesh"]
+material = ExtResource("team_marker")
+size = Vector2(2.0, 2.0)
 
 [node name="Ubermech" type="Node3D"]
 script = ExtResource("agent")
@@ -34,6 +40,13 @@ script = ExtResource("slot")
 model_scene = ExtResource("model")
 
 [node name="Model" parent="Visuals" instance=ExtResource("model")]
+
+[node name="TeamMarker" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 0.06, 0)
+cast_shadow = 0
+mesh = SubResource("team_marker_mesh")
+instance_shader_parameters/half_size = Vector2(1.0, 1.0)
+metadata/not_selectable = true
 
 [node name="SelectionRing" type="MeshInstance3D" parent="."]
 position = Vector3(0,0.08,0)

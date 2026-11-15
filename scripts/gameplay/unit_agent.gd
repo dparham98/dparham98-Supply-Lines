@@ -1,7 +1,10 @@
 extends Node3D
 ## Infantry combines engineering work and ranged combat. Visuals remains a replaceable scene.
 signal died(unit: Node3D)
-@export var team := "player"
+@export var team := "player":
+	set(value):
+		team = value
+		if is_node_ready(): _paint_team()
 @export var is_depot_truck := false
 @export var is_cargo_vehicle := false
 @export var can_construct := false
@@ -83,7 +86,12 @@ func _ready() -> void:
 	global_position = ground.tile_to_world(grid_position)
 	_claim(grid_position)
 	if start_fuelled and fuel_active(): fuel = fuel_rules.reserve_capacity
+	_paint_team()
 	_update_display()
+## The marker on the ground under the unit (docs/TEAM_MARKERS.md) takes its side's colour.
+func _paint_team() -> void:
+	var marker := get_node_or_null("Visuals/TeamMarker") as GeometryInstance3D
+	if marker: marker.set_instance_shader_parameter(&"team_color",preload("res://scripts/units/team_colors.gd").of(team))
 func set_selected(value: bool) -> void:
 	is_selected = value and team == "player"
 	$SelectionRing.visible = is_selected
