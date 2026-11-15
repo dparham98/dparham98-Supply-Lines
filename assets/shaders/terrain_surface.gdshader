@@ -39,6 +39,10 @@ uniform float desert_relief = 1.0;
 // Part of the map drawn by the sculpted landscape instead (docs/LANDSCAPE_LOOKDEV.md), as UV min and max. Set by
 // scripts/tools/build_landscape.gd; all zero draws the whole map here.
 uniform vec4 landscape_region = vec4(0.0);
+// Open ground only (grass, forest floor, desert): saturation and brightness, so the ground sits behind units and
+// buildings. 1.0 leaves it as drawn.
+uniform float ground_saturation = 1.0;
+uniform float ground_value = 1.0;
 const float MAP_METRES = 500.0;
 const float BLEND_RANGE = 8.0;
 // All tiles of a set share their borders, so any variant can sit beside any other. UVs stay continuous
@@ -131,6 +135,7 @@ void fragment() {
   vec2 bent = normal_map.xy - 0.5 - slope * 0.1 * relief;
   normal_map.xy = 0.5 + bent * min(1.0, 0.42 / max(length(bent), 0.001));
   color *= 1.0 + (height - 0.5) * 0.12 * relief;
+  color = mix(vec3(dot(color, vec3(0.2126, 0.7152, 0.0722))), color, ground_saturation) * ground_value;
  } else if (terrain == 1.0 || terrain == 4.0) {
   // Water, and the mountain foot in darkened desert tiles.
   ground_set(tile_uv, terrain == 4.0 ? 4.0 : 8.0, color, terrain == 4.0 ? mountain_surface_mean : water_surface_mean, surface_tint, 0.0, color, normal_map);
