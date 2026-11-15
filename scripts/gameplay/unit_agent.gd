@@ -88,10 +88,12 @@ func _ready() -> void:
 	if start_fuelled and fuel_active(): fuel = fuel_rules.reserve_capacity
 	_paint_team()
 	_update_display()
-## The marker on the ground under the unit (docs/TEAM_MARKERS.md) takes its side's colour.
+## The marker on the ground under the unit and the team paint on its model (docs/TEAM_MARKERS.md)
+## take its side's colour.
 func _paint_team() -> void:
 	var marker := get_node_or_null("Visuals/TeamMarker") as GeometryInstance3D
 	if marker: marker.set_instance_shader_parameter(&"team_color",preload("res://scripts/units/team_colors.gd").of(team))
+	preload("res://scripts/components/team_paint.gd").apply(get_node_or_null("Visuals/Model"),team)
 func set_selected(value: bool) -> void:
 	is_selected = value and team == "player"
 	$SelectionRing.visible = is_selected

@@ -9,5 +9,6 @@ run_reference_speed = 6.0
 blend_time = 0.35
 death_clip = &"Die"
 death_fx_scene = ExtResource("death_fx")
+metadata/team_materials = PackedStringArray("Oxide red")
 [node name="Rig" parent="." instance=ExtResource("rig")]
 transform = Transform3D(-1,0,0,0,1,0,0,0,-1,0,0,0)
