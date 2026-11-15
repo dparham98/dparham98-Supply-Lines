@@ -210,17 +210,49 @@ func place_global_plan(point: Vector3, queued := false) -> Node3D:
 	if global_plan_kind != &"rail": global_plan_kind = &""
 	return plan
 ## The friendly crate under the pointer, if any.
-func pick_crate(screen: Vector2) -> Node3D:
+## `screen` in the picking helpers below is the pointer's screen position, or a MapPick from the minimap.
+func pick_crate(screen) -> Node3D:
 	var crate := pick_target(screen,"supply_crates")
 	return crate if is_instance_valid(crate) and crate.team == "player" else null
-func pick_target(screen: Vector2, group: String, _radius := 34.0) -> Node3D:
+func pick_target(screen, group: String, _radius := 34.0) -> Node3D:
 	var camera := get_viewport().get_camera_3d()
 	var closest: Node3D
 	var distance := INF
 	for node in get_tree().get_nodes_in_group(group):
-		var d: float = preload("res://scripts/units/selection_bounds.gd").hit_distance(node,camera,screen)
+		var d: float = pick_distance(node,camera,screen)
 		if d < distance: distance = d; closest = node
 	return closest
+## A minimap click standing in for the pointer (docs/MINIMAP_ORDERS.md): a ground point, and how near a
+## marker must be to it to be picked.
+class MapPick:
+	var point: Vector3
+	var radius: float
+	func _init(at: Vector3, within: float) -> void:
+		point = at
+		radius = within
+## Gives the order a click at `point` would give: a right-click order, or with `card` the waiting command's.
+## The map's own order rules run, with the minimap point in place of the pointer.
+func issue_map_order(point: Vector3, radius: float, card: bool, queued := false) -> void:
+	var pick := MapPick.new(point,radius)
+	if card: issue_card_order(pick,queued)
+	else: issue_order(pick,queued)
+## The ground under the pointer, or the minimap's point.
+func ground_at(screen):
+	if screen is MapPick: return screen.point
+	var camera := get_viewport().get_camera_3d()
+	return Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(screen),camera.project_ray_normal(screen))
+const SelectionBounds = preload("res://scripts/units/selection_bounds.gd")
+## How near `node` is to the pointer, or INF when it is missed. From the minimap it is the ground distance
+## from the point to the node's model bounds, so a large building is picked anywhere on its footprint.
+func pick_distance(node: Node3D, camera: Camera3D, screen) -> float:
+	if not screen is MapPick: return SelectionBounds.hit_distance(node,camera,screen)
+	var at := Vector2(screen.point.x,screen.point.z)
+	var d := Vector2(node.global_position.x,node.global_position.z).distance_to(at)
+	for mesh in SelectionBounds.meshes(node):
+		var box: AABB = mesh.global_transform*mesh.get_aabb()
+		var nearest := at.clamp(Vector2(box.position.x,box.position.z),Vector2(box.end.x,box.end.z))
+		d = minf(d,nearest.distance_to(at))
+	return d if d <= screen.radius else INF
 ## A friendly unit or building under the pointer, for forced fire with the Attack command.
 func pick_friendly(screen: Vector2) -> Node3D:
 	var camera := get_viewport().get_camera_3d()
@@ -229,7 +261,7 @@ func pick_friendly(screen: Vector2) -> Node3D:
 	for group in ["units","selectable_buildings"]:
 		for node in get_tree().get_nodes_in_group(group):
 			if node.get("team") != "player" or not node.has_method("take_damage"): continue
-			var d: float = preload("res://scripts/units/selection_bounds.gd").hit_distance(node,camera,screen)
+			var d: float = SelectionBounds.hit_distance(node,camera,screen)
 			if d < distance: distance = d; closest = node
 	return closest
 # Shift-held orders join each unit's queue; plain orders replace it (docs/COMMAND_QUEUE.md).
@@ -241,7 +273,10 @@ func give_order(unit: Node3D, entry: Dictionary, queued: bool) -> void:
 	else:
 		unit.order_queue.clear()
 		unit.run_order(entry)
-func issue_order(screen: Vector2, queued := false) -> void:
+func issue_order(screen, queued := false) -> void:
+	# From the minimap a click lands near markers rather than on them, so the orders that only make sense
+	# when aimed at a model are left out (docs/MINIMAP_ORDERS.md).
+	var from_map: bool = screen is MapPick
 	var enemy := pick_target(screen,"enemies")
 	var resource := pick_target(screen,"resources",48)
 	var dropoff := pick_target(screen,"depots",50)
@@ -251,8 +286,7 @@ func issue_order(screen: Vector2, queued := false) -> void:
 	var plan := pick_target(screen,"construction_plans",50)
 	if is_instance_valid(plan) and (plan.finished or plan.kind == &"rail"): plan = null
 	var crate := pick_crate(screen)
-	var camera := get_viewport().get_camera_3d()
-	var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(screen),camera.project_ray_normal(screen))
+	var point = ground_at(screen)
 	var selected := 0
 	var forest_ordered := false
 	var coal_ordered: Node3D
@@ -277,7 +311,7 @@ func issue_order(screen: Vector2, queued := false) -> void:
 		elif building and building.team == unit.team and building.health < building.max_health and unit.can_repair: give_order(unit,{kind = "repair", target = building},queued)
 		elif building and building.is_in_group("capturable_buildings") and building.team != unit.team and unit.can_capture_depots: give_order(unit,{kind = "capture", target = building},queued)
 		elif building and CombatResolver.can_hit(unit,building): give_order(unit,{kind = "attack", target = building},queued)
-		elif dropoff and dropoff.team == unit.team: give_order(unit,{kind = "return", target = dropoff},queued)
+		elif dropoff and dropoff.team == unit.team and not from_map: give_order(unit,{kind = "return", target = dropoff},queued)
 		elif point != null and unit.can_gather and ground.get_tile_at_position(point) != null and ground.get_terrain(ground.get_tile_at_position(point)) == 5:
 			notify("Build an Iron Mine on this deposit before gathering iron.")
 		elif point != null:
@@ -292,13 +326,14 @@ func issue_order(screen: Vector2, queued := false) -> void:
 	elif forest_ordered: notify("Harvest wood from the forest tile and deliver it to a friendly Depot.")
 	elif is_instance_valid(coal_ordered): notify("Dig coal and deliver it to a friendly Depot. %d left in this field; workers move on through it cell by cell." % coal_ordered.field_remaining())
 	elif resource: notify("Gather %s and deliver to a friendly Depot." % resource.resource_kind)
-	elif dropoff: notify("Return carried resources or repair this Depot.")
+	elif dropoff and not from_map: notify("Return carried resources or repair this Depot.")
 func show_shot(start: Vector3, end: Vector3, team: String, projectile: PackedScene = null) -> void:
 	var shot = (projectile if projectile != null else tracer_scene).instantiate()
 	add_child(shot)
 	shot.configure(start,end,team)
 
-func issue_card_order(screen: Vector2, queued := false) -> void:
+func issue_card_order(screen, queued := false) -> void:
+	var from_map: bool = screen is MapPick
 	var target: Node3D
 	# Pin: the build page's paying stockpile.
 	if pending_unit_command == "pin":
@@ -318,14 +353,14 @@ func issue_card_order(screen: Vector2, queued := false) -> void:
 		target = pick_target(screen,"enemies")
 		if target == null:
 			var building = pick_target(screen,"selectable_buildings",50)
-			if is_instance_valid(building) and (building.is_in_group("mines") or building.team not in ["player","neutral"]): target = building
-		# Nothing hostile under the pointer: the Attack command fires on a friendly unit or building.
-		if target == null: target = pick_friendly(screen)
+			if is_instance_valid(building) and (building.team not in ["player","neutral"] or (building.is_in_group("mines") and not (from_map and building.team == "player"))): target = building
+		# Nothing hostile under the pointer: the Attack command fires on a friendly unit or building. From the
+		# minimap it attack-moves instead.
+		if target == null and not from_map: target = pick_friendly(screen)
 	elif pending_unit_command == "gather":
 		target = pick_target(screen,"resources",48)
 		if target == null:
-			var camera := get_viewport().get_camera_3d()
-			var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(screen),camera.project_ray_normal(screen))
+			var point = ground_at(screen)
 			if point != null and ground.get_tile_at_position(point) != null:
 				var cell = ground.get_tile_at_position(point)
 				if ground.get_terrain(cell) == 5: notify("Build an Iron Mine on this deposit before gathering iron."); return
@@ -342,7 +377,7 @@ func issue_card_order(screen: Vector2, queued := false) -> void:
 			# Unload also lands on a queued build site.
 			var site := pick_target(screen,"construction_plans",50)
 			if pending_unit_command == "unload" and is_instance_valid(site) and not site.finished and site.kind != &"rail": target = site
-	var ground_point = Plane(Vector3.UP,0).intersects_ray(get_viewport().get_camera_3d().project_ray_origin(screen),get_viewport().get_camera_3d().project_ray_normal(screen))
+	var ground_point = ground_at(screen)
 	# Attack on open ground is attack-move.
 	if pending_unit_command == "attack" and not is_instance_valid(target) and ground_point != null:
 		for unit in get_tree().get_nodes_in_group("units"):
@@ -383,8 +418,7 @@ func issue_card_order(screen: Vector2, queued := false) -> void:
 	if pending_unit_command != "move" and not is_instance_valid(target):
 		notify("Click an appropriate target for "+pending_unit_command+".")
 		return
-	var camera := get_viewport().get_camera_3d()
-	var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(screen),camera.project_ray_normal(screen))
+	var point = ground_at(screen)
 	for unit in get_tree().get_nodes_in_group("units"):
 		if unit.team != "player" or not unit.is_selected: continue
 		if pending_unit_command == "move":

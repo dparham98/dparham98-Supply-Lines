@@ -1,5 +1,7 @@
 extends Control
-## North-up map: world +X right, +Z down. Clicking changes camera focus only.
+## North-up map: world +X right, +Z down. Left-click moves the camera; right-click orders the selected units
+## to that point, and a waiting command (Move, Attack, Gather, Deploy, Unload...) takes its point here too
+## (docs/MINIMAP_ORDERS.md).
 @export var bounds := Rect2(-250,-250,500,500)
 @onready var game = get_tree().get_first_node_in_group("skirmish")
 const Overlay = preload("res://scripts/ui/map_overlay.gd")
@@ -14,17 +16,29 @@ func map_to_world(point: Vector2) -> Vector3:
 	var value := bounds.position+(point/size).clamp(Vector2.ZERO,Vector2.ONE)*bounds.size
 	return Vector3(value.x,0,value.y)
 const PICK_RADIUS := 9.0
+## How near a marker an order click must land to target it, in minimap pixels.
+const ORDER_PICK_RADIUS := 4.0
+## Commands that only take a stop: a click away from every stop pans instead.
+const STOP_ONLY := ["pin","assign_depot"]
 func _gui_input(event: InputEvent) -> void:
 	if not event is InputEventMouseButton or not event.pressed: return
-	if event.button_index == MOUSE_BUTTON_RIGHT and game.armed():
-		game.cancel_armed(); game.notify("Command cancelled.")
+	if event.button_index == MOUSE_BUTTON_RIGHT:
+		# Right-click cancels an armed command, as on the map, else orders the selected units there.
+		if game.armed(): game.cancel_armed(); game.notify("Command cancelled.")
+		elif not game.hud.selected_units().is_empty(): game.issue_map_order(map_to_world(event.position),order_radius(),false,event.shift_pressed)
 		accept_event()
 	elif event.button_index == MOUSE_BUTTON_LEFT:
-		# While Load, Unload or Pin waits for a stop, clicking a pulsing marker picks it; elsewhere pans.
+		# While Load, Unload or Pin waits for a stop, clicking a pulsing marker picks it. Another waiting unit
+		# command takes the clicked point; with none waiting the click pans.
 		var stop := stop_at(event.position)
 		if stop != null: game.hud.pick_stop(stop,event.shift_pressed)
+		elif not game.pending_unit_command.is_empty() and game.pending_unit_command not in STOP_ONLY:
+			game.issue_map_order(map_to_world(event.position),order_radius(),true,event.shift_pressed)
 		else: game.get_node("CameraRig").focus_position(map_to_world(event.position))
 		accept_event()
+## ORDER_PICK_RADIUS in world metres at this minimap's scale, by the coarser axis if they differ.
+func order_radius() -> float:
+	return ORDER_PICK_RADIUS*maxf(bounds.size.x/maxf(1.0,size.x),bounds.size.y/maxf(1.0,size.y))
 func stop_at(point: Vector2) -> Node3D:
 	var best: Node3D
 	var distance := PICK_RADIUS
