@@ -19,7 +19,7 @@ This is the logistics redesign approved in `UI_OVERHAUL_PLAN.md`, on branch `fea
   - **Once** stops there.
   - **All available** queues the same Load/Unload pair again while the pickup still has crates.
   - **Repeat** always queues it again, and Load waits at the pickup until crates appear.
-- **Queuing:** Shift queues Load and Unload like other orders, with waypoint markers. A dashed trip line joins pickup and delivery while the vehicle is selected.
+- **Queuing:** Shift queues Load and Unload like other orders, shown by the dashed queue path. A dashed trip line joins pickup and delivery while the vehicle is selected.
 - **Right-click shortcut:** right-click on a friendly Depot or deployed truck unloads when carrying crates, and loads otherwise.
 - **Distant stops:** while Load or Unload is armed, a list of every friendly stop appears above the grid. Choosing one issues the order, and Shift queues it.
 - **Trains:** they stop only at Depots, along friendly rails. Their round-trip fuel estimate and warning now cover the current Load/Unload pair as well as legacy routes.

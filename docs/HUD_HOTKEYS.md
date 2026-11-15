@@ -27,7 +27,7 @@ The current keys, as set on 2026-11-15. `scripts/tools/setup_command_actions.gd`
 | Load page | A Iron · E Energy · W Wood · C Coal · X Clear · Esc Cancel. Shift fills free slots |
 | Make crates page | A Iron · E Energy · W Wood · C Coal · Esc Cancel. Shift makes five |
 
-Camera: arrows pan (Shift for fast), wheel zooms, **O** overview, **Space** focus HQ, **Home** focus selection, hold **Alt** to show every health bar. There is no rotate key. Space is read before the HUD, so a HUD button that still has focus after a click never takes it as a press. **F10** opens the playtest tools.
+Camera: arrows pan (Shift for fast), wheel zooms, **O** overview, **Space** focus HQ, **Home** focus selection, hold **Alt** to show every health bar. There is no rotate key. Space is read before the HUD, so a HUD button that still has focus after a click never takes it as a press. A focused text field or dropdown, or an open popup or dialog, keeps Space instead. **F10** opens the playtest tools.
 
 ## Selection
 

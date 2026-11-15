@@ -129,12 +129,12 @@ func route_lines() -> Array[Array]:
 			var stops: Array = unit.shipment_stops()
 			if not stops.is_empty(): lines.append([stops[0].point,stops[1].point])
 	return lines
-## A selected player unit's queued orders as one dashed path: from the unit through its current destination
-## and each queued one (docs/COMMAND_QUEUE.md). A unit with nothing queued shows none.
+## A selected player unit's orders as one dashed path: from the unit through its current destination and
+## each queued one (docs/COMMAND_QUEUE.md). An idle unit shows none.
 func queue_lines() -> Array[Array]:
 	var lines: Array[Array] = []
 	for unit in get_tree().get_nodes_in_group("units"):
-		if unit.team != "player" or not unit.is_selected or unit.order_queue.is_empty(): continue
+		if unit.team != "player" or not unit.is_selected: continue
 		var points: Array = [unit.global_position]
 		points.append_array(unit.waypoint_points())
 		if points.size() >= 2: lines.append(points)

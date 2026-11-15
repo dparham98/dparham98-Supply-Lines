@@ -7,9 +7,6 @@ func _initialize() -> void:
 		"produce_infantry": KEY_F, "produce_depot_truck": KEY_D, "produce_cargo": KEY_V, "produce_train": KEY_T,
 		"produce_scout": KEY_S, "produce_grenadier": KEY_G, "produce_tank": KEY_T, "produce_motorcycle": KEY_C, "produce_drone": KEY_D, "produce_ubermech": KEY_Q,
 		"control_group_1": KEY_1, "control_group_2": KEY_2, "control_group_3": KEY_3, "control_group_4": KEY_4, "control_group_5": KEY_5, "control_group_6": KEY_6, "control_group_7": KEY_7, "control_group_8": KEY_8, "control_group_9": KEY_9,
-		# Overview moved from M (Move). Focus HQ is Space: the camera reads it before the HUD, so a focused
-		# button never takes it.
-		"camera_overview": KEY_O, "camera_focus_hq": KEY_SPACE,
 		"playtest_tools": KEY_F10, "map_show_all": KEY_ALT,
 		"command_load": KEY_E, "command_unload": KEY_V, "command_trips": KEY_C,
 		# The Load and Make crates pages, and the Generator card's fuel tiles.

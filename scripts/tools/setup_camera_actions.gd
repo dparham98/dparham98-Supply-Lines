@@ -1,4 +1,6 @@
 extends SceneTree
+# Saves the camera keys to the Input Map; the only place they are set. Focus HQ is Space, which the camera
+# reads before the HUD so a focused button never takes it. There is no rotate key: Q and E are command keys.
 func _initialize() -> void:
 	var keys := {"camera_pan_left": KEY_LEFT, "camera_pan_right": KEY_RIGHT, "camera_pan_forward": KEY_UP, "camera_pan_back": KEY_DOWN, "camera_fast_pan": KEY_SHIFT, "camera_overview": KEY_O, "camera_focus_hq": KEY_SPACE, "camera_focus_selection": KEY_HOME}
 	for action in keys:

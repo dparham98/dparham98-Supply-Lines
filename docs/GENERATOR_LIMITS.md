@@ -43,11 +43,11 @@ The player sets both on the Depot card, with two buttons that step through prese
   - lowering the reserve frees coal
   - a latched wood cycle whose wood is taken waits for wood, not for the reserve
   - the presets wrap round, and end at the Depot's own storage capacity
-  - the Depot card shows both buttons with H and J, and the stats; a press steps the setting; another side's Depot shows none of them
+  - the Depot card shows both buttons with their keys (H and J when added; E and Q since PR #75), and the stats; a press steps the setting; another side's Depot shows none of them
   - a Generator plan is built for 40 iron and no energy
 - **`tests/generator_batch_test.gd`** now runs its cycle checks with fixed rules (coal 50 E over 5 s, no reserve, ceiling at capacity), so it keeps testing the cycle mechanics alone.
 - **`tests/command_cards_test.gd`:** counts the two new tiles, and fuel left counts coal above the reserve.
-- **`tests/hud_hotkeys_test.gd`:** the Depot card's keys now include H and J.
+- **`tests/hud_hotkeys_test.gd`:** the Depot card's keys now include H and J (E and Q since PR #75).
 - **Older payment checks:** six of them use a Generator only as a priced build, and they keep its old 100 E / 20 I price at their start:
   - `bottom_hud_test`
   - `supply_test`

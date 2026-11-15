@@ -97,9 +97,9 @@ func _process(delta: float) -> void:
 
 func _input(event: InputEvent) -> void:
 	if Engine.is_editor_hint(): return
-	# Focus HQ is Space, which a focused HUD button would also take as a press; read it first, unless
-	# the player is typing in a text field.
-	if event.is_action_pressed("camera_focus_hq") and not event.is_echo() and not get_viewport().gui_get_focus_owner() is LineEdit:
+	# Focus HQ is Space, which a focused HUD button would also take as a press, so it is read first. A text
+	# field, dropdown or open popup or dialog keeps Space for itself.
+	if event.is_action_pressed("camera_focus_hq") and not event.is_echo() and not gui_wants_space():
 		focus_hq()
 		get_viewport().set_input_as_handled()
 		return
@@ -113,6 +113,14 @@ func _input(event: InputEvent) -> void:
 		else: cancel_pointer_navigation()
 		get_viewport().set_input_as_handled()
 
+## Whether a GUI control should get Space instead of Focus HQ: a focused text field or dropdown, or an
+## open popup or dialog.
+func gui_wants_space() -> bool:
+	var focused := get_viewport().gui_get_focus_owner()
+	if focused is LineEdit or focused is TextEdit or focused is OptionButton or focused is MenuButton: return true
+	for window in get_viewport().get_embedded_subwindows():
+		if window.visible: return true
+	return false
 func _unhandled_input(event: InputEvent) -> void:
 	if Engine.is_editor_hint(): return
 	if event is InputEventKey and event.echo: return

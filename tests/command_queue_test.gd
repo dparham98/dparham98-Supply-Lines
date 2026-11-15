@@ -55,6 +55,9 @@ func run() -> void:
 	if not check(worker.global_position.distance_to(a) < 2.5,"First move not reached before the second started"): return
 	if not check(run_until(worker,func(): return worker.order == "idle" and worker.order_queue.is_empty(),40) and worker.global_position.distance_to(worker.move_goal) < 1.5,"Queue did not finish at the last waypoint"): return
 	if not check(overlay.queue_lines().is_empty(),"A path shown for an idle unit"): return
+	# A single order, with nothing queued, shows the path to its destination.
+	worker.run_order({kind = "move", point = a})
+	if not check(overlay.queue_lines().size() == 1 and overlay.queue_lines()[0].size() == 2 and overlay.queue_lines()[0][1] == a,"A single order should show a path to its destination"): return
 	# A plain order replaces the queue; Stop clears it.
 	worker.queue_order({kind = "move", point = a}); worker.queue_order({kind = "move", point = b})
 	game.issue_order(screen(c))

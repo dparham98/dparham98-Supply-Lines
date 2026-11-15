@@ -86,6 +86,18 @@ func run() -> void:
 	game.selected_building = game.depot; hud._process(0)
 	var depot_keys := visible_keys()
 	if not check(depot_keys == ["D","V","T","C","E","Q"] and depot_keys.size() == depot_keys.filter(func(k): return depot_keys.count(k) == 1).size(),"Depot card keys (Depot truck, Cargo, Train, Make crates, Energy ceiling, Coal kept; no Build) missing or duplicated %s" % [depot_keys]): return
+	# The other cards and pages, by every tile each can show at once.
+	var sets := {
+		"Production building": [hud.card,["PrintInfantry","ProduceScout","ProduceGrenadier","ProduceTank","ProduceMotorcycle","ProduceDrone","ProduceUbermech"]],
+		"Generator": [hud.card,["ToggleGenerator","BurnWood","BurnCoal","BurnEither","AssignDepot","FocusAssigned"]],
+		"Load page": [hud.pick,["LoadTiles/Iron","LoadTiles/Energy","LoadTiles/Wood","LoadTiles/Coal","LoadTiles/Clear","Cancel"]],
+		"Build page": [hud.build_menu,["Actions/Depot","Actions/Generator","Actions/Barracks","Actions/TankFactory","Actions/Mine","Actions/Rail","Actions/Pin","Actions/Back"]]}
+	for title in sets:
+		var keys := []
+		for path in sets[title][1]: keys.append(hud.hotkey_text(sets[title][0].get_node(path)))
+		var unique := {}
+		for key in keys: unique[key] = true
+		if not check(not keys.has("") and unique.size() == keys.size(),"%s has a missing or repeated key: %s" % [title,keys]): return
 	game.selected_building = null
 	# Keys press visible buttons and show their letter.
 	select_only(worker)
@@ -148,5 +160,14 @@ func run() -> void:
 	press(KEY_SPACE)
 	if not check(Vector2(rig._focus_target.x-hq.global_position.x,rig._focus_target.z-hq.global_position.z).length() < 0.5,"Space should focus the HQ"): return
 	if not check(stopped[0] == 0,"Space should not press the focused HUD button"): return
+	# A focused dropdown keeps Space for itself.
+	var dropdown: OptionButton = hud.get_node("Bottom/Body/Row/Context/AssignedSource")
+	dropdown.visible = true
+	dropdown.grab_focus()
+	rig.focus_position(hq.global_position+Vector3(80,0,80))
+	press(KEY_SPACE)
+	if not check(Vector2(rig._focus_target.x-hq.global_position.x,rig._focus_target.z-hq.global_position.z).length() > 50,"Space should go to a focused dropdown, not the camera"): return
+	dropdown.release_focus()
+	dropdown.visible = false
 	print("HUD_HOTKEYS_TEST_PASSED")
 	quit(0)

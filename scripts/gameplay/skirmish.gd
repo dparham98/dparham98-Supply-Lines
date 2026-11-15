@@ -164,6 +164,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		# A click lays one piece and finishes; with Shift held, track laying stays armed for the next piece.
 		if point != null and $RailNetwork.place(rail_kind(),point,rail_heading,rail_join(),hud.global_payer if hud.global_pinned and is_instance_valid(hud.global_payer) else null) != null and not event.shift_pressed:
 			placing_rail = false
+			notify("Track laid; laying finished. R lays another piece. Hold Shift while clicking to keep laying.")
 		get_viewport().set_input_as_handled()
 		return
 	if (placing_depot or placing_generator or not placing_structure.is_empty()) and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:

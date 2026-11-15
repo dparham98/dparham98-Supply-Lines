@@ -30,8 +30,8 @@ Phase 3 of the approved HUD plan, on branch `feature/command-queue` from main `9
 
 ## Queue path
 
-- Queued orders show as a yellow dashed line on the ground. It runs from the unit through its current destination and then each queued destination in order. It replaced the numbered disc markers on 2026-11-15.
-- It is drawn for selected player units that have at least one order queued. A single order with nothing queued shows no line. The line shortens as the queue advances and goes when the queue empties or the unit is deselected.
+- A selected unit's orders show as a yellow dashed line on the ground. It runs from the unit through its current destination and then each queued destination in order. It replaced the numbered disc markers on 2026-11-15.
+- It is drawn for selected player units with an order, including a single order with nothing queued, which shows the line to its destination. The line shortens as the queue advances and goes when the unit is idle or deselected.
 - The HUD's map overlay draws it (`queue_lines()` in `map_overlay.gd`), in screen space beside the dashed Cargo route lines, so it is drawn over models and stays visible. The old `WaypointMarkers` node and `waypoint_marker.tscn` are removed.
 
 ## Fix included
@@ -48,7 +48,7 @@ Phase 3 of the approved HUD plan, on branch `feature/command-queue` from main `9
   - Shift card orders staying armed;
   - out of fuel pausing and then resuming;
   - a route assignment clearing the queue;
-  - the dashed path's points and dashes, and no path for an idle or stopped unit;
+  - the dashed path's points, a path for a single order, and no path for an idle or stopped unit;
   - the Cargo refuel rate.
 - `tests/command_queue_runtime_check.gd` (rendered) uses a real selection click and three real Shift-right-clicks. Its screenshots are `queue_path` and `queue_progress`.
 - Needs a human playtest.

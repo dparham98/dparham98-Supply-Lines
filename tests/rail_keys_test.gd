@@ -80,7 +80,7 @@ func run() -> void:
 	await click_at(await look_at_end(far))
 	if not check(rails.pieces.size() == before+1 and rails.pieces[before].kind == "fork_left","A click after R should lay a fork"): return
 	# A plain click lays its piece and finishes: the Build page has its keys back.
-	if not check(not game.placing_rail,"A plain click should finish track laying"): return
+	if not check(not game.placing_rail and "laying finished" in game.message,"A plain click should finish track laying and say so: %s" % game.message): return
 	await process_frame
 	await press(KEY_G)
 	if not check(not game.placing_rail and game.global_plan_kind == &"generator","G should be the Generator tile again"): return
