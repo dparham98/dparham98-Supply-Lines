@@ -20,7 +20,7 @@ The map keeps the 500 x 500 grid of 1 m cells. Start A (the player) is in the we
 - **Lanes for rail.** Track pieces only run north-south and east-west, so the lanes do too: main to either expansion is a straight north-south run, and the centre, north and south lanes are straight east-west runs past the coal.
 - Nothing to gather is nearer than 30 cells to the map edge.
 
-Start B has no opponent. The scene has an `EnemyStart` marker, a mirrored starter mine, four Hostiles round start B and two beside each contested field. The markers under `Sites` show where each side is meant to settle; nothing reads them in play.
+Start B has no opponent. The scene has an `EnemyStart` marker, a mirrored starter mine, and one enemy of each unit type in a ring round start B: Infantry, Scout, Grenadier, Tank, Motorcycle, Drone, Übermech, Cargo truck and Depot truck, the same list the playtest panel spawns. They start fuelled, like every unit placed in the scene. The contested coal fields are unguarded. The markers under `Sites` show where each side is meant to settle; nothing reads them in play.
 
 ## Measured
 
@@ -143,7 +143,7 @@ godot --path . --script res://scripts/tools/draw_map_preview.gd
 - **Belt depth.** 9 cells is about two minutes of sawing with a Depot beside it, and much longer when every load of wood is carried far. A Tank drives straight through. Whether that is real Infantry time or tedium needs your eye. Clearing a 9-cell corridor also yields 180 wood, worth 1,800 energy in a Generator.
 - **Coal amounts,** and whether 2,000 is enough reason to fight at midfield.
 - **Safe and exposed.** Both expansions are about equally far from the enemy by ground; the difference is that the exposed one can be reached without passing the main.
-- **Resistance.** Hostiles hold their ground and fire at 15 m (docs/PATHING.md). They do not cover the middle of the centre lane.
+- **Resistance.** The enemies at start B have no opponent AI: they hold their ground and fire at whatever comes into their own range. The Cargo and Depot trucks do not fight. Nothing guards the contested coal.
 - **Look.** Coal lumps, the dark seam and the large flat-topped massifs were set by eye from four renders. Water borders keep the blocky steps of the cells.
 - **Frame rate.** On one machine with vertical sync off the whole-map view drew 2.3 million triangles at about 280 frames a second, against 1.4 million and about 400 to 460 on the original map. Slower machines were not tried.
 

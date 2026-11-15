@@ -446,7 +446,7 @@ custom_minimum_size = Vector2(200,200)
 layout_mode = 2
 clip_contents = true
 mouse_filter = 0
-tooltip_text = "MINIMAP · Click to move camera. Blue: friendly · Red: hostile · Grey: neutral · Gold: resources"
+tooltip_text = "MINIMAP · Left-click moves the camera. Right-click orders selected units there; a waiting command (Move, Attack...) takes its point here too. Blue: friendly · Red: hostile · Grey: neutral · Gold: resources"
 script = ExtResource("map_script")
 [node name="Terrain" type="TextureRect" parent="Bottom/Body/Row/MapColumn/Map"]
 layout_mode = 0

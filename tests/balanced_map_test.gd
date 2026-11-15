@@ -107,7 +107,22 @@ func run() -> void:
 		if unit.team == "player": players += 1
 		else: hostiles += 1
 	if not check(players == 2 and game.has_node("Entities/Units/Infantry") and game.get_node("Entities/Units/StarterTruck").fuel == game.get_node("Entities/Units/StarterTruck").fuel_rules.reserve_capacity, "Start A should be one Infantry and one fuelled Cargo truck"): return
-	if not check(hostiles >= 6, "Start B and the contested coal should be guarded"): return
+	# Start B holds one enemy of each unit type the playtest panel spawns, fuelled and on open ground.
+	var roster: Array = []
+	var panel: Node = load("res://scenes/ui/playtest_panel.tscn").instantiate()
+	for scene in panel.spawn_scenes: roster.append(scene.resource_path)
+	panel.free()
+	var enemy_scenes: Array = []
+	for unit in get_nodes_in_group("units"):
+		if unit.team == "player": continue
+		enemy_scenes.append(unit.scene_file_path)
+		var cell = ground.get_tile_at_position(unit.global_position)
+		var near_b: bool = Vector2(unit.position.x, unit.position.z).distance_to(Vector2(game.get_node("Sites/EnemyStart").position.x, game.get_node("Sites/EnemyStart").position.z)) <= 16.0
+		if not check(unit.team == "enemy" and unit.is_in_group("enemies") and near_b and cell != null and ground.can_traverse(cell, unit.mobility_layer(), unit._owner_key()), "%s should be an enemy on open ground at start B" % unit.name): return
+		if not check(not unit.fuel_active() or unit.fuel == unit.fuel_rules.reserve_capacity, "%s should start fuelled" % unit.name): return
+	enemy_scenes.sort()
+	roster.sort()
+	if not check(hostiles == roster.size() and enemy_scenes == roster, "Start B should hold one enemy of each unit type: %s" % [enemy_scenes]): return
 	reach = game.get_node("Entities/Units/Infantry").interaction_range
 
 	nav.region = Rect2i(0, 0, SIZE, SIZE)

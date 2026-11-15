@@ -483,7 +483,7 @@ func update_contents() -> void:
 	if not is_instance_valid(node):
 		name_label.text = "Nothing selected"
 		info.get_node("HealthText").text = "Select a unit or building"
-		info.get_node("Details").text = "Minimap: click to move camera.\nBlue: friendly · red: hostile\nGrey: neutral · gold: resources"
+		info.get_node("Details").text = "Minimap: left-click moves the camera, right-click orders selected units there.\nBlue: friendly · red: hostile\nGrey: neutral · gold: resources"
 		commands.get_node("Title").text = "COMMAND CARD"
 		hint_text = "Left-click selects. Drag selects units. Right-click gives orders. B opens the build page."
 		return

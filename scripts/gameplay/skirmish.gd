@@ -218,9 +218,30 @@ func pick_target(screen: Vector2, group: String, _radius := 34.0) -> Node3D:
 	var closest: Node3D
 	var distance := INF
 	for node in get_tree().get_nodes_in_group(group):
-		var d: float = preload("res://scripts/units/selection_bounds.gd").hit_distance(node,camera,screen)
+		var d: float = pick_distance(node,camera,screen)
 		if d < distance: distance = d; closest = node
 	return closest
+# Minimap orders (docs/MINIMAP_ORDERS.md): while the minimap gives an order, a world point and radius stand
+# in for the pointer, so the map's own order rules run unchanged.
+var _map_point := Vector3.INF
+var _map_radius := 0.0
+## Gives the order a click at `point` would give: a right-click order, or with `card` the waiting command's.
+func issue_map_order(point: Vector3, radius: float, card: bool, queued := false) -> void:
+	_map_point = point
+	_map_radius = radius
+	if card: issue_card_order(Vector2.ZERO,queued)
+	else: issue_order(Vector2.ZERO,queued)
+	_map_point = Vector3.INF
+## The ground under the pointer, or the minimap's point while it gives an order.
+func ground_at(screen: Vector2):
+	if _map_point != Vector3.INF: return _map_point
+	var camera := get_viewport().get_camera_3d()
+	return Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(screen),camera.project_ray_normal(screen))
+## How near `node` is to the pointer, or on the ground to the minimap's point; INF when it is missed.
+func pick_distance(node: Node3D, camera: Camera3D, screen: Vector2) -> float:
+	if _map_point == Vector3.INF: return preload("res://scripts/units/selection_bounds.gd").hit_distance(node,camera,screen)
+	var d := Vector2(node.global_position.x-_map_point.x,node.global_position.z-_map_point.z).length()
+	return d if d <= _map_radius else INF
 ## A friendly unit or building under the pointer, for forced fire with the Attack command.
 func pick_friendly(screen: Vector2) -> Node3D:
 	var camera := get_viewport().get_camera_3d()
@@ -229,7 +250,7 @@ func pick_friendly(screen: Vector2) -> Node3D:
 	for group in ["units","selectable_buildings"]:
 		for node in get_tree().get_nodes_in_group(group):
 			if node.get("team") != "player" or not node.has_method("take_damage"): continue
-			var d: float = preload("res://scripts/units/selection_bounds.gd").hit_distance(node,camera,screen)
+			var d: float = pick_distance(node,camera,screen)
 			if d < distance: distance = d; closest = node
 	return closest
 # Shift-held orders join each unit's queue; plain orders replace it (docs/COMMAND_QUEUE.md).
@@ -251,8 +272,7 @@ func issue_order(screen: Vector2, queued := false) -> void:
 	var plan := pick_target(screen,"construction_plans",50)
 	if is_instance_valid(plan) and (plan.finished or plan.kind == &"rail"): plan = null
 	var crate := pick_crate(screen)
-	var camera := get_viewport().get_camera_3d()
-	var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(screen),camera.project_ray_normal(screen))
+	var point = ground_at(screen)
 	var selected := 0
 	var forest_ordered := false
 	var coal_ordered: Node3D
@@ -324,8 +344,7 @@ func issue_card_order(screen: Vector2, queued := false) -> void:
 	elif pending_unit_command == "gather":
 		target = pick_target(screen,"resources",48)
 		if target == null:
-			var camera := get_viewport().get_camera_3d()
-			var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(screen),camera.project_ray_normal(screen))
+			var point = ground_at(screen)
 			if point != null and ground.get_tile_at_position(point) != null:
 				var cell = ground.get_tile_at_position(point)
 				if ground.get_terrain(cell) == 5: notify("Build an Iron Mine on this deposit before gathering iron."); return
@@ -342,7 +361,7 @@ func issue_card_order(screen: Vector2, queued := false) -> void:
 			# Unload also lands on a queued build site.
 			var site := pick_target(screen,"construction_plans",50)
 			if pending_unit_command == "unload" and is_instance_valid(site) and not site.finished and site.kind != &"rail": target = site
-	var ground_point = Plane(Vector3.UP,0).intersects_ray(get_viewport().get_camera_3d().project_ray_origin(screen),get_viewport().get_camera_3d().project_ray_normal(screen))
+	var ground_point = ground_at(screen)
 	# Attack on open ground is attack-move.
 	if pending_unit_command == "attack" and not is_instance_valid(target) and ground_point != null:
 		for unit in get_tree().get_nodes_in_group("units"):
@@ -383,8 +402,7 @@ func issue_card_order(screen: Vector2, queued := false) -> void:
 	if pending_unit_command != "move" and not is_instance_valid(target):
 		notify("Click an appropriate target for "+pending_unit_command+".")
 		return
-	var camera := get_viewport().get_camera_3d()
-	var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(screen),camera.project_ray_normal(screen))
+	var point = ground_at(screen)
 	for unit in get_tree().get_nodes_in_group("units"):
 		if unit.team != "player" or not unit.is_selected: continue
 		if pending_unit_command == "move":
