@@ -57,7 +57,7 @@ func run() -> void:
 	assert(game.ore == game.ore_delivered)
 	var delivered: int = game.ore_delivered
 	game.get_node("DepotNetwork").select_depot(game.depot)
-	assert(game.get_node("DepotNetwork").construct_production(Vector3(180,0,160),&"barracks"))
+	assert(game.get_node("DepotNetwork").construct_production(Vector3(182,0,160),&"barracks"))
 	barracks = get_nodes_in_group("production_buildings")[0]
 	barracks.set_process(false)
 	assert(barracks.request_unit(&"infantry"))

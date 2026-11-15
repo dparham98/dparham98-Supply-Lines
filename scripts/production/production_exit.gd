@@ -5,5 +5,5 @@ static func find_cell(ground: Node, point: Vector3, footprint: Vector2i, layer: 
 	if center == null: return Vector2i(-1,-1)
 	for radius in range(maxi(footprint.x,footprint.y)/2+2,16):
 		for offset in [Vector2i(0,radius),Vector2i(radius,0),Vector2i(-radius,0),Vector2i(0,-radius)]:
-			if ground.can_traverse(center+offset,layer): return center+offset
+			if ground.can_traverse(center+offset,layer) and not ground.is_apron(center+offset): return center+offset
 	return Vector2i(-1,-1)
