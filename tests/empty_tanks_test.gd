@@ -17,7 +17,7 @@ func run() -> void:
 	game.set_process(false)
 	for node in get_nodes_in_group("units"): node.set_process(false)
 	var depot: Node3D = game.depot
-	var starter: Array = get_nodes_in_group("units").filter(func(unit): return unit.get("is_cargo_vehicle") == true)
+	var starter: Array = get_nodes_in_group("units").filter(func(unit): return unit.get("is_cargo_vehicle") == true and unit.team == "player")
 	if not check(starter.size() == 1 and starter[0].fuel_active() and starter[0].fuel >= starter[0].fuel_rules.reserve_capacity,"The authored starter Cargo truck should start full"): return
 	# Printed at the Depot.
 	depot.coal = 0
