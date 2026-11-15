@@ -1,33 +1,50 @@
 [gd_scene format=3]
 
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_fill"]
+sky_top_color = Color(0.36, 0.5, 0.72, 1)
+sky_horizon_color = Color(0.68, 0.74, 0.8, 1)
+sky_energy_multiplier = 1.0
+ground_bottom_color = Color(0.26, 0.24, 0.2, 1)
+ground_horizon_color = Color(0.58, 0.6, 0.58, 1)
+sun_angle_max = 0.0
+
+[sub_resource type="Sky" id="Sky_fill"]
+sky_material = SubResource("ProceduralSkyMaterial_fill")
+
 [sub_resource type="Environment" id="Environment_82gp4"]
 background_mode = 1
 background_color = Color(0.16078432, 0.22352941, 0.25882354, 1)
-ambient_light_source = 2
-ambient_light_color = Color(0.7, 0.76, 0.84, 1)
-ambient_light_energy = 0.5
-tonemap_mode = 3
-tonemap_exposure = 1.12
-tonemap_white = 3.0
+sky = SubResource("Sky_fill")
+ambient_light_source = 3
+ambient_light_sky_contribution = 1.0
+ambient_light_energy = 0.75
+reflected_light_source = 2
+tonemap_mode = 4
+tonemap_exposure = 1.0
+tonemap_white = 4.0
 ssao_enabled = true
-ssao_radius = 1.4
-ssao_intensity = 1.8
-ssao_power = 1.4
-fog_enabled = true
-fog_light_color = Color(0.72, 0.79, 0.86, 1)
-fog_light_energy = 0.9
-fog_sun_scatter = 0.12
-fog_density = 0.0002
+ssao_radius = 1.2
+ssao_intensity = 2.2
+ssao_power = 1.6
+ssao_detail = 0.6
+ssao_light_affect = 0.15
+glow_enabled = true
+glow_intensity = 0.35
+glow_strength = 0.9
+glow_bloom = 0.0
+glow_blend_mode = 1
+glow_hdr_threshold = 1.3
 adjustment_enabled = true
-adjustment_contrast = 1.04
-adjustment_saturation = 0.98
+adjustment_contrast = 1.06
+adjustment_saturation = 1.0
 
 [node name="Lighting" type="Node3D" unique_id=1838254414]
+editor_description = "Global light for every map. A raking sun from the west-south-west for readable shadows and relief; sky ambient so shadowed sides take a cool tint; AgX tone mapping so snow and pale buildings do not burn out; ambient occlusion to seat units and buildings on the ground; glow only above 1.3 so only emissive flashes and lamps bloom. No depth fog: the camera is orthographic, so it would tint the whole screen evenly."
 
 [node name="Sun" type="DirectionalLight3D" parent="." unique_id=731527091]
 transform = Transform3D(0.406, 0.565, -0.718, 0, 0.786, 0.618, 0.914, -0.251, 0.319, 0, 0, 0)
-light_color = Color(1, 0.94, 0.84, 1)
-light_energy = 1.25
+light_color = Color(1, 0.93, 0.8, 1)
+light_energy = 1.45
 shadow_enabled = true
 shadow_bias = 0.04
 shadow_normal_bias = 1.2

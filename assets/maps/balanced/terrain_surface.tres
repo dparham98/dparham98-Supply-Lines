@@ -15,3 +15,5 @@ shader_parameter/category_map = ExtResource("3")
 shader_parameter/tile_albedo = ExtResource("4")
 shader_parameter/tile_normal = ExtResource("5")
 shader_parameter/ground_blend = ExtResource("6")
+shader_parameter/ground_saturation = 0.82
+shader_parameter/ground_value = 0.9

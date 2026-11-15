@@ -60,7 +60,17 @@ The tree shaders read that mask too: whatever would hide a cleared cell from the
 
 ## Lighting (`scenes/maps/lighting.tscn`, all maps)
 
-Sun from the west-south-west at 38 degrees, so shadows fall to the right and show relief; softer shadows over a 340 m range; ambient occlusion; light fog; ACES tone mapping with a small contrast and saturation adjustment. This changes the whole game's look, not only the slice.
+Sun from the west-south-west at 38 degrees, so shadows fall to the right and show relief; softer shadows over a 340 m range; ambient occlusion. This changes the whole game's look, not only the slice.
+
+Lighting pass (2026-11-14), so units and buildings stand out from the ground:
+
+- Ambient light comes from a procedural sky instead of one flat colour, so shadowed sides take a cool tint. The sun is a little warmer and stronger (1.45).
+- AgX tone mapping replaces ACES, so snow and pale roofs do not burn out.
+- Glow is on above an HDR threshold of 1.3, so only emissive flashes and lamps bloom.
+- There is no depth fog. The camera is orthographic, so every pixel is the same distance away and fog only tinted the whole screen evenly.
+- The ground is quieter. `terrain_surface.gdshader` has `ground_saturation` and `ground_value` for open ground (grass, forest floor and desert); the balanced map sets 0.82 and 0.9.
+- The balanced map's rock is slightly darker and its snow greyer, set in `assets/maps/balanced/mountain_massif.tres`.
+- Forest tiles are multiplied by a cool tint in `forest_tile.tres`, which calms the yellow speckle.
 
 ## Cost
 
