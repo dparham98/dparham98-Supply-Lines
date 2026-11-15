@@ -17,13 +17,6 @@ albedo_color = Color(0.2,1,0.6,1)
 roughness = 0.85
 shading_mode = 0
 
-[sub_resource type="TorusMesh" id="r2"]
-inner_radius = 0.85
-outer_radius = 0.96
-rings = 20
-ring_segments = 6
-material = SubResource("r1")
-
 [sub_resource type="TorusMesh" id="supply_ring"]
 inner_radius = 0.985
 outer_radius = 1.0
@@ -59,11 +52,6 @@ mesh = SubResource("team_marker_mesh")
 instance_shader_parameters/half_size = Vector2(1.2, 2.7)
 metadata/not_selectable = true
 
-[node name="SelectionRing" type="MeshInstance3D" parent="."]
-position = Vector3(0,0.08,0)
-visible = false
-mesh = SubResource("r2")
-
 [node name="Status" type="Label3D" parent="."]
 position = Vector3(0,3.3,0)
 billboard = 1
@@ -83,7 +71,6 @@ pixel_size = 0.04
 outline_size = 6
 modulate = Color(1,0.8,0.35,1)
 text = "0 Ore"
-
 
 [node name="SupplyRadius" type="MeshInstance3D" parent="."]
 position = Vector3(0,0.12,0)
