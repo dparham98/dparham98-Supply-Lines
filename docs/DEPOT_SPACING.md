@@ -13,7 +13,7 @@ A new Depot must stand at least 70 m, centre to centre, from every other friendl
 - **Every way a new Depot is made:**
   - building one with a selected builder
   - placing a Depot plan from the Build page
-  - building a Depot plan: checked again before each building step and at completion. A plan that has lost its spacing (for example when an enemy Depot beside it is captured) builds in no material and reads "Blocked · a new Depot must stand at least 70 m from every other friendly Depot". Cancel it to recover its materials.
+  - building a Depot plan: checked again before each building step and at completion. A plan that has lost its spacing (for example when an enemy Depot beside it is captured) builds in no material and reads "Blocked · a new Depot must stand at least 70 m from every other friendly Depot". Cancelling it leaves the materials delivered to the site as piles.
   - deploying a Depot truck
 - **Checked against:**
   - the asking side's own Depots
