@@ -16,6 +16,14 @@ func run() -> void:
 	var depot = game.depot
 	var other = game.get_node("Entities/Buildings/EastDepot")
 	clear(depot.stockpile); clear(other.stockpile)
+	# Cycle mechanics with fixed numbers: coal 50 E over 5 s, no coal reserve and no energy ceiling below
+	# storage capacity. The tuned values and the limits are checked in generator_limits_test.gd.
+	var fixed := GeneratorRules.new()
+	fixed.coal_output = 50; fixed.coal_seconds = 5.0
+	generator.fuel_rules = fixed
+	for each in [depot,other]:
+		each.coal_reserve = 0
+		each.energy_ceiling = each.storage_capacity
 	generator.reset_cycle(); other.wood = 100; other.coal = 100
 	generator._process(100)
 	if not check(depot.energy == 0 and not generator.active() and generator.cycle_elapsed == 0,"Empty generator produced free energy or borrowed fuel"): return

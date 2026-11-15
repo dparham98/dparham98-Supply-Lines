@@ -2,3 +2,5 @@
 [ext_resource type="Script" path="res://scripts/economy/supply_rules.gd" id="rules"]
 [resource]
 script = ExtResource("rules")
+generator_energy_cost = 0
+generator_iron_cost = 40

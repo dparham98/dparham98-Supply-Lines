@@ -18,6 +18,20 @@ var energy: int:
 	set(value): stockpile.set_amount(&"energy",value)
 @export var initial_wood := 0
 @export var initial_coal := 0
+## Generators assigned here stop once the Depot holds this much energy. The player sets it on the Depot card.
+@export_range(0,10000) var energy_ceiling := 600
+## Generators assigned here leave this much coal for vehicle fuel. The player sets it on the Depot card.
+@export_range(0,10000) var coal_reserve := 60
+## The values the Depot card steps through, in order. The last ceiling is the full storage capacity.
+const ENERGY_CEILINGS := [300,600,1000,2000]
+const COAL_RESERVES := [0,30,60,120]
+## Steps to the next preset, wrapping round; a value set in the editor goes to the first preset above it.
+func cycle_energy_ceiling() -> void: energy_ceiling = _next_preset(ENERGY_CEILINGS,energy_ceiling)
+func cycle_coal_reserve() -> void: coal_reserve = _next_preset(COAL_RESERVES,coal_reserve)
+static func _next_preset(presets: Array, value: int) -> int:
+	for preset in presets:
+		if preset > value: return preset
+	return presets[0]
 var wood: int:
 	get: return stockpile.amount(&"wood")
 	set(value): stockpile.set_amount(&"wood",value)
