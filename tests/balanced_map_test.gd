@@ -414,7 +414,7 @@ func _opening_estimate(from_a: Vector2i, mine_cell: Vector2, safe_a: Vector2i, c
 	var loads := ceili(float(iron_needed)/worker.carry_capacity)
 	var iron_ready := mining_starts+loads*load_seconds+(loads*2-1)*leg/walk
 	# First Tank, built at the main. With new vehicles starting full it only waits for iron. With new vehicles
-	# starting empty (FuelRules.testing_full_tanks off) it also waits for a tank of coal dug at the safe expansion
+	# starting empty (this map's testing_full_tanks off) it also waits for a tank of coal dug at the safe expansion
 	# and brought home by the starter Cargo truck, which is already waiting there.
 	var built_in: float = ceilf(float(factory.iron_cost)/worker.harvest_amount)*worker.harvest_interval
 	var tank_fuelled := iron_ready+built_in+factory.print_seconds

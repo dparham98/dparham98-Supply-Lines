@@ -8,9 +8,10 @@ extends Resource
 @export_range(0,10,0.01) var coal_per_movement_unit := 0.10
 @export_range(0,100,0.5) var refuel_coal_per_second := 5.0
 @export_range(0,1,0.01) var low_fuel_fraction := 0.25
-## Testing switch: vehicles built at Depots and factories start with a full tank instead of empty.
+## Fallback for a vehicle made with no skirmish root (a scene run on its own): start with a full tank.
 static var testing_full_tanks := true
-## Whether a vehicle built now starts with a full tank: the testing switch, unless this map's skirmish
-## turns it off (skirmish testing_full_tanks; the balanced map does, docs/ECONOMY_REPORT.md step 5).
+## Whether a vehicle made now starts with a full tank. The map's skirmish decides (`testing_full_tanks`, on
+## except on the balanced map, economy report step 5 in PR #66); the fallback applies only without one.
 static func full_tanks_for(game: Node) -> bool:
-	return testing_full_tanks and (not is_instance_valid(game) or game.get("testing_full_tanks") != false)
+	if is_instance_valid(game) and game.get("testing_full_tanks") is bool: return game.testing_full_tanks
+	return testing_full_tanks
