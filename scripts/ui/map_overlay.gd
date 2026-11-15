@@ -1,11 +1,13 @@
 extends Control
 # Map status overlay (docs/UI_PHASE_C.md): one screen-space pass draws health bars, production
-# progress, status icons, capture rings, carried cargo, route lines and delivery pop-ups above
+# progress, status icons, capture rings, carried cargo, route lines, queue paths and delivery pop-ups above
 # actors, replacing their always-on text labels at runtime. Hold Alt to show everything.
 const Bounds = preload("res://scripts/units/selection_bounds.gd")
 const TEAM_COLORS := preload("res://scripts/units/team_colors.gd").COLORS
 const RESOURCE_COLORS := {&"energy": Color(0.818,0.771,0.652), &"iron": Color(0.604,0.655,0.678), &"wood": Color(0.435,0.682,0.353), &"coal": Color(0.788,0.541,0.29)}
 const AMBER := Color(0.941,0.698,0.29)
+## The dashed path through a selected unit's queued orders.
+const QUEUE_COLOR := Color(1,0.82,0.25,0.9)
 const RED := Color(0.89,0.35,0.31)
 const TRACK := Color(0.055,0.09,0.114,0.85)
 const STORAGE_WARNING := 0.9
@@ -127,6 +129,16 @@ func route_lines() -> Array[Array]:
 			var stops: Array = unit.shipment_stops()
 			if not stops.is_empty(): lines.append([stops[0].point,stops[1].point])
 	return lines
+## A selected player unit's orders as one dashed path: from the unit through its current destination and
+## each queued one (docs/COMMAND_QUEUE.md). An idle unit shows none.
+func queue_lines() -> Array[Array]:
+	var lines: Array[Array] = []
+	for unit in get_tree().get_nodes_in_group("units"):
+		if unit.team != "player" or not unit.is_selected: continue
+		var points: Array = [unit.global_position]
+		points.append_array(unit.waypoint_points())
+		if points.size() >= 2: lines.append(points)
+	return lines
 func _on_delivered(target: Node3D, kind: StringName, amount: int) -> void:
 	popups.append({node = target, text = "+%d %s" % [amount,str(kind)], color = RESOURCE_COLORS.get(kind,Color.WHITE), time = Time.get_ticks_msec()/1000.0})
 # One ping per order: a group order emits once per unit, so repeats at the same spot are merged.
@@ -182,6 +194,10 @@ func _draw() -> void:
 			color.a = 1.0-t
 			draw_ring(center,Vector2(6+16*t,3+8*t),color,2)
 			if not ping.queued: draw_ring(center,Vector2(3,1.5),color,2)
+	for path in queue_lines():
+		for i in range(path.size()-1):
+			if camera.is_position_behind(path[i]) or camera.is_position_behind(path[i+1]): continue
+			draw_dashed_line(camera.unproject_position(path[i]),camera.unproject_position(path[i+1]),QUEUE_COLOR,2,8)
 	for line in route_lines():
 		if camera.is_position_behind(line[0]) or camera.is_position_behind(line[1]): continue
 		var a := camera.unproject_position(line[0])

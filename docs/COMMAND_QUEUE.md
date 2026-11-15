@@ -28,11 +28,11 @@ Phase 3 of the approved HUD plan, on branch `feature/command-queue` from main `9
 - **Out of fuel** pauses the queue without dropping it. It resumes once the vehicle has refuelled.
 - Assigning a supply route clears a Cargo vehicle's or Train's queue. Repeating routes never go idle.
 
-## Waypoint markers
+## Queue path
 
-- `WaypointMarkers` in `resource_skirmish.tscn` pools instances of the authored `scenes/gameplay/waypoint_marker.tscn`: a yellow disc with a number.
-- It shows the current destination as 1 and each queued destination after it, for selected player units only. Markers renumber as the queue advances and disappear when the unit is idle or deselected.
-- Markers sit on the ground plane (y = 0), like other ground-plane picking, and have no connecting lines.
+- A selected unit's orders show as a yellow dashed line on the ground. It runs from the unit through its current destination and then each queued destination in order. It replaced the numbered disc markers on 2026-11-15.
+- It is drawn for selected player units with an order, including a single order with nothing queued, which shows the line to its destination. The line shortens as the queue advances and goes when the unit is idle or deselected.
+- The HUD's map overlay draws it (`queue_lines()` in `map_overlay.gd`), in screen space beside the dashed Cargo route lines, so it is drawn over models and stays visible. The old `WaypointMarkers` node and `waypoint_marker.tscn` are removed.
 
 ## Fix included
 
@@ -48,7 +48,7 @@ Phase 3 of the approved HUD plan, on branch `feature/command-queue` from main `9
   - Shift card orders staying armed;
   - out of fuel pausing and then resuming;
   - a route assignment clearing the queue;
-  - marker counts, numbering and hiding;
+  - the dashed path's points, a path for a single order, and no path for an idle or stopped unit;
   - the Cargo refuel rate.
-- `tests/command_queue_runtime_check.gd` (rendered) uses a real selection click and three real Shift-right-clicks. Its screenshots are `queue_markers` and `queue_progress`.
+- `tests/command_queue_runtime_check.gd` (rendered) uses a real selection click and three real Shift-right-clicks. Its screenshots are `queue_path` and `queue_progress`.
 - Needs a human playtest.

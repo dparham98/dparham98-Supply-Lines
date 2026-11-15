@@ -64,7 +64,7 @@ func run() -> void:
 	if not check(absf(low) < 0.15 and high > 1.9 and high < 2.2,"Motorcycle not on the ground or the wrong height: y %.2f..%.2f" % [low,high]): return
 	if not check(behind-ahead > 2.5 and behind-ahead < 2.9 and right-left > 0.8 and right-left < 1.3,"Motorcycle size wrong: z %.2f..%.2f x %.2f..%.2f" % [ahead,behind,left,right]): return
 	if not check(unit.to_local(fork.global_position).z < -0.5 and unit.to_local(model.muzzle_position()).z < unit.to_local(swivel.global_position).z-0.5,"Motorcycle should face -Z"): return
-	if not check(unit.get_node("SelectionRing").mesh.outer_radius >= (behind-ahead)*0.5,"The bike sticks out past its selection ring"): return
+	if not check(unit.get_node("Visuals/TeamMarker").mesh.size.y >= behind-ahead,"The bike sticks out past its team marker"): return
 	# Where the left hand holds the bars, for checking it stays there through a turn.
 	var hand_in_arm := Vector3(0.0775,-0.117,0.5)
 	var grip_in_bars: Vector3 = bars.global_transform.affine_inverse()*(arm.global_transform*hand_in_arm)

@@ -10,18 +10,6 @@
 
 [ext_resource type="Material" path="res://assets/materials/units/team_marker.tres" id="team_marker"]
 
-[sub_resource type="StandardMaterial3D" id="r1"]
-albedo_color = Color(0.2,1,0.6,1)
-roughness = 0.85
-shading_mode = 0
-
-[sub_resource type="TorusMesh" id="r2"]
-inner_radius = 7.9
-outer_radius = 8.1
-rings = 64
-ring_segments = 6
-material = SubResource("r1")
-
 [sub_resource type="PlaneMesh" id="team_marker_mesh"]
 material = ExtResource("team_marker")
 size = Vector2(3.8, 15.8)
@@ -48,11 +36,6 @@ cast_shadow = 0
 mesh = SubResource("team_marker_mesh")
 instance_shader_parameters/half_size = Vector2(1.9, 7.9)
 metadata/not_selectable = true
-
-[node name="SelectionRing" type="MeshInstance3D" parent="."]
-position = Vector3(0,0.08,0)
-visible = false
-mesh = SubResource("r2")
 
 [node name="Status" type="Label3D" parent="."]
 position = Vector3(0,5.2,0)

@@ -148,7 +148,7 @@ func run() -> void:
 	for kind in ResourceStockpile.KINDS: depot.stockpile.set_amount(kind,0)
 	depot.iron = 150; depot.wood = 25
 	select(null,depot)
-	if not check(hud.card.get_node("MakeCrates").visible and not hud.card.has_node("EmptyCrate") and hud.hotkey_text(hud.card.get_node("MakeCrates")) == "K","Make crates tile wrong"): return
+	if not check(hud.card.get_node("MakeCrates").visible and not hud.card.has_node("EmptyCrate") and hud.hotkey_text(hud.card.get_node("MakeCrates")) == "C","Make crates tile wrong"): return
 	hud.card.get_node("MakeCrates").pressed.emit(); hud._process(0)
 	if not check(hud.crate_page_open and hud.pick.visible and hud.load_tiles.visible and not hud.load_tiles.get_node("Clear").visible and not hud.manifest_panel.visible and not hud.card.visible,"Crate page not shown"): return
 	if not check(hud.load_tiles.get_node("Coal").disabled and not hud.load_tiles.get_node("Iron").disabled,"Crate tiles did not follow stock"): return

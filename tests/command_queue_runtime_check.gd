@@ -1,5 +1,5 @@
 extends SceneTree
-# Rendered command queue check: real selection click and Shift-right-clicks; marker screenshots.
+# Rendered command queue check: real selection click and Shift-right-clicks; dashed queue path screenshots.
 var game: Node3D
 const TestOutput = preload("res://tests/test_output.gd")
 const OUTPUT = "queue_work/"
@@ -41,14 +41,14 @@ func run() -> void:
 	var start: Vector3 = worker.global_position
 	for offset in [Vector3(8,0,-2),Vector3(14,0,-4),Vector3(18,0,0)]:
 		await click_at(camera.unproject_position(start+offset),MOUSE_BUTTON_RIGHT,true)
-	var markers = game.get_node("WaypointMarkers")
+	var overlay = game.get_node("Interface/MapOverlay")
 	for frame in range(3): await process_frame
-	if not check(worker.order == "move" and worker.order_queue.size() == 2 and markers.visible_count() == 3,"Shift-right-clicks did not build a 3-step queue (queue %d, markers %d)" % [worker.order_queue.size(),markers.visible_count()]): return
-	await shot("queue_markers")
+	if not check(worker.order == "move" and worker.order_queue.size() == 2 and overlay.queue_lines().size() == 1 and overlay.queue_lines()[0].size() == 4,"Shift-right-clicks did not build a 3-step queue (queue %d, paths %s)" % [worker.order_queue.size(),overlay.queue_lines()]): return
+	await shot("queue_path")
 	for i in range(60*12):
 		worker._process(1.0/60)
 		if worker.order_queue.size() == 1: break
 	for frame in range(3): await process_frame
-	if not check(worker.order_queue.size() == 1 and markers.visible_count() == 2,"Markers did not follow queue progress"): return
+	if not check(worker.order_queue.size() == 1 and overlay.queue_lines().size() == 1 and overlay.queue_lines()[0].size() == 3,"The path did not follow queue progress"): return
 	await shot("queue_progress")
 	print("COMMAND_QUEUE_RUNTIME_CHECK_PASSED"); quit(TestOutput.exit_code())
