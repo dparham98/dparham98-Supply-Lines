@@ -302,6 +302,14 @@ events = [SubResource("key_resource_coal")]
 action = &"command_make_crates"
 [sub_resource type="Shortcut" id="shortcut_command_make_crates"]
 events = [SubResource("key_command_make_crates")]
+[sub_resource type="InputEventAction" id="key_command_energy_ceiling"]
+action = &"command_energy_ceiling"
+[sub_resource type="Shortcut" id="shortcut_command_energy_ceiling"]
+events = [SubResource("key_command_energy_ceiling")]
+[sub_resource type="InputEventAction" id="key_command_coal_reserve"]
+action = &"command_coal_reserve"
+[sub_resource type="Shortcut" id="shortcut_command_coal_reserve"]
+events = [SubResource("key_command_coal_reserve")]
 [sub_resource type="InputEventAction" id="key_command_burn_either"]
 action = &"command_burn_either"
 [sub_resource type="Shortcut" id="shortcut_command_burn_either"]
@@ -1716,6 +1724,7 @@ text = "?"
 [node name="EnergyCeiling" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
 tooltip_text = "Steps the energy ceiling: 300, 600, 1000, 2000."
+shortcut = SubResource("shortcut_command_energy_ceiling")
 layout_mode = 0
 custom_minimum_size = Vector2(46,46)
 text = ""
@@ -1737,10 +1746,11 @@ mouse_filter = 2
 horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
 theme_override_font_sizes/font_size = 11
-text = ""
+text = "?"
 [node name="CoalReserve" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
 tooltip_text = "Steps the coal kept for vehicles: 0, 30, 60, 120."
+shortcut = SubResource("shortcut_command_coal_reserve")
 layout_mode = 0
 custom_minimum_size = Vector2(46,46)
 text = ""
@@ -1762,7 +1772,7 @@ mouse_filter = 2
 horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
 theme_override_font_sizes/font_size = 11
-text = ""
+text = "?"
 [node name="BurnWood" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
 tooltip_text = "1 wood makes 10 energy in 2 seconds."

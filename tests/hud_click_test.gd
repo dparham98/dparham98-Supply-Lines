@@ -16,6 +16,10 @@ func click_at(point: Vector2) -> void:
 	root.push_input(event,true)
 	# A human click spans multiple process frames. Do not emit button signals directly.
 	for frame in range(5): await process_frame
+	# Payment checks use a Generator as a priced build; keep its old 100 E / 20 I price here. The current
+	# price is checked in generator_limits_test.gd.
+	var priced: SupplyRules = load("res://assets/economy/supply_rules.tres")
+	priced.generator_energy_cost = 100; priced.generator_iron_cost = 20
 	event = InputEventMouseButton.new()
 	event.position = point
 	event.button_index = MOUSE_BUTTON_LEFT

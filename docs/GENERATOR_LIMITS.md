@@ -16,10 +16,10 @@ Each Depot has two settings that its assigned Generators follow (`scripts/gamepl
 
 The player sets both on the Depot card, with two buttons that step through presets each press:
 
-| Button | Slot | Presets |
-|---|---|---|
-| Energy ceiling | 4 | 300, 600, 1000, 2000 (2000 is the full storage capacity) |
-| Coal kept | 5 | 0, 30, 60, 120 |
+| Button | Slot | Key | Presets |
+|---|---|---|---|
+| Energy ceiling | 4 | H | 300, 600, 1000, 2000 (2000 is the full storage capacity) |
+| Coal kept | 5 | J | 0, 30, 60, 120 |
 
 - The Depot card's stats show both values. A press also posts a notice.
 - **Generator card:**
@@ -43,3 +43,12 @@ The player sets both on the Depot card, with two buttons that step through prese
   - the presets wrap round
 - **`tests/generator_batch_test.gd`** now runs its cycle checks with fixed rules (coal 50 E over 5 s, no reserve, ceiling at capacity), so it keeps testing the cycle mechanics alone.
 - **`tests/command_cards_test.gd`:** counts the two new tiles, and fuel left counts coal above the reserve.
+- **`tests/hud_hotkeys_test.gd`:** the Depot card's keys now include H and J.
+- **Older payment checks:** six of them use a Generator only as a priced build, and they keep its old 100 E / 20 I price at their start:
+  - `bottom_hud_test`
+  - `supply_test`
+  - `site_construction_test`
+  - `pending_construction_test`
+  - `mobile_supply_test`
+  - `hud_click_test`
+- **`generator_model_test`:** lifts the ceiling, since it checks the model.

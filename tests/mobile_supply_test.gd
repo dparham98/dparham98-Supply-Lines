@@ -15,6 +15,10 @@ func near(unit: Node3D, target: Node3D, offset: Vector3) -> void:
 func run() -> void:
 	game = load("res://scenes/maps/mobile_supply_exercise.tscn").instantiate()
 	root.add_child(game); await process_frame
+	# Payment checks use a Generator as a priced build; keep its old 100 E / 20 I price here. The current
+	# price is checked in generator_limits_test.gd.
+	var priced: SupplyRules = load("res://assets/economy/supply_rules.tres")
+	priced.generator_energy_cost = 100; priced.generator_iron_cost = 20
 	game.set_process(false)
 	for group in ["units","depots","mines"]:
 		for node in get_nodes_in_group(group): node.set_process(false)

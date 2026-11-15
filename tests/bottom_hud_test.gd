@@ -12,6 +12,10 @@ func run() -> void:
 	game = load("res://scenes/maps/supply_routes.tscn").instantiate()
 	root.add_child(game)
 	await process_frame
+	# Payment checks use a Generator as a priced build; keep its old 100 E / 20 I price here. The current
+	# price is checked in generator_limits_test.gd.
+	var priced: SupplyRules = load("res://assets/economy/supply_rules.tres")
+	priced.generator_energy_cost = 100; priced.generator_iron_cost = 20
 	await process_frame
 	game.set_process(false)
 	hud = game.get_node("Interface")
