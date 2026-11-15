@@ -27,8 +27,6 @@
 [ext_resource type="PackedScene" path="res://scenes/gameplay/rail_network.tscn" id="rails"]
 [ext_resource type="Resource" path="res://assets/economy/engineering_rules.tres" id="engineering"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/material_pile.tscn" id="pile"]
-[ext_resource type="PackedScene" path="res://scenes/gameplay/waypoint_marker.tscn" id="waypoint"]
-[ext_resource type="Script" path="res://scripts/gameplay/waypoint_markers.gd" id="waypoints"]
 [node name="ResourceSkirmish" type="Node3D" groups=["skirmish"]]
 editor_description = "Playable gather-print-fight scenario. Native actors and reusable Visuals slots. Positions are authored on the existing map."
 script = ExtResource("game")
@@ -95,8 +93,5 @@ pixel_size = 0.03
 no_depth_test = true
 modulate = Color(0.75,1,0.85,1)
 text = "RAIL"
-[node name="WaypointMarkers" type="Node3D" parent="."]
-script = ExtResource("waypoints")
-marker_scene = ExtResource("waypoint")
 
 [node name="Interface" parent="." instance=ExtResource("hud")]
