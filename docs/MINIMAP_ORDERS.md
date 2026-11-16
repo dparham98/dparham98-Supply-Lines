@@ -9,7 +9,7 @@ The minimap can give orders as well as move the camera.
 | Right-click | nothing selected | Nothing. |
 | Right-click | a command waiting | Cancels it, as on the map. |
 | Left-click | Move, Attack, Gather, Repair, Capture, Deploy, Load or Unload waiting | Gives that command at the point or marker, as a left-click on the map would (`issue_card_order`). Attack on open ground is attack-move. Attack never forces fire on your own units, buildings or mines from the minimap: by them it attack-moves too. Shift queues and keeps the command waiting. |
-| Left-click | Pin or Assign Depot waiting | Picks a pulsing stop, as before; away from every stop it moves the camera. |
+| Left-click | Pin waiting | Picks a pulsing stop, as before; away from every stop it moves the camera. |
 
 ## How it works
 

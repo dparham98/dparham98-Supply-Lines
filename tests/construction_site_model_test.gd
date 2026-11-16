@@ -49,6 +49,9 @@ func run() -> void:
 		for rope in model.find_children("*rope_0_*","MeshInstance3D",true,false): front_ropes += 1
 		if not check(front_ropes < size,"The %dx%d front should leave a gate: %d ropes" % [size,size,front_ropes]): return
 		model.free()
+	# A mechanics check on a map laid out for the old 35 m Depot range (docs/DEPOT_RANGE.md).
+	var old_range: DepotRules = load("res://assets/economy/depot_rules.tres")
+	old_range.construction_radius = 35.0
 	game = load("res://scenes/maps/resource_skirmish.tscn").instantiate()
 	root.add_child(game)
 	for i in range(3): await process_frame

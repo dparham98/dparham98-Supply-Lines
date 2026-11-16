@@ -6,6 +6,7 @@ A new Depot must stand at least 70 m, centre to centre, from every other friendl
 
 - A Depot costs 20 energy and 20 iron and comes with a free Infantry. Before this rule, three extra Depots beside the first mine gave four Infantry by 1:20 for 60 E / 60 I, far cheaper than a Barracks.
 - At 70 m apart, two Depots' 35 m service ranges never overlap. Each new Depot is a real expansion, so the free Infantry still rewards expanding, as intended.
+- Since the range was halved to 17.5 m (`docs/DEPOT_RANGE.md`), 70 m leaves a 35 m gap between neighbouring ranges. The spacing was kept until the new range has been played.
 - The cost: a Depot can no longer be put anywhere. That is the trade the report names.
 
 ## Where it applies

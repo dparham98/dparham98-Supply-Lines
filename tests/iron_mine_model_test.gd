@@ -46,6 +46,9 @@ func _in_effect(mesh: Node, top: Node) -> bool:
 func part(model: Node3D, name: String) -> Node3D:
 	return model.get_node(ROOT+name)
 func run() -> void:
+	# A mechanics check on a map laid out for the old 35 m Depot range (docs/DEPOT_RANGE.md).
+	var old_range: DepotRules = load("res://assets/economy/depot_rules.tres")
+	old_range.construction_radius = 35.0
 	game = load("res://scenes/maps/resource_skirmish.tscn").instantiate()
 	root.add_child(game)
 	for i in range(3): await process_frame

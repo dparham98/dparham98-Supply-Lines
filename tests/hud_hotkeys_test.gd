@@ -89,7 +89,7 @@ func run() -> void:
 	# The other cards and pages, by every tile each can show at once.
 	var sets := {
 		"Production building": [hud.card,["PrintInfantry","ProduceScout","ProduceGrenadier","ProduceTank","ProduceMotorcycle","ProduceDrone","ProduceUbermech"]],
-		"Generator": [hud.card,["ToggleGenerator","BurnWood","BurnCoal","BurnEither","AssignDepot","FocusAssigned"]],
+		"Generator": [hud.card,["ToggleGenerator","BurnWood","BurnCoal","BurnEither","FocusAssigned"]],
 		"Load page": [hud.pick,["LoadTiles/Iron","LoadTiles/Energy","LoadTiles/Wood","LoadTiles/Coal","LoadTiles/Clear","Cancel"]],
 		"Build page": [hud.build_menu,["Actions/Depot","Actions/Generator","Actions/Barracks","Actions/TankFactory","Actions/Mine","Actions/Rail","Actions/Pin","Actions/Back"]]}
 	for title in sets:

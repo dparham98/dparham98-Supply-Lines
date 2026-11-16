@@ -20,7 +20,7 @@ The current keys, as set on 2026-11-15. `scripts/tools/setup_command_actions.gd`
 | Depot truck | M Move · S Stop · T Auto-refuel · D Deploy |
 | Depot | D Depot truck · V Cargo vehicle · T Train · C Make crates · E Energy ceiling · Q Coal kept · X Cancel production |
 | Production building | F Infantry · S Scout · G Grenadier · T Tank · C Motorcycle · D Drone · Q Übermech |
-| Generator | R Pause/Resume · W Burn wood · C Burn coal · E Burn either · A Assign Depot · F Focus Depot |
+| Generator | R Pause/Resume · W Burn wood · C Burn coal · E Burn either · F Focus Depot |
 | Construction plan | X Cancel plan |
 | Build page (B) and Worksite page | D Depot · G Generator · B Barracks · T Tank Factory · A Iron Mine · R Rail · P Pin payer (Build page only) · Esc Back |
 | Laying rail | R next piece (straight, left and right curve, left and right fork) · F turn a free piece · G change a fork's joining end · Shift-click keep laying · Esc finish |
