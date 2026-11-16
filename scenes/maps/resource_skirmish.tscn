@@ -24,6 +24,7 @@
 [ext_resource type="PackedScene" path="res://scenes/gameplay/tank_factory.tscn" id="factory"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/wood_site.tscn" id="wood"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/iron_mine.tscn" id="mine"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/site_mine.tscn" id="site_mine"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/rail_network.tscn" id="rails"]
 [ext_resource type="Resource" path="res://assets/economy/engineering_rules.tres" id="engineering"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/material_pile.tscn" id="pile"]
@@ -45,6 +46,7 @@ barracks_scene = ExtResource("barracks")
 tank_factory_scene = ExtResource("factory")
 supply_rules = ExtResource("supply")
 mine_scene = ExtResource("mine")
+site_mine_scene = ExtResource("site_mine")
 engineering_rules = ExtResource("engineering")
 [node name="ConstructionPreview" parent="." instance=ExtResource("preview")]
 [node name="Terrain" parent="." instance=ExtResource("terrain")]

@@ -8,6 +8,9 @@ extends Node
 @export var tank_factory_scene: PackedScene
 @export var supply_rules: SupplyRules
 @export var mine_scene: PackedScene
+## The mine built on a mine site (docs/MINE_SITES.md): the same mine with the model made for the cut in the rock.
+## Left empty, a site gets mine_scene.
+@export var site_mine_scene: PackedScene
 @export var engineering_rules: EngineeringRules
 var preview_material: StandardMaterial3D
 var selected: Node3D
@@ -21,6 +24,10 @@ func select_depot(node: Node3D) -> void:
 		depot.get_node("Territory").visible = depot == selected and depot.team == "player"
 func owned_selected() -> bool:
 	return SupplySource.available(selected,"player")
+## The mine scene for a spot: the portal mine on a mine site, the pithead on an ore field.
+func mine_scene_for(spot: Rect2i) -> PackedScene:
+	var on_site: bool = game.ground.get_terrain(spot.position) == game.ground.Terrain.MINE_SITE
+	return site_mine_scene if on_site and site_mine_scene != null else mine_scene
 ## Where a mine placed at a point would stand: the whole mine site under the point, or the ordinary footprint
 ## about the point on an ore field (docs/MINE_SITES.md).
 func mine_spot(point: Vector3) -> Rect2i:
@@ -346,8 +353,8 @@ func construct_mine(point: Vector3) -> bool:
 		var strip := strip_notice(point,engineering_rules.mine_footprint,&"iron_mine")
 		game.notify(strip if not strip.is_empty() else "Mine requires a complete empty iron-deposit footprint inside the paying stockpile range."); return false
 	if not selected.spend_local(engineering_rules.mine_energy_cost,engineering_rules.mine_iron_cost): game.notify("Paying stockpile lacks local mine resources."); return false
-	var mine = mine_scene.instantiate()
 	var spot := mine_spot(point)
+	var mine = mine_scene_for(spot).instantiate()
 	mine.rules = engineering_rules; mine.position = game.ground.tile_to_world(spot.position+spot.size/2)
 	game.get_node("Entities/Buildings").add_child(mine,true)
 	game.notify("Shared iron mine built. Any player's Infantry can gather or repair it.")
@@ -413,6 +420,7 @@ func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_paye
 		var spot := mine_spot(point)
 		spec = spec.duplicate()
 		spec.size = spot.size; start = spot.position
+		spec.scene = mine_scene_for(spot); spec.model = _model_scene(spec.scene)
 	if not plan_terrain_valid(start,spec.size,kind) or plan_overlaps(start,spec.size):
 		var strip := strip_notice(point,spec.size,kind)
 		game.notify(strip if not strip.is_empty() else "Plan needs valid empty terrain and cannot overlap another plan. Mines require iron deposits.")

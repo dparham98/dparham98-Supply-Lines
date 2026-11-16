@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/mine_rig.gd" id="rig_script"]
+[ext_resource type="PackedScene" path="res://assets/models/buildings/portal_mine.glb" id="rig"]
+
+[node name="PortalMineModel" type="Node3D"]
+editor_description = "The Iron Mine that stands in a mine site, dug into the rock (docs/PORTAL_MINE_MODEL.md). Its clips are played by the same rig as the old pithead's."
+script = ExtResource("rig_script")
+
+[node name="Rig" parent="." instance=ExtResource("rig")]
