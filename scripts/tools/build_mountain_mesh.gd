@@ -7,6 +7,9 @@ extends SceneTree
 const ToolArgs := preload("res://scripts/tools/tool_args.gd")
 const WIDTH := 500
 const MOUNTAIN := 4
+## A mine site (docs/MINE_SITES.md) is a recess cut into the rock: the mountain keeps its height around it, the
+## mesh is left open over it, and sheer walls close the cut.
+const MINE_SITE := 7
 const MESH_PATH := "res://assets/models/terrain/mountains.res"
 const MATERIAL_PATH := "res://assets/materials/terrain/mountain_massif.tres"
 const DETAIL_PATH := "res://assets/textures/terrain/mountain_rock_detail.png"
@@ -22,6 +25,7 @@ const WARP := 1.8
 
 var cells: PackedByteArray
 var distance: PackedFloat32Array
+var sites: Array[Vector2] = []
 var ridges := FastNoiseLite.new()
 var relief := FastNoiseLite.new()
 var spurs := FastNoiseLite.new()
@@ -32,6 +36,8 @@ func _initialize() -> void:
 	cells = FileAccess.get_file_as_bytes(ToolArgs.value("cells",ToolArgs.DEFAULT_CELLS))
 	if cells.size() != WIDTH*WIDTH:
 		push_error("Unexpected terrain_cells.bin size"); quit(1); return
+	for i in range(WIDTH*WIDTH):
+		if cells[i] == MINE_SITE: sites.append(Vector2(i%WIDTH,i/WIDTH))
 	_setup_noise()
 	_measure_distance()
 	if not ToolArgs.given("mesh"): _save_textures()
@@ -71,13 +77,29 @@ func _setup_noise() -> void:
 func is_mountain(x: int, z: int) -> bool:
 	return x >= 0 and z >= 0 and x < WIDTH and z < WIDTH and cells[z*WIDTH+x] == MOUNTAIN
 
+func is_site(x: int, z: int) -> bool:
+	return x >= 0 and z >= 0 and x < WIDTH and z < WIDTH and cells[z*WIDTH+x] == MINE_SITE
+
+# Rock for the purpose of the mountain's shape: a site is cut out of it afterwards.
+func is_rock(x: int, z: int) -> bool:
+	return is_mountain(x,z) or is_site(x,z)
+
+# Metres from a point to the nearest mine site cell, or a large number when none is near.
+func site_distance(x: float, z: float) -> float:
+	var best := 1000.0
+	for site in sites:
+		var dx := maxf(maxf(site.x-x,x-site.x-1.0),0.0)
+		var dz := maxf(maxf(site.y-z,z-site.y-1.0),0.0)
+		best = minf(best,sqrt(dx*dx+dz*dz))
+	return best
+
 # Two-pass chamfer distance from each Mountain cell to the nearest other ground, in metres.
 func _measure_distance() -> void:
 	distance.resize(WIDTH*WIDTH)
 	const DIAGONAL := 1.4142
 	for z in range(WIDTH):
 		for x in range(WIDTH):
-			if not is_mountain(x,z):
+			if not is_rock(x,z):
 				distance[z*WIDTH+x] = 0.0
 				continue
 			var best := 1.0
@@ -86,7 +108,7 @@ func _measure_distance() -> void:
 			distance[z*WIDTH+x] = best
 	for z in range(WIDTH-1,-1,-1):
 		for x in range(WIDTH-1,-1,-1):
-			if not is_mountain(x,z): continue
+			if not is_rock(x,z): continue
 			var best: float = distance[z*WIDTH+x]
 			if x < WIDTH-1 and z < WIDTH-1 and x > 0:
 				best = minf(best,minf(distance[z*WIDTH+x+1]+1.0,minf(distance[(z+1)*WIDTH+x]+1.0,minf(distance[(z+1)*WIDTH+x+1]+DIAGONAL,distance[(z+1)*WIDTH+x-1]+DIAGONAL))))
@@ -141,6 +163,7 @@ func _build_mesh() -> ArrayMesh:
 					var d := _vertex(gx+1,gz+1,size,step,index_of,vertices,normals,colors)
 					# Godot front faces wind clockwise seen from outside.
 					indices.append_array([a,b,c,b,d,c])
+	_cut_walls(size,step,index_of,vertices,normals,colors,indices)
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = vertices
@@ -164,12 +187,43 @@ func _vertex(gx: int, gz: int, size: int, step: float, index_of: Dictionary, ver
 	for offset in [Vector2(1.5,0),Vector2(-1.5,0),Vector2(0,1.5),Vector2(0,-1.5)]: around += height_at(x+offset.x,z+offset.y)
 	var hollow := clampf(0.5+(height-around/4.0)*0.9,0.0,1.0)
 	var wander := Vector2(warp_x.get_noise_2d(x,z),warp_z.get_noise_2d(x,z))*WARP*1.6
+	# The outline stays on the cells around a mine site, so the cut lines up with the mine that stands in it.
+	if not sites.is_empty(): wander *= smoothstep(1.0,6.0,site_distance(x,z))
 	var world := Vector3(x-WIDTH*0.5+wander.x,height,z-WIDTH*0.5+wander.y)
 	index_of[key] = vertices.size()
 	vertices.append(world)
 	normals.append(normal)
 	colors.append(Color(hollow,clampf(height/PEAK,0.0,1.0),0.0,1.0))
 	return vertices.size()-1
+
+# Sheer walls down to the ground along every edge between a mine site cell and a Mountain cell.
+func _cut_walls(size: int, step: float, index_of: Dictionary, vertices: PackedVector3Array, normals: PackedVector3Array, colors: PackedColorArray, indices: PackedInt32Array) -> void:
+	for site in sites:
+		var x := int(site.x)
+		var z := int(site.y)
+		for side in [Vector2i(1,0),Vector2i(-1,0),Vector2i(0,1),Vector2i(0,-1)]:
+			if not is_mountain(x+side.x,z+side.y): continue
+			# The edge shared with that Mountain cell, as grid points along it.
+			var inward := Vector3(-side.x,0.0,-side.y)
+			for sub in range(DENSITY):
+				var tops: Array[int] = []
+				for end in [sub,sub+1]:
+					var gx: int = (x+(1 if side.x > 0 else 0))*DENSITY+(end if side.x == 0 else 0)
+					var gz: int = (z+(1 if side.y > 0 else 0))*DENSITY+(end if side.y == 0 else 0)
+					tops.append(_vertex(gx,gz,size,step,index_of,vertices,normals,colors))
+				var corners: Array[int] = []
+				for top in tops:
+					for foot in [false,true]:
+						var point: Vector3 = vertices[top]
+						if foot: point.y = -0.3
+						corners.append(vertices.size())
+						vertices.append(point)
+						normals.append(inward)
+						colors.append(Color(0.32 if foot else 0.45,clampf(point.y/PEAK,0.0,1.0),0.0,1.0))
+				# corners: top a, foot a, top b, foot b. Front faces wind clockwise seen from inside the cut.
+				var across: Vector3 = (vertices[corners[2]]-vertices[corners[0]]).cross(vertices[corners[1]]-vertices[corners[0]])
+				if across.dot(inward) < 0.0: indices.append_array([corners[0],corners[2],corners[1],corners[2],corners[3],corners[1]])
+				else: indices.append_array([corners[0],corners[1],corners[2],corners[2],corners[1],corners[3]])
 
 # Seamless rock detail: broad fractures with fine grain, and the normal map made from them.
 func _save_textures() -> void:

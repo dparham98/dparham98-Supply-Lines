@@ -319,7 +319,7 @@ func issue_order(screen, queued := false) -> void:
 		elif building and building.is_in_group("capturable_buildings") and building.team != unit.team and unit.can_capture_depots: give_order(unit,{kind = "capture", target = building},queued)
 		elif building and CombatResolver.can_hit(unit,building): give_order(unit,{kind = "attack", target = building},queued)
 		elif dropoff and dropoff.team == unit.team and not from_map: give_order(unit,{kind = "return", target = dropoff},queued)
-		elif point != null and unit.can_gather and ground.get_tile_at_position(point) != null and ground.get_terrain(ground.get_tile_at_position(point)) == 5:
+		elif point != null and unit.can_gather and ground.get_tile_at_position(point) != null and ground.get_terrain(ground.get_tile_at_position(point)) in [5,7]:
 			notify("Build an Iron Mine on this deposit before gathering iron.")
 		elif point != null:
 			var cell = ground.get_tile_at_position(point)
@@ -364,7 +364,7 @@ func issue_card_order(screen, queued := false) -> void:
 			var point = ground_at(screen)
 			if point != null and ground.get_tile_at_position(point) != null:
 				var cell = ground.get_tile_at_position(point)
-				if ground.get_terrain(cell) == 5: notify("Build an Iron Mine on this deposit before gathering iron."); return
+				if ground.get_terrain(cell) in [5,7]: notify("Build an Iron Mine on this deposit before gathering iron."); return
 				target = ground.coal_source(cell) if ground.get_terrain(cell) == 6 else ground.forest_source(cell)
 	elif pending_unit_command == "repair": target = pick_target(screen,"selectable_buildings",50)
 	elif pending_unit_command == "capture": target = pick_target(screen,"capturable_buildings",50)

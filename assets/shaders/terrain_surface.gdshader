@@ -19,6 +19,8 @@ uniform vec3 forest_surface_mean = vec3(0.044, 0.108, 0.027);
 uniform vec3 mountain_surface_mean = vec3(0.0902, 0.0942, 0.0736);
 // Desert tiles darkened to stony ground, for the mountain foot where the sculpted mesh does not cover it.
 uniform vec3 stony_tint = vec3(0.2, 0.22, 0.38);
+// Mine sites (category 7): the rust that stains their stone.
+uniform vec3 mine_site_stain = vec3(0.36, 0.14, 0.07);
 // Coal cells (category 6): how dark the seam is drawn.
 uniform vec3 coal_shade = vec3(0.1, 0.1, 0.125);
 // Distance from the desert and grass border, from scripts/tools/build_ground_blend_map.gd: 0.5 is the border.
@@ -164,10 +166,11 @@ void fragment() {
   normal_map.xy = 0.5 + bent * min(1.0, 0.42 / max(length(bent), 0.001));
   color *= 1.0 + (height - 0.5) * 0.12 * relief;
   color = mix(vec3(dot(color, vec3(0.2126, 0.7152, 0.0722))), color, ground_saturation) * ground_value;
- } else if (terrain == 4.0) {
-  // The mountain foot in darkened desert tiles.
-  ground_set(tile_uv, 4.0, color, mountain_surface_mean, surface_tint, 0.0, color, normal_map);
+ } else if (terrain == 4.0 || terrain == 7.0) {
+  // The mountain foot in darkened desert tiles. A mine site is the same stone, stained with rust.
+  ground_set(tile_uv, 4.0, color, mountain_surface_mean, terrain == 4.0 ? surface_tint : 0.0, 0.0, color, normal_map);
   color *= stony_tint;
+  if (terrain == 7.0) { color = mix(color * 1.5, mine_site_stain * dot(color, vec3(4.0)), 0.55); }
  } else if (terrain == 6.0) {
   // Coal seam: the cracked desert tiles with their colour taken out, darkened to black rock.
   vec3 seam;

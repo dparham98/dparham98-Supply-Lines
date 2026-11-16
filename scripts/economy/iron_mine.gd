@@ -15,15 +15,23 @@ func _ready() -> void:
 	resource_kind = &"iron"; resource_name = "Shared iron mine"
 	health = max_health
 	var center = ground.get_tile_at_position(global_position)
-	var start: Vector2i = center-rules.mine_footprint/2 if center != null else Vector2i(-1,-1)
-	if not ground.ore_footprint_valid(start,rules.mine_footprint): push_error("Mine requires an empty iron-deposit footprint"); queue_free(); return
-	global_position = ground.tile_to_world(start)+Vector3(rules.mine_footprint.x*0.5-0.5,0,rules.mine_footprint.y*0.5-0.5)
-	for z in range(start.y,start.y+rules.mine_footprint.y):
-		for x in range(start.x,start.x+rules.mine_footprint.x):
+	var footprint: Vector2i = rules.mine_footprint
+	var start: Vector2i = center-footprint/2 if center != null else Vector2i(-1,-1)
+	# On a mine site the mine takes the whole site, whichever of its cells it was set down on.
+	if center != null and ground.get_terrain(center) == ground.Terrain.MINE_SITE:
+		var site: Rect2i = ground.mine_site_rect(center)
+		start = site.position; footprint = site.size
+	if not ground.ore_footprint_valid(start,footprint): push_error("Mine requires an empty iron-deposit footprint"); queue_free(); return
+	global_position = ground.tile_to_world(start)+Vector3(footprint.x*0.5-0.5,0,footprint.y*0.5-0.5)
+	for z in range(start.y,start.y+footprint.y):
+		for x in range(start.x,start.x+footprint.x):
 			var cell := Vector2i(x,z)
 			cells.append(cell)
 			ground.set_tile_feature(cell,"occupied_by",_key())
 			ground.iron_mines[cell] = self
+	# On a mine site the mine has its back to the mountain and looks out over the open ground.
+	var facing: Vector2i = ground.mine_site_facing(start,footprint) if ground.get_terrain(start) == ground.Terrain.MINE_SITE else Vector2i.ZERO
+	if facing != Vector2i.ZERO and has_node("Visuals"): $Visuals.rotation.y = atan2(facing.x,facing.y)
 	add_to_group("mines"); add_to_group("selectable_buildings")
 	# The ore rocks drawn on and around the footprint give way to the pithead.
 	if ground.has_method("cover_ore"): ground.cover_ore(_key(),cells)
