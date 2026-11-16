@@ -100,8 +100,12 @@ func run() -> void:
 	await shot("rail_construction")
 	game.placing_rail = true
 	# A curve from the free end, shown for art review; its cost is refunded so later payment checks hold.
-	var curve_end: Vector3 = laid.ends()[1].position+Vector3(1.0,0,0)
-	var curve = rails.place("curve",curve_end,Vector3.RIGHT,false,source)
+	# The new track's free end away from the build site, nearest the Depot.
+	var near_end := {}
+	for end in rails.free_ends("player"):
+		if rails.pieces.find(end.piece) >= pieces_before and (near_end.is_empty() or end.position.distance_to(source.global_position) < near_end.position.distance_to(source.global_position)): near_end = end
+	# Laid directly for art review: it reaches past the Depot's range, as planned track may.
+	var curve = rails.lay("curve",rails.placement("curve",near_end.position+near_end.out*1.0,near_end.out,false).transform,source)
 	if not check(curve != null and curve.kind == "curve","Curve not laid from the free end"): return
 	source.iron += rails.cost("curve")
 	await shot("rail_curve")
