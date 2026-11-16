@@ -51,12 +51,12 @@ func run() -> void:
 	for frame in range(180): rig.advance_camera(1.0/60)
 	await click_at(target(worker))
 	await click_at(target(tank),true)
-	if not check(worker.is_selected and tank.is_selected and hud.strip.visible,"Mixed selection strip not shown"): return
+	if not check(worker.is_selected and tank.is_selected and hud.portraits.visible,"Mixed selection portraits not shown"): return
 	game.alert("Depot under attack",depot.global_position)
 	await shot("mixed_selection")
-	var tank_button: Button = hud.strip.get_node("Type1") if hud.strip.get_node("Type1").text.begins_with("Tank") else hud.strip.get_node("Type2")
+	var tank_button: Button = hud.portraits.get_child(hud.portrait_units.find(tank))
 	await click(tank_button)
-	if not check(tank.is_selected and not worker.is_selected,"Strip click did not narrow to the Tank"): return
+	if not check(tank.is_selected and not worker.is_selected,"Portrait click did not narrow to the Tank"): return
 	if not check(hud.bars.get_node("Fuel").visible,"Tank fuel bar not shown"): return
 	await shot("tank_bars")
 	var entry: Button = hud.feed.get_node("Entry1")

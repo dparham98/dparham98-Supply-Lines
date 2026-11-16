@@ -6,8 +6,10 @@ extends CanvasLayer
 @onready var info = $Bottom/Body/Row/Info
 @onready var build_menu = $Bottom/Body/Row/Commands/BuildMenu
 @onready var bars = $Bottom/Body/Row/Info/Bars
-@onready var strip = $Bottom/Body/Header/Selection
 @onready var feed = $Feed
+## One portrait per selected unit while more than one is selected (docs/SELECTION_PORTRAITS.md).
+@onready var portraits = $Bottom/Body/Row/Info/Portraits
+var portrait_units: Array[Node3D] = []
 ## Top left: the energy banking rate and the Generator settings of the Depot in context. Top right: its
 ## storage. Both show while your Depot, or a building in its range, is selected (docs/DEPOT_PANELS.md).
 @onready var depot_panel = $DepotPanel
@@ -50,7 +52,6 @@ const TILE_GAP := 4
 const RESOURCE_KINDS := [&"energy",&"iron",&"wood",&"coal"]
 var _icons := {}
 # Cargo vehicles open on their delivery route page; Orders shows the ordinary command card.
-var strip_types: Array[String] = []
 var feed_points: Array[Vector3] = []
 ## Darkens a whole-card image that cannot be paid for yet. The card keeps its own colours.
 const UNAFFORDABLE := Color(0.5,0.42,0.4)
@@ -72,8 +73,8 @@ var shown: Node3D
 var desired_buttons: Array[String] = []
 func _ready() -> void:
 	$Bottom/Body/Header/GlobalBuild.pressed.connect(open_global_build)
-	for i in strip.get_child_count():
-		strip.get_child(i).pressed.connect(narrow_selection.bind(i))
+	for i in portraits.get_child_count():
+		portraits.get_child(i).pressed.connect(pick_portrait.bind(i))
 	for i in feed.get_child_count():
 		feed.get_child(i).pressed.connect(focus_alert.bind(i))
 	card.get_node("CancelPlan").pressed.connect(func():
@@ -204,7 +205,8 @@ func _process(_delta: float) -> void:
 	var units := selected_units()
 	if units.size() > 1 and not global_build_open:
 		commands.get_node("Title").text = "%d FRIENDLY UNITS SELECTED" % units.size()
-		hint_text = "Right-click moves the group. Commands apply where each unit supports them. Details show the first unit."
+		hint_text = "Right-click moves the group. Commands apply where each unit supports them; the card and stats show the outlined unit. Click a portrait to select only that unit, Shift-click to remove it. Ctrl-click keeps only that type, Ctrl+Shift-click removes that type."
+	update_portraits(units)
 	# Apply final visibility once. Hiding a pressed button cancels its GUI gesture.
 	for button in card.get_children():
 		if button is Button: button.visible = desired_buttons.has(str(button.name))
@@ -232,7 +234,6 @@ func _process(_delta: float) -> void:
 	$Bottom/Body/Header/GlobalBuild.disabled = global_build_open
 	place_tiles()
 	update_tip()
-	update_strip(units)
 	update_depot_panels()
 	update_feed()
 ## The player's Depot whose panels show for the selected object: the Depot itself, the Depot a Generator or
@@ -436,24 +437,48 @@ func update_unit_sections(node: Node3D) -> void:
 			route.get_node("Bar").step = 0.0
 			route.get_node("Bar").value = to_origin/maxf(0.001,to_origin+to_destination)
 # One button per unit type in a mixed selection.
-func update_strip(units: Array[Node3D]) -> void:
-	var counts := {}
-	var names := {}
-	strip_types.clear()
+## Portraits replace the single unit's health, bars and details. Units are grouped by type, in the order the
+## types were first selected, so the unit the card shows (the first) is always the first portrait.
+func update_portraits(units: Array[Node3D]) -> void:
+	var many := units.size() > 1 and not global_build_open
+	portraits.visible = many
+	portrait_units.clear()
+	if not many: return
+	for id in ["Health","HealthText","Bars","Storage","Warning","Details"]: info.get_node(id).visible = false
+	var types: Array[String] = []
 	for unit in units:
-		var key: String = unit.scene_file_path
-		if not counts.has(key): strip_types.append(key); names[key] = object_name(unit)
-		counts[key] = counts.get(key,0)+1
-	strip.visible = units.size() > 1 and not global_build_open
-	for i in strip.get_child_count():
-		var button: Button = strip.get_child(i)
-		button.visible = strip.visible and i < strip_types.size()
-		if button.visible: button.text = "%s ×%d" % [names[strip_types[i]],counts[strip_types[i]]]
-func narrow_selection(index: int) -> void:
-	if index >= strip_types.size(): return
-	var keep_type := not Input.is_key_pressed(KEY_SHIFT)
+		if not types.has(unit.scene_file_path): types.append(unit.scene_file_path)
+	for type in types:
+		for unit in units:
+			if unit.scene_file_path == type: portrait_units.append(unit)
+	var slots := portraits.get_child_count()
+	var more := portrait_units.size()-slots
+	state_label.text = "Card shows %s (outlined)%s" % [object_name(units[0])," · %d more not shown" % more if more > 0 else ""]
+	for i in slots:
+		var button: Button = portraits.get_child(i)
+		button.visible = i < portrait_units.size()
+		if not button.visible: continue
+		var unit: Node3D = portrait_units[i]
+		var id := icon_name(unit)
+		if not _icons.has(id): _icons[id] = load("res://assets/ui/icons/%s.svg" % id)
+		if button.icon != _icons[id]: button.icon = _icons[id]
+		var health: ProgressBar = button.get_node("Health")
+		health.max_value = unit.max_health
+		health.value = unit.health
+		var ratio := float(unit.health)/maxf(unit.max_health,1)
+		health.get_theme_stylebox("fill").bg_color = Color(0.364,0.674,0.469) if ratio > 0.6 else (Color(1,0.72,0.2) if ratio > 0.3 else Color(0.95,0.3,0.25))
+		button.get_node("Primary").visible = unit == units[0]
+		var tip := "%s · Health %d / %d · %s\nClick: only this unit · Shift: remove it · Ctrl: only this type · Ctrl+Shift: remove this type" % [object_name(unit),unit.health,unit.max_health,unit.state]
+		if button.tooltip_text != tip: button.tooltip_text = tip
+## Click keeps only that unit selected; Shift-click drops it. With Ctrl the same goes for its whole type.
+func pick_portrait(index: int) -> void:
+	if index >= portrait_units.size() or not is_instance_valid(portrait_units[index]): return
+	var picked: Node3D = portrait_units[index]
+	var by_type := Input.is_key_pressed(KEY_CTRL)
+	var remove := Input.is_key_pressed(KEY_SHIFT)
 	for unit in selected_units():
-		unit.set_selected((unit.scene_file_path == strip_types[index]) == keep_type)
+		var hit: bool = unit.scene_file_path == picked.scene_file_path if by_type else unit == picked
+		unit.set_selected(not hit if remove else hit)
 func update_feed() -> void:
 	var now := Time.get_ticks_msec()/1000.0
 	feed_points.clear()
@@ -547,7 +572,7 @@ func update_contents() -> void:
 		hint_text = "Left-click selects. Drag selects units. Right-click gives orders. B opens the build page."
 		return
 	var units := selected_units()
-	name_label.text = object_name(node)+( " · +%d selected" % (units.size()-1) if units.size() > 1 else "")
+	name_label.text = object_name(node) if units.size() <= 1 else "%d units selected" % units.size()
 	info.get_node("Health").max_value = node.max_health
 	info.get_node("Health").value = node.health
 	info.get_node("HealthText").text = "Health %d / %d" % [node.health,node.max_health]
