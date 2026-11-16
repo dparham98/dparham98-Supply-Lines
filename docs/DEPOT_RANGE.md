@@ -31,6 +31,23 @@ At 17.5 m no start or expansion on the balanced map had iron inside its range, s
 - **The original First Contact map (`resource_skirmish.tscn`) was not changed.** Its iron is also beyond 17.5 m of its Depot, so no Iron Mine can be built there from the start.
 - The tests that check mechanics on First Contact and the exercise maps set the range back to 35 m inside the test, with a comment. Those mechanics are mines, plans, repair, refuelling, rails and mobile supply.
 
+## A building is covered when its centre is in range
+
+- Found in the playtest of 43e580f: building plans beside a Depot with plenty of energy waited for ever with "Waiting for energy coverage".
+- A Depot (or deployed Cargo truck) used to cover a footprint only if all four corners were inside its range. At 17.5 m, a Barracks or Tank Factory almost never fits that way round a Depot, even when it sits visibly inside the Territory ring.
+- Now the footprint's centre must be inside the range (`range_covers_footprint` in `depot_network.gd`). One rule covers:
+  - which stockpile pays a plan's energy;
+  - where a selected builder can place a building;
+  - where an Iron Mine can be paid for.
+- A plan can still be placed outside every range, for a Depot to come later.
+  - The placement preview now says "no Depot range covers it: nothing pays its energy yet".
+  - The plan's waiting state says it needs a Depot whose range covers its centre, with the energy still owed.
+- `tests/plan_coverage_test.gd` (headless, balanced map) checks:
+  - a Barracks plan with its centre in range and a corner out is paid from the Depot;
+  - a plan outside the range is not paid, and says why;
+  - the preview warns only outside every range.
+  - It fails on the old corner rule.
+
 ## Generators use the Depot they stand in
 
 - The Assign Depot command is gone, with its card tile, its A key (`command_assign_depot`), its pick prompt, and its map and minimap handling.

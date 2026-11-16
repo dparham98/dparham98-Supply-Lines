@@ -135,15 +135,19 @@ func can_place_size(point: Vector3, payer: Node3D, size: Vector2i, expansion := 
 	if not game.ground.is_footprint_valid(start,size): return false
 	if expansion: return true
 	if not SupplySource.available(payer,"player"): return false
-	for offset in [Vector2i.ZERO,Vector2i(size.x-1,0),Vector2i(0,size.y-1),size-Vector2i.ONE]:
-		if game.ground.tile_to_world(start+offset).distance_to(payer.global_position) > SupplySource.radius(payer): return false
-	return true
+	return range_covers_footprint(payer,start,size)
+## Whether a stockpile's range covers a footprint: the footprint's centre is inside the range, as the
+## Territory ring shows it (docs/DEPOT_RANGE.md). Every corner used to have to be inside; with the 17.5 m
+## range that left almost no room round a Depot, so plans waited for energy beside it for ever.
+func range_covers_footprint(source, start: Vector2i, size: Vector2i) -> bool:
+	var centre: Vector3 = game.ground.tile_to_world(start)+Vector3(size.x*0.5-0.5,0,size.y*0.5-0.5)
+	return Vector2(centre.x-source.global_position.x,centre.z-source.global_position.z).length() <= SupplySource.radius(source)
 func construct(point: Vector3) -> bool:
 	if not builder_valid(): game.notify("Builder must remain selected, alive and inside the paying stockpile range."); return false
 	if not owned_selected() or not can_place(point,selected):
 		var spaced := spacing_notice(point)
 		if spaced.is_empty(): spaced = strip_notice(point,depot_size(),&"depot")
-		game.notify(spaced if not spaced.is_empty() else "Select a friendly stockpile; all construction corners must be in its range on empty land."); return false
+		game.notify(spaced if not spaced.is_empty() else "Select a friendly stockpile; the building's centre must be inside its range, on empty land."); return false
 	var rules = depot_rules()
 	if not selected.spend_local(rules.depot_energy_cost,rules.depot_iron_cost):
 		game.notify("Selected stockpile lacks local construction resources."); return false
@@ -331,9 +335,7 @@ func can_place_mine(point: Vector3, payer: Node3D) -> bool:
 	var size: Vector2i = engineering_rules.mine_footprint
 	var start := footprint_start(point,size)
 	if not game.ground.ore_footprint_valid(start,size): return false
-	for offset in [Vector2i.ZERO,Vector2i(size.x-1,0),Vector2i(0,size.y-1),size-Vector2i.ONE]:
-		if game.ground.tile_to_world(start+offset).distance_to(payer.global_position) > SupplySource.radius(payer): return false
-	return true
+	return range_covers_footprint(payer,start,size)
 func construct_mine(point: Vector3) -> bool:
 	if not builder_valid() or not can_place_mine(point,selected):
 		var strip := strip_notice(point,engineering_rules.mine_footprint,&"iron_mine")
@@ -462,6 +464,7 @@ func update_global_preview(point: Vector3) -> bool:
 	var site_line := "" if game.global_plan_kind == &"rail" else " · iron on site %d/%d%s" % [on_site.get(&"iron",0),spec.iron," · READY" if covered else ""]
 	if not spaced: site_line = " · "+spacing_reason()
 	elif not valid and not strip_notice(point,spec.size,game.global_plan_kind).is_empty(): site_line = " · keep the Depot Truck strip clear"
+	elif valid and spec.energy > 0 and covering_sources(start,spec.size).is_empty(): site_line += " · no Depot range covers it: nothing pays its energy yet"
 	ghost.get_node("Status").text = "%s · %s · %d E / %d I%s" % ["PLAN" if valid else "BLOCKED",spec.title,spec.energy,spec.iron,site_line]
 	return valid
 ## Piles and crates inside a footprint that still hold something (docs/SITE_CONSTRUCTION.md).
@@ -477,13 +480,16 @@ func materials_inside(rect: Rect2i) -> Dictionary:
 	var result := {}
 	for node in stores_inside(rect): result[node.resource_kind] = result.get(node.resource_kind,0)+node.remaining
 	return result
-## Whether a stockpile's range covers every corner of the plan's footprint.
+## Whether a stockpile's range covers the plan's footprint (its centre).
 func source_covers_plan(source, plan: Node3D) -> bool:
-	if not SupplySource.available(source,"player"): return false
-	var size: Vector2i = plan.spec.size
-	for offset in [Vector2i.ZERO,Vector2i(size.x-1,0),Vector2i(0,size.y-1),size-Vector2i.ONE]:
-		if game.ground.tile_to_world(plan.start+offset).distance_to(source.global_position) > SupplySource.radius(source): return false
-	return true
+	return SupplySource.available(source,"player") and range_covers_footprint(source,plan.start,plan.spec.size)
+## The friendly stockpiles whose range covers a footprint, nearest first.
+func covering_sources(start: Vector2i, size: Vector2i) -> Array[Node3D]:
+	var centre: Vector3 = game.ground.tile_to_world(start)+Vector3(size.x*0.5-0.5,0,size.y*0.5-0.5)
+	var result: Array[Node3D] = []
+	for source in SupplySource.candidates(get_tree(),centre,"player"):
+		if range_covers_footprint(source,start,size): result.append(source)
+	return result
 ## Energy comes from one covering Depot or deployed Cargo vehicle; materials never do.
 func plan_energy_source_valid(plan: Node3D, source, due: int) -> bool:
 	return source_covers_plan(source,plan) and source.energy >= due
