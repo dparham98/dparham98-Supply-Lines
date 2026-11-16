@@ -6,10 +6,24 @@ albedo_color = Color(0.2,1,0.4,0.45)
 [sub_resource type="BoxMesh" id="mesh"]
 size = Vector3(1,0.15,1)
 material = SubResource("mat")
+[sub_resource type="StandardMaterial3D" id="range_mat"]
+shading_mode = 0
+albedo_color = Color(0.2,0.8,1,0.6)
+transparency = 1
+[sub_resource type="TorusMesh" id="range_mesh"]
+inner_radius = 0.992
+outer_radius = 1.0
+rings = 96
+ring_segments = 4
+material = SubResource("range_mat")
 [node name="ConstructionPreview" type="Node3D"]
 visible = false
 [node name="Footprint" type="MeshInstance3D" parent="."]
 mesh = SubResource("mesh")
+[node name="Range" type="MeshInstance3D" parent="."]
+visible = false
+cast_shadow = 0
+mesh = SubResource("range_mesh")
 [node name="Status" type="Label3D" parent="."]
 position = Vector3(0,2,0)
 billboard = 1

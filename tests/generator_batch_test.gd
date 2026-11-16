@@ -7,6 +7,9 @@ func check(value: bool, message: String) -> bool:
 func clear(stock: ResourceStockpile) -> void:
 	for kind in ResourceStockpile.KINDS: stock.withdraw(kind,stock.amount(kind))
 func run() -> void:
+	# A mechanics check on a map laid out for the old 35 m Depot range (docs/DEPOT_RANGE.md).
+	var old_range: DepotRules = load("res://assets/economy/depot_rules.tres")
+	old_range.construction_radius = 35.0
 	game = load("res://scenes/maps/generator_exercise.tscn").instantiate()
 	root.add_child(game); await process_frame
 	game.set_process(false)
@@ -72,13 +75,18 @@ func run() -> void:
 	# Capture resets only elapsed work, preserving the unconsumed stock.
 	generator._process(1); depot.team = "enemy"; depot.ownership_changed.emit(); generator._process(100)
 	if not check(depot.energy == 20 and depot.wood == 1 and generator.cycle_kind.is_empty(),"Captured Depot received old-team generation"): return
-	depot.team = "player"; depot.ownership_changed.emit(); generator._process(1)
+	# Its Depot captured, it takes the other friendly Depot covering it (docs/DEPOT_RANGE.md), with no cycle carried over.
+	if not check(generator.assigned_depot == other,"A Generator should move to another covering Depot when its own is captured"): return
+	depot.team = "player"; depot.ownership_changed.emit()
+	if not check(generator.assign_source(depot),"Generator could not go back to its recaptured Depot"): return
+	generator._process(1)
 	if not check(depot.energy == 20 and generator.cycle_elapsed == 1,"Capture retained old-team elapsed cycle"): return
-	# Explicit reassignment cannot move a half-finished cycle to a different wallet.
+	# Reassignment cannot move a half-finished cycle to a different wallet.
 	if not check(generator.assign_source(other) and generator.cycle_elapsed == 0,"Reassignment retained cycle progress"): return
 	var before: int = other.energy
+	var before_wood: int = other.wood
 	generator._process(2)
-	if not check(other.energy == before+10 and other.wood == 99 and depot.energy == 20 and depot.wood == 1,"Reassignment moved or pooled inventory"): return
+	if not check(other.energy == before+10 and other.wood == before_wood-1 and depot.energy == 20 and depot.wood == 1,"Reassignment moved or pooled inventory"): return
 	if not check(not generator.assign_source(game.get_node("Entities/Units/Train")),"Generator accepted a mobile operating wallet"): return
 	# Two generators racing for one wood cannot duplicate output.
 	clear(depot.stockpile); depot.wood = 1; generator.assign_source(depot)
@@ -90,11 +98,15 @@ func run() -> void:
 	depot.wood = 1; second._process(0); second.take_damage(second.health)
 	if not check(depot.wood == 1 and depot.energy == 10,"Destroyed generator lost pending fuel or emitted energy"): return
 	# Large simulation steps run only available cycles, never free output.
-	generator.reset_cycle(); depot.wood = 3; var energy: int = depot.energy
+	generator.reset_cycle(); depot.wood = 3; var energy: int = depot.energy; var other_wood: int = other.wood
 	generator._process(20)
-	if not check(depot.energy == energy+30 and depot.wood == 0 and other.wood == 99,"Long tick created unbacked output"): return
+	if not check(depot.energy == energy+30 and depot.wood == 0 and other.wood == other_wood,"Long tick created unbacked output"): return
+	# Its Depot destroyed, it moves to the other covering Depot (docs/DEPOT_RANGE.md); with none left, it stops.
 	depot.take_damage(depot.health); await process_frame
 	generator._process(10)
-	if not check(not generator.source_valid() and not generator.active(),"Destroyed assigned Depot left generator active"): return
+	if not check(generator.assigned_depot == other,"A Generator should move to another covering Depot when its own is destroyed"): return
+	other.take_damage(other.health); await process_frame
+	generator._process(10)
+	if not check(not generator.source_valid() and not generator.active(),"A Generator with no Depot left should stop"): return
 	game.queue_free(); await process_frame
 	print("GENERATOR_BATCH_CHECKS_PASSED"); quit()

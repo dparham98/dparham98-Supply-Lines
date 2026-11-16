@@ -91,8 +91,18 @@ func _ready() -> void:
 			cells.append(cell)
 			ground.set_tile_feature(cell,"occupied_by",_key())
 	add_to_group("energy_generators")
-	if is_instance_valid(assigned_depot): assigned_depot.ownership_changed.connect(_source_changed)
+	if source_valid(): assigned_depot.ownership_changed.connect(_source_changed)
+	else: find_source()
 	_update_display()
+var _search_left := 0.0
+## Takes the nearest friendly Depot whose range covers this Generator (docs/DEPOT_RANGE.md). There is no
+## manual assignment: a Generator burns fuel from, and banks energy in, the Depot it stands in.
+func find_source() -> bool:
+	var best: Node3D = null
+	for depot in get_tree().get_nodes_in_group("depots"):
+		if depot.is_queued_for_deletion() or depot.health <= 0 or not SupplySource.covers(depot,global_position,team): continue
+		if best == null or depot.global_position.distance_to(global_position) < best.global_position.distance_to(global_position): best = depot
+	return best != null and assign_source(best)
 func source_valid() -> bool:
 	return is_instance_valid(assigned_depot) and not assigned_depot.is_queued_for_deletion() and assigned_depot.team == team and assigned_depot.health > 0
 func active() -> bool:
@@ -101,7 +111,11 @@ func active() -> bool:
 	var kind := choose_fuel()
 	return not kind.is_empty() and energy_room() >= fuel_rules.output(kind)
 func _process(delta: float) -> void:
-	if not source_valid(): reset_cycle()
+	if not source_valid():
+		reset_cycle()
+		# Its Depot was lost: look for another covering one about twice a second.
+		_search_left -= delta
+		if _search_left <= 0: _search_left = 0.5; find_source()
 	if not enabled or health <= 0 or not source_valid(): _update_display(); return
 	var time_left := maxf(0,delta)
 	# Recheck storage/fuel for every complete cycle; never bank blocked time.

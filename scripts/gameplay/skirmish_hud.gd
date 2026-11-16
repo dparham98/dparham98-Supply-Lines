@@ -26,7 +26,7 @@ var _tip_control: Control
 var _tip_since := 0.0
 ## Fixed command slots, row-major in the 4 × 3 grid. Commands that never share a card may share a slot.
 const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 4, "Return": 5, "DropMaterials": 6, "Build": 7,
-	"BurnWood": 4, "BurnCoal": 5, "BurnEither": 6, "AssignDepot": 7, "MakeCrates": 3, "Worksite": 7,
+	"BurnWood": 4, "BurnCoal": 5, "BurnEither": 6, "MakeCrates": 3, "Worksite": 7,
 	"EnergyCeiling": 4, "CoalReserve": 5,
 	"Repair": 8, "Capture": 9, "DeployTruck": 10, "CancelPlan": 11,
 	"DeployCargo": 2, "Load": 4, "Unload": 5, "Trips": 6,
@@ -119,9 +119,6 @@ func _ready() -> void:
 	for pair in [["BurnWood","wood"],["BurnCoal","coal"],["BurnEither","either"]]:
 		card.get_node(pair[0]).pressed.connect(func():
 			if is_instance_valid(shown) and shown.is_in_group("energy_generators"): shown.set_fuel_preference(pair[1]))
-	card.get_node("AssignDepot").pressed.connect(func():
-		game.pending_unit_command = "assign_depot"
-		game.notify("Assign: choose a Depot that covers this Generator."))
 	card.get_node("DropMaterials").pressed.connect(func():
 		for unit in selected_units():
 			if unit.can_gather and unit.cargo > 0:
@@ -539,14 +536,13 @@ func update_contents() -> void:
 		set_stats([["Output","%.1f E/s" % node.output_rate()],["Burning",str(node.cycle_kind).capitalize() if not node.cycle_kind.is_empty() else "Waiting"],["Cycle","%.1f / %.1fs" % [node.cycle_elapsed,node.cycle_seconds]],["Fuel left",node.fuel_left_text()]])
 		if is_instance_valid(source): show_storage("%s storage" % source.name,source.stockpile)
 		info.get_node("Details").text = "Assigned Depot: %s" % (source.name if is_instance_valid(source) else "none")
-		hint_text = "Burns fuel from its assigned Depot. Wood: 1 → %d E / %.1fs. Coal: 1 → %d E / %.1fs. Either uses wood first. Changes apply next cycle. It pauses at the Depot's energy ceiling or full storage, and leaves the Depot's coal reserve for vehicles." % [node.fuel_rules.wood_output,node.fuel_rules.wood_seconds,node.fuel_rules.coal_output,node.fuel_rules.coal_seconds]
+		hint_text = "Burns fuel from the Depot whose range it stands in, and banks the energy there. Wood: 1 → %d E / %.1fs. Coal: 1 → %d E / %.1fs. Either uses wood first. Changes apply next cycle. It pauses at the Depot's energy ceiling or full storage, and leaves the Depot's coal reserve for vehicles." % [node.fuel_rules.wood_output,node.fuel_rules.wood_seconds,node.fuel_rules.coal_output,node.fuel_rules.coal_seconds]
 		if node.team == "player":
 			show_button("ToggleGenerator","Pause" if node.enabled else "Resume")
 			set_card(card.get_node("ToggleGenerator"),"generator_pause" if node.enabled else "generator_resume")
 			show_fuel_tile("BurnWood","Burn wood","wood",node.fuel_preference)
 			show_fuel_tile("BurnCoal","Burn coal","coal",node.fuel_preference)
 			show_fuel_tile("BurnEither","Burn either (wood first)","either",node.fuel_preference)
-			show_button("AssignDepot","Assign Depot")
 		if is_instance_valid(node.assigned_depot): show_button("FocusAssigned","Focus Depot")
 	else:
 		var nearest = nearest_depot(node)
@@ -840,18 +836,12 @@ func pick_prompt() -> String:
 			if selected_cargo() != null: return "LOAD · CHOOSE A STOP"
 		"unload":
 			if selected_cargo() != null: return "UNLOAD · CHOOSE A STOP\nLeft-click a Depot on the map or minimap to unpack there, a build site to deliver its materials, or open ground to set crates down. Shift queues. Right-click or Esc cancels."
-		"assign_depot":
-			if is_instance_valid(shown) and shown.is_in_group("energy_generators"): return "ASSIGN A DEPOT\nLeft-click a friendly Depot that covers this Generator, on the map or minimap. It burns fuel from that Depot. Right-click or Esc cancels."
 		"pin":
 			if global_build_open: return "PIN A PAYER\nLeft-click a Depot or deployed Cargo truck on the map or minimap. New plans pay only from it. Right-click or Esc cancels."
 	return ""
 func pick_stops() -> Array[Node3D]:
 	var stops: Array[Node3D] = []
 	if pick_prompt().is_empty() or crate_page_open: return stops
-	if game.pending_unit_command == "assign_depot":
-		for depot in get_tree().get_nodes_in_group("depots"):
-			if SupplySource.covers(depot,shown.global_position,shown.team): stops.append(depot)
-		return stops
 	var vehicle := selected_cargo()
 	for group in ["depots","mobile_supplies"]:
 		for node in get_tree().get_nodes_in_group(group):
@@ -862,13 +852,6 @@ func pick_stops() -> Array[Node3D]:
 	return stops
 func pick_stop(stop: Node3D, queued := false) -> void:
 	var mode: String = game.pending_unit_command
-	if mode == "assign_depot":
-		if not pick_stops().has(stop) or not shown.assign_source(stop):
-			game.notify("Pick a friendly Depot that covers this Generator.")
-			return
-		game.pending_unit_command = ""
-		game.notify("Generator now burns fuel from %s." % stop.name)
-		return
 	if not pick_stops().has(stop):
 		game.notify("Pick a friendly Depot%s." % (" or deployed Cargo truck" if mode == "pin" or not selected_cargo().is_in_group("rail_trains") else ""))
 		return

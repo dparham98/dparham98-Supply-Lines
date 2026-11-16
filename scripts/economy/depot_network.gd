@@ -94,12 +94,13 @@ func depot_centre(point: Vector3) -> Vector2:
 	var start := footprint_start(point,size)
 	var at: Vector3 = game.ground.tile_to_world(start)+Vector3(size.x*0.5-0.5,0,size.y*0.5-0.5)
 	return Vector2(at.x,at.z)
-## Whether a new Depot may stand at `point`: its snapped centre at least DepotRules.min_depot_spacing from
+## Whether a new Depot may stand at `point`: its snapped centre at least DepotRules.min_depot_spacing() (twice
+## the Depot range, so ranges never overlap) from
 ## every Depot of `team`, every unfinished Depot plan, and every site a Depot truck of `team` has been
 ## ordered to deploy on, other than `ignore` (the plan or truck asking). Captured Depots are not checked
 ## (docs/DEPOT_SPACING.md).
 func depot_spacing_ok(point: Vector3, team := "player", ignore: Node = null) -> bool:
-	var spacing: float = depot_rules().min_depot_spacing
+	var spacing: float = depot_rules().min_depot_spacing()
 	if spacing <= 0.0: return true
 	var at := depot_centre(point)
 	for depot in get_tree().get_nodes_in_group("depots"):
@@ -122,7 +123,7 @@ func deploy_sites(unit: Node3D) -> Array[Vector3]:
 	return sites
 ## The spacing rule in words, for every notice and status line that names it.
 func spacing_reason() -> String:
-	return "at least %.0f m from every other friendly Depot" % depot_rules().min_depot_spacing
+	return "at least %.0f m from every other friendly Depot, so the ranges don't overlap" % depot_rules().min_depot_spacing()
 ## The notice for a Depot site that fails on spacing, or "" when spacing is not the problem.
 func spacing_notice(point: Vector3, team := "player", ignore: Node = null) -> String:
 	return "" if depot_spacing_ok(point,team,ignore) else "A new Depot must stand %s." % spacing_reason()
@@ -216,14 +217,45 @@ func construct_generator(point: Vector3) -> bool:
 func _process(_delta: float) -> void:
 	var ghost = game.get_node_or_null("ConstructionPreview")
 	if ghost == null: return
-	ghost.visible = not game.global_plan_kind.is_empty() or game.placing_depot or game.placing_generator or not game.placing_structure.is_empty()
+	var truck := deploying_truck()
+	ghost.visible = not game.global_plan_kind.is_empty() or game.placing_depot or game.placing_generator or not game.placing_structure.is_empty() or truck != null
 	if not ghost.visible: return
 	var camera := game.get_viewport().get_camera_3d()
 	var mouse := game.get_viewport().get_mouse_position()
 	var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(mouse),camera.project_ray_normal(mouse))
 	if point == null: ghost.visible = false; return
 	if not game.global_plan_kind.is_empty(): update_global_preview(point)
+	elif truck != null: update_deploy_preview(point,truck)
 	else: update_preview(point,game.placing_generator)
+## The selected player Depot Truck while Deploy waits for a site, or null.
+func deploying_truck() -> Node3D:
+	if game.pending_unit_command != "deploy": return null
+	for unit in get_tree().get_nodes_in_group("units"):
+		if unit.team == "player" and unit.is_selected and unit.get("is_depot_truck") == true: return unit
+	return null
+## A Depot about to be placed shows its range around where it will stand, so the player can see what it
+## will cover. Other placements hide it.
+func show_range(depot: bool) -> void:
+	var ring: Node3D = game.get_node("ConstructionPreview/Range")
+	ring.visible = depot
+	if depot: ring.scale = Vector3.ONE*depot_rules().construction_radius
+## Deploy preview: the Depot footprint and range where the truck would set it down.
+func update_deploy_preview(point: Vector3, truck: Node3D) -> bool:
+	var ghost = game.get_node("ConstructionPreview")
+	var size := depot_size()
+	var start := footprint_start(point,size)
+	ghost.position = game.ground.tile_to_world(start)+Vector3(size.x*0.5-0.5,0.2,size.y*0.5-0.5)
+	ghost.get_node("Footprint").scale = Vector3(size.x,1,size.y)
+	show_range(true)
+	var valid := can_deploy_at(truck,point)
+	if preview_material == null:
+		preview_material = ghost.get_node("Footprint").mesh.material.duplicate()
+		ghost.get_node("Footprint").material_override = preview_material
+	preview_material.albedo_color = Color(0.2,1,0.4,0.45) if valid else Color(1,0.15,0.1,0.45)
+	var reason := ""
+	if not valid: reason = " · " + (spacing_reason() if not depot_spacing_ok(point,truck.team,truck) else "needs empty buildable land")
+	ghost.get_node("Status").text = "%s · Depot%s" % ["DEPLOY" if valid else "BLOCKED",reason]
+	return valid
 func update_preview(point: Vector3, generator: bool) -> bool:
 	var ghost = game.get_node("ConstructionPreview")
 	var size: Vector2i = supply_rules.generator_footprint
@@ -249,6 +281,7 @@ func update_preview(point: Vector3, generator: bool) -> bool:
 	var start := footprint_start(point,size)
 	ghost.position = game.ground.tile_to_world(start)+Vector3(size.x*0.5-0.5,0.2,size.y*0.5-0.5)
 	ghost.get_node("Footprint").scale = Vector3(size.x,1,size.y)
+	show_range(not generator and game.placing_structure.is_empty())
 	var valid: bool = builder_valid() and owned_selected() and can_place_size(point,selected,size) and selected.energy >= energy_cost and selected.iron >= iron_cost
 	if not generator and game.placing_structure.is_empty(): valid = valid and depot_spacing_ok(point)
 	if game.placing_structure == &"iron_mine": valid = builder_valid() and can_place_mine(point,selected) and selected.energy >= energy_cost and selected.iron >= iron_cost
@@ -415,6 +448,7 @@ func update_global_preview(point: Vector3) -> bool:
 	var start := footprint_start(point,spec.size)
 	ghost.position = game.ground.tile_to_world(start)+Vector3(spec.size.x*0.5-0.5,0.2,spec.size.y*0.5-0.5)
 	ghost.get_node("Footprint").scale = Vector3(spec.size.x,1,spec.size.y)
+	show_range(game.global_plan_kind == &"depot")
 	var valid := plan_terrain_valid(start,spec.size,game.global_plan_kind) and not plan_overlaps(start,spec.size)
 	var spaced: bool = game.global_plan_kind != &"depot" or depot_spacing_ok(point)
 	valid = valid and spaced

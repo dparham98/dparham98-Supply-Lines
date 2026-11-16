@@ -106,10 +106,10 @@ initial_wood = 40
 initial_coal = 60
 [node name="IronMine" parent="Entities/Buildings" instance=ExtResource("mine")]
 editor_description = "Starter mine on start A's iron field, so the first iron can be gathered before any can be spent."
-position = Vector3(-142,0,13)
+position = Vector3(-174,0,11)
 [node name="IronMineB" parent="Entities/Buildings" instance=ExtResource("mine")]
 editor_description = "Starter mine on start B's iron field, mirroring start A's."
-position = Vector3(142,0,-13)
+position = Vector3(174,0,-11)
 [node name="Resources" type="Node3D" parent="Entities"]
 [node name="Units" type="Node3D" parent="Entities"]
 [node name="Infantry" parent="Entities/Units" instance=ExtResource("infantry")]

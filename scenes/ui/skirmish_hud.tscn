@@ -60,7 +60,6 @@
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_generator_fuel_wood.png" id="card_generator_fuel_wood"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_generator_fuel_coal.png" id="card_generator_fuel_coal"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_generator_fuel_either.png" id="card_generator_fuel_either"]
-[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_assigned_depot.png" id="card_assigned_depot"]
 [sub_resource type="StyleBoxFlat" id="panel"]
 bg_color = Color(0.068,0.077,0.066,0.98)
 border_width_top = 2
@@ -314,10 +313,6 @@ events = [SubResource("key_command_coal_reserve")]
 action = &"command_burn_either"
 [sub_resource type="Shortcut" id="shortcut_command_burn_either"]
 events = [SubResource("key_command_burn_either")]
-[sub_resource type="InputEventAction" id="key_command_assign_depot"]
-action = &"command_assign_depot"
-[sub_resource type="Shortcut" id="shortcut_command_assign_depot"]
-events = [SubResource("key_command_assign_depot")]
 [node name="Interface" type="CanvasLayer"]
 process_mode = 3
 script = ExtResource("hud")
@@ -1834,31 +1829,6 @@ icon = ExtResource("card_generator_fuel_either")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/BurnEither"]
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -22.0
-offset_top = 2.0
-offset_right = -5.0
-offset_bottom = 16.0
-grow_horizontal = 0
-mouse_filter = 2
-horizontal_alignment = 2
-theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
-theme_override_font_sizes/font_size = 11
-text = "?"
-[node name="AssignDepot" type="Button" parent="Bottom/Body/Row/Commands/Main"]
-theme_type_variation = &"CommandCard"
-tooltip_text = "Pick the Depot whose fuel this Generator burns and whose storage it fills."
-shortcut = SubResource("shortcut_command_assign_depot")
-layout_mode = 0
-custom_minimum_size = Vector2(46,46)
-text = ""
-icon = ExtResource("card_assigned_depot")
-expand_icon = true
-icon_alignment = 1
-[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/AssignDepot"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0

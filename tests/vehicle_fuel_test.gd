@@ -28,6 +28,9 @@ func place(unit: Node3D, point: Vector3) -> void:
 	unit.global_position = game.ground.tile_to_world(unit.grid_position)
 	unit._claim(unit.grid_position)
 func run() -> void:
+	# A mechanics check on a map laid out for the old 35 m Depot range (docs/DEPOT_RANGE.md).
+	var old_range: DepotRules = load("res://assets/economy/depot_rules.tres")
+	old_range.construction_radius = 35.0
 	await fixture("res://scenes/maps/resource_skirmish.tscn")
 	game.testing_full_tanks = false
 	var depot = game.depot

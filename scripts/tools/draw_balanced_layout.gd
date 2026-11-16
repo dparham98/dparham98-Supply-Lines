@@ -111,9 +111,11 @@ func _forest() -> void:
 	ellipse(FOREST, 205, 300, 8, 14, 2.0, OPEN)
 
 func _iron() -> void:
-	block(ORE, 107, 262, 112, 268) # main, inside the starting Depot's 35 m
-	block(ORE, 42, 150, 46, 155) # safe expansion
-	block(ORE, 102, 366, 106, 371) # exposed expansion
+	# Each field lies inside a Depot's 17.5 m range of its site (docs/DEPOT_RANGE.md), clear of the Depot
+	# and of the truck strip on its east side.
+	block(ORE, 73, 257, 78, 263) # main, south-west of the starting Depot
+	block(ORE, 51, 146, 55, 151) # safe expansion
+	block(ORE, 93, 363, 97, 368) # exposed expansion
 
 func _coal() -> void:
 	coal_field(62, 113, FIELD_ROWS, BELT) # safe: in the pocket beside the safe expansion
