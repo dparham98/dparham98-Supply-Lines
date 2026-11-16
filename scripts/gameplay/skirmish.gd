@@ -37,7 +37,11 @@ var selected_building: Node3D:
 		selected_building = value
 		_show_team_marker(value,true)
 var pending_unit_command := ""
-var placing_rail := false
+## Track laying (docs/RAIL_PLANNING.md). Leaving it, however it is left, drops any track still only planned.
+var placing_rail := false:
+	set(value):
+		placing_rail = value
+		if not value and is_inside_tree() and has_node("RailNetwork"): $RailNetwork.clear_plan()
 ## Maglev piece being laid (docs/MAGLEV_TRACKS.md): straight, left or right curve, and the free-placement heading.
 var rail_piece := "straight"
 var rail_heading := Vector3.RIGHT
@@ -132,24 +136,39 @@ func rail_kind() -> String:
 func rail_join() -> int:
 	if rail_piece.begins_with("fork"): return rail_fork_join
 	return 1 if rail_piece == "right" else 0
-## R, F and G belong to track laying while it is armed. Button shortcuts run before _unhandled_input and the
-## Build page stays open while laying, so its tiles with the same letters would otherwise answer first.
+## Track-laying keys (docs/RAIL_PLANNING.md): R turns a free piece 90 degrees, Tab cycles the piece type, G
+## changes which end of a fork joins, Enter lays the plan and Backspace takes back its last piece. They belong
+## to track laying while it is armed: button shortcuts run before _unhandled_input and the Build page stays
+## open while laying, so its tiles with the same letters would otherwise answer first, and Tab would move focus.
+const RAIL_KEYS := [KEY_R,KEY_TAB,KEY_G,KEY_ENTER,KEY_KP_ENTER,KEY_BACKSPACE]
 func _input(event: InputEvent) -> void:
 	if not placing_rail or not event is InputEventKey or not event.pressed: return
-	if not event.physical_keycode in [KEY_R,KEY_F,KEY_G]: return
+	if not event.physical_keycode in RAIL_KEYS: return
 	get_viewport().set_input_as_handled()
 	if not event.echo: _rail_key(event.physical_keycode)
+const RAIL_HELP := "R turns it; Tab changes piece; click plans; Enter lays the plan once it joins two Depots, mines or build sites; Backspace undoes; Esc drops it."
 func _rail_key(key: int) -> void:
-	if key == KEY_R:
+	if key == KEY_TAB:
 		rail_piece = {"straight":"left","left":"right","right":"fork_left","fork_left":"fork_right","fork_right":"straight"}[rail_piece]
 		rail_fork_join = 0
-		notify("Laying %s track, %d iron. R switches piece; F turns a free piece; G changes which end of a fork joins; Shift-click keeps laying; Esc finishes." % [rail_piece.replace("_"," "),$RailNetwork.cost(rail_kind())])
-	elif key == KEY_F:
+		notify("Planning %s track, %d iron. %s" % [rail_piece.replace("_"," "),$RailNetwork.cost(rail_kind()),RAIL_HELP])
+	elif key == KEY_R:
 		rail_heading = Vector3(-rail_heading.z,0,rail_heading.x)
-		notify("Free piece heading turned. Snapped pieces follow the track they join.")
-	elif rail_piece.begins_with("fork"):
-		rail_fork_join = (rail_fork_join+1)%3
-		notify("Fork joins the track by its %s." % ["entry","straight exit","branch exit"][rail_fork_join])
+		notify("Piece turned 90 degrees. A piece that snaps to a track end follows that track.")
+	elif key == KEY_G:
+		if rail_piece.begins_with("fork"):
+			rail_fork_join = (rail_fork_join+1)%3
+			notify("Fork joins the track by its %s." % ["entry","straight exit","branch exit"][rail_fork_join])
+	elif key == KEY_BACKSPACE:
+		$RailNetwork.unplan_last()
+		notify("Last planned piece removed; %d left." % $RailNetwork.pending.size())
+	else:
+		var laid: Array[Node3D] = $RailNetwork.commit_plan(_rail_pin())
+		if not laid.is_empty():
+			placing_rail = false
+## The pinned payer for track, or null.
+func _rail_pin():
+	return hud.global_payer if hud.global_pinned and is_instance_valid(hud.global_payer) else null
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE: cancel_armed()
 	# Actor selection takes precedence over armed world actions.
@@ -166,10 +185,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if placing_rail and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var camera := get_viewport().get_camera_3d()
 		var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(event.position),camera.project_ray_normal(event.position))
-		# A click lays one piece and finishes; with Shift held, track laying stays armed for the next piece.
-		if point != null and $RailNetwork.place(rail_kind(),point,rail_heading,rail_join(),hud.global_payer if hud.global_pinned and is_instance_valid(hud.global_payer) else null) != null and not event.shift_pressed:
-			placing_rail = false
-			notify("Track laid; laying finished. R lays another piece. Hold Shift while clicking to keep laying.")
+		# A click plans one piece; nothing is laid or paid until Enter lays the whole plan.
+		if point != null:
+			var refused: String = $RailNetwork.plan_piece(rail_kind(),point,rail_heading,rail_join())
+			if not refused.is_empty(): notify(refused)
+			else:
+				var blocker: String = $RailNetwork.plan_blocker(_rail_pin())
+				notify("%d pieces planned, %d iron. %s" % [$RailNetwork.pending.size(),$RailNetwork.plan_cost(),"Enter lays it." if blocker.is_empty() else blocker])
 		get_viewport().set_input_as_handled()
 		return
 	if (placing_depot or placing_generator or not placing_structure.is_empty()) and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:

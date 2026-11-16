@@ -1,7 +1,8 @@
 extends SceneTree
-# Headless: track laying by real key presses and clicks. The Build page stays open while laying, and its
-# tiles use R and G too, so the keys must reach track laying first. A click lays one piece and finishes;
-# Shift-click keeps laying (docs/MAGLEV_TRACKS.md).
+# Headless: track planning by real key presses and clicks (docs/RAIL_PLANNING.md). The Build page stays open
+# while laying, and its tiles use R and G too, so the keys must reach track laying first. Tab cycles the piece,
+# R turns it 90 degrees, G picks a fork's joining end, a click plans a piece, Backspace takes it back and Enter
+# lays the plan once it connects two targets.
 var game: Node3D
 var hud: CanvasLayer
 var rails: Node
@@ -51,39 +52,46 @@ func run() -> void:
 	await press(KEY_R)
 	if not check(game.placing_rail and game.rail_piece == "straight","R should start laying track from the Build page"): return
 	if not check(hud.build_menu.get_node("Actions/Rail").is_visible_in_tree(),"The test needs the Rail tile on screen"): return
-	# While laying, R cycles every piece and comes back round.
+	# While laying, Tab cycles every piece and comes back round, and does not move GUI focus.
 	for piece in ["left","right","fork_left","fork_right","straight"]:
-		await press(KEY_R)
-		if not check(game.rail_piece == piece,"R should reach %s, got %s" % [piece,game.rail_piece]): return
-	# F turns a free piece.
+		await press(KEY_TAB)
+		if not check(game.rail_piece == piece,"Tab should reach %s, got %s" % [piece,game.rail_piece]): return
+	# R turns a piece 90 degrees, four times round to where it began.
 	var heading: Vector3 = game.rail_heading
-	await press(KEY_F)
-	if not check(game.rail_heading.is_equal_approx(Vector3(-heading.z,0,heading.x)) and game.placing_rail,"F should turn a free piece"): return
+	await press(KEY_R)
+	if not check(game.rail_heading.is_equal_approx(Vector3(-heading.z,0,heading.x)) and game.placing_rail and game.rail_piece == "straight","R should turn the piece 90 degrees"): return
+	for i in range(3): await press(KEY_R)
+	if not check(game.rail_heading.is_equal_approx(heading),"Four turns should come back round"): return
 	# G does nothing on a straight, and must not start a Generator.
 	await press(KEY_G)
 	if not check(game.placing_rail and game.global_plan_kind.is_empty() and game.rail_fork_join == 0,"G on a straight should do nothing"): return
-	# A curve chosen by key is the piece a click lays.
+	# A curve chosen by key is the piece a click plans; nothing is laid or paid yet.
 	var west: Dictionary = free_end(game.get_node("Entities/Rails/Track0"),0)
 	if not check(not west.is_empty(),"Fixture has no free west end"): return
-	await press(KEY_R)
+	await press(KEY_TAB)
 	var before: int = rails.pieces.size()
-	await click_at(await look_at_end(west),true)
-	if not check(rails.pieces.size() == before+1 and rails.pieces[before].kind == "curve","A click after R should lay a curve"): return
-	if not check(game.placing_rail and game.rail_piece == "left","A Shift-click should keep laying the same piece"): return
-	# On to a fork: G walks its three joining ends and stays in track laying. Only the branch exit fits at the
-	# east end, inside the Depot radius, and the click lays it there.
-	for i in range(2): await press(KEY_R)
-	if not check(game.rail_piece == "fork_left","R should reach the left fork"): return
+	var payer: Node3D = game.get_node("Entities/Buildings/Depot")
+	var iron: int = payer.iron
+	await click_at(await look_at_end(west))
+	if not check(rails.pending.size() == 1 and rails.pending[0].kind == "curve" and rails.pieces.size() == before,"A click after Tab should plan a curve, not lay it"): return
+	if not check(game.placing_rail and game.rail_piece == "left","Planning should stay armed with the same piece"): return
+	# Backspace takes it back.
+	await press(KEY_BACKSPACE)
+	if not check(rails.pending.is_empty() and game.placing_rail,"Backspace should remove the planned piece"): return
+	await click_at(await look_at_end(west))
+	if not check(rails.pending.size() == 1,"The curve should plan again"): return
+	# On to a fork: G walks its three joining ends and stays in track laying.
+	for i in range(2): await press(KEY_TAB)
+	if not check(game.rail_piece == "fork_left","Tab should reach the left fork"): return
 	for join in [1,2,0,1,2]:
 		await press(KEY_G)
 		if not check(game.placing_rail and game.global_plan_kind.is_empty() and game.rail_fork_join == join,"G should move a fork to join %d" % join): return
-	var far: Dictionary = free_end(game.get_node("Entities/Rails/Track6"),1)
-	if not check(not far.is_empty(),"Fixture has no free east end"): return
-	before = rails.pieces.size()
-	await click_at(await look_at_end(far))
-	if not check(rails.pieces.size() == before+1 and rails.pieces[before].kind == "fork_left","A click after R should lay a fork"): return
-	# A plain click lays its piece and finishes: the Build page has its keys back.
-	if not check(not game.placing_rail and "laying finished" in game.message,"A plain click should finish track laying and say so: %s" % game.message): return
+	# The fixture's track joins both Depots, so the curve joined to it already connects two targets: Enter lays
+	# it and finishes. The Build page has its keys back.
+	if not check(rails.plan_blocker().is_empty(),"The plan joined to the fixture line should connect two Depots: "+rails.plan_blocker()): return
+	await press(KEY_ENTER)
+	if not check(rails.pieces.size() == before+1 and rails.pieces[before].kind == "curve" and rails.pending.is_empty() and not game.placing_rail,"Enter should lay the plan and finish laying"): return
+	if not check(payer.iron < iron or game.get_node("Entities/Buildings/EastDepot").iron < iron,"A Depot should pay for the laid track"): return
 	await process_frame
 	await press(KEY_G)
 	if not check(not game.placing_rail and game.global_plan_kind == &"generator","G should be the Generator tile again"): return

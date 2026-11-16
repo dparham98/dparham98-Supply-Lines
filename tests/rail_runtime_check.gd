@@ -69,19 +69,36 @@ func run() -> void:
 	await click(hud.get_node("Bottom/Body/Header/GlobalBuild"))
 	await click(hud.build_menu.get_node("Actions/Rail"))
 	if not check(game.placing_rail and game.rail_piece == "straight","Rail Build button did not start laying track"): return
-	# A free straight north of the Depot, then a second one snapped onto its free end; the Depot pays by length.
-	# Shift-clicks keep track laying armed between pieces.
+	# A planned straight north of the Depot, then a second one snapped onto its free end (docs/RAIL_PLANNING.md).
+	# Nothing is laid or paid until the plan joins two targets and Enter lays it; the Depot then pays by length.
 	var iron_before: int = source.iron
 	var pieces_before: int = rails.pieces.size()
 	var free_point: Vector3 = source.global_position+Vector3(-6,0,-7)
-	await click_at(rig.camera.unproject_position(free_point),true)
-	if not check(rails.pieces.size() == pieces_before+1 and source.iron == iron_before-rails.cost("straight"),"First straight not laid or not paid"): return
-	var laid = rails.pieces[rails.pieces.size()-1]
+	await click_at(rig.camera.unproject_position(free_point))
+	if not check(rails.pending.size() == 1 and rails.pieces.size() == pieces_before and source.iron == iron_before and game.placing_rail,"A click should plan a piece, not lay it"): return
 	# Its west end, where the Depot does not hide the ground from the click.
-	var free_end: Vector3 = laid.ends()[0].position
-	await click_at(rig.camera.unproject_position(free_end+Vector3(-1.0,0,0.5)),true)
-	if not check(rails.pieces.size() == pieces_before+2 and not rails.connection(laid,0).is_empty() and source.iron == iron_before-2*rails.cost("straight") and game.placing_rail,"Snapped straight or payer debit failed"): return
+	var free_end: Vector3 = rails._pending_end(rails.pending[0],0).position
+	await click_at(rig.camera.unproject_position(free_end+Vector3(-1.0,0,0.5)))
+	if not check(rails.pending.size() == 2 and rails.pieces.size() == pieces_before and source.iron == iron_before,"The second piece should be planned onto the first"): return
+	await shot("rail_plan")
+	# A build site past the plan's far end is its second target.
+	var far: Dictionary = rails.pending_free_ends()[0]
+	for end in rails.pending_free_ends():
+		if end.position.distance_to(source.global_position) > far.position.distance_to(source.global_position): far = end
+	var site: Node3D = null
+	for r in range(4,14):
+		site = network.queue_plan(far.position+far.out*r,&"generator")
+		if site != null: break
+	if not check(site != null and rails.plan_blocker().is_empty(),"The plan should connect the Depot and a build site: "+rails.plan_blocker()): return
+	var enter := InputEventKey.new()
+	enter.keycode = KEY_ENTER; enter.physical_keycode = KEY_ENTER; enter.pressed = true
+	root.push_input(enter,true)
+	for frame in range(3): await process_frame
+	if not check(rails.pieces.size() == pieces_before+2 and rails.pending.is_empty() and source.iron == iron_before-2*rails.cost("straight") and not game.placing_rail,"Enter should lay and pay the plan and finish laying"): return
+	var laid = rails.pieces[rails.pieces.size()-1]
+	if not check(not rails.connection(laid,0).is_empty() or not rails.connection(laid,1).is_empty(),"The laid pieces should join"): return
 	await shot("rail_construction")
+	game.placing_rail = true
 	# A curve from the free end, shown for art review; its cost is refunded so later payment checks hold.
 	var curve_end: Vector3 = laid.ends()[1].position+Vector3(1.0,0,0)
 	var curve = rails.place("curve",curve_end,Vector3.RIGHT,false,source)
