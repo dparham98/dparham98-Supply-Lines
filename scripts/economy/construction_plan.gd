@@ -219,7 +219,7 @@ func refresh_state() -> void:
 	if not network.plan_terrain_valid(start,spec.size,kind,self): state = "Waiting for footprint to clear"
 	elif not network.plan_spacing_ok(self): state = spacing_state()
 	elif not materials_covered(): state = "Waiting for materials on site"
-	elif energy_payer(energy_due(0) if spec.energy > 0 else 0) == null and spec.energy > energy_paid: state = "Waiting for energy coverage"
+	elif energy_payer(energy_due(0) if spec.energy > 0 else 0) == null and spec.energy > energy_paid: state = "Waiting for energy · needs a Depot whose range covers its centre, with %d E" % (spec.energy-energy_paid)
 	else: state = "Materials on site · order Infantry to construct"
 	refresh_label()
 func finish() -> Node3D:
