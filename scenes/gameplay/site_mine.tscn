@@ -1,0 +1,32 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/economy/iron_mine.gd" id="script"]
+[ext_resource type="Resource" path="res://assets/economy/engineering_rules.tres" id="rules"]
+[ext_resource type="PackedScene" path="res://scenes/models/portal_mine_model.tscn" id="model"]
+[ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
+[ext_resource type="Material" path="res://assets/materials/units/team_marker.tres" id="team_marker"]
+[sub_resource type="PlaneMesh" id="team_marker_mesh"]
+material = ExtResource("team_marker")
+size = Vector2(4.4, 3.4)
+
+[node name="SiteMine" type="Node3D"]
+editor_description = "The Iron Mine as built on a mine site (docs/MINE_SITES.md): the same mine as iron_mine.tscn with the portal model, which fills the 4 x 3 cut in the mountain. DepotNetwork.site_mine_scene."
+script = ExtResource("script")
+rules = ExtResource("rules")
+[node name="Visuals" type="Node3D" parent="."]
+script = ExtResource("slot")
+model_scene = ExtResource("model")
+[node name="Model" parent="Visuals" instance=ExtResource("model")]
+[node name="TeamMarker" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 0.06, 0)
+visible = false
+cast_shadow = 0
+mesh = SubResource("team_marker_mesh")
+instance_shader_parameters/half_size = Vector2(2.2, 1.7)
+metadata/not_selectable = true
+[node name="Label" type="Label3D" parent="."]
+position = Vector3(0,5.2,0)
+billboard = 1
+no_depth_test = true
+font_size = 30
+pixel_size = 0.035
+text = "NEUTRAL IRON MINE"

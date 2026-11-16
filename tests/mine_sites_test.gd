@@ -113,7 +113,8 @@ func run() -> void:
 	if not check(network.can_place_mine(corner,depot) and not network.can_place_mine(outside,depot),"The build rule does not follow the site"): return
 	if not check(ground.iron_amount(site.position) == ground.harvesting_rules.iron_per_site_tile,"A site cell holds the wrong iron"): return
 	# Set down on a corner cell, the mine still takes the whole site and stands at its middle.
-	var mine: Node3D = load("res://scenes/gameplay/iron_mine.tscn").instantiate()
+	if not check(network.mine_scene_for(site) == network.site_mine_scene and network.site_mine_scene != null and network.mine_scene_for(Rect2i(ground.get_tile_at_position(game.get_node("Entities/Buildings/IronMine").global_position),rules.mine_footprint)) == network.mine_scene,"A site should get the portal mine and an ore field the pithead"): return
+	var mine: Node3D = network.mine_scene_for(site).instantiate()
 	mine.rules = rules
 	mine.position = corner
 	game.get_node("Entities/Buildings").add_child(mine)
@@ -130,7 +131,21 @@ func run() -> void:
 	# A planned mine takes the whole site too.
 	var other: Rect2i = sites[0] if sites[0] != site else sites[1]
 	var plan = network.queue_plan(ground.tile_to_world(other.position),&"iron_mine")
-	if not check(plan != null and plan.start == other.position and plan.spec.size == other.size,"A planned mine does not take its whole site"): return
+	if not check(plan != null and plan.start == other.position and plan.spec.size == other.size and plan.spec.scene == network.site_mine_scene,"A planned mine does not take its whole site, or is not the portal mine"): return
+	# The portal mine has every clip the rig plays, and fits inside the cut.
+	var rig = mine.get_node("Visuals/Model")
+	for clip in [rig.idle_clip,rig.work_clip,rig.depleted_clip,rig.build_clip,rig.death_clip]:
+		if not check(rig.player.has_animation(clip),"The portal mine has no %s clip" % clip): return
+	if not check(rig.player.get_animation(rig.work_clip).loop_mode == Animation.LOOP_LINEAR and rig.player.get_animation(rig.idle_clip).loop_mode == Animation.LOOP_LINEAR,"The portal mine's Idle and Work should loop"): return
+	var reach := AABB()
+	for part in rig.find_children("*","MeshInstance3D",true,false):
+		if part.name.begins_with("floor"): continue
+		var box: AABB = rig.global_transform.affine_inverse()*part.global_transform*part.get_aabb()
+		reach = box if reach.size == Vector3.ZERO else reach.merge(box)
+	if not check(reach.position.x > -2.2 and reach.end.x < 2.2 and reach.position.z > -1.75 and reach.end.z < 1.56,"The portal mine does not fit its 4 x 3 cut: %s" % reach): return
+	mine.extract(5,"player")
+	mine._process(0.1)
+	if not check(rig.working(),"The portal mine does not work while it is mined"): return
 	if not check(network.plan_spec(&"iron_mine").size == rules.mine_footprint,"Planning on a site changed the mine's ordinary footprint"): return
 	# The starter mine on the old ore field still works as before.
 	var old = game.get_node("Entities/Buildings/IronMine")

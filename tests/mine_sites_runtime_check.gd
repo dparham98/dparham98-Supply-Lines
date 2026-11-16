@@ -18,7 +18,7 @@ func shot(rig: Node, at: Vector3, zoom: float, name: String) -> Image:
 func middle(game: Node3D, site: Rect2i) -> Vector3:
 	return game.ground.tile_to_world(site.position)+Vector3(site.size.x*0.5-0.5,0,site.size.y*0.5-0.5)
 func build(game: Node3D, site: Rect2i) -> Node3D:
-	var mine: Node3D = load("res://scenes/gameplay/iron_mine.tscn").instantiate()
+	var mine: Node3D = load("res://scenes/gameplay/site_mine.tscn").instantiate()
 	mine.rules = game.get_node("DepotNetwork").engineering_rules
 	mine.position = game.ground.tile_to_world(site.position)
 	game.get_node("Entities/Buildings").add_child(mine)
@@ -54,9 +54,14 @@ func run() -> void:
 	var grass: Color = bare.get_pixelv(Vector2i(camera.unproject_position(centre+out*7.0)))
 	print("Site %s against ground %s" % [floor_colour,grass])
 	if not check(floor_colour.r-floor_colour.g > grass.r-grass.g+0.05,"A bare mine site does not stand out from the ground"): return
-	build(game,near)
+	var mine := build(game,near)
 	for frame in range(4): await process_frame
 	await shot(rig,centre+out*4.0,30,"mine_site_built")
+	await shot(rig,centre+out*1.5,14,"mine_site_close")
+	# Being mined: the cart is on its way into the tunnel.
+	mine.extract(5,"player")
+	for frame in range(70): await process_frame
+	await shot(rig,centre+out*1.5,14,"mine_site_working")
 	build(game,east)
 	for frame in range(4): await process_frame
 	await shot(rig,middle(game,east)+Vector3(4,0,0),30,"mine_site_east")

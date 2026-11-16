@@ -2,7 +2,7 @@
 
 A mine site is a terrain kind: a recess cut into the side of a mountain, 4 cells across and 3 deep, in which only an Iron Mine can be built. It is the first step towards iron mines that are dug into the rock instead of standing on a field of ore rocks. The older Ore kind still works as before, and both can be on one map.
 
-This step adds the terrain kind, its rules, the cut in the mountain and a trial map. The mine is still the free-standing pithead of [IRON_MINE_MODEL.md](IRON_MINE_MODEL.md), standing in the middle of the cut and turned to face out of it. The model made for the cut is a later step: a portal in the rock face with rails and carts running out of it, a hoist beside it and a winch house above, after the concept agreed on 2026-11-15. This terrain is what it will be built to fit.
+A mine built on a site is the portal mine of [PORTAL_MINE_MODEL.md](PORTAL_MINE_MODEL.md): a steel portal in a collar of rock, with a track and an ore cart, a hoist, a winch house and tanks. It fills the cut and looks out of it. A mine on an ore field is still the pithead of [IRON_MINE_MODEL.md](IRON_MINE_MODEL.md).
 
 | A bare site | A mine in it |
 | --- | --- |
@@ -26,7 +26,7 @@ This step adds the terrain kind, its rules, the cut in the mountain and a trial 
 
 The floor of the cut is the ground shader's kind 7: the stony ground of the mountain foot, stained with rust (`mine_site_stain`). No ore rocks stand on it.
 
-For the mine model that will replace the pithead, the cut gives a level floor 4 m across and 3 m deep at ground height, a back wall across its full width, a side wall on each flank, and a clear strip 4 m across and 2 m deep on the open ground in front.
+For the portal mine, the cut gives a level floor 4 m across and 3 m deep at ground height, a back wall across its full width, a side wall on each flank, and a clear strip 4 m across and 2 m deep on the open ground in front.
 
 **Which way a site faces matters to the eye.** The game looks north and down. A site that faces south opens towards the camera and is seen whole. One that faces east or west is seen side-on, half hidden by the mountain's own shoulders (`images/mine_site_east.png`), and one that faces north is hidden behind the mountain altogether. A layout should face its sites south where it can.
 
@@ -55,7 +55,6 @@ godot --headless --path . --script res://scripts/tools/rebuild_terrain_scenery.g
 
 ## Not done yet
 
-- The mine model is still the 2 m pithead, which looks small in the middle of a 4 x 3 cut. The portal, rails, carts, hoist and winch house are the next step.
 - The construction site's fence model only exists for square footprints, so a mine planned on a site shows the plain plan grid while it is built.
 - No ore vein is drawn on the rock, and a bare site has no marker beyond its stained floor and the orange block on the minimap.
 - The minimap and `draw_map_preview.gd` do not label a site's iron.
