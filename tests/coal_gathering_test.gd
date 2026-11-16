@@ -23,7 +23,7 @@ func run() -> void:
 	var ground = game.ground
 	var rules: HarvestingRules = ground.harvesting_rules
 	var network = game.get_node("DepotNetwork")
-	if not check(ground.Terrain.COAL == 6 and ground.TERRAIN_NAMES.size() == 7 and ground.TERRAIN_NAMES[6].begins_with("Coal"), "Coal is not a terrain category"): return
+	if not check(ground.Terrain.COAL == 6 and ground.TERRAIN_NAMES.size() == 8 and ground.TERRAIN_NAMES[6].begins_with("Coal"), "Coal is not a terrain category"): return
 
 	# The field beside start A's safe expansion.
 	var site: Vector3 = game.get_node("Sites/SafeExpansionA").position

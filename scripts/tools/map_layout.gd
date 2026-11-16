@@ -3,7 +3,12 @@ extends RefCounted
 ## colour per terrain category. Palette index = the Terrain value in scripts/terrain/terrain_grid.gd.
 ## scripts/tools/build_map_data.gd turns a layout into the files the game reads.
 const SIZE := 500
-const NAMES: PackedStringArray = ["grass", "water", "desert", "forest", "mountain", "ore", "coal"]
+const NAMES: PackedStringArray = ["grass", "water", "desert", "forest", "mountain", "ore", "coal", "mine site"]
+## A mine site (docs/MINE_SITES.md): this many cells across the rock face and this many deep into it, with this many
+## rows of open ground kept clear in front for the mine's rails.
+const MINE_SITE := 7
+const MINE_SITE_SIZE := Vector2i(4, 3)
+const MINE_FRONT_DEPTH := 2
 const PALETTE: Array[Color] = [
 	Color8(98, 132, 60), # 0 grass
 	Color8(36, 98, 150), # 1 water
@@ -12,6 +17,7 @@ const PALETTE: Array[Color] = [
 	Color8(118, 118, 122), # 4 mountain
 	Color8(196, 52, 40), # 5 ore (iron)
 	Color8(18, 18, 24), # 6 coal
+	Color8(236, 122, 28), # 7 mine site
 ]
 
 ## Writes cells as an 8-bit indexed PNG with the palette above. Godot's own PNG writer has no indexed mode.
@@ -96,3 +102,57 @@ static func counts(cells: PackedByteArray) -> PackedInt32Array:
 ## The 180 degree turn about the map centre that swaps the two starts.
 static func turned(cell: Vector2i) -> Vector2i:
 	return Vector2i(SIZE-1-cell.x, SIZE-1-cell.y)
+
+## What is wrong with the mine sites drawn on a layout, as lines of text; empty when all are sound. A site is a
+## recess cut into a mountain: a block 4 cells across and 3 deep, with Mountain cells all along its back and both
+## its flanks, and open ground (grass or desert) across its front for two rows out, where its rails will run.
+static func mine_site_errors(cells: PackedByteArray) -> PackedStringArray:
+	var errors := PackedStringArray()
+	var seen := {}
+	for i in range(SIZE*SIZE):
+		if cells[i] != MINE_SITE or seen.has(i): continue
+		var patch: Array[int] = [i]
+		seen[i] = true
+		var low := Vector2i(i%SIZE, i/SIZE)
+		var high := low
+		var head := 0
+		while head < patch.size():
+			var at := patch[head]; head += 1
+			var x := at%SIZE
+			var z := at/SIZE
+			low = Vector2i(mini(low.x, x), mini(low.y, z))
+			high = Vector2i(maxi(high.x, x), maxi(high.y, z))
+			for next in [at-1 if x > 0 else -1, at+1 if x < SIZE-1 else -1, at-SIZE, at+SIZE]:
+				if next >= 0 and next < SIZE*SIZE and cells[next] == MINE_SITE and not seen.has(next):
+					seen[next] = true
+					patch.append(next)
+		var size := high-low+Vector2i.ONE
+		var upright := size == MINE_SITE_SIZE
+		var sideways := size == Vector2i(MINE_SITE_SIZE.y, MINE_SITE_SIZE.x)
+		if patch.size() != MINE_SITE_SIZE.x*MINE_SITE_SIZE.y or not (upright or sideways):
+			errors.append("Mine site at %d,%d is not a %d x %d block (%d cells)" % [low.x, low.y, MINE_SITE_SIZE.x, MINE_SITE_SIZE.y, patch.size()])
+			continue
+		var sound := false
+		for facing in ([Vector2i(0, 1), Vector2i(0, -1)] if upright else [Vector2i(1, 0), Vector2i(-1, 0)]):
+			if site_walled(cells, low, size, facing): sound = true
+		if not sound: errors.append("Mine site at %d,%d needs Mountain along its back and both flanks, and grass or desert for %d rows along its front" % [low.x, low.y, MINE_FRONT_DEPTH])
+	return errors
+
+## Whether a block that looks out one way has Mountain all along its back and both flanks and open ground across
+## its front. The block's own cells are not looked at.
+static func site_walled(cells: PackedByteArray, low: Vector2i, size: Vector2i, facing: Vector2i) -> bool:
+	var high := low+size-Vector2i.ONE
+	for step in range(size.x if facing.x == 0 else size.y):
+		var behind := Vector2i(low.x+step, low.y-1 if facing.y > 0 else high.y+1) if facing.x == 0 else Vector2i(low.x-1 if facing.x > 0 else high.x+1, low.y+step)
+		if _kind(cells, behind) != 4: return false
+		for depth in range(MINE_FRONT_DEPTH):
+			var front := Vector2i(low.x+step, high.y+1+depth if facing.y > 0 else low.y-1-depth) if facing.x == 0 else Vector2i(high.x+1+depth if facing.x > 0 else low.x-1-depth, low.y+step)
+			if not (_kind(cells, front) in [0, 2]): return false
+	# Both flanks: the cells either side of the block, all the way from back to front.
+	for step in range(size.y if facing.x == 0 else size.x):
+		for flank in ([Vector2i(low.x-1, low.y+step), Vector2i(high.x+1, low.y+step)] if facing.x == 0 else [Vector2i(low.x+step, low.y-1), Vector2i(low.x+step, high.y+1)]):
+			if _kind(cells, flank) != 4: return false
+	return true
+
+static func _kind(cells: PackedByteArray, cell: Vector2i) -> int:
+	return int(cells[cell.y*SIZE+cell.x]) if cell.x >= 0 and cell.y >= 0 and cell.x < SIZE and cell.y < SIZE else -1

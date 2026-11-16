@@ -1,7 +1,9 @@
 extends MeshInstance3D
 
-enum Terrain { GRASS, WATER, DESERT, FOREST, MOUNTAIN, ORE, COAL }
-const TERRAIN_NAMES = ["Grass", "Water", "Desert", "Forest", "Mountains", "Ore deposit (unassigned)", "Coal deposit"]
+## MINE_SITE is a recess cut into the side of a mountain, 4 cells across and 3 deep, in which only an Iron Mine can stand
+## (docs/MINE_SITES.md). ORE is the older kind of deposit: a field of cells on which mines go anywhere.
+enum Terrain { GRASS, WATER, DESERT, FOREST, MOUNTAIN, ORE, COAL, MINE_SITE }
+const TERRAIN_NAMES = ["Grass", "Water", "Desert", "Forest", "Mountains", "Ore deposit (unassigned)", "Coal deposit", "Mine site"]
 var grid_size := Vector2i(500, 500)
 var tile_size := 1.0
 ## The map this grid plays on: one category byte per cell, row by row. Each map has its own file
@@ -33,6 +35,9 @@ signal ore_cover_changed(cells: Array, covered: bool)
 ## Cell -> how many mines or mine sites cover its ore rocks.
 var ore_covered: Dictionary = {}
 var _ore_covers: Dictionary = {}
+## Cells of open ground kept clear in front of each mine site, out from its mouth.
+const MINE_FRONT_DEPTH := 2
+var _site_of: Dictionary = {}
 var _clearing_mask: Image
 var _clearing_texture: ImageTexture
 var _mask_dirty := false
@@ -52,6 +57,7 @@ func _ready() -> void:
 			var open := t == Terrain.GRASS or t == Terrain.DESERT
 			tiles[z * grid_size.x + x] = {"terrain": t, "terrain_buildable": open, "walkable": open, "buildable": open, "occupied_by": null}
 			navigation_grid.set_point_solid(Vector2i(x, z), not open)
+	_mark_mine_fronts()
 	# State texture belongs to this match, never to the shared saved material/map.
 	if material_override is ShaderMaterial:
 		material_override = material_override.duplicate()
@@ -97,8 +103,47 @@ func is_footprint_valid(pos: Vector2i, size: Vector2i) -> bool:
 	if not is_tile_in_bounds(pos) or not is_tile_in_bounds(pos + size - Vector2i.ONE): return false
 	for z in range(pos.y, pos.y + size.y):
 		for x in range(pos.x, pos.x + size.x):
-			if not is_tile_valid(Vector2i(x, z)) or tiles[z*grid_size.x+x].has("rail") or tiles[z*grid_size.x+x].has("apron"): return false
+			if not is_tile_valid(Vector2i(x, z)) or tiles[z*grid_size.x+x].has("rail") or tiles[z*grid_size.x+x].has("apron") or tiles[z*grid_size.x+x].has("mine_front"): return false
 	return true
+
+## Kept clear in front of a mine site for the mine's rails and carts: units cross it, nothing is built on it.
+func is_mine_front(pos: Vector2i) -> bool:
+	return is_tile_in_bounds(pos) and tiles[pos.y * grid_size.x + pos.x].has("mine_front")
+
+## The whole mine site a cell belongs to, or an empty rectangle for any other cell.
+func mine_site_rect(cell: Vector2i) -> Rect2i:
+	if get_terrain(cell) != Terrain.MINE_SITE: return Rect2i()
+	if _site_of.has(cell): return _site_of[cell]
+	var patch: Array[Vector2i] = [cell]
+	var seen := {cell: true}
+	var low := cell
+	var high := cell
+	var head := 0
+	while head < patch.size():
+		var at := patch[head]; head += 1
+		low = Vector2i(mini(low.x,at.x),mini(low.y,at.y))
+		high = Vector2i(maxi(high.x,at.x),maxi(high.y,at.y))
+		for next in [at+Vector2i(1,0),at-Vector2i(1,0),at+Vector2i(0,1),at-Vector2i(0,1)]:
+			if get_terrain(next) == Terrain.MINE_SITE and not seen.has(next):
+				seen[next] = true
+				patch.append(next)
+	var rect := Rect2i(low,high-low+Vector2i.ONE)
+	for member in patch: _site_of[member] = rect
+	return rect
+
+func _mark_mine_fronts() -> void:
+	for z in range(grid_size.y):
+		for x in range(grid_size.x):
+			var cell := Vector2i(x,z)
+			if int(tiles[z*grid_size.x+x].terrain) != Terrain.MINE_SITE: continue
+			var rect := mine_site_rect(cell)
+			if rect.position != cell: continue
+			var facing := mine_site_facing(rect.position,rect.size)
+			if facing == Vector2i.ZERO: continue
+			for depth in range(MINE_FRONT_DEPTH):
+				for step in range(rect.size.x if facing.x == 0 else rect.size.y):
+					var front := Vector2i(rect.position.x+step,rect.end.y+depth if facing.y > 0 else rect.position.y-1-depth) if facing.x == 0 else Vector2i(rect.end.x+depth if facing.x > 0 else rect.position.x-1-depth,rect.position.y+step)
+					if is_tile_in_bounds(front) and bool(tiles[front.y*grid_size.x+front.x].terrain_buildable): tiles[front.y*grid_size.x+front.x]["mine_front"] = true
 
 func find_buildable_footprint(origin: Vector2i, size: Vector2i) -> Vector2i:
 	if is_footprint_valid(origin, size): return origin
@@ -308,7 +353,19 @@ func coal_source(cell: Vector2i) -> Node3D:
 	coal_sources[cell] = source
 	return source
 func iron_amount(cell: Vector2i) -> int:
+	if get_terrain(cell) == Terrain.MINE_SITE: return iron_reserves.get(cell,harvesting_rules.iron_per_site_tile)
 	return iron_reserves.get(cell,harvesting_rules.iron_per_tile) if get_terrain(cell) == Terrain.ORE else 0
+## The way a mine on this footprint looks out of its recess: the side with open ground all along it and Mountain
+## all along the side opposite. Zero when the footprint has no such side.
+func mine_site_facing(start: Vector2i, size: Vector2i) -> Vector2i:
+	for facing in [Vector2i(0,1),Vector2i(0,-1),Vector2i(1,0),Vector2i(-1,0)]:
+		var backed := true
+		for i in range(size.x if facing.x == 0 else size.y):
+			var behind := Vector2i(start.x+i,start.y-1 if facing.y > 0 else start.y+size.y) if facing.x == 0 else Vector2i(start.x-1 if facing.x > 0 else start.x+size.x,start.y+i)
+			var front := Vector2i(start.x+i,start.y+size.y if facing.y > 0 else start.y-1) if facing.x == 0 else Vector2i(start.x+size.x if facing.x > 0 else start.x-1,start.y+i)
+			if get_terrain(behind) != Terrain.MOUNTAIN or not (get_terrain(front) in [Terrain.GRASS,Terrain.DESERT]): backed = false
+		if backed: return facing
+	return Vector2i.ZERO
 func extract_iron(cell: Vector2i, requested: int) -> int:
 	var taken := mini(maxi(0,requested),iron_amount(cell))
 	iron_reserves[cell] = iron_amount(cell)-taken
@@ -316,9 +373,14 @@ func extract_iron(cell: Vector2i, requested: int) -> int:
 func ore_footprint_valid(start: Vector2i, size: Vector2i) -> bool:
 	if not is_tile_in_bounds(start) or not is_tile_in_bounds(start+size-Vector2i.ONE): return false
 	var reserves := 0
+	# All of one kind: an ore field, or a mine site, which must also have its back to a mountain.
+	var kind := get_terrain(start)
+	if kind != Terrain.ORE and kind != Terrain.MINE_SITE: return false
 	for z in range(start.y,start.y+size.y):
 		for x in range(start.x,start.x+size.x):
 			var cell := Vector2i(x,z)
-			if get_terrain(cell) != Terrain.ORE or tiles[z*500+x].occupied_by != null or tiles[z*500+x].has("rail") or tiles[z*500+x].has("apron"): return false
+			if get_terrain(cell) != kind or tiles[z*500+x].occupied_by != null or tiles[z*500+x].has("rail") or tiles[z*500+x].has("apron"): return false
 			reserves += iron_amount(cell)
+	# A mine takes its whole site, which must open onto ground on one side.
+	if kind == Terrain.MINE_SITE and (mine_site_rect(start) != Rect2i(start,size) or mine_site_facing(start,size) == Vector2i.ZERO): return false
 	return reserves > 0

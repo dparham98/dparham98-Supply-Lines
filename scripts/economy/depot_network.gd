@@ -21,6 +21,12 @@ func select_depot(node: Node3D) -> void:
 		depot.get_node("Territory").visible = depot == selected and depot.team == "player"
 func owned_selected() -> bool:
 	return SupplySource.available(selected,"player")
+## Where a mine placed at a point would stand: the whole mine site under the point, or the ordinary footprint
+## about the point on an ore field (docs/MINE_SITES.md).
+func mine_spot(point: Vector3) -> Rect2i:
+	var cell = game.ground.get_tile_at_position(point)
+	if cell != null and game.ground.get_terrain(cell) == game.ground.Terrain.MINE_SITE: return game.ground.mine_site_rect(cell)
+	return Rect2i(footprint_start(point,engineering_rules.mine_footprint),engineering_rules.mine_footprint)
 func footprint_start(point: Vector3, size: Vector2i) -> Vector2i:
 	var cell = game.ground.get_tile_at_position(point)
 	return Vector2i(-1,-1) if cell == null else cell-size/2
@@ -273,7 +279,7 @@ func update_preview(point: Vector3, generator: bool) -> bool:
 			energy_cost = depot_rules().depot_energy_cost
 			iron_cost = depot_rules().depot_iron_cost
 	if game.placing_structure == &"iron_mine":
-		size = engineering_rules.mine_footprint
+		size = mine_spot(point).size
 		energy_cost = engineering_rules.mine_energy_cost
 		iron_cost = engineering_rules.mine_iron_cost
 	elif not game.placing_structure.is_empty():
@@ -332,17 +338,17 @@ func construct_production(point: Vector3, kind: StringName) -> bool:
 
 func can_place_mine(point: Vector3, payer: Node3D) -> bool:
 	if not SupplySource.available(payer,"player"): return false
-	var size: Vector2i = engineering_rules.mine_footprint
-	var start := footprint_start(point,size)
-	if not game.ground.ore_footprint_valid(start,size): return false
-	return range_covers_footprint(payer,start,size)
+	var spot := mine_spot(point)
+	if not game.ground.ore_footprint_valid(spot.position,spot.size): return false
+	return range_covers_footprint(payer,spot.position,spot.size)
 func construct_mine(point: Vector3) -> bool:
 	if not builder_valid() or not can_place_mine(point,selected):
 		var strip := strip_notice(point,engineering_rules.mine_footprint,&"iron_mine")
 		game.notify(strip if not strip.is_empty() else "Mine requires a complete empty iron-deposit footprint inside the paying stockpile range."); return false
 	if not selected.spend_local(engineering_rules.mine_energy_cost,engineering_rules.mine_iron_cost): game.notify("Paying stockpile lacks local mine resources."); return false
 	var mine = mine_scene.instantiate()
-	mine.rules = engineering_rules; mine.position = point
+	var spot := mine_spot(point)
+	mine.rules = engineering_rules; mine.position = game.ground.tile_to_world(spot.position+spot.size/2)
 	game.get_node("Entities/Buildings").add_child(mine,true)
 	game.notify("Shared iron mine built. Any player's Infantry can gather or repair it.")
 	return true
@@ -402,6 +408,11 @@ func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_paye
 	if spec.is_empty(): return null
 	if kind == &"rail": game.notify("Maglev track is laid piece by piece from the Build page, not planned."); return null
 	var start := footprint_start(point,spec.size)
+	if kind == &"iron_mine":
+		# A mine planned on a mine site takes the whole site.
+		var spot := mine_spot(point)
+		spec = spec.duplicate()
+		spec.size = spot.size; start = spot.position
 	if not plan_terrain_valid(start,spec.size,kind) or plan_overlaps(start,spec.size):
 		var strip := strip_notice(point,spec.size,kind)
 		game.notify(strip if not strip.is_empty() else "Plan needs valid empty terrain and cannot overlap another plan. Mines require iron deposits.")
@@ -448,6 +459,10 @@ func update_global_preview(point: Vector3) -> bool:
 	var spec := plan_spec(game.global_plan_kind)
 	var ghost = game.get_node("ConstructionPreview")
 	var start := footprint_start(point,spec.size)
+	if game.global_plan_kind == &"iron_mine":
+		var spot := mine_spot(point)
+		spec = spec.duplicate()
+		spec.size = spot.size; start = spot.position
 	ghost.position = game.ground.tile_to_world(start)+Vector3(spec.size.x*0.5-0.5,0.2,spec.size.y*0.5-0.5)
 	ghost.get_node("Footprint").scale = Vector3(spec.size.x,1,spec.size.y)
 	show_range(game.global_plan_kind == &"depot")

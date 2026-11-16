@@ -10,10 +10,11 @@ extends SceneTree
 const MapLayout := preload("res://scripts/tools/map_layout.gd")
 const ToolArgs := preload("res://scripts/tools/tool_args.gd")
 const SIZE := 500
-## Mean ground colours the shader expects (its *_surface_mean settings, as sRGB), then ore and coal as drawn.
+## Mean ground colours the shader expects (its *_surface_mean settings, as sRGB), then ore, coal and mine sites as
+## drawn.
 const SURFACE: Array[Color] = [
 	Color8(88, 112, 57), Color8(28, 91, 110), Color8(200, 168, 103), Color8(60, 93, 45), Color8(84, 86, 77),
-	Color8(150, 74, 48), Color8(26, 26, 30),
+	Color8(150, 74, 48), Color8(26, 26, 30), Color8(112, 80, 60),
 ]
 ## How far the soft variation moves a colour from its mean. The shader ignores differences over a quarter.
 const VARIATION := 0.12
@@ -28,6 +29,10 @@ func _initialize() -> void:
 		for line in layout.errors: push_error(line)
 		quit(1); return
 	var cells: PackedByteArray = layout.cells
+	var site_errors := MapLayout.mine_site_errors(cells)
+	if not site_errors.is_empty():
+		for line in site_errors: push_error(line)
+		quit(1); return
 	var file := FileAccess.open(folder+"/terrain_cells.bin", FileAccess.WRITE)
 	if file == null:
 		push_error("Could not write terrain_cells.bin"); quit(1); return

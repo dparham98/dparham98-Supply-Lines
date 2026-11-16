@@ -109,6 +109,7 @@ Layout palette, from `scripts/tools/map_layout.gd` (index = category):
 | 4 | Mountain | `#76767A` |
 | 5 | Ore (iron) | `#C43428` |
 | 6 | Coal | `#121218` |
+| 7 | Mine site ([MINE_SITES.md](MINE_SITES.md)) | `#EC7A1C` |
 
 A pixel of any other colour stops the build and names its position. The layout may be saved back as indexed or as plain RGB.
 
