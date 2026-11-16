@@ -52,6 +52,8 @@ func run() -> void:
 	for frame in range(4): await process_frame
 	game.set_process(false)
 	var rig = game.get_node("CameraRig"); rig.set_process(false)
+	# Only the ground is measured here. The HUD's dark panels over the map would count as black spots and seams.
+	game.get_node("Interface").visible = false
 	# A grass and desert border south-west of the player Depot.
 	var close: Image = await shot(rig,Vector3(140.5,0,120.5),20,"ground_tiles_close")
 	var grass := detail(close,Rect2i(100,100,200,150))
