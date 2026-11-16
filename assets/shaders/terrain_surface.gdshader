@@ -25,7 +25,14 @@ uniform vec3 coal_shade = vec3(0.1, 0.1, 0.125);
 uniform sampler2D ground_blend : filter_linear, repeat_disable;
 // The same image's green channel is the distance from the shoreline: 0.5 is the shore, above it is water.
 // Metres the drawn shore may wander, and the colours and motion of the water drawn from it.
-uniform float shore_wander = 0.6;
+uniform float shore_wander = 0.35;
+// Metres the drawn shore sits inside the Water cells. With the wander it keeps drawn water off ground that units
+// walk on; the blue channel holds the cells' own edge, which the drawn shore never crosses. scripts/tools/
+// shore_field.gd uses the same two numbers.
+uniform float shore_inset = 0.8;
+// Above 0.5 the water is sunk (scripts/tools/build_water_basin.gd): this shader then draws only the ground and the
+// bed, on the basin mesh where its second UV marks it, and a separate surface mesh draws the water.
+uniform float water_sunk = 0.0;
 uniform vec3 water_shallow = vec3(0.07, 0.2, 0.17);
 uniform vec3 water_deep = vec3(0.012, 0.06, 0.095);
 // Metres from the shore at which the bed is lost from view.
@@ -116,9 +123,13 @@ void fragment() {
  vec2 metres = UV * MAP_METRES;
  vec4 blend = texture(ground_blend, UV);
  // Metres into the water. The cells give a staircase; the blurred distance and a little noise give a shoreline.
- float shore = (blend.g - 0.5) * 2.0 * BLEND_RANGE + (layered_noise(metres * 0.19 + vec2(41.0, 7.0), 3) - 0.5) * 4.0 * shore_wander;
+ float shore = min((blend.g - 0.5) * 2.0 * BLEND_RANGE + (layered_noise(metres * 0.19 + vec2(41.0, 7.0), 3) - 0.5) * 4.0 * shore_wander - shore_inset, blend.b * BLEND_RANGE - 2.0);
  bool land = terrain == 0.0 || terrain == 2.0 || terrain == 3.0;
- if (land || (terrain == 1.0 && shore < 3.0)) {
+ // Sunk water: the flat ground stops just past the shore and the basin mesh carries on from there. They overlap
+ // by a few centimetres where both are level, so no gap can open between them.
+ bool basin = UV2.x > 0.5;
+ if (water_sunk > 0.5 && (basin ? shore < -0.2 : shore > -0.15)) { discard; }
+ if (land || (terrain == 1.0 && (shore < 3.0 || basin))) {
   // Open ground: grass (or forest floor) and desert crossfade along a wandering line. Water cells near the shore
   // draw it too, as the bed seen through the shallows and wherever the drawn shore runs inside them.
   float signed_metres = (blend.r - 0.5) * 2.0 * BLEND_RANGE;
@@ -170,6 +181,10 @@ void fragment() {
   vec3 bank = bank_color * (0.8 + 0.4 * value_noise(metres * 2.3));
   vec3 bed = mix(color, bank * mix(1.0, 0.72, smoothstep(-0.5, 0.0, shore)), wet * 0.85);
   ROUGHNESS = mix(ROUGHNESS, 0.55, wet * 0.8);
+  if (water_sunk > 0.5) {
+   // The bed, seen through the surface mesh: sand at the bank, silt further down.
+   color = mix(bed, bed * vec3(0.5, 0.62, 0.5), smoothstep(0.4, 4.0, shore));
+  } else {
   // The edge of the water laps in and out, each stretch of shore in its own time.
   float lap = sin(TIME * 0.8 + layered_noise(metres * 0.11, 2) * 25.0) * 0.14;
   float cover = smoothstep(0.0, 0.3, shore + lap);
@@ -194,6 +209,7 @@ void fragment() {
   color = mix(mix(bed, water, cover), vec3(0.78, 0.84, 0.82), foam);
   normal_map = mix(normal_map, ripple, cover * (1.0 - foam));
   ROUGHNESS = mix(mix(ROUGHNESS, 0.1, cover), 0.8, foam);
+  }
  }
  if (texture(cleared_cells, UV).r > 0.5) { color = vec3(0.28, 0.22, 0.12); ROUGHNESS = 0.96; normal_map = vec3(0.5, 0.5, 1.0); }
  ALBEDO = color;

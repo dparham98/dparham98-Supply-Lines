@@ -118,6 +118,7 @@ A pixel of any other colour stops the build and names its position. The layout m
 godot --headless --path . --script res://scripts/tools/build_map_data.gd -- --map=res://assets/maps/balanced
 godot --headless --path . --script res://scripts/tools/build_ground_blend_map.gd -- --cells=res://assets/maps/balanced/terrain_cells.bin --output=res://assets/maps/balanced/ground_blend.png
 godot --headless --path . --script res://scripts/tools/build_mountain_mesh.gd -- --cells=res://assets/maps/balanced/terrain_cells.bin --mesh=res://assets/maps/balanced/mountains.res --material=res://assets/maps/balanced/mountain_massif.tres
+godot --headless --path . --script res://scripts/tools/build_water_basin.gd -- --cells=res://assets/maps/balanced/terrain_cells.bin --basin=res://assets/maps/balanced/water_basin.res --surface=res://assets/maps/balanced/water_surface.res
 godot --headless --path . --import
 godot --headless --path . --script res://scripts/tools/rebuild_terrain_scenery.gd -- --terrain=res://scenes/maps/balanced_terrain.tscn
 godot --headless --path . --script res://tests/balanced_map_test.gd

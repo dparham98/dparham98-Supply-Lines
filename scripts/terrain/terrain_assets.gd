@@ -64,6 +64,10 @@ func _process(delta: float) -> void:
 @export var reed_scenes: Array[PackedScene] = []
 @export var shore_rock_scenes: Array[PackedScene] = []
 @export var lily_scenes: Array[PackedScene] = []
+## When both are set the water is sunk below the ground: the bed of the shores and the water surface, written by
+## scripts/tools/build_water_basin.gd. The Ground material must then have water_sunk set to 1.
+@export var water_basin_mesh: Mesh
+@export var water_surface_mesh: Mesh
 ## When above zero, forest batches are split into squares this many metres across, so the renderer can skip the
 ## ones off screen. Maps with a lot of forest need it; 0 keeps one batch per patch scene.
 @export_range(0, 250, 1) var forest_chunk_metres: int = 0
@@ -79,7 +83,7 @@ func rebuild_scenery() -> void:
 	var baker = load("res://scripts/tools/terrain_baker.gd").new()
 	# The scenery is baked from the same cells the Ground node plays on.
 	var cells_path = $Ground.get("cells_path")
-	var output: Node3D = baker.build(tree_scene, mountain_scene, ore_scene, scatter_seed, forest_tile_scenes, mountain_mesh, landscape, cells_path if cells_path else baker.DEFAULT_CELLS, coal_scene, forest_chunk_metres, {"reeds": reed_scenes, "rocks": shore_rock_scenes, "lilies": lily_scenes})
+	var output: Node3D = baker.build(tree_scene, mountain_scene, ore_scene, scatter_seed, forest_tile_scenes, mountain_mesh, landscape, cells_path if cells_path else baker.DEFAULT_CELLS, coal_scene, forest_chunk_metres, {"reeds": reed_scenes, "rocks": shore_rock_scenes, "lilies": lily_scenes, "basin": water_basin_mesh, "surface": water_surface_mesh, "ground_material": $Ground.material_override})
 	if output.get_child_count() == 0:
 		output.free()
 		return

@@ -19,6 +19,8 @@
 [ext_resource type="PackedScene" path="res://scenes/terrain/forest_tile_08.tscn" id="forest_tile_8"]
 [ext_resource type="PackedScene" path="res://scenes/terrain/forest_tile_09.tscn" id="forest_tile_9"]
 [ext_resource type="PackedScene" path="res://scenes/maps/balanced_terrain_landmarks.tscn" id="landmarks"]
+[ext_resource type="ArrayMesh" path="res://assets/maps/balanced/water_basin.res" id="water_basin"]
+[ext_resource type="ArrayMesh" path="res://assets/maps/balanced/water_surface.res" id="water_surface"]
 [ext_resource type="PackedScene" path="res://scenes/terrain/kit/reeds_01.tscn" id="reeds_01"]
 [ext_resource type="PackedScene" path="res://scenes/terrain/kit/reeds_02.tscn" id="reeds_02"]
 [ext_resource type="PackedScene" path="res://scenes/terrain/kit/shore_rock_01.tscn" id="shore_rock_01"]
@@ -44,6 +46,8 @@ coal_scene = ExtResource("coal")
 reed_scenes = Array[PackedScene]([ExtResource("reeds_01"), ExtResource("reeds_02")])
 shore_rock_scenes = Array[PackedScene]([ExtResource("shore_rock_01"), ExtResource("shore_rock_02")])
 lily_scenes = Array[PackedScene]([ExtResource("lily_pads_01"), ExtResource("lily_pads_02")])
+water_basin_mesh = ExtResource("water_basin")
+water_surface_mesh = ExtResource("water_surface")
 forest_chunk_metres = 50
 landmarks_path = "res://scenes/maps/balanced_terrain_landmarks.tscn"
 
