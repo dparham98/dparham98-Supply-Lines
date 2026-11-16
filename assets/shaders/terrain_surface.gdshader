@@ -23,6 +23,18 @@ uniform vec3 stony_tint = vec3(0.2, 0.22, 0.38);
 uniform vec3 coal_shade = vec3(0.1, 0.1, 0.125);
 // Distance from the desert and grass border, from scripts/tools/build_ground_blend_map.gd: 0.5 is the border.
 uniform sampler2D ground_blend : filter_linear, repeat_disable;
+// The same image's green channel is the distance from the shoreline: 0.5 is the shore, above it is water.
+// Metres the drawn shore may wander, and the colours and motion of the water drawn from it.
+uniform float shore_wander = 0.6;
+uniform vec3 water_shallow = vec3(0.07, 0.2, 0.17);
+uniform vec3 water_deep = vec3(0.012, 0.06, 0.095);
+// Metres from the shore at which the bed is lost from view.
+uniform float water_depth_metres = 5.0;
+// Wet sand or mud on the strip of ground beside the water, and how wide that strip is.
+uniform vec3 bank_color = vec3(0.2, 0.155, 0.095);
+uniform float bank_metres = 1.4;
+uniform float foam_strength = 0.6;
+uniform float ripple_strength = 0.5;
 // Metres the drawn border may wander either side of its smoothed line, and how wide the crossfade is.
 uniform float border_wander = 0.65;
 uniform float border_softness = 0.28;
@@ -39,6 +51,10 @@ uniform float desert_relief = 1.0;
 // Part of the map drawn by the sculpted landscape instead (docs/LANDSCAPE_LOOKDEV.md), as UV min and max. Set by
 // scripts/tools/build_landscape.gd; all zero draws the whole map here.
 uniform vec4 landscape_region = vec4(0.0);
+// Open ground only (grass, forest floor, desert): saturation and brightness, so the ground sits behind units and
+// buildings. 1.0 leaves it as drawn.
+uniform float ground_saturation = 1.0;
+uniform float ground_value = 1.0;
 const float MAP_METRES = 500.0;
 const float BLEND_RANGE = 8.0;
 // All tiles of a set share their borders, so any variant can sit beside any other. UVs stay continuous
@@ -98,9 +114,14 @@ void fragment() {
  ROUGHNESS = terrain == 1.0 ? 0.33 : 0.96;
  vec2 tile_uv = UV * MAP_METRES / tile_metres;
  vec2 metres = UV * MAP_METRES;
- if (terrain == 0.0 || terrain == 2.0 || terrain == 3.0) {
-  // Open ground: grass (or forest floor) and desert crossfade along a wandering line.
-  float signed_metres = (texture(ground_blend, UV).r - 0.5) * 2.0 * BLEND_RANGE;
+ vec4 blend = texture(ground_blend, UV);
+ // Metres into the water. The cells give a staircase; the blurred distance and a little noise give a shoreline.
+ float shore = (blend.g - 0.5) * 2.0 * BLEND_RANGE + (layered_noise(metres * 0.19 + vec2(41.0, 7.0), 3) - 0.5) * 4.0 * shore_wander;
+ bool land = terrain == 0.0 || terrain == 2.0 || terrain == 3.0;
+ if (land || (terrain == 1.0 && shore < 3.0)) {
+  // Open ground: grass (or forest floor) and desert crossfade along a wandering line. Water cells near the shore
+  // draw it too, as the bed seen through the shallows and wherever the drawn shore runs inside them.
+  float signed_metres = (blend.r - 0.5) * 2.0 * BLEND_RANGE;
   // The map image traces the old stepped border, so its tint fades out beside the border.
   float map_tint = surface_tint * smoothstep(1.5, 4.0, abs(signed_metres));
   vec3 grass; vec3 grass_normal; vec3 desert; vec3 desert_normal;
@@ -131,10 +152,11 @@ void fragment() {
   vec2 bent = normal_map.xy - 0.5 - slope * 0.1 * relief;
   normal_map.xy = 0.5 + bent * min(1.0, 0.42 / max(length(bent), 0.001));
   color *= 1.0 + (height - 0.5) * 0.12 * relief;
- } else if (terrain == 1.0 || terrain == 4.0) {
-  // Water, and the mountain foot in darkened desert tiles.
-  ground_set(tile_uv, terrain == 4.0 ? 4.0 : 8.0, color, terrain == 4.0 ? mountain_surface_mean : water_surface_mean, surface_tint, 0.0, color, normal_map);
-  if (terrain == 4.0) { color *= stony_tint; }
+  color = mix(vec3(dot(color, vec3(0.2126, 0.7152, 0.0722))), color, ground_saturation) * ground_value;
+ } else if (terrain == 4.0) {
+  // The mountain foot in darkened desert tiles.
+  ground_set(tile_uv, 4.0, color, mountain_surface_mean, surface_tint, 0.0, color, normal_map);
+  color *= stony_tint;
  } else if (terrain == 6.0) {
   // Coal seam: the cracked desert tiles with their colour taken out, darkened to black rock.
   vec3 seam;
@@ -142,10 +164,36 @@ void fragment() {
   color = vec3(dot(seam, vec3(0.3, 0.5, 0.2))) * coal_shade;
   ROUGHNESS = 0.6;
  }
- if (terrain == 1.0) {
-  float wave = sin(UV.y * 900.0 + sin(UV.x * 170.0 + TIME * 0.18) * 1.4 + TIME * 0.7);
-  float small = sin(UV.y * 1900.0 + UV.x * 90.0 - TIME * 0.4);
-  color += vec3(0.018, 0.035, 0.04) * (wave * 0.30 + small * 0.10);
+ if (terrain == 1.0 || (land && shore > -bank_metres - 0.5)) {
+  // The bank: ground turns to wet sand towards the water, darkest at the waterline.
+  float wet = smoothstep(-bank_metres, -0.15, shore);
+  vec3 bank = bank_color * (0.8 + 0.4 * value_noise(metres * 2.3));
+  vec3 bed = mix(color, bank * mix(1.0, 0.72, smoothstep(-0.5, 0.0, shore)), wet * 0.85);
+  ROUGHNESS = mix(ROUGHNESS, 0.55, wet * 0.8);
+  // The edge of the water laps in and out, each stretch of shore in its own time.
+  float lap = sin(TIME * 0.8 + layered_noise(metres * 0.11, 2) * 25.0) * 0.14;
+  float cover = smoothstep(0.0, 0.3, shore + lap);
+  // Clear over the bed in the shallows, then deepening.
+  float depth = smoothstep(0.0, water_depth_metres, shore);
+  vec3 water = mix(mix(bed * vec3(0.5, 0.78, 0.7), water_shallow, 0.35 + 0.45 * smoothstep(0.0, 1.6, shore)), water_deep, depth);
+  water *= 0.88 + 0.24 * layered_noise(metres / 26.0 + vec2(5.0, 1.0), 2);
+  // Ripples: two layers of small waves crossing each other.
+  vec2 first = metres * 0.85 + vec2(TIME * 0.21, TIME * 0.12);
+  vec2 second = metres * 2.3 + vec2(-TIME * 0.16, TIME * 0.27);
+  float level = value_noise(first) + 0.45 * value_noise(second);
+  vec2 slope = vec2(value_noise(first + vec2(0.1, 0.0)) + 0.45 * value_noise(second + vec2(0.1, 0.0)) - level, value_noise(first + vec2(0.0, 0.1)) + 0.45 * value_noise(second + vec2(0.0, 0.1)) - level) / 0.1;
+  vec2 bent = -slope * 0.22 * ripple_strength * (0.35 + 0.65 * depth);
+  vec3 ripple = vec3(0.5 + bent * min(1.0, 0.42 / max(length(bent), 0.001)), 1.0);
+  water *= 1.0 + (level - 0.72) * 0.16;
+  // Foam: a broken line at the edge, and a fainter one that drifts out from it.
+  float broken = layered_noise(metres * 1.6 + vec2(TIME * 0.05, -TIME * 0.04), 2);
+  float edge = 1.0 - smoothstep(0.0, 0.75, shore + lap);
+  float drift = fract(TIME * 0.07 + layered_noise(metres * 0.07, 2) * 3.0);
+  float ring = (1.0 - smoothstep(0.0, 0.22, abs(shore - 0.5 - drift * 1.6))) * (1.0 - drift) * 0.55;
+  float foam = cover * clamp(smoothstep(0.42, 0.62, broken * (0.45 + edge)) * edge * 1.4 + ring * smoothstep(0.5, 0.7, broken), 0.0, 1.0) * foam_strength;
+  color = mix(mix(bed, water, cover), vec3(0.78, 0.84, 0.82), foam);
+  normal_map = mix(normal_map, ripple, cover * (1.0 - foam));
+  ROUGHNESS = mix(mix(ROUGHNESS, 0.1, cover), 0.8, foam);
  }
  if (texture(cleared_cells, UV).r > 0.5) { color = vec3(0.28, 0.22, 0.12); ROUGHNESS = 0.96; normal_map = vec3(0.5, 0.5, 1.0); }
  ALBEDO = color;

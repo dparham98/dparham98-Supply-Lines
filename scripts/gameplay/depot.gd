@@ -18,6 +18,19 @@ var energy: int:
 	set(value): stockpile.set_amount(&"energy",value)
 @export var initial_wood := 0
 @export var initial_coal := 0
+## Generators assigned here stop once the Depot holds this much energy. The player sets it with the
+## Depot panel's slider (docs/DEPOT_PANELS.md); at the Depot's storage capacity there is no ceiling.
+@export_range(0,10000) var energy_ceiling := 600
+## Generators assigned here leave this much coal for vehicle fuel. The player sets it on the Depot panel.
+@export_range(0,10000) var coal_reserve := 60
+const ENERGY_CEILING_STEP := 50
+const COAL_RESERVE_STEP := 10
+const COAL_RESERVE_MAX := 300
+## The sliders' values, snapped to their steps and kept in range.
+func set_energy_ceiling(value: float) -> void:
+	energy_ceiling = clampi(snappedi(roundi(value),ENERGY_CEILING_STEP),0,storage_capacity)
+func set_coal_reserve(value: float) -> void:
+	coal_reserve = clampi(snappedi(roundi(value),COAL_RESERVE_STEP),0,COAL_RESERVE_MAX)
 var wood: int:
 	get: return stockpile.amount(&"wood")
 	set(value): stockpile.set_amount(&"wood",value)
@@ -50,6 +63,9 @@ var queue := 0
 var cancelling := false
 ## Tiles reserved beside the Depot while a truck is being built there.
 var truck_cells: Array[Vector2i] = []
+## The same strip, kept free of buildings for as long as the Depot stands, so a truck build never stalls
+## behind one (docs/DEPOT_MODEL.md). Units still cross it. Stored on each tile as "apron".
+var apron_cells: Array[Vector2i] = []
 var progress := 0.0
 var cells: Array[Vector2i] = []
 @onready var game = get_tree().get_first_node_in_group("skirmish")
@@ -80,7 +96,18 @@ func _ready() -> void:
 		for x in range(start.x,start.x+footprint.x):
 			var cell := Vector2i(x,z)
 			cells.append(cell)
-			ground.set_tile_feature(cell,"occupied_by","depot_%s" % get_instance_id())
+			ground.set_tile_feature(cell,"occupied_by",_key())
+	_reserve_apron()
+## The value this Depot leaves on the tiles it holds.
+func _key() -> String:
+	return "depot_%s" % get_instance_id()
+## Marks the truck strip as unbuildable. The model's heading is set before the Depot enters the tree.
+func _reserve_apron() -> void:
+	for cell in truck_side_cells():
+		var tile: Dictionary = ground.tiles[cell.y*ground.grid_size.x+cell.x]
+		if tile.has("apron"): continue
+		tile["apron"] = _key()
+		apron_cells.append(cell)
 ## The DepotRules testing iron grant applies unless this map's skirmish switches it off (testing_iron_grant).
 func testing_iron_granted() -> bool:
 	return rules.testing_starting_iron >= 0 and (not is_instance_valid(game) or game.get("testing_iron_grant") != false)
@@ -98,7 +125,7 @@ func _process(delta: float) -> void:
 	var seconds := current_seconds()
 	if truck and truck_cells.is_empty():
 		if $Visuals/Model.deploying(): $Progress.text = "Depot unfolding · truck waiting"; return
-		if not _begin_truck(): $Progress.text = "Exit blocked · waiting"; return
+		if not _begin_truck(): _clear_idle_units(); $Progress.text = "Exit blocked · waiting"; return
 	progress = minf(seconds,progress+delta)
 	if truck: $Visuals/Model.show_truck(progress)
 	$Progress.text = "Printing %s · %d%%" % [pending[0],roundi(progress/seconds*100)]
@@ -108,7 +135,7 @@ func _process(delta: float) -> void:
 		var spawn := Vector2i(-1,-1)
 		for radius in range(6,16):
 			for offset in [Vector2i(0,radius),Vector2i(radius,0),Vector2i(-radius,0),Vector2i(0,-radius)]:
-				if ground.is_tile_valid(center+offset): spawn = center+offset; break
+				if ground.is_tile_valid(center+offset) and not ground.is_apron(center+offset): spawn = center+offset; break
 			if spawn.x >= 0: break
 		if pending[0] != "train" and spawn.x < 0: $Progress.text = "Exit blocked · waiting"; return
 		var train_stop := {}
@@ -120,7 +147,7 @@ func _process(delta: float) -> void:
 		if kind == "cargo": scene = game.get_node("DepotNetwork").cargo_scene
 		elif kind == "train": scene = game.get_node("RailNetwork").train_scene
 		var unit = scene.instantiate()
-		if "start_fuelled" in unit: unit.start_fuelled = FuelRules.testing_full_tanks
+		if "start_fuelled" in unit: unit.start_fuelled = FuelRules.full_tanks_for(game)
 		unit.position = train_stop.position if not train_stop.is_empty() else ground.tile_to_world(spawn)
 		game.get_node("Entities/Units").add_child(unit,true)
 		queue -= 1
@@ -146,12 +173,22 @@ func _begin_truck() -> bool:
 	if side.is_empty(): return false
 	for cell in side:
 		if not ground.is_tile_valid(cell): return false
-	for cell in side: ground.set_tile_feature(cell,"occupied_by","depot_%s" % get_instance_id())
+	for cell in side: ground.set_tile_feature(cell,"occupied_by",_key())
 	truck_cells = side
 	return true
+## A truck waiting on idle units of this side standing on its strip sends them to the nearest open ground.
+func _clear_idle_units() -> void:
+	for cell in truck_side_cells():
+		if not ground.is_tile_in_bounds(cell): continue
+		var owner = ground.tiles[cell.y*ground.grid_size.x+cell.x].occupied_by
+		if owner == null or not str(owner).begins_with("agent_"): continue
+		var unit = instance_from_id(int(str(owner).trim_prefix("agent_")))
+		if not is_instance_valid(unit) or unit.get("team") != team or unit.get("order") != "idle": continue
+		var free_cell: Vector2i = ground.find_nearest_open_tile(cell)
+		if free_cell.x >= 0: unit.command_move(ground.tile_to_world(free_cell))
 func _release_truck_side() -> void:
 	for cell in truck_cells:
-		if ground.tiles[cell.y*ground.grid_size.x+cell.x].occupied_by == "depot_%s" % get_instance_id(): ground.set_tile_feature(cell,"occupied_by",null)
+		if ground.tiles[cell.y*ground.grid_size.x+cell.x].occupied_by == _key(): ground.set_tile_feature(cell,"occupied_by",null)
 	truck_cells.clear()
 ## The chassis and trailer on the side become the real truck, on the same spot.
 func _complete_truck() -> void:
@@ -162,7 +199,7 @@ func _complete_truck() -> void:
 	_release_truck_side()
 	$Visuals/Model.finish_truck()
 	var unit = game.get_node("DepotNetwork").truck_scene.instantiate()
-	unit.start_fuelled = FuelRules.testing_full_tanks
+	unit.start_fuelled = FuelRules.full_tanks_for(game)
 	unit.position = where
 	game.get_node("Entities/Units").add_child(unit,true)
 	unit.global_position = where
@@ -217,8 +254,20 @@ func request_cargo() -> bool:
 	return true
 func generation_rate() -> float:
 	var total := 0.0
+	for generator in assigned_generators(): total += generator.output_rate()
+	return total
+func assigned_generators() -> Array[Node3D]:
+	var found: Array[Node3D] = []
 	for generator in get_tree().get_nodes_in_group("energy_generators"):
-		if generator.assigned_depot == self: total += generator.output_rate()
+		if generator.assigned_depot == self and generator.health > 0: found.append(generator)
+	return found
+## The most its Generators could bank at once, each burning its faster fuel: the Depot panel's bar is
+## measured against it.
+func peak_generation_rate() -> float:
+	var total := 0.0
+	for generator in assigned_generators():
+		var rules = generator.fuel_rules
+		total += maxf(float(rules.wood_output)/rules.wood_seconds,float(rules.coal_output)/rules.coal_seconds)
 	return total
 func update_capture(delta: float) -> void:
 	var teams: Array[String] = []
@@ -251,7 +300,11 @@ func _exit_tree() -> void:
 	if not is_instance_valid(ground): return
 	_release_truck_side()
 	for cell in cells:
-		if ground.tiles[cell.y*500+cell.x].occupied_by == "depot_%s" % get_instance_id(): ground.set_tile_feature(cell,"occupied_by",null)
+		if ground.tiles[cell.y*500+cell.x].occupied_by == _key(): ground.set_tile_feature(cell,"occupied_by",null)
+	for cell in apron_cells:
+		var tile: Dictionary = ground.tiles[cell.y*ground.grid_size.x+cell.x]
+		if tile.get("apron") == _key(): tile.erase("apron")
+	apron_cells.clear()
 
 func take_damage(amount: int) -> void:
 	health = maxi(0,health-maxi(0,amount))

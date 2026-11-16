@@ -11,25 +11,29 @@ Phase 1 of the HUD plan (hotkeys, queuing and HUD modernization), approved on 20
 
 ## Keys
 
-| Card | Keys |
-| --- | --- |
-| Unit | M Move · A Attack · G Gather · S Stop · V Deliver · R Repair · C Capture · X Drop materials · T Auto-refuel · D Deploy into Depot |
-| Cargo Supply panel | M Move · D Deploy/pack · P Pause/resume route · X Cancel route (T Auto-refuel is on the Orders page) |
-| Cargo Orders page | M Move · S Stop · D Deploy/pack supplies · T Auto-refuel · L Load · U Unload · C Trips · W Worksite |
-| Depot | U Depot Truck · C Cargo Vehicle · T Train · K Make crates |
-| Production building | I Infantry · S Scout · G Grenadier · T Tank · M Motorcycle · D Drone · U Übermech |
-| Generator | P Pause/resume · F Focus assigned Depot · W Burn wood · C Burn coal · R Burn either · A Assign Depot |
-| Load page | I Iron · N Energy · W Wood · C Coal · X Clear · Esc Cancel. Shift fills free slots |
-| Make crates page | I Iron · N Energy · W Wood · C Coal · Esc Cancel. Shift makes five |
-| Worksite page | D Depot · G Generator · B Barracks · T Tank Factory · I Iron Mine · Esc Back |
-| Construction plan | X Cancel plan |
+The current keys, as set on 2026-11-15. `scripts/tools/setup_command_actions.gd` and `setup_camera_actions.gd` save them to the Input Map.
 
-Two camera keys moved: overview is now **O** (was M) and focus HQ is now **Backspace** (was F). Arrows, Q/E, Shift, wheel and Home are unchanged. Esc still cancels an armed command.
+| Card or page | Keys |
+| --- | --- |
+| Infantry and combat units | M Move · S Stop · A Attack · G Gather · V Deliver · X Drop materials · R Repair · C Capture · T Auto-refuel (vehicles) |
+| Cargo truck / Train | M Move · S Stop · T Auto-refuel · D Deploy/Pack supplies · E Load · V Unload · C Trips · W Worksite (not Trains) |
+| Depot truck | M Move · S Stop · T Auto-refuel · D Deploy |
+| Depot | D Depot truck · V Cargo vehicle · T Train · C Make crates · X Cancel production (the Generator settings are sliders on the Depot panel, docs/DEPOT_PANELS.md) |
+| Production building | F Infantry · S Scout · G Grenadier · T Tank · C Motorcycle · D Drone · Q Übermech |
+| Generator | R Pause/Resume · W Burn wood · C Burn coal · E Burn either · F Focus Depot |
+| Construction plan | X Cancel plan |
+| Build page (B) and Worksite page | D Depot · G Generator · B Barracks · T Tank Factory · A Iron Mine · R Rail · P Pin payer (Build page only) · Esc Back |
+| Laying rail | R next piece (straight, left and right curve, left and right fork) · F turn a free piece · G change a fork's joining end · Shift-click keep laying · Esc finish |
+| Load page | A Iron · E Energy · W Wood · C Coal · X Clear · Esc Cancel. Shift fills free slots |
+| Make crates page | A Iron · E Energy · W Wood · C Coal · Esc Cancel. Shift makes five |
+
+Camera: arrows pan (Shift for fast), wheel zooms, **O** overview, **Space** focus HQ, **Home** focus selection, hold **Alt** to show every health bar. There is no rotate key. Space is read before the HUD, so a HUD button that still has focus after a click never takes it as a press. A focused text field or dropdown, or an open popup or dialog, keeps Space instead. **F10** opens the playtest tools.
 
 ## Selection
 
 - **Shift-click** a unit to add it to the selection or remove it. Shift-click on empty ground keeps the selection. Shift-click on a building selects the building as usual.
-- **Shift-drag** adds the boxed units.
+- **Shift-drag** adds the boxed units. Shift may be pressed before or during the drag (`docs/SELECTION_PORTRAITS.md`).
+- **Portraits** of a multiple selection: click keeps one unit, Shift-click removes it, Ctrl-click keeps its type, Ctrl+Shift-click removes its type.
 - **Double-click** a unit to select every friendly unit of the same type that is on screen.
 - **Ctrl+1–9** saves the selected units as a group. **1–9** recalls it. Pressing the same number again within 0.4 s centres the camera on the group. Dead units drop out of groups, and recalling an empty group leaves the selection alone.
 

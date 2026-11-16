@@ -94,7 +94,7 @@ Damage lands the moment the shot is fired, and every shot hits, so the flight is
 
 Put the effects in a separate GLB on the same timeline, `assets/models/effects/motorcycle_death_fx.glb`, with `scenes/models/motorcycle_death_fx.tscn`, using `scripts/components/burst_effect.gd` like `scenes/models/drone_death_fx.tscn`. `motorcycle_rig.gd` must stop writing to nodes while dying. Keep the effect collection in the `.blend`, switched off in the view layer.
 
-**Wiring.** Export to `assets/models/units/motorcycle.glb` (glTF Binary, +Y up, apply modifiers, animations as NLA tracks, no cameras or lights). Point `model_scene` and the `Model` node in `scenes/gameplay/motorcycle.tscn` at the new model scene. If the bike sticks out past the `SelectionRing`, enlarge the ring in that scene.
+**Wiring.** Export to `assets/models/units/motorcycle.glb` (glTF Binary, +Y up, apply modifiers, animations as NLA tracks, no cameras or lights). Point `model_scene` and the `Model` node in `scenes/gameplay/motorcycle.tscn` at the new model scene. If the bike sticks out past `Visuals/TeamMarker`, enlarge that marker's mesh and `half_size` in that scene.
 
 ## Checks
 

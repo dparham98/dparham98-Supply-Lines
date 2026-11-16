@@ -147,8 +147,10 @@ func energy_due(step: int) -> int:
 ## the energy share. Returns "" on progress, else the reason it waited (also set as the state).
 func work(_unit: Node3D, amount: int) -> String:
 	if finished: return "Built"
-	if not network.plan_terrain_valid(start,spec.size,kind):
+	if not network.plan_terrain_valid(start,spec.size,kind,self):
 		state = "Waiting for footprint to clear"; refresh_label(); return state
+	if not network.plan_spacing_ok(self):
+		state = spacing_state(); refresh_label(); return state
 	var material := next_material()
 	var step := mini(amount,needed(material)) if not material.is_empty() else 0
 	if step > 0 and on_site(material) < step:
@@ -214,9 +216,10 @@ func energy_payer(due: int) -> Node3D:
 ## Periodic state refresh while nobody is working on the site.
 func refresh_state() -> void:
 	if finished or state.begins_with("Constructing"): return
-	if not network.plan_terrain_valid(start,spec.size,kind): state = "Waiting for footprint to clear"
+	if not network.plan_terrain_valid(start,spec.size,kind,self): state = "Waiting for footprint to clear"
+	elif not network.plan_spacing_ok(self): state = spacing_state()
 	elif not materials_covered(): state = "Waiting for materials on site"
-	elif energy_payer(energy_due(0) if spec.energy > 0 else 0) == null and spec.energy > energy_paid: state = "Waiting for energy coverage"
+	elif energy_payer(energy_due(0) if spec.energy > 0 else 0) == null and spec.energy > energy_paid: state = "Waiting for energy · needs a Depot whose range covers its centre, with %d E" % (spec.energy-energy_paid)
 	else: state = "Materials on site · order Infantry to construct"
 	refresh_label()
 func finish() -> Node3D:
@@ -235,8 +238,10 @@ func finish() -> Node3D:
 ## tests and playtest tools use to stand buildings up. Buildings in play go through work().
 func complete_from_stock() -> Node3D:
 	if finished: return null
-	if not network.plan_terrain_valid(start,spec.size,kind):
+	if not network.plan_terrain_valid(start,spec.size,kind,self):
 		state = "Waiting for footprint to clear"; refresh_label(); return null
+	if not network.plan_spacing_ok(self):
+		state = spacing_state(); refresh_label(); return null
 	var source = network.plan_payer(self)
 	if source == null:
 		state = "Waiting for pinned Depot coverage / funds" if pinned else "Waiting for friendly Depot coverage / funds"
@@ -252,6 +257,9 @@ func complete_from_stock() -> Node3D:
 		network.game.notify("%s built from %s local stock." % [spec.title,source.name])
 		queue_free()
 	return building
+## A Depot site now too close to a friendly Depot, for example one captured nearby: it waits, and can be cancelled.
+func spacing_state() -> String:
+	return "Blocked · a new Depot must stand "+network.spacing_reason()
 ## Site line for labels and panels, for example "Iron on site 25/45 · built 0/45".
 func site_text() -> String:
 	var parts: PackedStringArray = []

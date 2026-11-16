@@ -16,6 +16,12 @@ func click_at(point: Vector2) -> void:
 	root.push_input(event,true)
 	# A human click spans multiple process frames. Do not emit button signals directly.
 	for frame in range(5): await process_frame
+	# Payment checks use a Generator as a priced build; keep its old 100 E / 20 I price here. The current
+	# price is checked in generator_limits_test.gd.
+	var priced: SupplyRules = load("res://assets/economy/supply_rules.tres")
+	priced.generator_energy_cost = 100; priced.generator_iron_cost = 20
+	# These checks place Depots close together; spacing has its own test (depot_spacing_test.gd).
+	load("res://assets/economy/depot_rules.tres").separate_ranges = false
 	event = InputEventMouseButton.new()
 	event.position = point
 	event.button_index = MOUSE_BUTTON_LEFT
@@ -29,6 +35,9 @@ func check(value: bool, message: String) -> bool:
 	return false
 func run() -> void:
 	root.size = Vector2i(1280,900)
+	# A mechanics check on a map laid out for the old 35 m Depot range (docs/DEPOT_RANGE.md).
+	var old_range: DepotRules = load("res://assets/economy/depot_rules.tres")
+	old_range.construction_radius = 35.0
 	game = load("res://scenes/maps/supply_routes.tscn").instantiate()
 	root.add_child(game)
 	hud = game.get_node("Interface")

@@ -27,7 +27,7 @@ A truck on Fetch brings a site exactly what it still lacks.
 
 ## Depot crates
 
-- The Depot's **Make crates (K)** tile replaces Empty crate.
+- The Depot's **Make crates (C)** tile replaces Empty crate.
 - It opens a page with Iron (I), Energy (N), Wood (W) and Coal (C) tiles. Each sets down one full 25-unit crate beside the Depot. **Shift** makes five.
 - A tile is dark when the Depot holds less than a crate of that resource.
 - Esc or Cancel closes the page.

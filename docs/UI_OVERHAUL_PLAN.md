@@ -48,7 +48,7 @@ Approved by the user on 2026-10-29. This covers how information is shown in the 
 - **Keep stocked:** a Depot setting that repacks crates as they're collected.
 - **Load (L) and Unload (U):** click a Depot or deployed truck. Load takes crates in the order they were packed. Unload unpacks whole crates and keeps any that don't fit.
 - **Trips (C):** once, all available, or repeat.
-- **Queuing:** Shift+Load and Shift+Unload use the command queue and waypoint markers.
+- **Queuing:** Shift+Load and Shift+Unload use the command queue and its dashed queue path.
 - **Trains:** they load and unload only at Depots with friendly track nearby.
 - **Removed:** Route, the per-trip manifest, the Load at / Unload at menus (a Depot list stays for distant Depots), Cancel route (now Stop), Pause/Resume (automatic pausing on capture stays), and the Orders/Delivery route tabs.
 - **Tests:** the existing route code stays underneath, driven in whole crates. The older tests that drive the removed Supply panel controls will be rewritten, as approved.

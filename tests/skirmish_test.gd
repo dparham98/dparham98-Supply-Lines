@@ -22,6 +22,9 @@ func screenshot(name: String) -> void:
 	TestOutput.save_png(self, root.get_texture().get_image(), OUTPUT+name+".png")
 func run() -> void:
 	root.size = Vector2i(1280,900)
+	# A mechanics check on a map laid out for the old 35 m Depot range (docs/DEPOT_RANGE.md).
+	var old_range: DepotRules = load("res://assets/economy/depot_rules.tres")
+	old_range.construction_radius = 35.0
 	game = load("res://scenes/maps/resource_skirmish.tscn").instantiate()
 	root.add_child(game)
 	await process_frame
@@ -57,7 +60,7 @@ func run() -> void:
 	assert(game.ore == game.ore_delivered)
 	var delivered: int = game.ore_delivered
 	game.get_node("DepotNetwork").select_depot(game.depot)
-	assert(game.get_node("DepotNetwork").construct_production(Vector3(180,0,160),&"barracks"))
+	assert(game.get_node("DepotNetwork").construct_production(Vector3(182,0,160),&"barracks"))
 	barracks = get_nodes_in_group("production_buildings")[0]
 	barracks.set_process(false)
 	assert(barracks.request_unit(&"infantry"))

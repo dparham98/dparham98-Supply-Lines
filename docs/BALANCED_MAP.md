@@ -10,7 +10,7 @@ This is the game's main scene: **F5** runs it. The original map, `resource_skirm
 
 The map keeps the 500 x 500 grid of 1 m cells. Start A (the player) is in the west and start B in the east. B's side is A's side turned half a circle about the map centre, so every distance and resource is the same for both.
 
-- **Start.** A walled plateau about 90 m across with three doors: east to the centre lane, north-east to the north corridor, south to the exposed expansion. The Depot starts with 500 energy and no iron, with one Infantry and one fuelled Cargo truck. A 42-cell iron field (10,500 iron) lies inside the Depot's 35 m, with a starter mine already on it, because a mine costs iron. There is a small wood beside the Depot and no coal.
+- **Start.** A walled plateau about 90 m across with three doors: east to the centre lane, north-east to the north corridor, south to the exposed expansion. The Depot starts with 200 energy, 60 iron, 40 wood and 60 coal (economy report step 5, PR #66), with one Infantry and one fuelled Cargo truck. Vehicles built here, or spawned from the playtest panel, start with an empty tank and fill from their Depot's coal. The 60 coal is for those first fills. With the Generator coal reserve from step 7 (PR #70, default 60), Generators burn none of it; they need coal dug beyond it, or wood. A 42-cell iron field (10,500 iron) lies south-west of the Depot, inside its 17.5 m range, with a starter mine already on it, because a mine costs iron. The three iron fields were moved closer when the Depot range was halved (`docs/DEPOT_RANGE.md`): every start and expansion keeps its field inside the new range. There is a small wood beside the Depot and no coal.
 - **Safe expansion.** A pocket north of the main, entered only through the main. It has iron (7,500) and the nearest coal, 13 m from the Depot site. One stretch of its outer wall is forest instead of rock, so Scouts can slip in and a Tank can cut in.
 - **Exposed expansion.** South of the main, with iron (7,500) and a coal field beyond it. It lies open to the south lane: the enemy can walk in without passing the main.
 - **Three routes between the starts.** The centre lane (319 m), and the north and south lanes (569 m each), which stay at least 24 cells apart outside the mains. The centre lane narrows to about 40 m at midfield, between the two contested forests. An open passage on each side of midfield joins the centre lane to a side lane.
@@ -20,7 +20,7 @@ The map keeps the 500 x 500 grid of 1 m cells. Start A (the player) is in the we
 - **Lanes for rail.** Track pieces only run north-south and east-west, so the lanes do too: main to either expansion is a straight north-south run, and the centre, north and south lanes are straight east-west runs past the coal.
 - Nothing to gather is nearer than 30 cells to the map edge.
 
-Start B has no opponent. The scene has an `EnemyStart` marker, a mirrored starter mine, four Hostiles round start B and two beside each contested field. The markers under `Sites` show where each side is meant to settle; nothing reads them in play.
+Start B has no opponent. The scene has an `EnemyStart` marker, a mirrored starter mine, and one enemy of each unit type in a ring round start B: Infantry, Scout, Grenadier, Tank, Motorcycle, Drone, Übermech, Cargo truck and Depot truck, the same list the playtest panel spawns. They start fuelled, like every unit placed in the scene. The contested coal fields are unguarded. The markers under `Sites` show where each side is meant to settle; nothing reads them in play.
 
 ## Measured
 
@@ -42,24 +42,25 @@ From `tests/balanced_map_test.gd`. Distances are the shortest ground path over t
 | Nearer contested field | 157.0, 12, 2,000 |
 | Farther contested field | 167.8, 12, 2,000 |
 | Safe expansion site to its coal's forest | 12.8 |
-| Iron cells within 35 m of start, safe and exposed sites | 42, 30, 30 |
+| Iron cells within 17.5 m of start, safe and exposed sites | 42, 30, 30 |
+| Start to starter mine (stand in reach) | 14.7 |
 | Forest cells within 45 m of the start | 351 |
 
 "Cells to clear" is the fewest Forest cells a worker must fell before it can stand within its 4 m reach of any coal. Until then no ground path reaches a field; the test also fells that corridor on the live terrain and checks the coal opens.
 
 ### The opening, by arithmetic
 
-Worked out from the unit speeds in `assets/units`, the rules resources and the measured paths, for a player who makes no mistakes. Nothing here was played.
+Worked out from the unit speeds in `assets/units`, the rules resources and the measured paths, for a player who makes no mistakes. Nothing here was played. The later rows were worked out before the start's iron field moved closer to the Depot; the shorter mining legs can only bring them earlier.
 
 | Step | Target | Estimate | How |
 | --- | --- | --- | --- |
-| Infantry mining iron | 0:10 | 0:09 | 18.8 m walk at 2 m/s |
+| Infantry mining iron | 0:10 | 0:07 | 14.7 m walk at 2 m/s |
 | Depot truck started | 1:00 | 0:57 | three loads of 10 over a 16.3 m leg |
 | Second Depot and its Infantry | 2:00 | 1:51, plus the deploy animation | 14.2 s to build the truck, 120.8 m at 3 m/s |
 | First coal in reach | 4:00 | 3:59 | 9 Forest cells at 13.5 s each, wood carried 4.3 m to the new Depot |
 | First Tank | 6:00 | 5:49 if new vehicles start empty; 4:23 as shipped | see below |
 
-The first Tank needs 130 iron with the truck and factory, which one Infantry mines by 4:04, and exactly the starting 500 energy. With `FuelRules.testing_full_tanks` on, as it is today, the Tank arrives fuelled and coal does not limit it. With that switch off it needs 60 coal in its Depot: dug at the safe expansion by 5:03 and trucked home, which gives 5:49.
+The first Tank needs 130 iron with the truck and factory, which one Infantry mines by 4:04, and exactly the starting 500 energy. With full tanks on, as before step 5, the Tank arrives fuelled and coal does not limit it. With this map's `testing_full_tanks` off, as it now is, it needs 60 coal in its Depot: dug at the safe expansion by 5:03 and trucked home, which gives 5:49.
 
 ## Coal rules
 
@@ -70,7 +71,7 @@ The first Tank needs 130 iron with the truck and factory, which one Infantry min
 - **Reach.** A worker must stand within its 4 m reach of the cell. When uncut forest is in the way it fells the fewest trees that let it in, one at a time, carrying the wood home, and then digs (docs/STALL_FIXES.md). It reports "Coal unreachable" only when no way through forest exists.
 - **Drawn.** The ground shader draws Coal cells as dark seam, and two lumps stand on each cell and shrink away when it is dug out. The minimap marks every field that still holds coal and shows dug-out cells. Pointing at a Coal cell shows what it and its field hold.
 - **No coal mine building.** Whether coal should need one is undecided; see below.
-- **Start conditions on this map.** `testing_coal_amount` is 0, so there is no testing coal pile. The pile still works in the scenes that set an amount. `testing_iron_grant` is off, so Depots here do not take the 500-iron testing grant; every other scene keeps it.
+- **Start conditions on this map.** `testing_coal_amount` is 0, so there is no testing coal pile. The pile still works in the scenes that set an amount. `testing_iron_grant` is off, so Depots here do not take the 500-iron testing grant; every other scene keeps it. `testing_full_tanks` is off, so vehicles built here or spawned from the playtest panel start empty (`FuelRules.full_tanks_for`, which reads the map's setting); every other scene keeps them full. The authored starter Cargo truck still starts full.
 
 ### Open questions
 
@@ -78,7 +79,7 @@ The first Tank needs 130 iron with the truck and factory, which one Infantry min
 2. Should a dug-out Coal cell become open ground? Ore cells stay blocked when exhausted. Coal follows Forest here because otherwise the middle of a field is out of reach.
 3. Should workers move on through a field by themselves? Wood has no such chaining; without it coal needs a new order every five loads. They now also fell the trees between one cell and the next (docs/STALL_FIXES.md).
 4. Are 50 a cell and 1,000 a field right, and should contested fields be twice a side field?
-5. Should new vehicles start empty on this map (`FuelRules.testing_full_tanks` off)? That is what makes coal limit the first Tank.
+5. Settled (2026-11-14): new vehicles start empty on this map, and the Depot starts with 60 coal for the first fills.
 6. Water-adjacent generation and crates costing wood are still deferred and not part of this.
 
 ## Files
@@ -143,12 +144,13 @@ godot --path . --script res://scripts/tools/draw_map_preview.gd
 - **Belt depth.** 9 cells is about two minutes of sawing with a Depot beside it, and much longer when every load of wood is carried far. A Tank drives straight through. Whether that is real Infantry time or tedium needs your eye. Clearing a 9-cell corridor also yields 180 wood, worth 1,800 energy in a Generator.
 - **Coal amounts,** and whether 2,000 is enough reason to fight at midfield.
 - **Safe and exposed.** Both expansions are about equally far from the enemy by ground; the difference is that the exposed one can be reached without passing the main.
-- **Resistance.** Hostiles hold their ground and fire at 15 m (docs/PATHING.md). They do not cover the middle of the centre lane.
+- **Resistance.** The enemies at start B have no opponent AI: they hold their ground and fire at whatever comes into their own range. The Cargo and Depot trucks do not fight. Nothing guards the contested coal.
 - **Look.** Coal lumps, the dark seam and the large flat-topped massifs were set by eye from four renders. Water borders keep the blocky steps of the cells.
 - **Frame rate.** On one machine with vertical sync off the whole-map view drew 2.3 million triangles at about 280 frames a second, against 1.4 million and about 400 to 460 on the original map. Slower machines were not tried.
 
 ## Checks
 
-- `tests/balanced_map_test.gd` (headless): the cells match the layout PNG and `terrain_data.png`; the layout is symmetric; category counts; the start is 500 energy and no iron with one Infantry and a fuelled truck; no testing pile; starts, sites and mines mirror each other; Depot footprints and the ground round each start are buildable; iron inside 35 m of every site; no coal inside 35 m of a start; every coal field enclosed, with its depth; 3 to 5 fields a side and 1 or 2 richer contested ones; the safe expansion unreachable without the main; at least two separate routes; and every metric equal for both sides. Prints the tables above.
+- `tests/balanced_map_test.gd` (headless): the cells match the layout PNG and `terrain_data.png`; the layout is symmetric; category counts; the start is 200 energy, 60 iron, 40 wood and 60 coal with one Infantry and a fuelled truck, and new vehicles start empty; no testing pile; starts, sites and mines mirror each other; Depot footprints and the ground round each start are buildable; iron inside a Depot's range of every site; no coal inside 35 m of a start; every coal field enclosed, with its depth; 3 to 5 fields a side and 1 or 2 richer contested ones; the safe expansion unreachable without the main; at least two separate routes; and every metric equal for both sides. Prints the tables above.
+- `tests/empty_tanks_test.gd` (headless): on this map a Depot truck and a Cargo vehicle printed at the Depot, a Tank from a Tank factory, and a Tank spawned from the playtest panel all start with an empty tank; the starter Cargo truck starts full.
 - `tests/coal_gathering_test.gd` (headless): Coal cells block walking and building; a cell is finite and shared; a worker sent to enclosed coal sets out to fell its way in and another order calls it off; a new Depot's Infantry digs, delivers 60 coal and moves on to the next cell; the dug-out cell opens and loses its lumps; the right-click order and hover card; the field running out; and a Generator burning the delivered coal.
 - `tests/balanced_map_runtime_check.gd` (rendered): the map draws, coal reads dark, the minimap marks coal, and it saves an overview, the start, a coal field and a contested field.

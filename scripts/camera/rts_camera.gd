@@ -89,15 +89,22 @@ func _process(delta: float) -> void:
 		# Keyboard takes precedence so touching an edge never doubles its speed.
 		if not keyboard_panning and edge_pan_enabled and not _dragging: pan = pointer_edge_pan()
 		if _dragging: pan = Vector2.ZERO
-		apply_navigation(pan.limit_length(), Input.get_axis("camera_rotate_left", "camera_rotate_right"), Input.is_action_pressed("camera_fast_pan"), delta)
+		apply_navigation(pan.limit_length(), 0.0, Input.is_action_pressed("camera_fast_pan"), delta)
 	else:
 		cancel_pointer_navigation()
 		_pan_velocity = Vector3.ZERO
 	advance_camera(delta)
 
 func _input(event: InputEvent) -> void:
+	if Engine.is_editor_hint(): return
+	# Focus HQ is Space, which a focused HUD button would also take as a press, so it is read first. A text
+	# field, dropdown or open popup or dialog keeps Space for itself.
+	if event.is_action_pressed("camera_focus_hq") and not event.is_echo() and not gui_wants_space():
+		focus_hq()
+		get_viewport().set_input_as_handled()
+		return
 	# Finish a gesture we already own even if the pointer moves over a UI panel.
-	if Engine.is_editor_hint() or not _dragging: return
+	if not _dragging: return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_MIDDLE and not event.pressed:
 		cancel_pointer_navigation()
 		get_viewport().set_input_as_handled()
@@ -106,13 +113,20 @@ func _input(event: InputEvent) -> void:
 		else: cancel_pointer_navigation()
 		get_viewport().set_input_as_handled()
 
+## Whether a GUI control should get Space instead of Focus HQ: a focused text field or dropdown, or an
+## open popup or dialog.
+func gui_wants_space() -> bool:
+	var focused := get_viewport().gui_get_focus_owner()
+	if focused is LineEdit or focused is TextEdit or focused is OptionButton or focused is MenuButton: return true
+	for window in get_viewport().get_embedded_subwindows():
+		if window.visible: return true
+	return false
 func _unhandled_input(event: InputEvent) -> void:
 	if Engine.is_editor_hint(): return
 	if event is InputEventKey and event.echo: return
 	if event.is_action_pressed("camera_overview"):
 		if overview: return_from_overview()
 		else: show_overview()
-	elif event.is_action_pressed("camera_focus_hq"): focus_hq()
 	elif event.is_action_pressed("camera_focus_selection"): focus_selection()
 	elif event.is_action_pressed("camera_zoom_in") or event.is_action_pressed("camera_zoom_out"):
 		var ticks := maxf(0.1, event.factor) if event is InputEventMouseButton else 1.0

@@ -28,8 +28,11 @@ func place(unit: Node3D, point: Vector3) -> void:
 	unit.global_position = game.ground.tile_to_world(unit.grid_position)
 	unit._claim(unit.grid_position)
 func run() -> void:
-	FuelRules.testing_full_tanks = false
+	# A mechanics check on a map laid out for the old 35 m Depot range (docs/DEPOT_RANGE.md).
+	var old_range: DepotRules = load("res://assets/economy/depot_rules.tres")
+	old_range.construction_radius = 35.0
 	await fixture("res://scenes/maps/resource_skirmish.tscn")
+	game.testing_full_tanks = false
 	var depot = game.depot
 	depot.coal = 0
 	var pile = game.get_node("Entities/Resources/TestingCoalPile")
@@ -149,6 +152,7 @@ func run() -> void:
 	if not check(produced.fuel >= produced.fuel_rules.reserve_capacity-1 and depot.coal+produced.fuel == 100,"Produced vehicle did not refuel at its Depot"): return
 	# Exercise scenes from earlier batches keep fuel off.
 	await fixture("res://scenes/maps/rail_exercise.tscn")
+	game.testing_full_tanks = false
 	var train = game.get_node("Entities/Units/Train")
 	if not check(not game.vehicle_fuel_required and not train.fuel_active() and train.fuel == 0,"Earlier exercise scene requires fuel"): return
 	# Trains burn no fuel even where vehicles do; a route needs only connected track.

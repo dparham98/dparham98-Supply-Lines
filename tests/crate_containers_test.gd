@@ -66,8 +66,10 @@ func run() -> void:
 	clear_crates()
 	depot.wood = 0; depot.coal = 0; depot.iron = 25
 	select(null,depot)
-	var segments = hud.info.get_node("Storage/Track/Segments")
-	if not check(hud.info.get_node("Storage/Head/Label").text == "Loose storage" and not segments.has_node("IronCrated") and not segments.get_node("Crates").visible and hud.info.get_node("Storage/Legend/Iron/Amount").text == "Iron 25","Depot storage still mixes in crates"): return
+	# Your Depot's storage is in the top-right panel (docs/DEPOT_PANELS.md).
+	var storage = hud.storage_panel.get_node("Storage")
+	var segments = storage.get_node("Track/Segments")
+	if not check(storage.get_node("Head/Label").text == "%s storage" % depot.name and not segments.has_node("IronCrated") and not segments.get_node("Crates").visible and storage.get_node("Legend/Iron/Amount").text == "Iron 25","Depot storage still mixes in crates"): return
 	# Workers deliver into a crate and, when it fills, into the next crate beside it.
 	var field := ground.get_tile_at_position(depot.global_position+Vector3(-16,0,14)) as Vector2i
 	var bin = CrateYard.spawn(self,field,&"",0,"player")
@@ -162,7 +164,7 @@ func run() -> void:
 	# HUD: crates aboard, a separate Crates segment, and the overlay's crate pips.
 	select(truck)
 	var aboard_pips = hud.info.get_node("Storage/Aboard")
-	if not check(hud.info.get_node("Storage/Head/Label").text == "Cargo · 1/4 crates" and segments.get_node("Crates").visible and aboard_pips.visible and aboard_pips.get_node("Pip0/Fill").color == aboard_pips.COLORS[&"coal"] and aboard_pips.get_node("Pip3").visible and not aboard_pips.get_node("Pip3/Fill").visible,"Crates aboard not shown"): return
+	if not check(hud.info.get_node("Storage/Head/Label").text == "Cargo · 1/4 crates" and hud.info.get_node("Storage/Track/Segments/Crates").visible and aboard_pips.visible and aboard_pips.get_node("Pip0/Fill").color == aboard_pips.COLORS[&"coal"] and aboard_pips.get_node("Pip3").visible and not aboard_pips.get_node("Pip3/Fill").visible,"Crates aboard not shown"): return
 	var overlay = hud.get_node("MapOverlay")
 	var truck_pips: Array = overlay.status_for(truck).pips
 	if not check(truck_pips.size() == 4 and truck_pips[0] == overlay.RESOURCE_COLORS[&"coal"] and truck_pips[1].a == 0,"Truck crate pips wrong"): return

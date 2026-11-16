@@ -96,7 +96,9 @@ func run() -> void:
 	ground = game.ground
 	if not check(ground.cells_path == MAP+"/terrain_cells.bin" and ground.terrain_cells == cells, "Scene does not play on the balanced cells"): return
 	if not check(game.testing_coal_amount == 0 and not game.has_node("Entities/Resources/TestingCoalPile"), "Balanced map should have no testing coal pile"): return
-	if not check(not game.testing_iron_grant and game.depot.iron == 0 and game.depot.energy == game.depot.rules.initial_energy, "Start should be %d energy and no iron" % game.depot.rules.initial_energy): return
+	var stock: Array = [game.depot.energy, game.depot.iron, game.depot.wood, game.depot.coal]
+	if not check(not game.testing_iron_grant and stock == [200, 60, 40, 60], "Start should be 200 energy, 60 iron, 40 wood and 60 coal: %s" % [stock]): return
+	if not check(not game.testing_full_tanks and not FuelRules.full_tanks_for(game), "New vehicles should start empty on this map"): return
 	var minimap: TextureRect = game.get_node("Interface/Bottom/Body/Row/MapColumn/Map/Terrain")
 	if not check(minimap.texture != null and minimap.texture.resource_path == MAP+"/layout.png", "Minimap does not show the balanced layout"): return
 	var players := 0
@@ -105,7 +107,22 @@ func run() -> void:
 		if unit.team == "player": players += 1
 		else: hostiles += 1
 	if not check(players == 2 and game.has_node("Entities/Units/Infantry") and game.get_node("Entities/Units/StarterTruck").fuel == game.get_node("Entities/Units/StarterTruck").fuel_rules.reserve_capacity, "Start A should be one Infantry and one fuelled Cargo truck"): return
-	if not check(hostiles >= 6, "Start B and the contested coal should be guarded"): return
+	# Start B holds one enemy of each unit type the playtest panel spawns, fuelled and on open ground.
+	var roster: Array = []
+	var panel: Node = load("res://scenes/ui/playtest_panel.tscn").instantiate()
+	for scene in panel.spawn_scenes: roster.append(scene.resource_path)
+	panel.free()
+	var enemy_scenes: Array = []
+	for unit in get_nodes_in_group("units"):
+		if unit.team == "player": continue
+		enemy_scenes.append(unit.scene_file_path)
+		var cell = ground.get_tile_at_position(unit.global_position)
+		var near_b: bool = Vector2(unit.position.x, unit.position.z).distance_to(Vector2(game.get_node("Sites/EnemyStart").position.x, game.get_node("Sites/EnemyStart").position.z)) <= 16.0
+		if not check(unit.team == "enemy" and unit.is_in_group("enemies") and near_b and cell != null and ground.can_traverse(cell, unit.mobility_layer(), unit._owner_key()), "%s should be an enemy on open ground at start B" % unit.name): return
+		if not check(not unit.fuel_active() or unit.fuel == unit.fuel_rules.reserve_capacity, "%s should start fuelled" % unit.name): return
+	enemy_scenes.sort()
+	roster.sort()
+	if not check(hostiles == roster.size() and enemy_scenes == roster, "Start B should hold one enemy of each unit type: %s" % [enemy_scenes]): return
 	reach = game.get_node("Entities/Units/Infantry").interaction_range
 
 	nav.region = Rect2i(0, 0, SIZE, SIZE)
@@ -412,7 +429,7 @@ func _opening_estimate(from_a: Vector2i, mine_cell: Vector2, safe_a: Vector2i, c
 	var loads := ceili(float(iron_needed)/worker.carry_capacity)
 	var iron_ready := mining_starts+loads*load_seconds+(loads*2-1)*leg/walk
 	# First Tank, built at the main. With new vehicles starting full it only waits for iron. With new vehicles
-	# starting empty (FuelRules.testing_full_tanks off) it also waits for a tank of coal dug at the safe expansion
+	# starting empty (this map's testing_full_tanks off) it also waits for a tank of coal dug at the safe expansion
 	# and brought home by the starter Cargo truck, which is already waiting there.
 	var built_in: float = ceilf(float(factory.iron_cost)/worker.harvest_amount)*worker.harvest_interval
 	var tank_fuelled := iron_ready+built_in+factory.print_seconds

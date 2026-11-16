@@ -1,6 +1,7 @@
 extends SceneTree
 # Headless: track laying by real key presses and clicks. The Build page stays open while laying, and its
-# tiles use R and G too, so the keys must reach track laying first (docs/MAGLEV_TRACKS.md).
+# tiles use R and G too, so the keys must reach track laying first. A click lays one piece and finishes;
+# Shift-click keeps laying (docs/MAGLEV_TRACKS.md).
 var game: Node3D
 var hud: CanvasLayer
 var rails: Node
@@ -15,10 +16,10 @@ func press(code: int) -> void:
 		key.keycode = code; key.physical_keycode = code; key.pressed = down
 		Input.parse_input_event(key); Input.flush_buffered_events()
 		await process_frame
-func click_at(point: Vector2) -> void:
+func click_at(point: Vector2, shift := false) -> void:
 	for down in [true,false]:
 		var event := InputEventMouseButton.new()
-		event.position = point; event.button_index = MOUSE_BUTTON_LEFT; event.pressed = down
+		event.position = point; event.button_index = MOUSE_BUTTON_LEFT; event.pressed = down; event.shift_pressed = shift
 		root.push_input(event,true)
 		for frame in range(3): await process_frame
 func look_at_end(end: Dictionary) -> Vector2:
@@ -31,6 +32,9 @@ func free_end(piece: Node, index: int) -> Dictionary:
 	return {}
 func run() -> void:
 	root.size = Vector2i(1280,900)
+	# A mechanics check on a map laid out for the old 35 m Depot range (docs/DEPOT_RANGE.md).
+	var old_range: DepotRules = load("res://assets/economy/depot_rules.tres")
+	old_range.construction_radius = 35.0
 	game = load("res://scenes/maps/rail_exercise.tscn").instantiate()
 	root.add_child(game)
 	for frame in range(4): await process_frame
@@ -63,8 +67,9 @@ func run() -> void:
 	if not check(not west.is_empty(),"Fixture has no free west end"): return
 	await press(KEY_R)
 	var before: int = rails.pieces.size()
-	await click_at(await look_at_end(west))
+	await click_at(await look_at_end(west),true)
 	if not check(rails.pieces.size() == before+1 and rails.pieces[before].kind == "curve","A click after R should lay a curve"): return
+	if not check(game.placing_rail and game.rail_piece == "left","A Shift-click should keep laying the same piece"): return
 	# On to a fork: G walks its three joining ends and stays in track laying. Only the branch exit fits at the
 	# east end, inside the Depot radius, and the click lays it there.
 	for i in range(2): await press(KEY_R)
@@ -77,8 +82,8 @@ func run() -> void:
 	before = rails.pieces.size()
 	await click_at(await look_at_end(far))
 	if not check(rails.pieces.size() == before+1 and rails.pieces[before].kind == "fork_left","A click after R should lay a fork"): return
-	# Finished laying: the Build page has its keys back.
-	game.cancel_armed()
+	# A plain click lays its piece and finishes: the Build page has its keys back.
+	if not check(not game.placing_rail and "laying finished" in game.message,"A plain click should finish track laying and say so: %s" % game.message): return
 	await process_frame
 	await press(KEY_G)
 	if not check(not game.placing_rail and game.global_plan_kind == &"generator","G should be the Generator tile again"): return

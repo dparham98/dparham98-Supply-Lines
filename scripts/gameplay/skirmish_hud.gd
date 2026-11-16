@@ -6,8 +6,17 @@ extends CanvasLayer
 @onready var info = $Bottom/Body/Row/Info
 @onready var build_menu = $Bottom/Body/Row/Commands/BuildMenu
 @onready var bars = $Bottom/Body/Row/Info/Bars
-@onready var strip = $Bottom/Body/Header/Selection
 @onready var feed = $Feed
+## One portrait per selected unit while more than one is selected (docs/SELECTION_PORTRAITS.md).
+@onready var portraits = $Bottom/Body/Row/Info/Portraits
+var portrait_units: Array[Node3D] = []
+## Top left: the energy banking rate and the Generator settings of the Depot in context. Top right: its
+## storage. Both show while your Depot, or a building in its range, is selected (docs/DEPOT_PANELS.md).
+@onready var depot_panel = $DepotPanel
+@onready var storage_panel = $StoragePanel
+var panel_depot: Node3D
+const FEED_TOP := 44.0
+const PANEL_GAP := 8.0
 @onready var name_label: Label = $Bottom/Body/Row/Info/Head/Text/Name
 @onready var context = $Bottom/Body/Row/Context
 @onready var manifest_panel = $Bottom/Body/Row/Context/Manifest
@@ -26,7 +35,7 @@ var _tip_control: Control
 var _tip_since := 0.0
 ## Fixed command slots, row-major in the 4 × 3 grid. Commands that never share a card may share a slot.
 const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 4, "Return": 5, "DropMaterials": 6, "Build": 7,
-	"BurnWood": 4, "BurnCoal": 5, "BurnEither": 6, "AssignDepot": 7, "MakeCrates": 3, "Worksite": 7,
+	"BurnWood": 4, "BurnCoal": 5, "BurnEither": 6, "MakeCrates": 3, "Worksite": 7,
 	"Repair": 8, "Capture": 9, "DeployTruck": 10, "CancelPlan": 11,
 	"DeployCargo": 2, "Load": 4, "Unload": 5, "Trips": 6,
 	"PrintTruck": 0, "PrintCargo": 1, "PrintTrain": 2,
@@ -37,13 +46,12 @@ const TRIP_LABELS := {"once": "once", "all": "all available", "repeat": "repeat"
 ## One icon per stat row (assets/ui/icons).
 const STAT_ICONS := {"Speed": "speed", "Range": "focus", "Damage": "damage", "Vision": "scout", "Vs buildings": "depot", "Splash": "splash",
 	"Cost": "cost", "Deploys": "deploy", "Output": "generator", "Burning": "refuel", "Cycle": "cycle", "Mode": "mode",
-	"Energy": "generator", "Iron": "mine", "Queue": "queue", "Fuel left": "cargo"}
+	"Energy": "generator", "Iron": "mine", "Queue": "queue", "Fuel left": "cargo", "Energy ceiling": "generator", "Coal kept": "refuel"}
 const TILE_GAP := 4
 @onready var state_label: Label = $Bottom/Body/Row/Info/Head/Text/State
 const RESOURCE_KINDS := [&"energy",&"iron",&"wood",&"coal"]
 var _icons := {}
 # Cargo vehicles open on their delivery route page; Orders shows the ordinary command card.
-var strip_types: Array[String] = []
 var feed_points: Array[Vector3] = []
 ## Darkens a whole-card image that cannot be paid for yet. The card keeps its own colours.
 const UNAFFORDABLE := Color(0.5,0.42,0.4)
@@ -65,8 +73,8 @@ var shown: Node3D
 var desired_buttons: Array[String] = []
 func _ready() -> void:
 	$Bottom/Body/Header/GlobalBuild.pressed.connect(open_global_build)
-	for i in strip.get_child_count():
-		strip.get_child(i).pressed.connect(narrow_selection.bind(i))
+	for i in portraits.get_child_count():
+		portraits.get_child(i).pressed.connect(pick_portrait.bind(i))
 	for i in feed.get_child_count():
 		feed.get_child(i).pressed.connect(focus_alert.bind(i))
 	card.get_node("CancelPlan").pressed.connect(func():
@@ -110,13 +118,14 @@ func _ready() -> void:
 			else: edit_manifest(pair[1],Input.is_key_pressed(KEY_SHIFT)))
 	load_tiles.get_node("Clear").pressed.connect(clear_manifest)
 	card.get_node("MakeCrates").pressed.connect(open_crate_page)
+	depot_panel.get_node("Body/CeilingSlider").value_changed.connect(func(value: float):
+		if is_instance_valid(panel_depot): panel_depot.set_energy_ceiling(value))
+	depot_panel.get_node("Body/CoalSlider").value_changed.connect(func(value: float):
+		if is_instance_valid(panel_depot): panel_depot.set_coal_reserve(value))
 	card.get_node("Worksite").pressed.connect(open_worksite)
 	for pair in [["BurnWood","wood"],["BurnCoal","coal"],["BurnEither","either"]]:
 		card.get_node(pair[0]).pressed.connect(func():
 			if is_instance_valid(shown) and shown.is_in_group("energy_generators"): shown.set_fuel_preference(pair[1]))
-	card.get_node("AssignDepot").pressed.connect(func():
-		game.pending_unit_command = "assign_depot"
-		game.notify("Assign: choose a Depot that covers this Generator."))
 	card.get_node("DropMaterials").pressed.connect(func():
 		for unit in selected_units():
 			if unit.can_gather and unit.cargo > 0:
@@ -196,7 +205,8 @@ func _process(_delta: float) -> void:
 	var units := selected_units()
 	if units.size() > 1 and not global_build_open:
 		commands.get_node("Title").text = "%d FRIENDLY UNITS SELECTED" % units.size()
-		hint_text = "Right-click moves the group. Commands apply where each unit supports them. Details show the first unit."
+		hint_text = "Right-click moves the group. Commands apply where each unit supports them; the card and stats show the outlined unit. Click a portrait to select only that unit, Shift-click to remove it. Ctrl-click keeps only that type, Ctrl+Shift-click removes that type."
+	update_portraits(units)
 	# Apply final visibility once. Hiding a pressed button cancels its GUI gesture.
 	for button in card.get_children():
 		if button is Button: button.visible = desired_buttons.has(str(button.name))
@@ -224,8 +234,64 @@ func _process(_delta: float) -> void:
 	$Bottom/Body/Header/GlobalBuild.disabled = global_build_open
 	place_tiles()
 	update_tip()
-	update_strip(units)
+	update_depot_panels()
 	update_feed()
+## The player's Depot whose panels show for the selected object: the Depot itself, the Depot a Generator or
+## production building uses, or else the nearest of your Depots whose range covers the selected building,
+## mine or plan. Units and other sides' buildings show none.
+func context_depot(node: Node3D) -> Node3D:
+	if not is_instance_valid(node): return null
+	if node.is_in_group("depots"): return node if node.team == "player" and node.health > 0 else null
+	if not (node.is_in_group("energy_generators") or node.is_in_group("production_buildings") or node.is_in_group("mines") or node.is_in_group("construction_plans")): return null
+	if not node.is_in_group("mines") and node.get("team") != null and node.team != "player": return null
+	var own = node.get("assigned_depot")
+	if is_instance_valid(own) and own.team == "player" and own.health > 0: return own
+	var best: Node3D = null
+	for depot in get_tree().get_nodes_in_group("depots"):
+		if depot.team != "player" or depot.health <= 0 or not SupplySource.covers(depot,node.global_position,"player"): continue
+		if best == null or depot.global_position.distance_to(node.global_position) < best.global_position.distance_to(node.global_position): best = depot
+	return best
+func update_depot_panels() -> void:
+	# The shown object may have been destroyed since update_contents last ran.
+	var depot := context_depot(shown if is_instance_valid(shown) else null)
+	depot_panel.visible = depot != null
+	storage_panel.visible = depot != null
+	# The alert feed sits under the storage panel while it shows.
+	var feed_top: float = storage_panel.position.y+storage_panel.size.y+PANEL_GAP if storage_panel.visible else FEED_TOP
+	if not is_equal_approx(feed.offset_top,feed_top): feed.offset_top = feed_top
+	if depot == null:
+		panel_depot = null
+		return
+	var playtest: Control = get_node_or_null("PlaytestPanel")
+	var panel_top: float = playtest.position.y+playtest.size.y+PANEL_GAP if playtest != null and playtest.visible else 12.0
+	if not is_equal_approx(depot_panel.offset_top,panel_top): depot_panel.offset_top = panel_top
+	var body = depot_panel.get_node("Body")
+	body.get_node("Title").text = "%s · ENERGY" % str(depot.name).to_upper()
+	var ceiling: HSlider = body.get_node("CeilingSlider")
+	var coal: HSlider = body.get_node("CoalSlider")
+	ceiling.max_value = depot.storage_capacity
+	coal.max_value = depot.COAL_RESERVE_MAX
+	# The sliders write straight to the Depot with the same steps, so following the Depot each frame never
+	# pulls back a drag, and shows changes made elsewhere.
+	panel_depot = depot
+	if ceiling.value != depot.energy_ceiling: ceiling.set_value_no_signal(depot.energy_ceiling)
+	if coal.value != depot.coal_reserve: coal.set_value_no_signal(depot.coal_reserve)
+	body.get_node("Ceiling/Value").text = "No ceiling" if depot.energy_ceiling >= depot.storage_capacity else "%s E" % grouped(depot.energy_ceiling)
+	body.get_node("Coal/Value").text = grouped(depot.coal_reserve)
+	var generators: Array[Node3D] = depot.assigned_generators()
+	var rate: float = depot.generation_rate()
+	var bar: ProgressBar = body.get_node("Rate")
+	bar.max_value = maxf(depot.peak_generation_rate(),0.001)
+	bar.value = rate
+	body.get_node("Banking/Value").text = "+%.1f E/s" % rate if rate > 0 else ("0 E/s" if not generators.is_empty() else "No Generators")
+	# Stopped: say why, from the first Generator that is not running.
+	var note := ""
+	if generators.is_empty(): note = "Build a Generator in this Depot's range to bank energy here."
+	elif rate <= 0: note = generators[0].describe_state()
+	var note_label: Label = body.get_node("Note")
+	note_label.visible = not note.is_empty()
+	note_label.text = note
+	show_storage("%s storage" % depot.name,depot.stockpile,storage_panel.get_node("Storage"))
 # Fuel and cargo bars under health. Fuel turns amber when low and red when empty.
 func update_bars(node: Node3D) -> void:
 	if node.fuel_active():
@@ -270,8 +336,8 @@ func grouped(value: int) -> String:
 		out += digits[i]
 	return ("-" if value < 0 else "")+out
 # One storage bar split by resource against capacity, with a legend of exact amounts.
-func show_storage(title: String, stockpile: ResourceStockpile) -> void:
-	var section = info.get_node("Storage")
+func show_storage(title: String, stockpile: ResourceStockpile, section: Control = null) -> void:
+	if section == null: section = info.get_node("Storage")
 	section.visible = true
 	section.get_node("Head/Label").text = title
 	section.get_node("Legend").visible = true
@@ -372,24 +438,48 @@ func update_unit_sections(node: Node3D) -> void:
 			route.get_node("Bar").step = 0.0
 			route.get_node("Bar").value = to_origin/maxf(0.001,to_origin+to_destination)
 # One button per unit type in a mixed selection.
-func update_strip(units: Array[Node3D]) -> void:
-	var counts := {}
-	var names := {}
-	strip_types.clear()
+## Portraits replace the single unit's health, bars and details. Units are grouped by type, in the order the
+## types were first selected, so the unit the card shows (the first) is always the first portrait.
+func update_portraits(units: Array[Node3D]) -> void:
+	var many := units.size() > 1 and not global_build_open
+	portraits.visible = many
+	portrait_units.clear()
+	if not many: return
+	for id in ["Health","HealthText","Bars","Storage","Warning","Details"]: info.get_node(id).visible = false
+	var types: Array[String] = []
 	for unit in units:
-		var key: String = unit.scene_file_path
-		if not counts.has(key): strip_types.append(key); names[key] = object_name(unit)
-		counts[key] = counts.get(key,0)+1
-	strip.visible = units.size() > 1 and not global_build_open
-	for i in strip.get_child_count():
-		var button: Button = strip.get_child(i)
-		button.visible = strip.visible and i < strip_types.size()
-		if button.visible: button.text = "%s ×%d" % [names[strip_types[i]],counts[strip_types[i]]]
-func narrow_selection(index: int) -> void:
-	if index >= strip_types.size(): return
-	var keep_type := not Input.is_key_pressed(KEY_SHIFT)
+		if not types.has(unit.scene_file_path): types.append(unit.scene_file_path)
+	for type in types:
+		for unit in units:
+			if unit.scene_file_path == type: portrait_units.append(unit)
+	var slots := portraits.get_child_count()
+	var more := portrait_units.size()-slots
+	state_label.text = "Card shows %s (outlined)%s" % [object_name(units[0])," · %d more not shown" % more if more > 0 else ""]
+	for i in slots:
+		var button: Button = portraits.get_child(i)
+		button.visible = i < portrait_units.size()
+		if not button.visible: continue
+		var unit: Node3D = portrait_units[i]
+		var id := icon_name(unit)
+		if not _icons.has(id): _icons[id] = load("res://assets/ui/icons/%s.svg" % id)
+		if button.icon != _icons[id]: button.icon = _icons[id]
+		var health: ProgressBar = button.get_node("Health")
+		health.max_value = unit.max_health
+		health.value = unit.health
+		var ratio := float(unit.health)/maxf(unit.max_health,1)
+		health.get_theme_stylebox("fill").bg_color = Color(0.364,0.674,0.469) if ratio > 0.6 else (Color(1,0.72,0.2) if ratio > 0.3 else Color(0.95,0.3,0.25))
+		button.get_node("Primary").visible = unit == units[0]
+		var tip := "%s · Health %d / %d · %s\nClick: only this unit · Shift: remove it · Ctrl: only this type · Ctrl+Shift: remove this type" % [object_name(unit),unit.health,unit.max_health,unit.state]
+		if button.tooltip_text != tip: button.tooltip_text = tip
+## Click keeps only that unit selected; Shift-click drops it. With Ctrl the same goes for its whole type.
+func pick_portrait(index: int) -> void:
+	if index >= portrait_units.size() or not is_instance_valid(portrait_units[index]): return
+	var picked: Node3D = portrait_units[index]
+	var by_type := Input.is_key_pressed(KEY_CTRL)
+	var remove := Input.is_key_pressed(KEY_SHIFT)
 	for unit in selected_units():
-		unit.set_selected((unit.scene_file_path == strip_types[index]) == keep_type)
+		var hit: bool = unit.scene_file_path == picked.scene_file_path if by_type else unit == picked
+		unit.set_selected(not hit if remove else hit)
 func update_feed() -> void:
 	var now := Time.get_ticks_msec()/1000.0
 	feed_points.clear()
@@ -478,12 +568,12 @@ func update_contents() -> void:
 	if not is_instance_valid(node):
 		name_label.text = "Nothing selected"
 		info.get_node("HealthText").text = "Select a unit or building"
-		info.get_node("Details").text = "Minimap: click to move camera.\nBlue: friendly · red: hostile\nGrey: neutral · gold: resources"
+		info.get_node("Details").text = "Minimap: left-click moves the camera, right-click orders selected units there.\nBlue: friendly · red: hostile\nGrey: neutral · gold: resources"
 		commands.get_node("Title").text = "COMMAND CARD"
 		hint_text = "Left-click selects. Drag selects units. Right-click gives orders. B opens the build page."
 		return
 	var units := selected_units()
-	name_label.text = object_name(node)+( " · +%d selected" % (units.size()-1) if units.size() > 1 else "")
+	name_label.text = object_name(node) if units.size() <= 1 else "%d units selected" % units.size()
 	info.get_node("Health").max_value = node.max_health
 	info.get_node("Health").value = node.health
 	info.get_node("HealthText").text = "Health %d / %d" % [node.health,node.max_health]
@@ -491,7 +581,8 @@ func update_contents() -> void:
 	if node.is_in_group("depots"):
 		commands.get_node("Title").text = "DEPOT · PRODUCTION"
 		state_label.text = "%s · territory %.0f · %+.1f E/s" % [team_label(node),node.rules.construction_radius,node.generation_rate()]
-		show_storage("Loose storage",node.stockpile)
+		# Your own Depot's storage shows in the top-right panel instead.
+		if node.team != "player": show_storage("Loose storage",node.stockpile)
 		if node.queue > 0:
 			var kind: String = node.pending[0] if not node.pending.is_empty() else ""
 			show_progress("Producing · "+DEPOT_PRODUCTS.get(kind,kind.capitalize()),"%d%%%s" % [roundi(node.progress/node.current_seconds()*100)," · %d more queued" % (node.queue-1) if node.queue > 1 else ""],node.progress/node.current_seconds())
@@ -528,16 +619,15 @@ func update_contents() -> void:
 		var source = node.assigned_depot
 		state_label.text = node.describe_state()
 		set_stats([["Output","%.1f E/s" % node.output_rate()],["Burning",str(node.cycle_kind).capitalize() if not node.cycle_kind.is_empty() else "Waiting"],["Cycle","%.1f / %.1fs" % [node.cycle_elapsed,node.cycle_seconds]],["Fuel left",node.fuel_left_text()]])
-		if is_instance_valid(source): show_storage("%s storage" % source.name,source.stockpile)
+		if is_instance_valid(source) and node.team != "player": show_storage("%s storage" % source.name,source.stockpile)
 		info.get_node("Details").text = "Assigned Depot: %s" % (source.name if is_instance_valid(source) else "none")
-		hint_text = "Burns fuel from its assigned Depot. Wood: 1 → %d E / %.1fs. Coal: 1 → %d E / %.1fs. Either uses wood first. Changes apply next cycle; full storage pauses fuel use." % [node.fuel_rules.wood_output,node.fuel_rules.wood_seconds,node.fuel_rules.coal_output,node.fuel_rules.coal_seconds]
+		hint_text = "Burns fuel from the Depot whose range it stands in, and banks the energy there. Wood: 1 → %d E / %.1fs. Coal: 1 → %d E / %.1fs. Either uses wood first. Changes apply next cycle. It pauses at the Depot's energy ceiling or full storage, and leaves the Depot's coal reserve for vehicles." % [node.fuel_rules.wood_output,node.fuel_rules.wood_seconds,node.fuel_rules.coal_output,node.fuel_rules.coal_seconds]
 		if node.team == "player":
 			show_button("ToggleGenerator","Pause" if node.enabled else "Resume")
 			set_card(card.get_node("ToggleGenerator"),"generator_pause" if node.enabled else "generator_resume")
 			show_fuel_tile("BurnWood","Burn wood","wood",node.fuel_preference)
 			show_fuel_tile("BurnCoal","Burn coal","coal",node.fuel_preference)
 			show_fuel_tile("BurnEither","Burn either (wood first)","either",node.fuel_preference)
-			show_button("AssignDepot","Assign Depot")
 		if is_instance_valid(node.assigned_depot): show_button("FocusAssigned","Focus Depot")
 	else:
 		var nearest = nearest_depot(node)
@@ -782,7 +872,7 @@ func begin_global_placement(kind: StringName) -> void:
 		game.placing_rail = true
 		game.rail_piece = "straight"
 		var rails = game.get_node("RailNetwork")
-		game.notify("Click to lay a straight (%d iron) from a free track end or in a Depot's loading range. R switches straight, curves (%d iron) and forks; F turns a free piece; Esc finishes." % [rails.cost("straight"),rails.cost("curve")])
+		game.notify("Click to lay a straight (%d iron) from a free track end or in a Depot's loading range. R switches straight, curves (%d iron) and forks; F turns a free piece. Shift-click keeps laying; Esc finishes." % [rails.cost("straight"),rails.cost("curve")])
 		return
 	game.global_plan_kind = kind
 	game.notify("Click valid terrain to place an unpaid %s plan. Esc cancels placement; existing plans remain." % network.plan_spec(kind).title)
@@ -832,18 +922,12 @@ func pick_prompt() -> String:
 			if selected_cargo() != null: return "LOAD · CHOOSE A STOP"
 		"unload":
 			if selected_cargo() != null: return "UNLOAD · CHOOSE A STOP\nLeft-click a Depot on the map or minimap to unpack there, a build site to deliver its materials, or open ground to set crates down. Shift queues. Right-click or Esc cancels."
-		"assign_depot":
-			if is_instance_valid(shown) and shown.is_in_group("energy_generators"): return "ASSIGN A DEPOT\nLeft-click a friendly Depot that covers this Generator, on the map or minimap. It burns fuel from that Depot. Right-click or Esc cancels."
 		"pin":
 			if global_build_open: return "PIN A PAYER\nLeft-click a Depot or deployed Cargo truck on the map or minimap. New plans pay only from it. Right-click or Esc cancels."
 	return ""
 func pick_stops() -> Array[Node3D]:
 	var stops: Array[Node3D] = []
 	if pick_prompt().is_empty() or crate_page_open: return stops
-	if game.pending_unit_command == "assign_depot":
-		for depot in get_tree().get_nodes_in_group("depots"):
-			if SupplySource.covers(depot,shown.global_position,shown.team): stops.append(depot)
-		return stops
 	var vehicle := selected_cargo()
 	for group in ["depots","mobile_supplies"]:
 		for node in get_tree().get_nodes_in_group(group):
@@ -854,13 +938,6 @@ func pick_stops() -> Array[Node3D]:
 	return stops
 func pick_stop(stop: Node3D, queued := false) -> void:
 	var mode: String = game.pending_unit_command
-	if mode == "assign_depot":
-		if not pick_stops().has(stop) or not shown.assign_source(stop):
-			game.notify("Pick a friendly Depot that covers this Generator.")
-			return
-		game.pending_unit_command = ""
-		game.notify("Generator now burns fuel from %s." % stop.name)
-		return
 	if not pick_stops().has(stop):
 		game.notify("Pick a friendly Depot%s." % (" or deployed Cargo truck" if mode == "pin" or not selected_cargo().is_in_group("rail_trains") else ""))
 		return

@@ -66,22 +66,24 @@ func run() -> void:
 	for node in get_nodes_in_group("units"): node.set_selected(false)
 	hud._process(0)
 	if not check(not fuel_bar.visible and not bars.get_node("Cargo").visible,"Bars shown for a Depot"): return
-	# Type strip: one button per type; click keeps a type, Shift-click removes it.
+	# Portraits (docs/SELECTION_PORTRAITS.md) replace the old type strip: Ctrl-click keeps a type, Ctrl+Shift-click
+	# removes it.
+	if not check(not hud.has_node("Bottom/Body/Header/Selection"),"The header type strip should be gone"): return
 	await select([worker,second,tank])
-	var strip = hud.strip
-	if not check(strip.visible and strip.get_node("Type1").visible and strip.get_node("Type2").visible and not strip.get_node("Type3").visible,"Strip buttons wrong"): return
-	var labels := [strip.get_node("Type1").text,strip.get_node("Type2").text]
-	if not check("Infantry ×2" in labels and "Tank ×1" in labels,"Strip labels wrong: %s" % [labels]): return
-	var tank_button := 1 if labels[1] == "Tank ×1" else 0
-	strip.get_child(tank_button).pressed.emit()
-	if not check(tank.is_selected and not worker.is_selected and not second.is_selected,"Strip click did not keep only Tanks"): return
-	hud._process(0)
-	if not check(not strip.visible,"Strip shown for a single unit"): return
+	if not check(hud.portraits.visible and hud.portrait_units.size() == 3,"Three portraits expected"): return
+	var ctrl := InputEventKey.new(); ctrl.keycode = KEY_CTRL; ctrl.physical_keycode = KEY_CTRL; ctrl.pressed = true
+	Input.parse_input_event(ctrl); Input.flush_buffered_events()
+	hud.portraits.get_child(hud.portrait_units.find(tank)).pressed.emit()
+	if not check(tank.is_selected and not worker.is_selected and not second.is_selected,"Ctrl-click did not keep only Tanks"): return
 	await select([worker,second,tank])
-	Input.parse_input_event(shift_event(true)); Input.flush_buffered_events(); await process_frame
-	strip.get_child(tank_button).pressed.emit()
+	Input.parse_input_event(shift_event(true)); Input.flush_buffered_events()
+	hud.portraits.get_child(hud.portrait_units.find(tank)).pressed.emit()
 	Input.parse_input_event(shift_event(false))
-	if not check(not tank.is_selected and worker.is_selected and second.is_selected,"Shift strip click did not remove Tanks"): return
+	var release := ctrl.duplicate(); release.pressed = false
+	Input.parse_input_event(release); Input.flush_buffered_events()
+	if not check(not tank.is_selected and worker.is_selected and second.is_selected,"Ctrl+Shift-click did not remove Tanks"): return
+	hud._process(0)
+	if not check(hud.portraits.visible and hud.portrait_units.size() == 2,"Two Infantry portraits should remain"): return
 	# Alert feed: newest first, throttled per key, click focuses the camera.
 	var point: Vector3 = game.depot.global_position+Vector3(40,0,-30)
 	game.alert("Test alert",point)

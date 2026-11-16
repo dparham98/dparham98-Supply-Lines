@@ -13,8 +13,17 @@ func near(unit: Node3D, target: Node3D, offset: Vector3) -> void:
 	unit.grid_position = game.ground.get_tile_at_position(unit.global_position)
 	unit._claim(unit.grid_position)
 func run() -> void:
+	# A mechanics check on a map laid out for the old 35 m Depot range (docs/DEPOT_RANGE.md); trucks keep half of it.
+	var old_range: DepotRules = load("res://assets/economy/depot_rules.tres")
+	old_range.construction_radius = 35.0
 	game = load("res://scenes/maps/mobile_supply_exercise.tscn").instantiate()
 	root.add_child(game); await process_frame
+	# Payment checks use a Generator as a priced build; keep its old 100 E / 20 I price here. The current
+	# price is checked in generator_limits_test.gd.
+	var priced: SupplyRules = load("res://assets/economy/supply_rules.tres")
+	priced.generator_energy_cost = 100; priced.generator_iron_cost = 20
+	# These checks place Depots close together; spacing has its own test (depot_spacing_test.gd).
+	load("res://assets/economy/depot_rules.tres").separate_ranges = false
 	game.set_process(false)
 	for group in ["units","depots","mines"]:
 		for node in get_nodes_in_group(group): node.set_process(false)
@@ -172,10 +181,11 @@ func run() -> void:
 			if network.can_place_size(candidate,train,Vector2i(3,3)): generator_point = candidate
 	if not check(generator_point != Vector3.ZERO and network.construct_generator(generator_point),"Train-funded Generator construction failed"): return
 	var generator = get_nodes_in_group("energy_generators")[-1]; generator.set_process(false)
-	if not check(generator.assigned_depot == null and not generator.active() and train.energy == 0 and train.iron == 25,"Mobile Generator silently began operation"): return
+	# A train-funded Generator takes the Depot whose range it stands in, never the train (docs/DEPOT_RANGE.md).
+	nearest_depot = null
 	for candidate in get_nodes_in_group("depots"):
-		if SupplySource.covers(candidate,generator.global_position,"player"): nearest_depot = candidate
-	if not check(generator.assign_source(nearest_depot) and generator.source_valid(),"Generator explicit Depot assignment failed"): return
+		if SupplySource.covers(candidate,generator.global_position,"player") and (nearest_depot == null or candidate.global_position.distance_to(generator.global_position) < nearest_depot.global_position.distance_to(generator.global_position)): nearest_depot = candidate
+	if not check(train.energy == 0 and train.iron == 25 and nearest_depot != null and generator.assigned_depot == nearest_depot and generator.source_valid(),"A train-funded Generator should take the covering Depot"): return
 	nearest_depot.stockpile.deposit(&"wood",1)
 	if not check(generator.active(),"Assigned Generator did not recognize local wood"): return
 	# Loss of a latched mobile source pauses Infantry rather than using neighboring Depot money.

@@ -15,3 +15,11 @@ extends Resource
 @export var truck_iron_cost := 30
 @export var deployed_energy := 100
 @export var deployed_iron := 0
+## A new Depot (built, planned or deployed from a truck) may not have its range overlap the range of any other
+## friendly Depot or Depot plan, so free Infantry cannot be farmed from Depots packed together
+## (docs/DEPOT_SPACING.md). Authored Depots are not checked. Off allows any spacing.
+@export var separate_ranges := true
+## The least distance, centre to centre, between a new Depot and every other friendly one: twice the range, so
+## the ranges may touch but not overlap. 0 when the rule is off.
+func min_depot_spacing() -> float:
+	return construction_radius*2.0 if separate_ranges else 0.0

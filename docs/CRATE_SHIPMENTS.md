@@ -13,13 +13,13 @@ This is the logistics redesign approved in `UI_OVERHAUL_PLAN.md`, on branch `fea
   - Depot and deployed-truck `energy`, `iron`, `wood` and `coal` now report spendable (loose) stock, and setting them keeps crates intact.
   - The storage bar shows the crated part of each resource lighter, and the legend counts crates (for example "Iron 500 · 3▢").
 - **Keep stocked:** a panel toggle that records the current crate counts. The Depot (or deployed truck) repacks up to those counts as vehicles collect crates and loose stock allows.
-- **Load (L):** click a friendly Depot or deployed Cargo vehicle. The vehicle drives there, waits the 2 s transfer, and takes crates oldest first up to its capacity.
-- **Unload (U):** unpacks whole crates into loose stock at the stop. Crates that don't fit stay aboard, and the state says so.
+- **Load (E):** click a friendly Depot or deployed Cargo vehicle. The vehicle drives there, waits the 2 s transfer, and takes crates oldest first up to its capacity.
+- **Unload (V):** unpacks whole crates into loose stock at the stop. Crates that don't fit stay aboard, and the state says so.
 - **Trips (C):** applies after each Unload:
   - **Once** stops there.
   - **All available** queues the same Load/Unload pair again while the pickup still has crates.
   - **Repeat** always queues it again, and Load waits at the pickup until crates appear.
-- **Queuing:** Shift queues Load and Unload like other orders, with waypoint markers. A dashed trip line joins pickup and delivery while the vehicle is selected.
+- **Queuing:** Shift queues Load and Unload like other orders, shown by the dashed queue path. A dashed trip line joins pickup and delivery while the vehicle is selected.
 - **Right-click shortcut:** right-click on a friendly Depot or deployed truck unloads when carrying crates, and loads otherwise.
 - **Distant stops:** while Load or Unload is armed, a list of every friendly stop appears above the grid. Choosing one issues the order, and Shift queues it.
 - **Trains:** they stop only at Depots, along friendly rails. Their round-trip fuel estimate and warning now cover the current Load/Unload pair as well as legacy routes.

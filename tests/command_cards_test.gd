@@ -31,7 +31,7 @@ func run() -> void:
 			tiles += 1
 			if not check(art(button).begins_with("sl_") and button.icon.get_width() == 128,"%s has no card art" % button.name): return
 			if not check(button.expand_icon and button.theme_type_variation == &"CommandCard" and button.text.is_empty() and button.has_node("Key"),"%s is not set up as a card" % button.name): return
-	if not check(tiles == 47,"Expected 47 card tiles, found %d" % tiles): return
+	if not check(tiles == 46,"Expected 46 card tiles, found %d" % tiles): return
 	# Commands with their own art.
 	var names := {"Return":"sl_deliver.png","DropMaterials":"sl_drop.png","DeployTruck":"sl_deploy_depot.png","ProduceUbermech":"sl_produce_ubermech.png","PrintTruck":"sl_produce_truck.png"}
 	for id in names:
@@ -78,19 +78,16 @@ func run() -> void:
 	var wood_tile: Button = hud.card.get_node("BurnWood")
 	var coal_tile: Button = hud.card.get_node("BurnCoal")
 	generator.set_fuel_preference("wood"); select(null,generator)
-	if not check(wood_tile.visible and coal_tile.visible and hud.card.get_node("BurnEither").visible and hud.card.get_node("AssignDepot").visible,"Generator fuel tiles missing"): return
+	if not check(wood_tile.visible and coal_tile.visible and hud.card.get_node("BurnEither").visible and not hud.card.has_node("AssignDepot"),"Generator fuel tiles missing, or Assign Depot still there"): return
 	if not check(not wood_tile.has_theme_color_override("icon_normal_color") and coal_tile.has_theme_color_override("icon_normal_color"),"Current fuel not lit"): return
 	coal_tile.pressed.emit(); hud._process(0)
 	if not check(generator.fuel_preference == "coal" and not coal_tile.has_theme_color_override("icon_normal_color") and wood_tile.has_theme_color_override("icon_normal_color"),"Burn Coal tile wrong"): return
 	var depot = generator.assigned_depot
-	depot.stockpile.set_amount(&"wood",4); depot.stockpile.set_amount(&"coal",2)
-	if not check(generator.fuel_left_text() == "2 coal · 10s","Coal fuel left wrong: "+generator.fuel_left_text()): return
+	depot.stockpile.set_amount(&"wood",4); depot.stockpile.set_amount(&"coal",depot.coal_reserve+2)
+	# Fuel left counts only the coal above the reserve kept for vehicles.
+	if not check(generator.fuel_left_text() == "2 coal · 6s","Coal fuel left wrong: "+generator.fuel_left_text()): return
 	generator.set_fuel_preference("either")
-	if not check(generator.fuel_left_text() == "4 wood + 2 coal · 18s","Either fuel left wrong: "+generator.fuel_left_text()): return
+	if not check(generator.fuel_left_text() == "4 wood + 2 coal · 14s","Either fuel left wrong: "+generator.fuel_left_text()): return
 	if not check(not hud.has_node("Bottom/Body/Row/Context/GeneratorMode") and not hud.context.get_node("AssignedSource").visible,"Generator dropdowns still shown"): return
-	hud.card.get_node("AssignDepot").pressed.emit(); hud._process(0)
-	if not check(game.pending_unit_command == "assign_depot" and hud.pick.visible and not hud.load_tiles.visible and hud.pick.get_node("Prompt").visible and hud.pick_stops().has(depot),"Assign Depot prompt wrong"): return
-	hud.pick_stop(depot)
-	if not check(game.pending_unit_command.is_empty() and generator.assigned_depot == depot,"Assign Depot pick failed"): return
 	print("COMMAND_CARDS_TEST_PASSED")
 	quit(0)

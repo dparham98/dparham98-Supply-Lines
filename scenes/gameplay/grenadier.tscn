@@ -7,17 +7,11 @@
 [ext_resource type="PackedScene" path="res://scenes/gameplay/grenade_round.tscn" id="round"]
 [ext_resource type="Resource" path="res://assets/units/grenadier.tres" id="stats"]
 
-[sub_resource type="StandardMaterial3D" id="r1"]
-albedo_color = Color(0.2,1,0.6,1)
-roughness = 0.85
-shading_mode = 0
+[ext_resource type="Material" path="res://assets/materials/units/team_marker.tres" id="team_marker"]
 
-[sub_resource type="TorusMesh" id="r2"]
-inner_radius = 0.85
-outer_radius = 0.96
-rings = 20
-ring_segments = 6
-material = SubResource("r1")
+[sub_resource type="PlaneMesh" id="team_marker_mesh"]
+material = ExtResource("team_marker")
+size = Vector2(1.5, 1.5)
 
 [node name="Grenadier" type="Node3D"]
 script = ExtResource("agent")
@@ -34,10 +28,12 @@ model_scene = ExtResource("model")
 
 [node name="Model" parent="Visuals" instance=ExtResource("model")]
 
-[node name="SelectionRing" type="MeshInstance3D" parent="."]
-position = Vector3(0,0.08,0)
-visible = false
-mesh = SubResource("r2")
+[node name="TeamMarker" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 0.06, 0)
+cast_shadow = 0
+mesh = SubResource("team_marker_mesh")
+instance_shader_parameters/half_size = Vector2(0.75, 0.75)
+metadata/not_selectable = true
 
 [node name="Status" type="Label3D" parent="."]
 position = Vector3(0,3.3,0)
