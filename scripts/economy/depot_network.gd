@@ -94,12 +94,13 @@ func depot_centre(point: Vector3) -> Vector2:
 	var start := footprint_start(point,size)
 	var at: Vector3 = game.ground.tile_to_world(start)+Vector3(size.x*0.5-0.5,0,size.y*0.5-0.5)
 	return Vector2(at.x,at.z)
-## Whether a new Depot may stand at `point`: its snapped centre at least DepotRules.min_depot_spacing from
+## Whether a new Depot may stand at `point`: its snapped centre at least DepotRules.min_depot_spacing() (twice
+## the Depot range, so ranges never overlap) from
 ## every Depot of `team`, every unfinished Depot plan, and every site a Depot truck of `team` has been
 ## ordered to deploy on, other than `ignore` (the plan or truck asking). Captured Depots are not checked
 ## (docs/DEPOT_SPACING.md).
 func depot_spacing_ok(point: Vector3, team := "player", ignore: Node = null) -> bool:
-	var spacing: float = depot_rules().min_depot_spacing
+	var spacing: float = depot_rules().min_depot_spacing()
 	if spacing <= 0.0: return true
 	var at := depot_centre(point)
 	for depot in get_tree().get_nodes_in_group("depots"):
@@ -122,7 +123,7 @@ func deploy_sites(unit: Node3D) -> Array[Vector3]:
 	return sites
 ## The spacing rule in words, for every notice and status line that names it.
 func spacing_reason() -> String:
-	return "at least %.0f m from every other friendly Depot" % depot_rules().min_depot_spacing
+	return "at least %.0f m from every other friendly Depot, so the ranges don't overlap" % depot_rules().min_depot_spacing()
 ## The notice for a Depot site that fails on spacing, or "" when spacing is not the problem.
 func spacing_notice(point: Vector3, team := "player", ignore: Node = null) -> String:
 	return "" if depot_spacing_ok(point,team,ignore) else "A new Depot must stand %s." % spacing_reason()

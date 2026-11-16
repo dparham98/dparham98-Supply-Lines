@@ -21,7 +21,7 @@ func click_at(point: Vector2) -> void:
 	var priced: SupplyRules = load("res://assets/economy/supply_rules.tres")
 	priced.generator_energy_cost = 100; priced.generator_iron_cost = 20
 	# These checks place Depots close together; spacing has its own test (depot_spacing_test.gd).
-	load("res://assets/economy/depot_rules.tres").min_depot_spacing = 0.0
+	load("res://assets/economy/depot_rules.tres").separate_ranges = false
 	event = InputEventMouseButton.new()
 	event.position = point
 	event.button_index = MOUSE_BUTTON_LEFT
