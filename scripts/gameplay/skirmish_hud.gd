@@ -252,7 +252,8 @@ func context_depot(node: Node3D) -> Node3D:
 		if best == null or depot.global_position.distance_to(node.global_position) < best.global_position.distance_to(node.global_position): best = depot
 	return best
 func update_depot_panels() -> void:
-	var depot := context_depot(shown)
+	# The shown object may have been destroyed since update_contents last ran.
+	var depot := context_depot(shown if is_instance_valid(shown) else null)
 	depot_panel.visible = depot != null
 	storage_panel.visible = depot != null
 	# The alert feed sits under the storage panel while it shows.
