@@ -52,6 +52,18 @@ The four forest overlays (pine, broadleaf, mixed and sparse) replace the old con
 
 Tile size, forest scale, feature share and tint were chosen by eye against renders. Water and mountain-foot borders keep the blocky steps of the map.
 
+## Water and shore
+
+Water is drawn by `assets/shaders/terrain_surface.gdshader` from a shoreline, not from the cells' square edges. Gameplay is unchanged: Water cells are exactly where `terrain_cells.bin` says, and the drawn shore stays within about a metre of their edge.
+
+- **Shore map:** the green channel of each map's `ground_blend.png` holds every cell's distance from the border between water and everything else, blurred to round off the steps. `scripts/tools/build_ground_blend_map.gd` writes it along with the grass and desert border, so the one rebuild after a map change covers both.
+- **Shading:** ground turns to wet sand on a strip beside the water (`bank_color`, `bank_metres`). The water is clear over the bed in the shallows and deepens to `water_deep` over `water_depth_metres`. Two layers of ripples cross it, its edge laps in and out, and a broken foam line follows the edge (`foam_strength`, `ripple_strength`, `shore_wander`).
+- **Dressing:** the `reed_scenes`, `shore_rock_scenes` and `lily_scenes` slots on a terrain scene are scattered by Rebuild terrain scenery into `Landmarks/Shore`. Reeds and rocks stand in the first one or two Water cells out from land and lily pads two to five cells out, all in drifts. Only Water cells are dressed, so nothing stands where units walk or buildings go. The balanced map has the slots filled; the original map leaves them empty.
+- **Lily pads:** `Blender/Terrain/build/build_lily_pads.py` (plain Python) writes `assets/models/terrain/kit/lily_pads_01.obj` and `_02.obj`.
+- **Limits:** water is still flat and level with the ground. Where water meets mountain, ore or coal cells the edge is still the cells' own. `tests/water_runtime_check.gd` is the rendered check.
+
+When the map layout changes, run `build_ground_blend_map.gd` for that map and then Rebuild terrain scenery, as before; nothing here is placed by hand.
+
 ## Painted forest tiles (05 to 09)
 
 The balanced map mixes five more forest patches in with the four above. They carry their colours on the vertices and use `assets/materials/terrain/forest_tile_painted.tres`, with no texture. Each is about 12,000 triangles and up to 3.7 m tall, against 700 triangles and 3.1 m for the first four. The original map still uses only the first four.

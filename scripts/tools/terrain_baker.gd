@@ -63,8 +63,9 @@ const DEFAULT_CELLS := "res://assets/maps/terrain_cells.bin"
 ## With mountain_mesh, that sculpted mesh replaces the scattered mountain_scene props.
 ## With landscape, its region gets the sculpted ground, water and scenery of docs/LANDSCAPE_LOOKDEV.md.
 ## cells_path is the map baked. With coal_scene, every Coal cell gets lumps of it. With forest_chunk above zero,
-## the forest_tiles batches are split into squares that many metres across.
-func build(tree_scene: PackedScene, mountain_scene: PackedScene, ore_scene: PackedScene, seed_: int = 2817, forest_tiles: Array = [], mountain_mesh: Mesh = null, landscape: LandscapeSettings = null, cells_path: String = DEFAULT_CELLS, coal_scene: PackedScene = null, forest_chunk: int = 0) -> Node3D:
+## the forest_tiles batches are split into squares that many metres across. shore holds the scenes that dress the
+## water's edge, as arrays under "reeds", "rocks" and "lilies"; empty leaves the shore bare.
+func build(tree_scene: PackedScene, mountain_scene: PackedScene, ore_scene: PackedScene, seed_: int = 2817, forest_tiles: Array = [], mountain_mesh: Mesh = null, landscape: LandscapeSettings = null, cells_path: String = DEFAULT_CELLS, coal_scene: PackedScene = null, forest_chunk: int = 0, shore: Dictionary = {}) -> Node3D:
 	var cells := FileAccess.get_file_as_bytes(cells_path)
 	assert(cells.size() == 250000)
 	var sculpted = load("res://scripts/tools/landscape_baker.gd").new() if landscape != null else null
@@ -173,5 +174,79 @@ func build(tree_scene: PackedScene, mountain_scene: PackedScene, ore_scene: Pack
 				lump_colors.append(Color(shade, shade, shade))
 			at = cells.find(6, at+1)
 		_scatter(root, "CoalDeposits", coal_scene, lumps, lump_colors)
+	_shore(root, cells, seed_+3, shore, sculpted, forest_chunk)
 	if sculpted != null: sculpted.add_to(root, cells, landscape, self)
 	return root
+
+# Reeds and rocks in the first water cells out from land, lily pads a little further, all in drifts rather than
+# evenly. Only Water cells are dressed, which nothing walks on or builds on. From its own generator, so nothing
+# else moves on a map that gains a shore.
+func _shore(root: Node3D, cells: PackedByteArray, seed_: int, shore: Dictionary, sculpted, chunk: int) -> void:
+	var reeds: Array = shore.get("reeds", [])
+	var stones: Array = shore.get("rocks", [])
+	var lilies: Array = shore.get("lilies", [])
+	if reeds.is_empty() and stones.is_empty() and lilies.is_empty(): return
+	# Cells out from the nearest land, up to 6.
+	var out := PackedByteArray()
+	out.resize(250000)
+	var edge: Array[int] = []
+	for i in range(250000):
+		out[i] = 0 if cells[i] != 1 else 255
+		if cells[i] != 1: continue
+		var x := i%500
+		var z := i/500
+		if (x > 0 and cells[i-1] != 1) or (x < 499 and cells[i+1] != 1) or (z > 0 and cells[i-500] != 1) or (z < 499 and cells[i+500] != 1):
+			out[i] = 1
+			edge.append(i)
+	var head := 0
+	while head < edge.size():
+		var i := edge[head]; head += 1
+		if out[i] >= 6: continue
+		for j in [i-1,i+1,i-500,i+500]:
+			if j < 0 or j >= 250000 or absi(j%500-i%500) > 1 or out[j] != 255: continue
+			out[j] = out[i]+1
+			edge.append(j)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_
+	var drifts := FastNoiseLite.new()
+	drifts.seed = seed_
+	drifts.frequency = 0.09
+	var placed := {}
+	for z in range(500):
+		for x in range(500):
+			var d := int(out[z*500+x])
+			if d == 0 or d > 6: continue
+			if sculpted != null and sculpted.covers(x, z): continue
+			var reed_drift := drifts.get_noise_2d(x, z)
+			var lily_drift := drifts.get_noise_2d(x*1.7+300.0, z*1.7-120.0)
+			var centre := Vector3(x+0.5-250, 0, z+0.5-250)
+			if not reeds.is_empty() and d <= 2 and reed_drift > 0.02:
+				for j in range(2 if d == 1 else 1):
+					if rng.randf() > 0.75: continue
+					var basis := Basis(Vector3.UP, rng.randf_range(0, TAU)).scaled(Vector3.ONE*rng.randf_range(0.75, 1.25)*(1.0 if d == 1 else 0.8))
+					_shore_place(placed, reeds[rng.randi_range(0, reeds.size()-1)], Transform3D(basis, centre+Vector3(rng.randf_range(-0.45, 0.45), -0.03, rng.randf_range(-0.45, 0.45))), Color.WHITE*rng.randf_range(0.8, 1.1), chunk)
+			if not stones.is_empty() and d == 1 and rng.randf() < 0.07:
+				var basis := Basis(Vector3.UP, rng.randf_range(0, TAU)).scaled(Vector3.ONE*rng.randf_range(0.45, 1.0))
+				_shore_place(placed, stones[rng.randi_range(0, stones.size()-1)], Transform3D(basis, centre+Vector3(rng.randf_range(-0.3, 0.3), -0.08, rng.randf_range(-0.3, 0.3))), Color.WHITE*rng.randf_range(0.8, 1.1), chunk)
+			if not lilies.is_empty() and d >= 2 and d <= 5 and lily_drift > 0.22 and rng.randf() < 0.3:
+				var basis := Basis(Vector3.UP, rng.randf_range(0, TAU)).scaled(Vector3.ONE*rng.randf_range(0.9, 1.5))
+				_shore_place(placed, lilies[rng.randi_range(0, lilies.size()-1)], Transform3D(basis, centre+Vector3(rng.randf_range(-0.4, 0.4), 0, rng.randf_range(-0.4, 0.4))), Color.WHITE*rng.randf_range(0.85, 1.1), chunk)
+	if placed.is_empty(): return
+	var group := Node3D.new()
+	group.name = "Shore"
+	root.add_child(group)
+	group.owner = root
+	for scene in placed:
+		var squares: Array = placed[scene].keys()
+		squares.sort()
+		for square in squares:
+			var transforms: Array[Transform3D] = placed[scene][square][0]
+			var colors: Array[Color] = placed[scene][square][1]
+			_batches(root, group, scene, transforms, colors, "_%s_%d_%d" % [scene.resource_path.get_file().get_basename(),square.x,square.y])
+
+func _shore_place(placed: Dictionary, scene: PackedScene, transform: Transform3D, tint: Color, chunk: int) -> void:
+	var square := Vector2i.ZERO if chunk <= 0 else Vector2i(floori((transform.origin.x+250.0)/chunk),floori((transform.origin.z+250.0)/chunk))
+	if not placed.has(scene): placed[scene] = {}
+	if not placed[scene].has(square): placed[scene][square] = [[] as Array[Transform3D],[] as Array[Color]]
+	placed[scene][square][0].append(transform)
+	placed[scene][square][1].append(tint)
