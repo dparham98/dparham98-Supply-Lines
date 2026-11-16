@@ -127,25 +127,43 @@ func run() -> void:
 	for generator in get_nodes_in_group("energy_generators"): still(generator)
 
 	# ---- 2. The nearest drop-off each trip, unless the player chose one.
+	# The Depot starts with iron of its own (60 on this map since economy step 5), so wait for a delivery.
+	var start_iron: int = depot.iron
 	worker.command_gather(mine)
-	if not check(step([worker],90.0,func(): return depot.iron >= 10),"First iron never reached the Depot: '%s'" % worker.state): return
-	if not check(worker.return_depot == depot and not worker.return_explicit,"The first load should go to the only Depot, unpinned"): return
-	var beside := site(&"depot",mine.global_position,11.0)
-	if not check(beside != Vector3.INF and beside.distance_to(mine.global_position) < depot.global_position.distance_to(mine.global_position)-5.0,"No Depot site beside the mine"): return
+	if not check(step([worker],90.0,func(): return depot.iron >= start_iron+10),"First iron never reached the Depot: '%s'" % worker.state): return
+	if not check(worker.return_depot == depot and not worker.return_explicit,"The first load should go to the only Depot, unpinned: drop-off %s, pinned %s" % [worker.return_depot,worker.return_explicit]): return
+	# Mines now sit inside their Depot's 17.5 m range (docs/DEPOT_RANGE.md), so no Depot can stand nearer to a
+	# worker at the mine than its own. The switch is checked with a wood stand 45 m out instead: the worker first
+	# carries its wood all the way back, then a Depot founded beside the stand takes the next loads. The Depot is
+	# founded directly: this checks delivery, not Depot spacing.
+	var out: Vector3 = (mine.global_position-depot.global_position)*Vector3(1,0,1)
+	var stand_point := site(&"generator",depot.global_position+out.normalized()*45.0,0.0)
+	if not check(stand_point != Vector3.INF,"No open ground for a wood stand"): return
+	var stand: Node3D = load("res://scenes/gameplay/wood_site.tscn").instantiate()
+	stand.position = stand_point
+	stand.amount = 1000
+	game.get_node("Entities/Resources").add_child(stand)
+	await process_frame
+	if not check(is_instance_valid(stand) and not stand.is_queued_for_deletion(),"The wood stand was refused"): return
+	var start_wood: int = depot.wood
+	worker.command_gather(stand)
+	if not check(step([worker],150.0,func(): return depot.wood >= start_wood+10),"The first wood never reached the Depot: '%s'" % worker.state): return
+	var beside := site(&"depot",stand.global_position,8.0)
+	if not check(beside != Vector3.INF and beside.distance_to(stand.global_position) < depot.global_position.distance_to(stand.global_position)-20.0,"No Depot site beside the wood stand"): return
 	var founded: Array = await found(beside,0)
 	var near_depot: Node3D = founded[0]
-	if not check(is_instance_valid(near_depot) and near_depot.iron == 0,"Second Depot not founded"): return
-	var far_iron: int = depot.iron
-	if not check(step([worker],90.0,func(): return near_depot.iron >= 20),"The worker kept its old drop-off: near Depot %d iron, far Depot %d (state '%s')" % [near_depot.iron,depot.iron,worker.state]): return
-	if not check(depot.iron <= far_iron+worker.carry_capacity,"At most the load already on its way may still go to the far Depot: %d more" % (depot.iron-far_iron)): return
+	if not check(is_instance_valid(near_depot) and near_depot.wood == 0,"Second Depot not founded"): return
+	var far_wood: int = depot.wood
+	if not check(step([worker],150.0,func(): return near_depot.wood >= 20),"The worker kept its old drop-off: near Depot %d wood, far Depot %d (state '%s')" % [near_depot.wood,depot.wood,worker.state]): return
+	if not check(depot.wood <= far_wood+worker.carry_capacity,"At most the load already on its way may still go to the far Depot: %d more" % (depot.wood-far_wood)): return
 	if not check(worker.return_depot == near_depot and not worker.return_explicit,"The nearer Depot should now be the drop-off, still unpinned"): return
 	# A right-click on a Depot pins it: later trips go there although another is nearer.
 	worker.command_return(depot)
-	worker.command_gather(mine)
-	far_iron = depot.iron
-	var near_iron: int = near_depot.iron
-	if not check(step([worker],120.0,func(): return depot.iron >= far_iron+20),"A pinned drop-off was not kept: far Depot %d more, near Depot %d more" % [depot.iron-far_iron,near_depot.iron-near_iron]): return
-	if not check(near_depot.iron <= near_iron+worker.carry_capacity and worker.return_explicit and worker.return_depot == depot,"Pinned deliveries leaked to the nearer Depot"): return
+	worker.command_gather(stand)
+	far_wood = depot.wood
+	var near_wood: int = near_depot.wood
+	if not check(step([worker],200.0,func(): return depot.wood >= far_wood+20),"A pinned drop-off was not kept: far Depot %d more, near Depot %d more" % [depot.wood-far_wood,near_depot.wood-near_wood]): return
+	if not check(near_depot.wood <= near_wood+worker.carry_capacity and worker.return_explicit and worker.return_depot == depot,"Pinned deliveries leaked to the nearer Depot"): return
 	worker.command_move(worker.global_position)
 
 	# ---- 3. Unload at a Depot also empties loose cargo.
@@ -164,11 +182,11 @@ func run() -> void:
 	if not check(truck.state.contains("1 crate") and truck.state.contains("55 loose"),"State should say what was unloaded: '%s'" % truck.state): return
 	# Only what fits goes in; the rest stays aboard. A right-click with loose cargo alone unloads.
 	near_depot.storage_capacity = near_depot.stockpile.total()+30
-	near_iron = near_depot.iron
+	var near_iron: int = near_depot.iron
 	truck.stockpile.deposit(&"iron",50)
 	truck.command_return(near_depot)
 	if not check(truck.order == "unload","Right-clicking a Depot with loose cargo aboard should unload, not load: %s" % truck.order): return
-	if not check(step([truck],60.0,func(): return truck.order == "idle"),"Partial unload never finished: '%s'" % truck.state): return
+	if not check(step([truck],120.0,func(): return truck.order == "idle"),"Partial unload never finished: '%s'" % truck.state): return
 	if not check(near_depot.iron == near_iron+30 and truck.stockpile.amount(&"iron") == 20 and truck.state.contains("20 loose retained"),"30 of 50 should fit and 20 stay aboard: Depot +%d, truck %d, '%s'" % [near_depot.iron-near_iron,truck.stockpile.amount(&"iron"),truck.state]): return
 	near_depot.storage_capacity = 2000
 	# The use it is for: a truck deployed beside the mine takes a worker's loads, then carries them home.
