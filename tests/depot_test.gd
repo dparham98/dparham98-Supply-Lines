@@ -6,11 +6,14 @@ func _initialize() -> void:
 	normal_economy_rules.testing_starting_iron = -1
 	call_deferred("run")
 func run() -> void:
+	# A mechanics check on a map laid out for the old 35 m Depot range (docs/DEPOT_RANGE.md).
+	var old_range: DepotRules = load("res://assets/economy/depot_rules.tres")
+	old_range.construction_radius = 35.0
 	var game = load("res://scenes/maps/resource_skirmish.tscn").instantiate()
 	root.add_child(game)
 	await process_frame
 	# These checks place Depots close together; spacing has its own test (depot_spacing_test.gd).
-	load("res://assets/economy/depot_rules.tres").min_depot_spacing = 0.0
+	load("res://assets/economy/depot_rules.tres").separate_ranges = false
 	game.set_process(false)
 	for unit in get_nodes_in_group("units"): unit.set_process(false)
 	for depot in get_nodes_in_group("depots"): depot.set_process(false)

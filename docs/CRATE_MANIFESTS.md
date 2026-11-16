@@ -41,7 +41,7 @@ All control is on the command card:
 
 - **Pause/Resume (R)** and **Focus Depot (F)**.
 - **Burn Wood (W), Burn Coal (C), Burn Either (E)**. The current choice is lit and the others are dark.
-- **Assign Depot (A)**. Click a friendly Depot that covers the Generator, on the map or minimap.
+- **No Assign Depot.** A Generator uses the friendly Depot whose range it stands in (`docs/DEPOT_RANGE.md`).
 
 The panel's Fuel left row gives the fuel in the Depot for the current setting and how long it burns. Barracks and Tank Factories still choose their Depot from a dropdown.
 

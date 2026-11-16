@@ -19,7 +19,7 @@ const PICK_RADIUS := 9.0
 ## How near a marker an order click must land to target it, in minimap pixels.
 const ORDER_PICK_RADIUS := 4.0
 ## Commands that only take a stop: a click away from every stop pans instead.
-const STOP_ONLY := ["pin","assign_depot"]
+const STOP_ONLY := ["pin"]
 func _gui_input(event: InputEvent) -> void:
 	if not event is InputEventMouseButton or not event.pressed: return
 	if event.button_index == MOUSE_BUTTON_RIGHT:

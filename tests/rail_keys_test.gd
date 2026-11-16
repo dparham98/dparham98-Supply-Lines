@@ -32,6 +32,9 @@ func free_end(piece: Node, index: int) -> Dictionary:
 	return {}
 func run() -> void:
 	root.size = Vector2i(1280,900)
+	# A mechanics check on a map laid out for the old 35 m Depot range (docs/DEPOT_RANGE.md).
+	var old_range: DepotRules = load("res://assets/economy/depot_rules.tres")
+	old_range.construction_radius = 35.0
 	game = load("res://scenes/maps/rail_exercise.tscn").instantiate()
 	root.add_child(game)
 	for frame in range(4): await process_frame
