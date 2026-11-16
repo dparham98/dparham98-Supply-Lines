@@ -1,0 +1,66 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/terrain/terrain_assets.gd" id="assets"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/tree.tscn" id="tree"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/mountain.tscn" id="mountain"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/ore_deposit.tscn" id="ore"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/coal_deposit.tscn" id="coal"]
+[ext_resource type="Material" path="res://assets/maps/lakes/terrain_surface.tres" id="surface"]
+[ext_resource type="Script" path="res://scripts/terrain/terrain_grid.gd" id="grid"]
+[ext_resource type="Resource" path="res://assets/economy/harvesting_rules.tres" id="harvesting"]
+[ext_resource type="ArrayMesh" path="res://assets/maps/lakes/mountains.res" id="mountains"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/forest_tile_01.tscn" id="forest_tile_1"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/forest_tile_02.tscn" id="forest_tile_2"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/forest_tile_03.tscn" id="forest_tile_3"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/forest_tile_04.tscn" id="forest_tile_4"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/forest_tile_05.tscn" id="forest_tile_5"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/forest_tile_06.tscn" id="forest_tile_6"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/forest_tile_07.tscn" id="forest_tile_7"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/forest_tile_08.tscn" id="forest_tile_8"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/forest_tile_09.tscn" id="forest_tile_9"]
+[ext_resource type="PackedScene" path="res://scenes/maps/lakes_terrain_landmarks.tscn" id="landmarks"]
+[ext_resource type="ArrayMesh" path="res://assets/maps/lakes/water_basin.res" id="water_basin"]
+[ext_resource type="ArrayMesh" path="res://assets/maps/lakes/water_surface.res" id="water_surface"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/reeds_01.tscn" id="reeds_01"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/reeds_02.tscn" id="reeds_02"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/shore_rock_01.tscn" id="shore_rock_01"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/shore_rock_02.tscn" id="shore_rock_02"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/lily_pads_01.tscn" id="lily_pads_01"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/kit/lily_pads_02.tscn" id="lily_pads_02"]
+
+[sub_resource type="PlaneMesh" id="ground_mesh"]
+size = Vector2(500, 500)
+
+[sub_resource type="BoxShape3D" id="ground_shape"]
+size = Vector3(500, 0.1, 500)
+
+[node name="Terrain" type="Node3D"]
+editor_description = "The Two Lakes map (docs/TWO_LAKES_MAP.md). Ground plays on assets/maps/lakes/terrain_cells.bin; Landmarks is its saved scenery. After the map data changes, press Rebuild terrain scenery here."
+script = ExtResource("assets")
+tree_scene = ExtResource("tree")
+mountain_scene = ExtResource("mountain")
+ore_scene = ExtResource("ore")
+forest_tile_scenes = Array[PackedScene]([ExtResource("forest_tile_1"), ExtResource("forest_tile_2"), ExtResource("forest_tile_3"), ExtResource("forest_tile_4"), ExtResource("forest_tile_5"), ExtResource("forest_tile_6"), ExtResource("forest_tile_7"), ExtResource("forest_tile_8"), ExtResource("forest_tile_9")])
+mountain_mesh = ExtResource("mountains")
+coal_scene = ExtResource("coal")
+reed_scenes = Array[PackedScene]([ExtResource("reeds_01"), ExtResource("reeds_02")])
+shore_rock_scenes = Array[PackedScene]([ExtResource("shore_rock_01"), ExtResource("shore_rock_02")])
+lily_scenes = Array[PackedScene]([ExtResource("lily_pads_01"), ExtResource("lily_pads_02")])
+water_basin_mesh = ExtResource("water_basin")
+water_surface_mesh = ExtResource("water_surface")
+forest_chunk_metres = 50
+landmarks_path = "res://scenes/maps/lakes_terrain_landmarks.tscn"
+
+[node name="Ground" type="MeshInstance3D" parent="." groups=["terrain_grid"]]
+material_override = ExtResource("surface")
+mesh = SubResource("ground_mesh")
+script = ExtResource("grid")
+cells_path = "res://assets/maps/lakes/terrain_cells.bin"
+harvesting_rules = ExtResource("harvesting")
+
+[node name="GroundCollision" type="StaticBody3D" parent="Ground"]
+
+[node name="GroundBounds" type="CollisionShape3D" parent="Ground/GroundCollision"]
+shape = SubResource("ground_shape")
+
+[node name="Landmarks" parent="." instance=ExtResource("landmarks")]
