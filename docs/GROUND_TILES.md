@@ -51,3 +51,19 @@ The four forest overlays (pine, broadleaf, mixed and sparse) replace the old con
 - `tests/ground_tiles_runtime_check.gd` (rendered): grass and desert show tile detail up close, open grass has no black spots, the noise has no seams, and saves close, play-zoom, whole-map, forest and water views.
 
 Tile size, forest scale, feature share and tint were chosen by eye against renders. Water and mountain-foot borders keep the blocky steps of the map.
+
+## Painted forest tiles (05 to 09)
+
+The balanced map mixes five more forest patches in with the four above. They carry their colours on the vertices and use `assets/materials/terrain/forest_tile_painted.tres`, with no texture. Each is about 12,000 triangles and up to 3.7 m tall, against 700 triangles and 3.1 m for the first four. The original map still uses only the first four.
+
+| Tile | What it is | Source |
+| --- | --- | --- |
+| 05 | Nine spruces over rocks and brush | Textured Hunyuan3D tile: stray flat sheets removed, fused into one skin, texture carried over as paint |
+| 06 | Ring of spruces round a hollow | Untextured Hunyuan3D tile: fused and reduced, painted by rule (straight thin walls are bark, the rest needles) |
+| 07 | Spruce over beech and birch | Scripted |
+| 08 | Beech and birch grove | Scripted |
+| 09 | Old spruces, a snag, a fallen trunk, boulders | Scripted |
+
+`Blender/Terrain/build/build_forest_tiles.py` makes all five. Scripted trees are simple painted shapes put through the same fusing and reducing as the generated tiles, which is what gives them the same cut. After a rebuild, run Rebuild terrain scenery on `scenes/maps/balanced_terrain.tscn`.
+
+Measured on 2026-11-15 at 1280 x 900 with `tests/balanced_map_runtime_check.gd`: the whole-map view went from 2.5 to 13.7 million triangles (135 to 68 frames per second); play-zoom views went from 1.3 to 1.8 million up to about 2.3 million. Hunyuan3D's community licence limits where and at what scale its output may be shipped; check it before tiles 05 and 06 go into a public release.
