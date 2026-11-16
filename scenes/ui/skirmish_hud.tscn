@@ -85,6 +85,8 @@ bg_color = Color(0.85,0.7,0.35,1)
 bg_color = Color(0.855,0.69,0.4,1)
 [sub_resource type="StyleBoxFlat" id="route_fill"]
 bg_color = Color(0.941,0.698,0.29,1)
+[sub_resource type="StyleBoxFlat" id="banking_fill"]
+bg_color = Color(0.818,0.771,0.652,1)
 [sub_resource type="StyleBoxFlat" id="hover_card"]
 content_margin_left = 8.0
 content_margin_top = 5.0
@@ -301,14 +303,6 @@ events = [SubResource("key_resource_coal")]
 action = &"command_make_crates"
 [sub_resource type="Shortcut" id="shortcut_command_make_crates"]
 events = [SubResource("key_command_make_crates")]
-[sub_resource type="InputEventAction" id="key_command_energy_ceiling"]
-action = &"command_energy_ceiling"
-[sub_resource type="Shortcut" id="shortcut_command_energy_ceiling"]
-events = [SubResource("key_command_energy_ceiling")]
-[sub_resource type="InputEventAction" id="key_command_coal_reserve"]
-action = &"command_coal_reserve"
-[sub_resource type="Shortcut" id="shortcut_command_coal_reserve"]
-events = [SubResource("key_command_coal_reserve")]
 [sub_resource type="InputEventAction" id="key_command_burn_either"]
 action = &"command_burn_either"
 [sub_resource type="Shortcut" id="shortcut_command_burn_either"]
@@ -1716,58 +1710,6 @@ horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
-[node name="EnergyCeiling" type="Button" parent="Bottom/Body/Row/Commands/Main"]
-theme_type_variation = &"CommandCard"
-tooltip_text = "Steps the energy ceiling: 300, 600, 1000, then none."
-shortcut = SubResource("shortcut_command_energy_ceiling")
-layout_mode = 0
-custom_minimum_size = Vector2(46,46)
-text = ""
-icon = ExtResource("card_generator_pause")
-expand_icon = true
-icon_alignment = 1
-metadata/detail = "Generators assigned to this Depot stop once it holds this much energy. Press to step through 300, 600, 1000, and no ceiling (full storage)."
-[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/EnergyCeiling"]
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -22.0
-offset_top = 2.0
-offset_right = -5.0
-offset_bottom = 16.0
-grow_horizontal = 0
-mouse_filter = 2
-horizontal_alignment = 2
-theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
-theme_override_font_sizes/font_size = 11
-text = "?"
-[node name="CoalReserve" type="Button" parent="Bottom/Body/Row/Commands/Main"]
-theme_type_variation = &"CommandCard"
-tooltip_text = "Steps the coal kept for vehicles: 0, 30, 60, 120."
-shortcut = SubResource("shortcut_command_coal_reserve")
-layout_mode = 0
-custom_minimum_size = Vector2(46,46)
-text = ""
-icon = ExtResource("card_auto_refuel_on")
-expand_icon = true
-icon_alignment = 1
-metadata/detail = "Generators assigned to this Depot never burn its coal below this, so vehicles can refuel. Press to step through 0, 30, 60 and 120."
-[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/CoalReserve"]
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -22.0
-offset_top = 2.0
-offset_right = -5.0
-offset_bottom = 16.0
-grow_horizontal = 0
-mouse_filter = 2
-horizontal_alignment = 2
-theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
-theme_override_font_sizes/font_size = 11
-text = "?"
 [node name="BurnWood" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
 tooltip_text = "1 wood makes 10 energy in 2 seconds."
@@ -2256,6 +2198,208 @@ visible = false
 mouse_filter = 2
 theme_override_styles/panel = SubResource("selection_box")
 
+[node name="DepotPanel" type="PanelContainer" parent="."]
+visible = false
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 300.0
+offset_bottom = 12.0
+theme = ExtResource("ui_theme")
+theme_override_styles/panel = SubResource("hover_card")
+[node name="Body" type="VBoxContainer" parent="DepotPanel"]
+layout_mode = 2
+theme_override_constants/separation = 3
+[node name="Title" type="Label" parent="DepotPanel/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95,0.7,0.3,1)
+theme_override_font_sizes/font_size = 12
+text = ""
+[node name="Banking" type="HBoxContainer" parent="DepotPanel/Body"]
+layout_mode = 2
+tooltip_text = "How fast this Depot's Generators are banking energy now, against the most they could with every one running on its faster fuel."
+[node name="Label" type="Label" parent="DepotPanel/Body/Banking"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72,0.69,0.59,1)
+theme_override_font_sizes/font_size = 12
+size_flags_horizontal = 3
+text = "Energy banking"
+[node name="Value" type="Label" parent="DepotPanel/Body/Banking"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 12
+text = ""
+[node name="Rate" type="ProgressBar" parent="DepotPanel/Body"]
+custom_minimum_size = Vector2(0,10)
+layout_mode = 2
+mouse_filter = 2
+show_percentage = false
+theme_override_styles/background = SubResource("bar_background")
+theme_override_styles/fill = SubResource("banking_fill")
+[node name="Note" type="Label" parent="DepotPanel/Body"]
+visible = false
+layout_mode = 2
+autowrap_mode = 3
+theme_override_colors/font_color = Color(0.72,0.69,0.59,1)
+theme_override_font_sizes/font_size = 11
+text = ""
+[node name="Ceiling" type="HBoxContainer" parent="DepotPanel/Body"]
+layout_mode = 2
+[node name="Label" type="Label" parent="DepotPanel/Body/Ceiling"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72,0.69,0.59,1)
+theme_override_font_sizes/font_size = 12
+size_flags_horizontal = 3
+text = "Energy ceiling"
+[node name="Value" type="Label" parent="DepotPanel/Body/Ceiling"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 12
+text = ""
+[node name="CeilingSlider" type="HSlider" parent="DepotPanel/Body"]
+layout_mode = 2
+focus_mode = 0
+max_value = 2000.0
+step = 50.0
+tooltip_text = "Generators banking here stop once the Depot holds this much energy. All the way right is no ceiling (full storage)."
+[node name="Coal" type="HBoxContainer" parent="DepotPanel/Body"]
+layout_mode = 2
+[node name="Label" type="Label" parent="DepotPanel/Body/Coal"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72,0.69,0.59,1)
+theme_override_font_sizes/font_size = 12
+size_flags_horizontal = 3
+text = "Coal kept for vehicles"
+[node name="Value" type="Label" parent="DepotPanel/Body/Coal"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 12
+text = ""
+[node name="CoalSlider" type="HSlider" parent="DepotPanel/Body"]
+layout_mode = 2
+focus_mode = 0
+max_value = 300.0
+step = 10.0
+tooltip_text = "Generators never burn this Depot's coal below this, so vehicles can refuel."
+[node name="StoragePanel" type="PanelContainer" parent="."]
+visible = false
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -312.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = 12.0
+grow_horizontal = 0
+mouse_filter = 2
+theme = ExtResource("ui_theme")
+theme_override_styles/panel = SubResource("hover_card")
+[node name="Storage" type="VBoxContainer" parent="StoragePanel"]
+layout_mode = 2
+theme_override_constants/separation = 3
+[node name="Head" type="HBoxContainer" parent="StoragePanel/Storage"]
+layout_mode = 2
+[node name="Label" type="Label" parent="StoragePanel/Storage/Head"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+theme_override_colors/font_color = Color(0.72,0.69,0.59,1)
+theme_override_font_sizes/font_size = 12
+[node name="Value" type="Label" parent="StoragePanel/Storage/Head"]
+layout_mode = 2
+text = ""
+theme_override_font_sizes/font_size = 12
+[node name="Track" type="PanelContainer" parent="StoragePanel/Storage"]
+custom_minimum_size = Vector2(0,12)
+layout_mode = 2
+theme_override_styles/panel = SubResource("bar_background")
+[node name="Segments" type="HBoxContainer" parent="StoragePanel/Storage/Track"]
+layout_mode = 2
+theme_override_constants/separation = 0
+[node name="Energy" type="ColorRect" parent="StoragePanel/Storage/Track/Segments"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+color = Color(0.818,0.771,0.652,1)
+[node name="Iron" type="ColorRect" parent="StoragePanel/Storage/Track/Segments"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+color = Color(0.604,0.655,0.678,1)
+[node name="Wood" type="ColorRect" parent="StoragePanel/Storage/Track/Segments"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+color = Color(0.435,0.682,0.353,1)
+[node name="Coal" type="ColorRect" parent="StoragePanel/Storage/Track/Segments"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+color = Color(0.788,0.541,0.29,1)
+[node name="Crates" type="ColorRect" parent="StoragePanel/Storage/Track/Segments"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+color = Color(0.56,0.4,0.22,1)
+[node name="Free" type="Control" parent="StoragePanel/Storage/Track/Segments"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+[node name="Legend" type="HFlowContainer" parent="StoragePanel/Storage"]
+layout_mode = 2
+theme_override_constants/h_separation = 10
+[node name="Energy" type="HBoxContainer" parent="StoragePanel/Storage/Legend"]
+layout_mode = 2
+theme_override_constants/separation = 4
+[node name="Swatch" type="ColorRect" parent="StoragePanel/Storage/Legend/Energy"]
+custom_minimum_size = Vector2(8,8)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.818,0.771,0.652,1)
+[node name="Amount" type="Label" parent="StoragePanel/Storage/Legend/Energy"]
+layout_mode = 2
+text = "Energy 0"
+theme_override_font_sizes/font_size = 12
+[node name="Iron" type="HBoxContainer" parent="StoragePanel/Storage/Legend"]
+layout_mode = 2
+theme_override_constants/separation = 4
+[node name="Swatch" type="ColorRect" parent="StoragePanel/Storage/Legend/Iron"]
+custom_minimum_size = Vector2(8,8)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.604,0.655,0.678,1)
+[node name="Amount" type="Label" parent="StoragePanel/Storage/Legend/Iron"]
+layout_mode = 2
+text = "Iron 0"
+theme_override_font_sizes/font_size = 12
+[node name="Wood" type="HBoxContainer" parent="StoragePanel/Storage/Legend"]
+layout_mode = 2
+theme_override_constants/separation = 4
+[node name="Swatch" type="ColorRect" parent="StoragePanel/Storage/Legend/Wood"]
+custom_minimum_size = Vector2(8,8)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.435,0.682,0.353,1)
+[node name="Amount" type="Label" parent="StoragePanel/Storage/Legend/Wood"]
+layout_mode = 2
+text = "Wood 0"
+theme_override_font_sizes/font_size = 12
+[node name="Coal" type="HBoxContainer" parent="StoragePanel/Storage/Legend"]
+layout_mode = 2
+theme_override_constants/separation = 4
+[node name="Swatch" type="ColorRect" parent="StoragePanel/Storage/Legend/Coal"]
+custom_minimum_size = Vector2(8,8)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.788,0.541,0.29,1)
+[node name="Amount" type="Label" parent="StoragePanel/Storage/Legend/Coal"]
+layout_mode = 2
+text = "Coal 0"
+theme_override_font_sizes/font_size = 12
 [node name="Feed" type="VBoxContainer" parent="."]
 theme = ExtResource("ui_theme")
 anchors_preset = 1
