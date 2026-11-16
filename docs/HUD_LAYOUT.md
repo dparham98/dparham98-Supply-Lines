@@ -11,9 +11,7 @@ Phase 4 of the approved HUD plan, on branch `feature/hud-layout` from main `5762
   - Fuel, for vehicles that use fuel: green normally, amber below 25%, red when empty.
   - Cargo, for Infantry and Cargo vehicles.
   - Health, fuel and cargo bars share a visible track style. The text details are unchanged.
-- **Type strip** (`Bottom/Body/Selection`).
-  - With more than one unit selected, it shows one button per unit type, for example `Infantry ×2`. Click keeps only that type; Shift-click removes it.
-  - It uses eight authored buttons.
+- **Selection portraits** (`Info/Portraits`), with more than one unit selected: one portrait per unit, replacing the type strip, which was removed on 2026-11-15 (`docs/SELECTION_PORTRAITS.md`).
 - **Alert feed** (`Feed`, top right).
   - Shows up to four positioned alerts from the last 45 s, newest first. Click one to centre the camera there.
   - Alerts come from `skirmish.alert(text, position, key)`:
@@ -28,7 +26,7 @@ Phase 4 of the approved HUD plan, on branch `feature/hud-layout` from main `5762
 ## Not included
 
 - The details text is still the full list. Replacing more lines with bars or icons would change strings the existing tests check, so it needs its own pass.
-- There are no unit portraits or icons. The strip uses text labels.
+- Multiple selections show unit portraits (`docs/SELECTION_PORTRAITS.md`).
 - Alerts don't play sounds, and the minimap doesn't mark alert locations.
 
 ## Validation

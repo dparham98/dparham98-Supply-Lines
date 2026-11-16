@@ -1,6 +1,7 @@
 extends Node
 const Bounds = preload("res://scripts/units/selection_bounds.gd")
 var selecting := false
+const MODIFIER_KEYS := [KEY_SHIFT,KEY_CTRL,KEY_ALT,KEY_META]
 var start_pos := Vector2.ZERO
 var end_pos := Vector2.ZERO
 var drag_distance := 0.0
@@ -12,7 +13,9 @@ func _input(event: InputEvent) -> void:
 	if selecting and event is InputEventMouseMotion:
 		end_pos = event.position
 		drag_distance = maxf(drag_distance,start_pos.distance_to(end_pos))
-	if selecting and ((event is InputEventMouseButton and event.button_index != MOUSE_BUTTON_LEFT and event.pressed) or (event is InputEventKey and event.pressed)):
+	# Another button or a key cancels the box, but not Shift, Ctrl or Alt, nor a held key repeating: Shift
+	# held through a drag adds the boxed units to the selection (docs/SELECTION_PORTRAITS.md).
+	if selecting and ((event is InputEventMouseButton and event.button_index != MOUSE_BUTTON_LEFT and event.pressed) or (event is InputEventKey and event.pressed and not event.echo and not MODIFIER_KEYS.has(event.keycode))):
 		selecting = false
 	if selecting and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
 		if get_viewport().gui_get_hovered_control() != null: selecting = false

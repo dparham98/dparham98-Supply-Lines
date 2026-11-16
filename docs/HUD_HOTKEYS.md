@@ -32,7 +32,8 @@ Camera: arrows pan (Shift for fast), wheel zooms, **O** overview, **Space** focu
 ## Selection
 
 - **Shift-click** a unit to add it to the selection or remove it. Shift-click on empty ground keeps the selection. Shift-click on a building selects the building as usual.
-- **Shift-drag** adds the boxed units.
+- **Shift-drag** adds the boxed units. Shift may be pressed before or during the drag (`docs/SELECTION_PORTRAITS.md`).
+- **Portraits** of a multiple selection: click keeps one unit, Shift-click removes it, Ctrl-click keeps its type, Ctrl+Shift-click removes its type.
 - **Double-click** a unit to select every friendly unit of the same type that is on screen.
 - **Ctrl+1–9** saves the selected units as a group. **1–9** recalls it. Pressing the same number again within 0.4 s centres the camera on the group. Dead units drop out of groups, and recalling an empty group leaves the selection alone.
 
