@@ -11,7 +11,7 @@ These changes come from the playtest of main at 8ee9b55 (2026-11-15).
   - where an Iron Mine and a rail piece can be paid for;
   - which Depot a mine's repair is charged to.
 - **Deployed Cargo trucks** take half the Depot range (`depot_range_fraction` 0.5), so their range halved too, to 8.75 m.
-- **Depot spacing is unchanged at 70 m** (`docs/DEPOT_SPACING.md`). That number was chosen so two 35 m ranges never overlap. With 17.5 m ranges there is now a 35 m gap between neighbouring Depots' ranges. Spacing is also the guard against cheap free Infantry, so it was left alone until the new range has been played.
+- **Depot spacing now follows the range** (`docs/DEPOT_SPACING.md`): a new Depot's range may not overlap another friendly Depot's, so Depots stand at least twice the range apart, 35 m now. It was a fixed 70 m, which left a 35 m gap between ranges at 17.5 m; the playtest asked for only no overlap.
 
 ## Iron moved closer on the balanced map
 

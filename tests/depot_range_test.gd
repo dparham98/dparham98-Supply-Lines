@@ -57,7 +57,7 @@ func run() -> void:
 	if not check(ring.visible and is_equal_approx(ring.scale.x,17.5),"The Deploy preview should show the range ring"): return
 	if not check(ghost.get_node("Status").text.begins_with("DEPLOY" if valid else "BLOCKED"),"The Deploy preview status is wrong: "+ghost.get_node("Status").text): return
 	# Next to the existing Depot it is blocked by spacing, and says so.
-	if not check(not network.update_deploy_preview(depot.global_position+Vector3(30,0,0),truck) and ghost.get_node("Status").text.contains("70"),"A Deploy site too close should be blocked for spacing: "+ghost.get_node("Status").text): return
+	if not check(not network.update_deploy_preview(depot.global_position+Vector3(25,0,0),truck) and ghost.get_node("Status").text.contains("35 m") and ghost.get_node("Status").text.contains("overlap"),"A Deploy site too close should be blocked for spacing: "+ghost.get_node("Status").text): return
 	# Other placements hide the ring.
 	game.pending_unit_command = ""
 	network.update_preview(depot.global_position,true)
