@@ -1,6 +1,6 @@
 # Depot spacing
 
-A new Depot's range may not overlap the range of any other friendly Depot or unfinished Depot plan. It must stand at least twice the Depot range away, centre to centre: 35 m with the 17.5 m range. The ranges may touch.
+A new Depot's range may not overlap the range of any other friendly Depot or unfinished Depot plan. It must stand at least twice the Depot range away, centre to centre: 52.5 m with the 26.25 m range (`docs/DEPOT_RANGE.md`). The ranges may touch.
 
 This began as step 6 of the economy report (`docs/ECONOMY_REPORT.md`, PR #66), accepted on 2026-11-14, as a fixed 70 m. That was twice the old 35 m range. After the range was halved, the playtest on 2026-11-15 asked for the rule to be only that ranges don't overlap, so the spacing now follows the range.
 

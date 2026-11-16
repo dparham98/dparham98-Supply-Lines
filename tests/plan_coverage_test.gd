@@ -1,7 +1,7 @@
 extends SceneTree
 # Headless: a building plan whose centre is inside a Depot's range is paid from it, even when corners of its
 # footprint stick out of the range (docs/DEPOT_RANGE.md). Every corner used to have to be inside, so with the
-# 17.5 m range a Barracks beside a Depot waited for energy for ever. Outside every range the preview says so.
+# 26.25 m range a Barracks beside a Depot waited for energy for ever. Outside every range the preview says so.
 var game: Node3D
 var network: Node
 func _initialize() -> void: call_deferred("run")
@@ -35,7 +35,7 @@ func run() -> void:
 	network = game.get_node("DepotNetwork")
 	var depot: Node3D = game.depot
 	var radius: float = SupplySource.radius(depot)
-	if not check(is_equal_approx(radius,17.5),"The test expects the 17.5 m range"): return
+	if not check(is_equal_approx(radius,26.25),"The test expects the 26.25 m range"): return
 	depot.energy = 2000
 	# Centre inside, a corner outside: covered, and the plan gets its energy from the Depot.
 	var inside := site(&"barracks",depot.global_position,8,radius-0.5,radius)

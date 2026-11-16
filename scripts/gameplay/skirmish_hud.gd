@@ -267,6 +267,7 @@ func update_depot_panels() -> void:
 	if not is_equal_approx(depot_panel.offset_top,panel_top): depot_panel.offset_top = panel_top
 	var body = depot_panel.get_node("Body")
 	body.get_node("Title").text = "%s · ENERGY" % str(depot.name).to_upper()
+	body.get_node("Stock/Value").text = "%s / %s E" % [grouped(depot.energy),grouped(depot.storage_capacity)]
 	var ceiling: HSlider = body.get_node("CeilingSlider")
 	var coal: HSlider = body.get_node("CoalSlider")
 	ceiling.max_value = depot.storage_capacity

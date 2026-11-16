@@ -136,7 +136,7 @@ func deploy_sites(unit: Node3D) -> Array[Vector3]:
 	return sites
 ## The spacing rule in words, for every notice and status line that names it.
 func spacing_reason() -> String:
-	return "at least %.0f m from every other friendly Depot, so the ranges don't overlap" % depot_rules().min_depot_spacing()
+	return "at least %s m from every other friendly Depot, so the ranges don't overlap" % String.num(depot_rules().min_depot_spacing(),1)
 ## The notice for a Depot site that fails on spacing, or "" when spacing is not the problem.
 func spacing_notice(point: Vector3, team := "player", ignore: Node = null) -> String:
 	return "" if depot_spacing_ok(point,team,ignore) else "A new Depot must stand %s." % spacing_reason()

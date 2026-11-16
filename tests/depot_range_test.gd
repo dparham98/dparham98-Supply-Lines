@@ -15,11 +15,11 @@ func run() -> void:
 	var depot: Node3D = game.depot
 	var network = game.get_node("DepotNetwork")
 	var hud = game.get_node("Interface")
-	if not check(is_equal_approx(depot.rules.construction_radius,17.5) and is_equal_approx(SupplySource.radius(depot),17.5) and is_equal_approx(depot.get_node("Territory").scale.x,17.5),"The Depot range should be 17.5 m"): return
+	if not check(is_equal_approx(depot.rules.construction_radius,26.25) and is_equal_approx(SupplySource.radius(depot),26.25) and is_equal_approx(depot.get_node("Territory").scale.x,26.25),"The Depot range should be 26.25 m"): return
 	# No Assign Depot anywhere.
 	if not check(not InputMap.has_action("command_assign_depot") and not hud.card.has_node("AssignDepot"),"Assign Depot should be gone"): return
 	# A Generator with no Depot given takes the one whose range it stands in.
-	var second: Node3D = network.establish(depot.global_position+Vector3(26,0,0),0,0)
+	var second: Node3D = network.establish(depot.global_position+Vector3(30,0,0),0,0)
 	second.set_process(false)
 	var generator: Node3D = load("res://scenes/gameplay/energy_generator.tscn").instantiate()
 	generator.rules = network.supply_rules
@@ -54,10 +54,10 @@ func run() -> void:
 	var far: Vector3 = truck.global_position
 	var valid: bool = network.update_deploy_preview(far,truck)
 	var ring: Node3D = ghost.get_node("Range")
-	if not check(ring.visible and is_equal_approx(ring.scale.x,17.5),"The Deploy preview should show the range ring"): return
+	if not check(ring.visible and is_equal_approx(ring.scale.x,26.25),"The Deploy preview should show the range ring"): return
 	if not check(ghost.get_node("Status").text.begins_with("DEPLOY" if valid else "BLOCKED"),"The Deploy preview status is wrong: "+ghost.get_node("Status").text): return
 	# Next to the existing Depot it is blocked by spacing, and says so.
-	if not check(not network.update_deploy_preview(depot.global_position+Vector3(25,0,0),truck) and ghost.get_node("Status").text.contains("35 m") and ghost.get_node("Status").text.contains("overlap"),"A Deploy site too close should be blocked for spacing: "+ghost.get_node("Status").text): return
+	if not check(not network.update_deploy_preview(depot.global_position+Vector3(40,0,0),truck) and ghost.get_node("Status").text.contains("52.5 m") and ghost.get_node("Status").text.contains("overlap"),"A Deploy site too close should be blocked for spacing: "+ghost.get_node("Status").text): return
 	# Other placements hide the ring.
 	game.pending_unit_command = ""
 	network.update_preview(depot.global_position,true)

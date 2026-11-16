@@ -14,6 +14,7 @@ They do not show for units, for other sides' buildings, or for a building outsid
 
 ## Top left: energy
 
+- **Energy stock:** the energy the Depot holds now against its storage, for example "1,240 / 2,000 E" (playtest of 9eaed10).
 - **Energy banking:** a bar of how fast the Depot's Generators are banking energy now (`generation_rate`), measured against the most they could bank with every one running on its faster fuel (`peak_generation_rate`). The value reads "+5.0 E/s", "0 E/s" or "No Generators".
 - When nothing is banking, a note says why, from the first assigned Generator's state line (for example "Paused · Depot at its 600 E ceiling" or "Waiting · 60 coal kept for vehicles"). With no Generators it says to build one in the Depot's range.
 - **Energy ceiling** slider: 0 to the Depot's storage capacity, in 50 E steps. All the way right reads "No ceiling".

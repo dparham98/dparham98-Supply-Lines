@@ -2,6 +2,16 @@
 
 These changes come from the playtest of main at 8ee9b55 (2026-11-15).
 
+## Depot range at 75%
+
+The playtest of main at 9eaed10 (2026-11-15) set the range back up to 75% of the original 35 m: **26.25 m**, in `construction_radius` in `assets/economy/depot_rules.tres`. Everything below follows it:
+
+- Depot spacing is 52.5 m.
+- Deployed Cargo trucks get 13.125 m.
+- The iron fields moved in for 17.5 m stay inside the larger range.
+
+The rest of this section records the halving that came first.
+
 ## Depot range halved
 
 - `construction_radius` in `assets/economy/depot_rules.tres` is now 17.5 m, half the old 35 m. The user may shrink it further after more testing; it is the one value to change.

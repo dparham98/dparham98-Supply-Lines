@@ -1,6 +1,9 @@
 class_name HarvestingRules
 extends Resource
 @export_range(1,10000) var forest_wood_per_tile := 20
+## How far, in cells, a worker looks for the next Forest cell when the one it is cutting runs out
+## (docs/FOREST_HAND_ON.md). 0 stops it when the cell runs out, as before.
+@export_range(0,64) var forest_search_cells := 10
 @export_range(1,10000) var iron_per_tile := 250
 ## Iron under each cell of a mine site (docs/MINE_SITES.md). A site is 4 x 3 cells, so it holds twelve times this:
 ## 7,500, as much as one of the balanced map's ore fields.

@@ -354,6 +354,14 @@ func _route_to_standing(target: Node3D, radius: float, keep_off := Rect2i()) -> 
 	path.remove_at(0)
 	_route = path
 	return true
+## To the nearest cell touching a build site's footprint; failing that, anywhere in the old reach of its centre.
+func _route_to_site(keep_off: Rect2i) -> bool:
+	_retry = 0.5
+	var path: Array[Vector2i] = Approach.touch_path(self,keep_off)
+	if path.is_empty(): return _route_to_standing(order_target,_construct_reach(),keep_off)
+	path.remove_at(0)
+	_route = path
+	return true
 ## Toward the nearest open cell to the target; the order stops the walk once the target is in range.
 func _route_toward(target: Node3D) -> bool:
 	var center = ground.get_tile_at_position(target.global_position)
@@ -372,6 +380,7 @@ func _route_near(target: Node3D, radius: float) -> bool:
 	_retry = 1
 	return false
 const CoalApproach := preload("res://scripts/terrain/coal_approach.gd")
+const Approach := preload("res://scripts/units/interaction_approach.gd")
 ## Route cells looked ahead for a straight run, and half the width of the lane a run must keep clear.
 const AIM_LOOKAHEAD := 32
 const LANE_HALF_WIDTH := 0.35
@@ -484,7 +493,8 @@ func _turn_toward(point: Vector3, delta: float) -> float:
 func _turn_speed(error: float) -> float:
 	return clampf((PI*0.5-error)/(PI*0.5-deg_to_rad(20.0)),0.0,1.0)
 ## Whether the gather source still holds anything. A dug-out coal cell hands the worker on to the next cell of
-## its field (docs/BALANCED_MAP.md); wood and iron sources have no next cell, so they end as before.
+## its field (docs/BALANCED_MAP.md), and a cut-out Forest cell to the nearest Forest cell near it
+## (docs/FOREST_HAND_ON.md); iron sources have no next cell, so they end as before.
 func _source_left() -> bool:
 	# The tree that stood in the way of the coal is down (or gone): back to the coal.
 	if is_instance_valid(_dig_source) and (not is_instance_valid(source) or source.remaining <= 0):
@@ -526,7 +536,8 @@ func _gather(delta: float) -> void:
 	if _work_timer >= harvest_interval:
 		_work_timer = 0
 		cargo += source.extract(mini(harvest_amount,carry_capacity-cargo),team)
-		if cargo >= carry_capacity or source.remaining <= 0: _head_home()
+		# A cell that runs out hands the worker on to the next one (coal, wood) before it walks home part-loaded.
+		if cargo >= carry_capacity or not _source_left(): _head_home()
 ## Coal that no open path leads to (docs/BALANCED_MAP.md): the worker fells the tree in its way and then goes
 ## back to the coal. One tree at a time, so the way is worked out again as the forest changes. False when
 ## there is nothing to cut: the coal is not behind forest, or no way through exists.
@@ -802,12 +813,17 @@ func _construct(delta: float) -> void:
 	var keep_off: Rect2i = order_target.footprint()
 	var here = ground.get_tile_at_position(global_position)
 	var on_site: bool = here != null and keep_off.has_point(here)
-	if on_site or global_position.distance_to(order_target.global_position) > _construct_reach():
+	# A builder starts as soon as it touches the footprint, from whichever side it comes (docs/BUILDER_TOUCH.md).
+	# One that cannot reach the edge works from anywhere in the old reach, at the end of its walk.
+	var touching: bool = not on_site and Approach.distance_to_rect(ground,global_position,keep_off) <= Approach.TOUCH
+	var in_reach: bool = touching or (_route.is_empty() and _moving_to.x < 0 and global_position.distance_to(order_target.global_position) <= _construct_reach())
+	if on_site or not in_reach:
 		_work_timer = 0
 		if _retry <= 0:
 			state = "Stepping off the build site" if on_site else "To build site"
-			if not _route_to_standing(order_target,_construct_reach(),keep_off): state = "No room beside the build site" if on_site else "Build site unreachable"
+			if not _route_to_site(keep_off): state = "No room beside the build site" if on_site else "Build site unreachable"
 		return
+	if not _route.is_empty() or _moving_to.x >= 0: _stop_route()
 	_face(order_target.global_position)
 	if cargo > 0 and order_target.shortfall(cargo_kind) > 0:
 		cargo -= order_target.receive(cargo_kind,cargo)
