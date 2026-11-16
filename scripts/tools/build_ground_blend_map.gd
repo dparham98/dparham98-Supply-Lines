@@ -3,11 +3,14 @@ extends SceneTree
 # between desert and grass ground (forest floor counts as grass). The terrain shader reads it to draw that border
 # as a soft, irregular line instead of 1 m steps. The green channel holds the same for the shoreline: how far each
 # cell is from the border between water and everything else, from which the shader draws banks, shallows and foam.
+# The blue channel is how far inside the Water cells each one is, which keeps the drawn shore inside the water.
+# Both come from scripts/tools/shore_field.gd.
 # It is art only; gameplay keeps reading terrain_cells.bin.
 # Run after the map cells change: godot --headless --path . --script res://scripts/tools/build_ground_blend_map.gd
 # Another map passes its own files after "--": --cells=<cells .bin> --output=<blend .png>. Coal and ore count as
 # neither kind of ground, as before.
 const ToolArgs := preload("res://scripts/tools/tool_args.gd")
+const ShoreField := preload("res://scripts/tools/shore_field.gd")
 var CELLS := ToolArgs.value("cells",ToolArgs.DEFAULT_CELLS)
 var OUTPUT := ToolArgs.value("output","res://assets/textures/terrain/ground_blend.png")
 const SIZE := 500
@@ -19,8 +22,6 @@ const FOREST := 3
 const RANGE := 8.0
 const DIAGONAL := 1.41421356
 const SMOOTHING_PASSES := 3
-# The shoreline is rounded off further: lakes drawn cell by cell should not keep their corners.
-const SHORE_SMOOTHING_PASSES := 6
 const FAR := 100000.0
 
 func _initialize() -> void:
@@ -36,18 +37,13 @@ func _initialize() -> void:
 	# The raw field still holds the staircase; a small blur rounds it off without moving the border far.
 	for pass_index in range(SMOOTHING_PASSES): signed = smoothed(signed)
 	# Shore: positive into the water, negative onto land.
-	var to_water := distance_to(cells,[WATER])
-	var to_land := distance_to(cells,[0,2,3,4,5,6])
-	var shore := PackedFloat32Array()
-	shore.resize(SIZE*SIZE)
-	for i in range(SIZE*SIZE):
-		shore[i] = clampf(to_land[i]-to_water[i],-RANGE,RANGE)
-	for pass_index in range(SHORE_SMOOTHING_PASSES): shore = smoothed(shore)
+	var field := ShoreField.new(cells)
 	var bytes := PackedByteArray()
 	bytes.resize(SIZE*SIZE*3)
 	for i in range(SIZE*SIZE):
 		bytes[i*3] = int(round((signed[i]/RANGE*0.5+0.5)*255.0))
-		bytes[i*3+1] = int(round((shore[i]/RANGE*0.5+0.5)*255.0))
+		bytes[i*3+1] = int(round((field.smooth[i]/RANGE*0.5+0.5)*255.0))
+		bytes[i*3+2] = int(round((field.inside[i]-ShoreField.LAND)/RANGE*255.0))
 	Image.create_from_data(SIZE,SIZE,false,Image.FORMAT_RGB8,bytes).save_png(ProjectSettings.globalize_path(OUTPUT))
 	print("GROUND_BLEND_MAP_BUILT"); quit()
 

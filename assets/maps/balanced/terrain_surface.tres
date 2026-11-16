@@ -17,3 +17,4 @@ shader_parameter/tile_normal = ExtResource("5")
 shader_parameter/ground_blend = ExtResource("6")
 shader_parameter/ground_saturation = 0.82
 shader_parameter/ground_value = 0.9
+shader_parameter/water_sunk = 1.0
