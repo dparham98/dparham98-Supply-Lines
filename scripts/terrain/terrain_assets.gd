@@ -59,6 +59,11 @@ func _process(delta: float) -> void:
 @export var landscape: LandscapeSettings
 ## Lumps standing on Coal cells. Maps without coal leave this empty.
 @export var coal_scene: PackedScene
+## Plants and stones along the water's edge: reeds and rocks in the first water cells, lily pads a little further
+## out. Empty leaves the shore bare.
+@export var reed_scenes: Array[PackedScene] = []
+@export var shore_rock_scenes: Array[PackedScene] = []
+@export var lily_scenes: Array[PackedScene] = []
 ## When above zero, forest batches are split into squares this many metres across, so the renderer can skip the
 ## ones off screen. Maps with a lot of forest need it; 0 keeps one batch per patch scene.
 @export_range(0, 250, 1) var forest_chunk_metres: int = 0
@@ -74,7 +79,7 @@ func rebuild_scenery() -> void:
 	var baker = load("res://scripts/tools/terrain_baker.gd").new()
 	# The scenery is baked from the same cells the Ground node plays on.
 	var cells_path = $Ground.get("cells_path")
-	var output: Node3D = baker.build(tree_scene, mountain_scene, ore_scene, scatter_seed, forest_tile_scenes, mountain_mesh, landscape, cells_path if cells_path else baker.DEFAULT_CELLS, coal_scene, forest_chunk_metres)
+	var output: Node3D = baker.build(tree_scene, mountain_scene, ore_scene, scatter_seed, forest_tile_scenes, mountain_mesh, landscape, cells_path if cells_path else baker.DEFAULT_CELLS, coal_scene, forest_chunk_metres, {"reeds": reed_scenes, "rocks": shore_rock_scenes, "lilies": lily_scenes})
 	if output.get_child_count() == 0:
 		output.free()
 		return
