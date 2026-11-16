@@ -18,25 +18,19 @@ var energy: int:
 	set(value): stockpile.set_amount(&"energy",value)
 @export var initial_wood := 0
 @export var initial_coal := 0
-## Generators assigned here stop once the Depot holds this much energy. The player sets it on the Depot card.
+## Generators assigned here stop once the Depot holds this much energy. The player sets it with the
+## Depot panel's slider (docs/DEPOT_PANELS.md); at the Depot's storage capacity there is no ceiling.
 @export_range(0,10000) var energy_ceiling := 600
-## Generators assigned here leave this much coal for vehicle fuel. The player sets it on the Depot card.
+## Generators assigned here leave this much coal for vehicle fuel. The player sets it on the Depot panel.
 @export_range(0,10000) var coal_reserve := 60
-## The values the Depot card steps through, in order. The ceilings end at this Depot's own storage
-## capacity, which is no ceiling at all.
-const ENERGY_CEILINGS := [300,600,1000]
-const COAL_RESERVES := [0,30,60,120]
-func energy_ceilings() -> Array:
-	var steps: Array = ENERGY_CEILINGS.filter(func(value): return value < storage_capacity)
-	steps.append(storage_capacity)
-	return steps
-## Steps to the next preset, wrapping round; a value set in the editor goes to the first preset above it.
-func cycle_energy_ceiling() -> void: energy_ceiling = _next_preset(energy_ceilings(),energy_ceiling)
-func cycle_coal_reserve() -> void: coal_reserve = _next_preset(COAL_RESERVES,coal_reserve)
-static func _next_preset(presets: Array, value: int) -> int:
-	for preset in presets:
-		if preset > value: return preset
-	return presets[0]
+const ENERGY_CEILING_STEP := 50
+const COAL_RESERVE_STEP := 10
+const COAL_RESERVE_MAX := 300
+## The sliders' values, snapped to their steps and kept in range.
+func set_energy_ceiling(value: float) -> void:
+	energy_ceiling = clampi(snappedi(roundi(value),ENERGY_CEILING_STEP),0,storage_capacity)
+func set_coal_reserve(value: float) -> void:
+	coal_reserve = clampi(snappedi(roundi(value),COAL_RESERVE_STEP),0,COAL_RESERVE_MAX)
 var wood: int:
 	get: return stockpile.amount(&"wood")
 	set(value): stockpile.set_amount(&"wood",value)
@@ -260,8 +254,20 @@ func request_cargo() -> bool:
 	return true
 func generation_rate() -> float:
 	var total := 0.0
+	for generator in assigned_generators(): total += generator.output_rate()
+	return total
+func assigned_generators() -> Array[Node3D]:
+	var found: Array[Node3D] = []
 	for generator in get_tree().get_nodes_in_group("energy_generators"):
-		if generator.assigned_depot == self: total += generator.output_rate()
+		if generator.assigned_depot == self and generator.health > 0: found.append(generator)
+	return found
+## The most its Generators could bank at once, each burning its faster fuel: the Depot panel's bar is
+## measured against it.
+func peak_generation_rate() -> float:
+	var total := 0.0
+	for generator in assigned_generators():
+		var rules = generator.fuel_rules
+		total += maxf(float(rules.wood_output)/rules.wood_seconds,float(rules.coal_output)/rules.coal_seconds)
 	return total
 func update_capture(delta: float) -> void:
 	var teams: Array[String] = []

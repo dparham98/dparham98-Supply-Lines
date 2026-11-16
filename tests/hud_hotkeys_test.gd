@@ -85,7 +85,7 @@ func run() -> void:
 	select_only(null)
 	game.selected_building = game.depot; hud._process(0)
 	var depot_keys := visible_keys()
-	if not check(depot_keys == ["D","V","T","C","E","Q"] and depot_keys.size() == depot_keys.filter(func(k): return depot_keys.count(k) == 1).size(),"Depot card keys (Depot truck, Cargo, Train, Make crates, Energy ceiling, Coal kept; no Build) missing or duplicated %s" % [depot_keys]): return
+	if not check(depot_keys == ["D","V","T","C"] and depot_keys.size() == depot_keys.filter(func(k): return depot_keys.count(k) == 1).size(),"Depot card keys (Depot truck, Cargo, Train, Make crates; no Build) missing or duplicated %s" % [depot_keys]): return
 	# The other cards and pages, by every tile each can show at once.
 	var sets := {
 		"Production building": [hud.card,["PrintInfantry","ProduceScout","ProduceGrenadier","ProduceTank","ProduceMotorcycle","ProduceDrone","ProduceUbermech"]],

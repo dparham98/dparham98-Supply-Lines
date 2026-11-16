@@ -11,7 +11,7 @@ func _initialize() -> void:
 		"command_load": KEY_E, "command_unload": KEY_V, "command_trips": KEY_C,
 		# The Load and Make crates pages, and the Generator card's fuel tiles.
 		"resource_iron": KEY_A, "resource_energy": KEY_E, "resource_wood": KEY_W, "resource_coal": KEY_C,
-		"command_energy_ceiling": KEY_E, "command_coal_reserve": KEY_Q, "command_make_crates": KEY_C, "command_worksite": KEY_W, "command_burn_either": KEY_E,
+		"command_make_crates": KEY_C, "command_worksite": KEY_W, "command_burn_either": KEY_E,
 		# Build page tiles (the card is hidden there, so letters can repeat) and header actions.
 		"build_depot": KEY_D, "build_generator": KEY_G, "build_barracks": KEY_B, "build_tank_factory": KEY_T, "build_mine": KEY_A, "build_rail": KEY_R, "build_pin": KEY_P, "build_back": KEY_ESCAPE,
 		# B opens the build page; the header button is disabled there, so B then picks Barracks.

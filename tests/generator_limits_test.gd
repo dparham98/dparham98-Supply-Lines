@@ -1,6 +1,7 @@
 extends SceneTree
 # Headless: Generators cost 0 E / 40 I, coal makes 30 E over 3 s, and a Generator stops at its Depot's
-# energy ceiling and never burns the Depot's coal below its reserve, set on the Depot card (docs/GENERATOR_LIMITS.md).
+# energy ceiling and never burns the Depot's coal below its reserve, set on the Depot panel (docs/GENERATOR_LIMITS.md,
+# docs/DEPOT_PANELS.md).
 var game: Node3D
 func _initialize() -> void: call_deferred("run")
 func check(value: bool, message: String) -> bool:
@@ -48,8 +49,8 @@ func run() -> void:
 	if not check(depot.energy == 610 and depot.coal == 98,"It should fill to the ceiling and stop: %d E, %d coal" % [depot.energy,depot.coal]): return
 	if not check(generator.describe_state().contains("600 E ceiling"),"It should then say it is at the ceiling: %s" % generator.describe_state()): return
 	# A higher ceiling lets it run on.
-	depot.cycle_energy_ceiling()
-	if not check(depot.energy_ceiling == 1000,"The ceiling should step from 600 to 1000"): return
+	depot.set_energy_ceiling(1000)
+	if not check(depot.energy_ceiling == 1000,"The ceiling should be raised to 1000"): return
 	generator._process(3.0)
 	if not check(depot.energy == 640,"A raised ceiling should let it run on: %d E" % depot.energy): return
 	# The reserve: coal is never burnt below 60.
@@ -73,38 +74,69 @@ func run() -> void:
 	generator.reset_cycle()
 	depot.coal = 60
 	# A lower reserve frees coal at once.
-	depot.cycle_coal_reserve()
-	depot.cycle_coal_reserve()
-	depot.cycle_coal_reserve()
-	if not check(depot.coal_reserve == 30,"The reserve should step 60, 120, 0, 30: %d" % depot.coal_reserve): return
+	depot.set_coal_reserve(30)
+	if not check(depot.coal_reserve == 30,"The reserve should be lowered to 30: %d" % depot.coal_reserve): return
 	generator._process(3.0)
 	if not check(depot.coal == 59,"A lower reserve should free coal: %d" % depot.coal): return
-	# The presets wrap round, and the last ceiling is the Depot's own storage capacity (no ceiling).
-	for step in [depot.storage_capacity,300,600]:
-		depot.cycle_energy_ceiling()
-		if not check(depot.energy_ceiling == step,"The ceiling should step to %d, is %d" % [step,depot.energy_ceiling]): return
-	depot.storage_capacity = 600
-	depot.energy_ceiling = 300
-	depot.cycle_energy_ceiling()
-	if not check(depot.energy_ceiling == 600 and depot.energy_ceilings() == [300,600],"A 600-unit Depot's ceilings should be 300 and 600: %s" % [depot.energy_ceilings()]): return
-	depot.storage_capacity = 2000
-	# The Depot card: the buttons step the settings, with keys E and Q; other sides' Depots do not show them.
+	# The sliders' values snap to 50 E and 10 coal and stay in range; the ceiling tops out at the Depot's storage.
+	depot.set_energy_ceiling(1234)
+	if not check(depot.energy_ceiling == 1250,"The ceiling should snap to 50 E: %d" % depot.energy_ceiling): return
+	depot.set_energy_ceiling(99999)
+	if not check(depot.energy_ceiling == depot.storage_capacity,"The ceiling should stop at the storage capacity: %d" % depot.energy_ceiling): return
+	depot.set_coal_reserve(1000)
+	if not check(depot.coal_reserve == depot.COAL_RESERVE_MAX,"The coal kept should stop at %d: %d" % [depot.COAL_RESERVE_MAX,depot.coal_reserve]): return
+	depot.set_coal_reserve(-5)
+	if not check(depot.coal_reserve == 0,"The coal kept should not go below 0: %d" % depot.coal_reserve): return
+	depot.set_energy_ceiling(600)
+	depot.set_coal_reserve(30)
+	# The Depot panels: your Depot shows its energy panel top left and its storage top right. The sliders set
+	# the ceiling and the coal kept. The card has no setting tiles or keys any more.
 	var hud: CanvasLayer = game.get_node("Interface")
 	hud.set_process(false)
 	game.selected_building = depot
 	hud._process(0)
-	var ceiling_tile: Button = hud.card.get_node("EnergyCeiling")
-	var reserve_tile: Button = hud.card.get_node("CoalReserve")
-	if not check(ceiling_tile.visible and reserve_tile.visible and hud.hotkey_text(ceiling_tile) == "E" and hud.hotkey_text(reserve_tile) == "Q","The Depot card should show both settings with keys E and Q"): return
-	if not check(hud.context.get_node("Stats/V1").text == "600 E" and hud.context.get_node("Stats/V2").text == "30","The Depot card should show the settings: %s, %s" % [hud.context.get_node("Stats/V1").text,hud.context.get_node("Stats/V2").text]): return
-	ceiling_tile.pressed.emit()
-	reserve_tile.pressed.emit()
-	if not check(depot.energy_ceiling == 1000 and depot.coal_reserve == 60,"The buttons should step the settings: %d E, %d coal" % [depot.energy_ceiling,depot.coal_reserve]): return
+	var body: Control = hud.depot_panel.get_node("Body")
+	var ceiling_slider: HSlider = body.get_node("CeilingSlider")
+	var coal_slider: HSlider = body.get_node("CoalSlider")
+	if not check(hud.depot_panel.visible and hud.storage_panel.visible and not hud.info.get_node("Storage").visible,"Your Depot should show both panels, its storage moved out of the bottom panel"): return
+	if not check(not hud.card.has_node("EnergyCeiling") and not hud.card.has_node("CoalReserve") and not InputMap.has_action("command_energy_ceiling") and not InputMap.has_action("command_coal_reserve"),"The Depot card's setting tiles and keys should be gone"): return
+	if not check(body.get_node("Ceiling/Value").text == "600 E" and body.get_node("Coal/Value").text == "30" and ceiling_slider.value == 600 and coal_slider.value == 30,"The panel should show the settings: %s, %s" % [body.get_node("Ceiling/Value").text,body.get_node("Coal/Value").text]): return
+	if not check(ceiling_slider.max_value == depot.storage_capacity and ceiling_slider.focus_mode == Control.FOCUS_NONE,"The ceiling slider should run to the storage capacity and take no keyboard focus"): return
+	ceiling_slider.value = 1000
+	coal_slider.value = 60
+	if not check(depot.energy_ceiling == 1000 and depot.coal_reserve == 60,"The sliders should set the settings: %d E, %d coal" % [depot.energy_ceiling,depot.coal_reserve]): return
+	ceiling_slider.value = depot.storage_capacity
+	hud._process(0)
+	if not check(body.get_node("Ceiling/Value").text == "No ceiling","All the way right should read No ceiling: "+body.get_node("Ceiling/Value").text): return
+	depot.set_energy_ceiling(1000)
+	# Banking: the bar is the live rate against every Generator running on its faster fuel (here coal, 10 E/s).
+	depot.energy = 0
+	depot.coal = 100
+	generator.reset_cycle()
+	generator._process(0.5)
+	hud._process(0)
+	var bar: ProgressBar = body.get_node("Rate")
+	if not check(is_equal_approx(bar.value,depot.generation_rate()) and depot.generation_rate() > 0 and is_equal_approx(bar.max_value,10.0),"The banking bar should show the rate: %.1f of %.1f" % [bar.value,bar.max_value]): return
+	if not check(body.get_node("Banking/Value").text == "+%.1f E/s" % depot.generation_rate() and not body.get_node("Note").visible,"The banking value is wrong: "+body.get_node("Banking/Value").text): return
+	generator.enabled = false
+	hud._process(0)
+	if not check(body.get_node("Banking/Value").text == "0 E/s" and body.get_node("Note").visible and body.get_node("Note").text == "Paused by player","A stopped Generator should say why: "+body.get_node("Note").text): return
+	generator.enabled = true
+	# The storage panel's alert feed moves down under it.
+	if not check(hud.feed.offset_top > hud.storage_panel.position.y+hud.storage_panel.size.y,"The alert feed should sit under the storage panel"): return
+	# A Generator in the Depot's range shows its Depot's panels.
+	game.selected_building = generator
+	hud._process(0)
+	if not check(hud.depot_panel.visible and hud.panel_depot == depot and hud.storage_panel.get_node("Storage/Head/Label").text == "%s storage" % depot.name,"A Generator should show its Depot's panels"): return
+	# Another side's Depot shows neither; its storage stays in the bottom panel.
+	game.selected_building = depot
 	depot.team = "hostile"
 	hud._process(0)
-	if not check(not ceiling_tile.visible and not reserve_tile.visible and not hud.context.get_node("Stats").visible,"Another side's Depot should not show its settings"): return
+	if not check(not hud.depot_panel.visible and not hud.storage_panel.visible and hud.info.get_node("Storage").visible,"Another side's Depot should not show the panels"): return
 	depot.team = "player"
 	game.selected_building = null
+	hud._process(0)
+	if not check(not hud.depot_panel.visible and not hud.storage_panel.visible and hud.feed.offset_top == hud.FEED_TOP,"Nothing selected should hide the panels and put the feed back"): return
 	# Built at the real price: a Generator plan takes 40 iron and no energy.
 	var network = game.get_node("DepotNetwork")
 	var spec: Dictionary = network.plan_spec(&"generator")

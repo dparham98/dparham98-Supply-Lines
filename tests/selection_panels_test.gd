@@ -40,9 +40,11 @@ func run() -> void:
 	depot.stockpile.set_amount(&"coal",100)
 	select(null,depot)
 	if not check(info.get_node("Head/Icon").texture != null and "territory" in info.get_node("Head/Text/State").text,"Depot header wrong"): return
-	if not check(shown("Storage") and hud.info.get_node("Storage/Head/Label").text == "Loose storage" and hud.info.get_node("Storage/Head/Value").text == "%s / %s" % [hud.grouped(depot.stockpile.total()),hud.grouped(depot.stockpile.capacity)],"Depot storage header wrong"): return
-	var segments = hud.info.get_node("Storage/Track/Segments")
-	if not check(segments.get_node("Coal").visible and is_equal_approx(segments.get_node("Coal").size_flags_stretch_ratio,100) and not segments.get_node("Wood").visible and hud.info.get_node("Storage/Legend/Coal/Amount").text == "Coal 100","Storage segments or legend wrong"): return
+	# Your Depot's storage shows in the top-right panel (docs/DEPOT_PANELS.md).
+	var storage = hud.storage_panel.get_node("Storage")
+	if not check(not shown("Storage") and hud.storage_panel.visible and storage.get_node("Head/Label").text == "%s storage" % depot.name and storage.get_node("Head/Value").text == "%s / %s" % [hud.grouped(depot.stockpile.total()),hud.grouped(depot.stockpile.capacity)],"Depot storage header wrong"): return
+	var segments = storage.get_node("Track/Segments")
+	if not check(segments.get_node("Coal").visible and is_equal_approx(segments.get_node("Coal").size_flags_stretch_ratio,100) and not segments.get_node("Wood").visible and storage.get_node("Legend/Coal/Amount").text == "Coal 100","Storage segments or legend wrong"): return
 	if not check(not shown("Production"),"Production shown with an empty queue"): return
 	depot.energy = 1000; depot.iron = 1000
 	if not check(depot.request_cargo() and depot.request_cargo(),"Cargo production refused"): return

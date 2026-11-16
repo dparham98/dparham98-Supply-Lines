@@ -8,6 +8,13 @@ extends CanvasLayer
 @onready var bars = $Bottom/Body/Row/Info/Bars
 @onready var strip = $Bottom/Body/Header/Selection
 @onready var feed = $Feed
+## Top left: the energy banking rate and the Generator settings of the Depot in context. Top right: its
+## storage. Both show while your Depot, or a building in its range, is selected (docs/DEPOT_PANELS.md).
+@onready var depot_panel = $DepotPanel
+@onready var storage_panel = $StoragePanel
+var panel_depot: Node3D
+const FEED_TOP := 44.0
+const PANEL_GAP := 8.0
 @onready var name_label: Label = $Bottom/Body/Row/Info/Head/Text/Name
 @onready var context = $Bottom/Body/Row/Context
 @onready var manifest_panel = $Bottom/Body/Row/Context/Manifest
@@ -27,7 +34,6 @@ var _tip_since := 0.0
 ## Fixed command slots, row-major in the 4 × 3 grid. Commands that never share a card may share a slot.
 const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 4, "Return": 5, "DropMaterials": 6, "Build": 7,
 	"BurnWood": 4, "BurnCoal": 5, "BurnEither": 6, "MakeCrates": 3, "Worksite": 7,
-	"EnergyCeiling": 4, "CoalReserve": 5,
 	"Repair": 8, "Capture": 9, "DeployTruck": 10, "CancelPlan": 11,
 	"DeployCargo": 2, "Load": 4, "Unload": 5, "Trips": 6,
 	"PrintTruck": 0, "PrintCargo": 1, "PrintTrain": 2,
@@ -111,10 +117,10 @@ func _ready() -> void:
 			else: edit_manifest(pair[1],Input.is_key_pressed(KEY_SHIFT)))
 	load_tiles.get_node("Clear").pressed.connect(clear_manifest)
 	card.get_node("MakeCrates").pressed.connect(open_crate_page)
-	card.get_node("EnergyCeiling").pressed.connect(func():
-		if is_instance_valid(shown) and shown.is_in_group("depots"): shown.cycle_energy_ceiling(); game.notify("Generators stop at %d energy in %s." % [shown.energy_ceiling,shown.name]))
-	card.get_node("CoalReserve").pressed.connect(func():
-		if is_instance_valid(shown) and shown.is_in_group("depots"): shown.cycle_coal_reserve(); game.notify("Generators leave %d coal in %s for vehicles." % [shown.coal_reserve,shown.name]))
+	depot_panel.get_node("Body/CeilingSlider").value_changed.connect(func(value: float):
+		if is_instance_valid(panel_depot): panel_depot.set_energy_ceiling(value))
+	depot_panel.get_node("Body/CoalSlider").value_changed.connect(func(value: float):
+		if is_instance_valid(panel_depot): panel_depot.set_coal_reserve(value))
 	card.get_node("Worksite").pressed.connect(open_worksite)
 	for pair in [["BurnWood","wood"],["BurnCoal","coal"],["BurnEither","either"]]:
 		card.get_node(pair[0]).pressed.connect(func():
@@ -227,7 +233,64 @@ func _process(_delta: float) -> void:
 	place_tiles()
 	update_tip()
 	update_strip(units)
+	update_depot_panels()
 	update_feed()
+## The player's Depot whose panels show for the selected object: the Depot itself, the Depot a Generator or
+## production building uses, or else the nearest of your Depots whose range covers the selected building,
+## mine or plan. Units and other sides' buildings show none.
+func context_depot(node: Node3D) -> Node3D:
+	if not is_instance_valid(node): return null
+	if node.is_in_group("depots"): return node if node.team == "player" and node.health > 0 else null
+	if not (node.is_in_group("energy_generators") or node.is_in_group("production_buildings") or node.is_in_group("mines") or node.is_in_group("construction_plans")): return null
+	if not node.is_in_group("mines") and node.get("team") != null and node.team != "player": return null
+	var own = node.get("assigned_depot")
+	if is_instance_valid(own) and own.team == "player" and own.health > 0: return own
+	var best: Node3D = null
+	for depot in get_tree().get_nodes_in_group("depots"):
+		if depot.team != "player" or depot.health <= 0 or not SupplySource.covers(depot,node.global_position,"player"): continue
+		if best == null or depot.global_position.distance_to(node.global_position) < best.global_position.distance_to(node.global_position): best = depot
+	return best
+func update_depot_panels() -> void:
+	# The shown object may have been destroyed since update_contents last ran.
+	var depot := context_depot(shown if is_instance_valid(shown) else null)
+	depot_panel.visible = depot != null
+	storage_panel.visible = depot != null
+	# The alert feed sits under the storage panel while it shows.
+	var feed_top: float = storage_panel.position.y+storage_panel.size.y+PANEL_GAP if storage_panel.visible else FEED_TOP
+	if not is_equal_approx(feed.offset_top,feed_top): feed.offset_top = feed_top
+	if depot == null:
+		panel_depot = null
+		return
+	var playtest: Control = get_node_or_null("PlaytestPanel")
+	var panel_top: float = playtest.position.y+playtest.size.y+PANEL_GAP if playtest != null and playtest.visible else 12.0
+	if not is_equal_approx(depot_panel.offset_top,panel_top): depot_panel.offset_top = panel_top
+	var body = depot_panel.get_node("Body")
+	body.get_node("Title").text = "%s · ENERGY" % str(depot.name).to_upper()
+	var ceiling: HSlider = body.get_node("CeilingSlider")
+	var coal: HSlider = body.get_node("CoalSlider")
+	ceiling.max_value = depot.storage_capacity
+	coal.max_value = depot.COAL_RESERVE_MAX
+	# The sliders write straight to the Depot with the same steps, so following the Depot each frame never
+	# pulls back a drag, and shows changes made elsewhere.
+	panel_depot = depot
+	if ceiling.value != depot.energy_ceiling: ceiling.set_value_no_signal(depot.energy_ceiling)
+	if coal.value != depot.coal_reserve: coal.set_value_no_signal(depot.coal_reserve)
+	body.get_node("Ceiling/Value").text = "No ceiling" if depot.energy_ceiling >= depot.storage_capacity else "%s E" % grouped(depot.energy_ceiling)
+	body.get_node("Coal/Value").text = grouped(depot.coal_reserve)
+	var generators: Array[Node3D] = depot.assigned_generators()
+	var rate: float = depot.generation_rate()
+	var bar: ProgressBar = body.get_node("Rate")
+	bar.max_value = maxf(depot.peak_generation_rate(),0.001)
+	bar.value = rate
+	body.get_node("Banking/Value").text = "+%.1f E/s" % rate if rate > 0 else ("0 E/s" if not generators.is_empty() else "No Generators")
+	# Stopped: say why, from the first Generator that is not running.
+	var note := ""
+	if generators.is_empty(): note = "Build a Generator in this Depot's range to bank energy here."
+	elif rate <= 0: note = generators[0].describe_state()
+	var note_label: Label = body.get_node("Note")
+	note_label.visible = not note.is_empty()
+	note_label.text = note
+	show_storage("%s storage" % depot.name,depot.stockpile,storage_panel.get_node("Storage"))
 # Fuel and cargo bars under health. Fuel turns amber when low and red when empty.
 func update_bars(node: Node3D) -> void:
 	if node.fuel_active():
@@ -272,8 +335,8 @@ func grouped(value: int) -> String:
 		out += digits[i]
 	return ("-" if value < 0 else "")+out
 # One storage bar split by resource against capacity, with a legend of exact amounts.
-func show_storage(title: String, stockpile: ResourceStockpile) -> void:
-	var section = info.get_node("Storage")
+func show_storage(title: String, stockpile: ResourceStockpile, section: Control = null) -> void:
+	if section == null: section = info.get_node("Storage")
 	section.visible = true
 	section.get_node("Head/Label").text = title
 	section.get_node("Legend").visible = true
@@ -493,17 +556,14 @@ func update_contents() -> void:
 	if node.is_in_group("depots"):
 		commands.get_node("Title").text = "DEPOT · PRODUCTION"
 		state_label.text = "%s · territory %.0f · %+.1f E/s" % [team_label(node),node.rules.construction_radius,node.generation_rate()]
-		show_storage("Loose storage",node.stockpile)
+		# Your own Depot's storage shows in the top-right panel instead.
+		if node.team != "player": show_storage("Loose storage",node.stockpile)
 		if node.queue > 0:
 			var kind: String = node.pending[0] if not node.pending.is_empty() else ""
 			show_progress("Producing · "+DEPOT_PRODUCTS.get(kind,kind.capitalize()),"%d%%%s" % [roundi(node.progress/node.current_seconds()*100)," · %d more queued" % (node.queue-1) if node.queue > 1 else ""],node.progress/node.current_seconds())
 		info.get_node("Details").text = "Queue %d / %d%s" % [node.queue,node.queue_limit," · capture %d%%" % roundi(node.capture_progress/node.rules.capture_seconds*100) if node.capture_progress > 0 else ""]
 		if node.team == "player":
-			var ceiling: String = "none (full storage)" if node.energy_ceiling >= node.storage_capacity else "%d E" % node.energy_ceiling
-			set_stats([["Energy ceiling",ceiling],["Coal kept","%d" % node.coal_reserve]])
 			show_button("MakeCrates","Make crates")
-			show_button("EnergyCeiling","Generator energy ceiling: %s" % ceiling)
-			show_button("CoalReserve","Coal kept for vehicles: %d" % node.coal_reserve)
 			if node.can_cancel(): show_button("CancelPlan","Cancel production")
 			show_production("PrintTruck","Depot truck",node.rules.truck_energy_cost,node.rules.truck_iron_cost,node)
 			show_production("PrintCargo","Cargo vehicle",network.supply_rules.cargo_energy_cost,network.supply_rules.cargo_iron_cost,node)
@@ -534,7 +594,7 @@ func update_contents() -> void:
 		var source = node.assigned_depot
 		state_label.text = node.describe_state()
 		set_stats([["Output","%.1f E/s" % node.output_rate()],["Burning",str(node.cycle_kind).capitalize() if not node.cycle_kind.is_empty() else "Waiting"],["Cycle","%.1f / %.1fs" % [node.cycle_elapsed,node.cycle_seconds]],["Fuel left",node.fuel_left_text()]])
-		if is_instance_valid(source): show_storage("%s storage" % source.name,source.stockpile)
+		if is_instance_valid(source) and node.team != "player": show_storage("%s storage" % source.name,source.stockpile)
 		info.get_node("Details").text = "Assigned Depot: %s" % (source.name if is_instance_valid(source) else "none")
 		hint_text = "Burns fuel from the Depot whose range it stands in, and banks the energy there. Wood: 1 → %d E / %.1fs. Coal: 1 → %d E / %.1fs. Either uses wood first. Changes apply next cycle. It pauses at the Depot's energy ceiling or full storage, and leaves the Depot's coal reserve for vehicles." % [node.fuel_rules.wood_output,node.fuel_rules.wood_seconds,node.fuel_rules.coal_output,node.fuel_rules.coal_seconds]
 		if node.team == "player":
