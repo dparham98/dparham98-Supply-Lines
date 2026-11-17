@@ -280,6 +280,22 @@ func harvest_forest(cell: Vector2i, requested: int) -> int:
 	forest_reserves[cell] = forest_amount(cell)-taken
 	if forest_reserves[cell] == 0: clear_forest(cell)
 	return taken
+## The Forest cell to cut after `cell` runs out (docs/FOREST_HAND_ON.md): the nearest one with wood left within
+## harvesting_rules.forest_search_cells, or (-1,-1). Nearest to the cut cell first, so the worker keeps eating into
+## the edge it has opened; ties go to the worker's side.
+func next_forest_cell(cell: Vector2i, near: Vector3) -> Vector2i:
+	var reach: int = harvesting_rules.forest_search_cells
+	var best := Vector2i(-1,-1)
+	var best_distance := INF
+	for z in range(cell.y-reach,cell.y+reach+1):
+		for x in range(cell.x-reach,cell.x+reach+1):
+			var other := Vector2i(x,z)
+			if other == cell or forest_amount(other) <= 0: continue
+			var cells := cell.distance_squared_to(other)
+			if cells > reach*reach: continue
+			var d: float = cells+tile_to_world(other).distance_to(near)*0.001
+			if d < best_distance: best = other; best_distance = d
+	return best
 func forest_source(cell: Vector2i) -> Node3D:
 	if forest_amount(cell) <= 0: return null
 	if forest_sources.has(cell): return forest_sources[cell]

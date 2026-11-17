@@ -17,7 +17,7 @@ The same Blender file supplies the truck and the crate.
 
 - **Truck:** `assets/models/units/depot_truck.glb` is frame 1 of the file, without the parts still scaled to nothing. `scenes/models/depot_truck_model.tscn` places it at world scale 0.6, about 15.3 m by 3.1 m, centred on the unit. All eight wheels roll and the front two steer through `vehicle_rig.gd`. Its team marker, which shows when it is selected, is sized to that length. Units still path as one tile, so this long model can overlap things when turning.
 - **Crate:** `assets/models/props/supply_crate.glb` is one of the authored crates, used by `scenes/gameplay/supply_crate.tscn`. It is at scale 0.4, not 0.6, because each crate has to fit its one tile. The coloured resource band sits on its middle strap.
-- **Deploy:** `DepotNetwork.deploy_truck` rounds the truck's heading to the nearest 90 degrees and turns the Depot's `Visuals` to match. `scripts/components/depot_rig.gd` moves the closed truck from where it stood onto the site in 1.2 s (`line_up_seconds`), then plays `deploy`, which takes 10 s. Footprints are square, so the heading does not change which tiles are used. Depots built by infantry or authored on maps skip the fold-out and face east as before.
+- **Deploy:** a deployed Depot faces east, like the map's Depots and those Infantry build, whichever way the truck faces (`DepotNetwork.deploy_yaw`). It used to take the truck's heading rounded to 90 degrees; the playtest of 2026-11-17 asked for east. `scripts/components/depot_rig.gd` moves the closed truck from where it stood onto the site in 1.2 s (`line_up_seconds`), then plays `deploy`, which takes 10 s. Footprints are square, so the heading does not change which tiles are used. Depots built by infantry or authored on maps skip the fold-out and face east as before.
 - **The Depot works from the start of the fold-out.** Deploying was already instant, and that has not changed.
 - Parts at zero scale are left out of selection (`scripts/units/selection_bounds.gd`).
 
@@ -32,7 +32,7 @@ A Depot Truck takes the length of both clips, about 14.2 s. Other Depot jobs sti
 - **No building on the truck strip.** A playtest found that a building placed on `truck_side` stalled every truck build there for good. Each Depot now reserves the strip (4 by 16 tiles at the authored size) as unbuildable for as long as it stands, stored on each tile as `apron`.
   - Depot, Generator, Barracks, Tank Factory and Iron Mine placement and plans all refuse it, and say why: "Keep the strip beside a Depot clear: Depot Trucks are built there." The placement preview says "keep the Depot Truck strip clear".
   - A new Depot, built, planned or deployed, also needs its own strip free of buildings, plans and other Depots' strips. A Depot plan's strip is held for it, so no other plan can go there while it waits.
-  - `DepotNetwork.strip_cells` predicts the strip from the Depot scene for a given heading: east for Infantry-built Depots and plans, the truck's nearest 90 degrees for a deployed one.
+  - `DepotNetwork.strip_cells` predicts the strip from the Depot scene for a given heading: east for every Depot, deployed ones included.
   - Units still cross it, and rail can still be laid on it. Units are not set down on it: Depot and production building exits skip it.
   - An idle unit of the Depot's side standing on the strip when a truck is waiting is sent to the nearest open ground.
   - It is freed when the Depot is removed. Check: `tests/depot_apron_test.gd`.

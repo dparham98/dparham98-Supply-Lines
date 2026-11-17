@@ -101,6 +101,11 @@ func run() -> void:
 	if not check(hud.depot_panel.visible and hud.storage_panel.visible and not hud.info.get_node("Storage").visible,"Your Depot should show both panels, its storage moved out of the bottom panel"): return
 	if not check(not hud.card.has_node("EnergyCeiling") and not hud.card.has_node("CoalReserve") and not InputMap.has_action("command_energy_ceiling") and not InputMap.has_action("command_coal_reserve"),"The Depot card's setting tiles and keys should be gone"): return
 	if not check(body.get_node("Ceiling/Value").text == "600 E" and body.get_node("Coal/Value").text == "30" and ceiling_slider.value == 600 and coal_slider.value == 30,"The panel should show the settings: %s, %s" % [body.get_node("Ceiling/Value").text,body.get_node("Coal/Value").text]): return
+	# The current energy stock against storage (playtest note, docs/DEPOT_PANELS.md).
+	depot.energy = 1240
+	hud._process(0)
+	var stock_text := "%s / %s E" % [hud.grouped(1240),hud.grouped(depot.storage_capacity)]
+	if not check(body.get_node("Stock/Value").text == stock_text and body.get_node("Stock/Value").text.begins_with("1"),"The panel should show the energy stock: "+body.get_node("Stock/Value").text): return
 	if not check(ceiling_slider.max_value == depot.storage_capacity and ceiling_slider.focus_mode == Control.FOCUS_NONE,"The ceiling slider should run to the storage capacity and take no keyboard focus"): return
 	ceiling_slider.value = 1000
 	coal_slider.value = 60

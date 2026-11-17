@@ -1,6 +1,6 @@
 extends SceneTree
 # Headless: a new Depot's range may not overlap any other friendly Depot's or Depot plan's: it stands at least
-# twice the range (35 m) away (docs/DEPOT_SPACING.md), whether planned, built or deployed from a truck.
+# twice the range (52.5 m) away (docs/DEPOT_SPACING.md), whether planned, built or deployed from a truck.
 # Authored and captured Depots are not checked. Sites held by deploy orders count; plans that lose their
 # spacing stop and say why.
 const SCENE := "res://scenes/maps/balanced_skirmish.tscn"
@@ -35,22 +35,22 @@ func run() -> void:
 	var main: Node3D = game.depot
 	var rules = network.depot_rules()
 	var spacing: float = rules.min_depot_spacing()
-	if not check(is_equal_approx(spacing,rules.construction_radius*2.0) and is_equal_approx(spacing,35.0),"Spacing should be twice the 17.5 m range, is %.1f" % spacing): return
+	if not check(is_equal_approx(spacing,rules.construction_radius*2.0) and is_equal_approx(spacing,52.5),"Spacing should be twice the 26.25 m range, is %.1f" % spacing): return
 	# The spacing follows the range.
 	var old_radius: float = rules.construction_radius
 	rules.construction_radius = 12.0
 	if not check(is_equal_approx(rules.min_depot_spacing(),24.0),"Spacing should follow the range"): return
 	rules.construction_radius = old_radius
 	# Plans.
-	var close := depot_site(main.global_position,24,32)
-	var far := depot_site(main.global_position,40,70)
+	var close := depot_site(main.global_position,36,48)
+	var far := depot_site(main.global_position,60,100)
 	if not check(close != Vector3.INF and far != Vector3.INF,"No test sites near the main Depot"): return
-	if not check(not network.depot_spacing_ok(close) and network.depot_spacing_ok(far),"24-32 m should be too close and 40 m+ far enough"): return
+	if not check(not network.depot_spacing_ok(close) and network.depot_spacing_ok(far),"36-48 m should be too close and 60 m+ far enough"): return
 	if not check(network.queue_plan(close,&"depot") == null,"A Depot plan with an overlapping range was accepted"): return
 	var plan: Node3D = network.queue_plan(far,&"depot")
-	if not check(plan != null,"A Depot plan 40 m+ away was refused"): return
+	if not check(plan != null,"A Depot plan 60 m+ away was refused"): return
 	# Another plan close to that plan is refused too; a Generator plan there is not affected.
-	var beside_plan := depot_site(plan.global_position,14,30)
+	var beside_plan := depot_site(plan.global_position,21,45)
 	if not check(beside_plan != Vector3.INF and network.queue_plan(beside_plan,&"depot") == null,"A Depot plan overlapping another Depot plan was accepted"): return
 	if not check(network.queue_plan(beside_plan,&"generator") != null,"Spacing should not affect other buildings"): return
 	# Completing the plan ignores the plan itself.
@@ -65,9 +65,9 @@ func run() -> void:
 	await process_frame
 	if not check(not network.can_deploy_at(truck,truck.global_position) and not network.deploy_truck(truck,truck.global_position),"A Depot truck deployed with an overlapping range"): return
 	if not check(is_instance_valid(truck) and not truck.is_queued_for_deletion(),"A refused deploy should keep the truck"): return
-	if not check(network.can_deploy_at(truck,far),"A Depot truck should be able to deploy 40 m+ away"): return
+	if not check(network.can_deploy_at(truck,far),"A Depot truck should be able to deploy 60 m+ away"): return
 	var before := get_nodes_in_group("depots").size()
-	if not check(network.deploy_truck(truck,far),"Deploy 40 m+ away failed"): return
+	if not check(network.deploy_truck(truck,far),"Deploy 60 m+ away failed"): return
 	await process_frame
 	if not check(get_nodes_in_group("depots").size() == before+1,"No new Depot after deploying"): return
 	# The rule measures from where a Depot actually stands once snapped to its footprint.
@@ -76,7 +76,7 @@ func run() -> void:
 		if depot != main and depot.team == "player" and Vector2(depot.global_position.x-far.x,depot.global_position.z-far.z).length() < 2.0: deployed = depot
 	if not check(deployed != null and network.depot_centre(far).is_equal_approx(Vector2(deployed.global_position.x,deployed.global_position.z)),"depot_centre should be where the Depot stands"): return
 	# The new Depot now pushes the rule outward from itself as well.
-	if not check(not network.depot_spacing_ok(far+Vector3(30,0,0)),"The deployed Depot should hold its own range clear"): return
+	if not check(not network.depot_spacing_ok(far+Vector3(45,0,0)),"The deployed Depot should hold its own range clear"): return
 	# A truck is checked against its own side's Depots.
 	if not check(network.depot_spacing_ok(close,"hostile") and not network.depot_spacing_ok(close,"player"),"Spacing should count only the asking side's Depots"): return
 	# A site a truck has been ordered to deploy on is held for it, as current order or queued.
@@ -103,7 +103,7 @@ func run() -> void:
 	var held: Node3D = network.queue_plan(open,&"depot")
 	if not check(held != null,"A Depot plan at the open site was refused"): return
 	held.set_process(false)
-	var neighbour := depot_site(held.global_position,14,30)
+	var neighbour := depot_site(held.global_position,21,45)
 	if not check(neighbour != Vector3.INF,"No site beside the plan"): return
 	network.establish(neighbour,0,0)
 	await process_frame
@@ -111,7 +111,7 @@ func run() -> void:
 	if not check(work_state.begins_with("Blocked") and network.spacing_reason() in work_state and held.added.is_empty(),"A plan too close should block before building: %s" % work_state): return
 	if not check(held.complete_from_stock() == null and held.state.begins_with("Blocked") and network.finish_plan(held) == null,"A plan too close should not be finished"): return
 	if not check(network.spacing_notice(close).contains(network.spacing_reason()),"Notices should name the rule"): return
-	if not check(network.spacing_reason() == "at least 35 m from every other friendly Depot, so the ranges don't overlap","The rule should say why: "+network.spacing_reason()): return
+	if not check(network.spacing_reason() == "at least 52.5 m from every other friendly Depot, so the ranges don't overlap","The rule should say why: "+network.spacing_reason()): return
 	# Off allows any spacing.
 	rules.separate_ranges = false
 	if not check(network.depot_spacing_ok(close) and rules.min_depot_spacing() == 0.0,"Turning the rule off should allow any spacing"): return

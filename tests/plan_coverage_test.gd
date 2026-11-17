@@ -1,7 +1,8 @@
 extends SceneTree
 # Headless: a building plan whose centre is inside a Depot's range is paid from it, even when corners of its
 # footprint stick out of the range (docs/DEPOT_RANGE.md). Every corner used to have to be inside, so with the
-# 17.5 m range a Barracks beside a Depot waited for energy for ever. Outside every range the preview says so.
+# 26.25 m range a Barracks beside a Depot waited for energy for ever. Outside every range the preview says so.
+# The preview is green, yellow or red by whether the site can be built and paid for, and lists the stock in range.
 var game: Node3D
 var network: Node
 func _initialize() -> void: call_deferred("run")
@@ -35,7 +36,7 @@ func run() -> void:
 	network = game.get_node("DepotNetwork")
 	var depot: Node3D = game.depot
 	var radius: float = SupplySource.radius(depot)
-	if not check(is_equal_approx(radius,17.5),"The test expects the 17.5 m range"): return
+	if not check(is_equal_approx(radius,26.25),"The test expects the 26.25 m range"): return
 	depot.energy = 2000
 	# Centre inside, a corner outside: covered, and the plan gets its energy from the Depot.
 	var inside := site(&"barracks",depot.global_position,8,radius-0.5,radius)
@@ -74,6 +75,25 @@ func run() -> void:
 	network.update_global_preview(inside)
 	status = game.get_node("ConstructionPreview/Status").text
 	if not check(not status.contains("no Depot range"),"The preview should not warn inside a range: "+status): return
+	# Colours: green where it can be built and paid for, yellow where the stock in range can't pay, red where it
+	# can't be built. The label lists the stock in range.
+	var colour := func() -> Color: return network.preview_material.albedo_color
+	network.update_global_preview(inside)
+	status = game.get_node("ConstructionPreview/Status").text
+	var area: Dictionary = network.area_stock(network.covering_sources(network.footprint_start(inside,network.plan_spec(&"barracks").size),network.plan_spec(&"barracks").size))
+	if not check(colour.call() == network.PLACE_OK and status.begins_with("BUILD") and status.contains("\nIn range: %d E · %d I · %d W · %d C" % [area[&"energy"],area[&"iron"],area[&"wood"],area[&"coal"]]) and area[&"energy"] >= depot.energy,"A buildable, affordable site should be green and list the stock in range: "+status.replace("\n"," | ")): return
+	var saved_energy: int = depot.energy
+	depot.energy = 0
+	network.update_global_preview(inside)
+	status = game.get_node("ConstructionPreview/Status").text
+	if not check(colour.call() == network.PLACE_SHORT and status.begins_with("CAN'T AFFORD") and status.contains("In range: 0 E"),"A buildable site the stock in range can't pay for should be yellow: "+status): return
+	depot.energy = saved_energy
+	network.update_global_preview(outside)
+	status = game.get_node("ConstructionPreview/Status").text
+	if not check(colour.call() == network.PLACE_SHORT and status.contains("No Depot range here"),"A buildable site out of every range should be yellow: "+status): return
+	network.update_global_preview(depot.global_position)
+	status = game.get_node("ConstructionPreview/Status").text
+	if not check(colour.call() == network.PLACE_BLOCKED and status.begins_with("BLOCKED"),"A site on the Depot should be red: "+status): return
 	game.global_plan_kind = &""
 	print("PLAN_COVERAGE_TEST_PASSED")
 	quit(0)
