@@ -97,9 +97,10 @@ func strip_notice(point: Vector3, size: Vector2i, kind: StringName, model_yaw :=
 	if on_strip(start,size): return STRIP_NOTICE
 	if kind == &"depot" and game.ground.is_footprint_valid(start,size) and not strip_clear(point,model_yaw): return STRIP_NOTICE
 	return ""
-## The heading a truck's Depot would take if it deployed now: its nearest 90 degrees.
-func deploy_yaw(unit: Node3D) -> float:
-	return snappedf(unit.get_node("Visuals").rotation.y,PI/2)+PI/2
+## The heading a truck's Depot takes: east, like the map's Depots and those Infantry build, whichever way the
+## truck faces (docs/DEPOT_MODEL.md).
+func deploy_yaw(_unit: Node3D) -> float:
+	return 0.0
 var _depot_size := Vector2i.ZERO
 ## The Depot footprint, read once from the Depot scene.
 func depot_size() -> Vector2i:
@@ -207,16 +208,18 @@ func deploy_truck(unit: Node3D, point: Vector3) -> bool:
 		if spaced.is_empty(): spaced = strip_notice(point,depot_size(),&"depot",deploy_yaw(unit))
 		game.notify(spaced if not spaced.is_empty() else "Truck needs an empty Depot footprint on buildable land."); return false
 	var rules = unit.deployment_rules
-	# The Depot takes the truck's nearest 90 degree heading; its model turns and pulls up from where the truck stood.
+	# The Depot faces east whatever the truck's heading; its model turns and pulls up from where the truck stood.
+	# A truck heading is the Depot's yaw less 90 degrees, so an east-facing Depot matches a truck heading -90.
 	var visuals: Node3D = unit.get_node("Visuals")
 	var yaw: float = visuals.rotation.y
-	var heading := snappedf(yaw,PI/2)
+	var model_yaw := deploy_yaw(unit)
+	var heading := model_yaw-PI/2
 	var trailer: Node3D = visuals.get_node_or_null("Model/Rig")
 	var from: Vector3 = trailer.global_position if trailer != null else unit.global_position
 	from.y = point.y
 	unit.remove_from_group("units")
 	unit.queue_free()
-	var depot := establish(point,rules.deployed_energy,rules.deployed_iron,heading+PI/2)
+	var depot := establish(point,rules.deployed_energy,rules.deployed_iron,model_yaw)
 	depot.get_node("Visuals/Model").play_deploy(from,angle_difference(heading,yaw))
 	game.notify("Truck consumed; new Depot established with its configured starter inventory.")
 	return true
