@@ -136,25 +136,33 @@ func rail_kind() -> String:
 func rail_join() -> int:
 	if rail_piece.begins_with("fork"): return rail_fork_join
 	return 1 if rail_piece == "right" else 0
-## Track-laying keys (docs/RAIL_PLANNING.md): R turns a free piece 90 degrees, Tab cycles the piece type, G
+## Track-laying keys (docs/RAIL_PLANNING.md): R mirrors a piece snapped to a track end and turns a free one 90 degrees, Tab cycles the piece type, G
 ## changes which end of a fork joins, Enter lays the plan and Backspace takes back its last piece. They belong
 ## to track laying while it is armed: button shortcuts run before _unhandled_input and the Build page stays
 ## open while laying, so its tiles with the same letters would otherwise answer first, and Tab would move focus.
+const RAIL_NAMES := {"straight":"straight","left":"left curve","right":"right curve","fork_left":"left fork","fork_right":"right fork"}
+const RAIL_MIRROR := {"left":"right","right":"left","fork_left":"fork_right","fork_right":"fork_left"}
 const RAIL_KEYS := [KEY_R,KEY_TAB,KEY_G,KEY_ENTER,KEY_KP_ENTER,KEY_BACKSPACE]
 func _input(event: InputEvent) -> void:
 	if not placing_rail or not event is InputEventKey or not event.pressed: return
 	if not event.physical_keycode in RAIL_KEYS: return
 	get_viewport().set_input_as_handled()
 	if not event.echo: _rail_key(event.physical_keycode)
-const RAIL_HELP := "R turns it; Tab changes piece; click plans; Enter lays the plan once it joins two Depots, mines or build sites; Backspace undoes; Esc drops it."
+const RAIL_HELP := "R mirrors it at a track end, or turns it; Tab changes piece; click plans; Enter lays the plan once it joins two Depots, mines or build sites; Backspace undoes; Esc drops it."
 func _rail_key(key: int) -> void:
 	if key == KEY_TAB:
 		rail_piece = {"straight":"left","left":"right","right":"fork_left","fork_left":"fork_right","fork_right":"straight"}[rail_piece]
 		rail_fork_join = 0
 		notify("Planning %s track, %d iron. %s" % [rail_piece.replace("_"," "),$RailNetwork.cost(rail_kind()),RAIL_HELP])
 	elif key == KEY_R:
-		rail_heading = Vector3(-rail_heading.z,0,rail_heading.x)
-		notify("Piece turned 90 degrees. A piece that snaps to a track end follows that track.")
+		# A piece snapped to a track end follows that track, so turning it does nothing: R gives the mirror piece
+		# instead, a curve bending the other way or the other hand of fork. A free piece turns 90 degrees.
+		if $RailNetwork.preview_snapped and RAIL_MIRROR.has(rail_piece):
+			rail_piece = RAIL_MIRROR[rail_piece]
+			notify("Mirrored to the %s." % RAIL_NAMES[rail_piece])
+		else:
+			rail_heading = Vector3(-rail_heading.z,0,rail_heading.x)
+			notify("Piece turned 90 degrees. At a track end, R mirrors a curve or fork instead.")
 	elif key == KEY_G:
 		if rail_piece.begins_with("fork"):
 			rail_fork_join = (rail_fork_join+1)%3

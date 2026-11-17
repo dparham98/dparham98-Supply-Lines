@@ -27,6 +27,8 @@ var _announced_depots := ""
 ## Planned track not laid yet (docs/RAIL_PLANNING.md): {kind, transform, cells, ghost}, in the order placed.
 var pending: Array[Dictionary] = []
 var _model_scales := {}
+## Whether the cursor piece snaps to a track end this frame; R then mirrors it instead of turning it.
+var preview_snapped := false
 ## Upkeep owed by each line, keyed by the line's lowest piece id; whole units are paid as they accrue.
 var _upkeep_owed := {}
 @onready var ground = get_tree().get_first_node_in_group("terrain_grid")
@@ -488,6 +490,7 @@ func _process(delta: float) -> void:
 	if preview == null: return
 	var active: bool = game.placing_rail
 	preview.visible = active
+	preview_snapped = false
 	if not active: return
 	var camera := game.get_viewport().get_camera_3d()
 	var mouse := game.get_viewport().get_mouse_position()
@@ -496,6 +499,7 @@ func _process(delta: float) -> void:
 	var kind: String = game.rail_kind()
 	var spot := placement(kind,point,game.rail_heading,game.rail_join())
 	if spot.is_empty(): preview.visible = false; return
+	preview_snapped = spot.snapped
 	var refused := plan_refusal(kind,spot.transform)
 	for child in preview.get_children():
 		var show: bool = child.name.to_snake_case() == kind

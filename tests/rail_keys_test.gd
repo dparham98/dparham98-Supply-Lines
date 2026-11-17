@@ -78,6 +78,19 @@ func run() -> void:
 	# Backspace takes it back.
 	await press(KEY_BACKSPACE)
 	if not check(rails.pending.is_empty() and game.placing_rail,"Backspace should remove the planned piece"): return
+	# At a track end R mirrors a curve to the other hand and back, without turning it. Free, it turns it.
+	rails.set_process(false)
+	rails.preview_snapped = true
+	var turned_to: Vector3 = game.rail_heading
+	await press(KEY_R)
+	if not check(game.rail_piece == "right" and game.rail_heading.is_equal_approx(turned_to),"R at a track end should mirror the left curve: %s" % game.rail_piece): return
+	await press(KEY_R)
+	if not check(game.rail_piece == "left","R again should mirror it back"): return
+	rails.preview_snapped = false
+	await press(KEY_R)
+	if not check(game.rail_piece == "left" and not game.rail_heading.is_equal_approx(turned_to),"A free curve should turn, not mirror"): return
+	for i in range(3): await press(KEY_R)
+	rails.set_process(true)
 	await click_at(await look_at_end(west))
 	if not check(rails.pending.size() == 1,"The curve should plan again"): return
 	# On to a fork: G walks its three joining ends and stays in track laying.

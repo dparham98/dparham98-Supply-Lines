@@ -9,7 +9,7 @@ Rail starts from the Build page's Rail tile (R).
 | Key | What it does |
 | --- | --- |
 | Tab | Next piece: straight, left curve, right curve, left fork, right fork. |
-| R | Turns the piece 90 degrees. A piece that snaps to a track end follows that track instead. |
+| R | At a track end, mirrors the piece: a left curve becomes a right curve, a left fork a right fork, and back. A straight has no mirror. A free piece turns 90 degrees instead. |
 | G | Changes which end of a fork joins the track. |
 | Click | Plans a piece. It snaps to a free end of laid track or of the plan. |
 | Backspace | Takes back the last planned piece. |
