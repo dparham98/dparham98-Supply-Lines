@@ -12,6 +12,11 @@ uniform vec3 rock_warm : source_color = vec3(0.44, 0.37, 0.3);
 uniform vec3 scree : source_color = vec3(0.36, 0.32, 0.25);
 uniform vec3 snow : source_color = vec3(0.86, 0.88, 0.92);
 uniform float snow_line = 7.8;
+// How far the light follows each small face of the mesh instead of the smoothed slope: cut stone, not dough.
+uniform float facet = 0.55;
+// Rough grass on the shelves below the snow.
+uniform vec3 shelf_grass : source_color = vec3(0.3, 0.31, 0.16);
+uniform float shelf_grass_amount = 0.5;
 // Part of the map whose rock is drawn by the sculpted landscape instead (docs/LANDSCAPE_LOOKDEV.md), as world X and Z
 // min and max. Set by scripts/tools/build_landscape.gd; all zero draws every mountain here.
 uniform vec4 landscape_region = vec4(0.0);
@@ -43,6 +48,9 @@ vec3 surface_normal(vec3 p, vec3 n, vec3 weights) {
 void fragment() {
  if (world_position.x > landscape_region.x && world_position.z > landscape_region.y && world_position.x < landscape_region.z && world_position.z < landscape_region.w) { discard; }
  vec3 n = normalize(world_normal);
+ vec3 face = normalize(cross(dFdy(world_position), dFdx(world_position)));
+ if (face.y < 0.0) { face = -face; }
+ n = normalize(mix(n, face, facet));
  vec3 weights = axis_weights(n);
  float fine = sample_detail(world_position / detail_metres, weights);
  float broad = sample_detail(world_position / (detail_metres * 4.3) + vec3(0.37, 0.11, 0.73), weights);
@@ -51,11 +59,15 @@ void fragment() {
  // Sedimentary bands that wander with the rock, strongest on steep faces.
  float bands = sin(world_position.y * 4.3 + broad * 9.0 + world_position.x * 0.11 + world_position.z * 0.07) * 0.5 + 0.5;
  vec3 rock = mix(rock_dark, rock_light, smoothstep(0.3, 0.72, rough_rock));
- rock = mix(rock, rock * mix(0.7, 1.15, bands), 1.0 - flatness);
+ rock = mix(rock, rock * mix(0.62, 1.15, bands), 1.0 - flatness);
+ // Steep faces sit a little darker than the shelves between them.
+ rock *= mix(0.82, 1.06, flatness);
  rock = mix(rock, rock_warm * (0.7 + rough_rock * 0.7), smoothstep(0.42, 0.72, broad) * 0.4);
  // Loose stone gathers on gentle ground and towards the foot.
  float low = 1.0 - smoothstep(0.02, 0.38, vertex_data.g);
  rock = mix(rock, scree * (0.75 + fine * 0.5), clamp(flatness * 0.55 + low * 0.7, 0.0, 1.0) * smoothstep(0.35, 0.7, n.y + low * 0.4));
+ // Shelves well above the foot carry rough grass.
+ rock = mix(rock, shelf_grass * (0.7 + fine * 0.6), flatness * smoothstep(0.12, 0.3, vertex_data.g) * smoothstep(0.3, 0.6, broad + fine * 0.3) * shelf_grass_amount);
  // Hollows stay dark, crests catch the light.
  float hollow = smoothstep(0.22, 0.72, vertex_data.r);
  rock *= mix(0.5, 1.22, hollow);

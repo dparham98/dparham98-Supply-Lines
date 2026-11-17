@@ -329,8 +329,14 @@ func issue_order(screen, queued := false) -> void:
 			give_order(unit,{kind = "gather", target = ground.forest_source(ground.get_tile_at_position(point))},queued)
 			forest_ordered = true
 		elif point != null and ground.get_tile_at_position(point) != null and ground.get_terrain(ground.get_tile_at_position(point)) == 6 and unit.can_gather:
-			coal_ordered = ground.coal_source(ground.get_tile_at_position(point))
-			give_order(unit,{kind = "gather", target = coal_ordered},queued)
+			# Coal comes through a mine on the seam; where the old rule is on, straight from the cell.
+			if ground.harvesting_rules.coal_needs_mine:
+				var seam_mine = ground.coal_mine_at(ground.get_tile_at_position(point))
+				if seam_mine != null: give_order(unit,{kind = "gather", target = seam_mine},queued)
+				else: notify("Build a Mine on this coal seam before gathering coal.")
+			else:
+				coal_ordered = ground.coal_source(ground.get_tile_at_position(point))
+				give_order(unit,{kind = "gather", target = coal_ordered},queued)
 		elif dropoff and dropoff.is_in_group("mobile_supplies") and unit.can_gather: give_order(unit,{kind = "return", target = dropoff},queued)
 		elif resource: give_order(unit,{kind = "gather", target = resource},queued)
 		elif dropoff and dropoff.team == unit.team and unit.cargo > 0: give_order(unit,{kind = "return", target = dropoff},queued)
@@ -384,7 +390,10 @@ func issue_card_order(screen, queued := false) -> void:
 			if point != null and ground.get_tile_at_position(point) != null:
 				var cell = ground.get_tile_at_position(point)
 				if ground.get_terrain(cell) in [5,7]: notify("Build an Iron Mine on this deposit before gathering iron."); return
-				target = ground.coal_source(cell) if ground.get_terrain(cell) == 6 else ground.forest_source(cell)
+				if ground.get_terrain(cell) == 6 and ground.harvesting_rules.coal_needs_mine:
+					target = ground.coal_mine_at(cell)
+					if target == null: notify("Build a Mine on this coal seam before gathering coal."); return
+				else: target = ground.coal_source(cell) if ground.get_terrain(cell) == 6 else ground.forest_source(cell)
 	elif pending_unit_command == "repair": target = pick_target(screen,"selectable_buildings",50)
 	elif pending_unit_command == "capture": target = pick_target(screen,"capturable_buildings",50)
 	elif pending_unit_command in ["load","unload"]:

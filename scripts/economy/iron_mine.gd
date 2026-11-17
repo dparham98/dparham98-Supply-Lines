@@ -10,6 +10,8 @@ var _wreck: Node3D
 var max_health: int:
 	get: return rules.mine_health
 var cells: Array[Vector2i] = []
+## A mine built on a coal seam (docs/COAL_MINES.md) is the same building; it yields coal from the whole seam.
+var on_coal := false
 @onready var ground = get_tree().get_first_node_in_group("terrain_grid")
 func _ready() -> void:
 	resource_kind = &"iron"; resource_name = "Shared iron mine"
@@ -32,12 +34,15 @@ func _ready() -> void:
 	# On a mine site the mine has its back to the mountain and looks out over the open ground.
 	var facing: Vector2i = ground.mine_site_facing(start,footprint) if ground.get_terrain(start) == ground.Terrain.MINE_SITE else Vector2i.ZERO
 	if facing != Vector2i.ZERO and has_node("Visuals"): $Visuals.rotation.y = atan2(facing.x,facing.y)
+	on_coal = ground.get_terrain(start) == ground.Terrain.COAL
+	if on_coal: resource_kind = &"coal"; resource_name = "Shared coal mine"
 	add_to_group("mines"); add_to_group("selectable_buildings")
 	# The ore rocks drawn on and around the footprint give way to the pithead.
 	if ground.has_method("cover_ore"): ground.cover_ore(_key(),cells)
 	amount = reserves()
 	super._ready()
 func reserves() -> int:
+	if on_coal: return ground.coal_field_remaining(ground.coal_field_at(cells[0]))
 	var total := 0
 	for cell in cells: total += ground.iron_amount(cell)
 	return total
@@ -45,14 +50,16 @@ func can_extract(_team: String) -> bool: return health > 0 and not is_queued_for
 func extract(requested: int, extracting_team := "") -> int:
 	if not can_extract(extracting_team): return 0
 	var taken := 0
-	for cell in cells: taken += ground.extract_iron(cell,maxi(0,requested-taken))
+	if on_coal: taken = ground.mine_coal(cells[0],maxi(0,requested))
+	else:
+		for cell in cells: taken += ground.extract_iron(cell,maxi(0,requested-taken))
 	remaining = reserves()
 	if taken > 0: _work_left = work_hold
 	_update_model()
 	update_label()
 	return taken
 func update_label() -> void:
-	$Label.text = "SHARED MINE · iron %d · %d/%d HP" % [remaining,health,max_health]
+	$Label.text = "SHARED MINE · %s %d · %d/%d HP" % [resource_kind,remaining,health,max_health]
 func _process(delta: float) -> void:
 	remaining = reserves(); update_label()
 	_work_left = maxf(0.0,_work_left-delta)

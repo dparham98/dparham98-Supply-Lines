@@ -175,8 +175,10 @@ void fragment() {
   // Coal seam: the cracked desert tiles with their colour taken out, darkened to black rock.
   vec3 seam;
   ground_set(tile_uv, 4.0, desert_surface_mean, desert_surface_mean, 0.0, 0.0, seam, normal_map);
-  color = vec3(dot(seam, vec3(0.3, 0.5, 0.2))) * coal_shade;
-  ROUGHNESS = 0.6;
+  // The seam lies in the ground: black, broken rock with a dull shine on some of its faces.
+  float facets = value_noise(metres * 3.1);
+  color = vec3(dot(seam, vec3(0.3, 0.5, 0.2))) * coal_shade * mix(0.55, 1.5, facets) * vec3(0.92, 0.96, 1.08);
+  ROUGHNESS = mix(0.7, 0.28, smoothstep(0.55, 0.8, facets));
  }
  if (terrain == 1.0 || (land && shore > -bank_metres - 0.5)) {
   // The bank: ground turns to wet sand towards the water, darkest at the waterline.

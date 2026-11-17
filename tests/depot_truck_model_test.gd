@@ -44,7 +44,8 @@ func run() -> void:
 	crate.material_kind = "iron"; crate.amount = 5; crate.refresh()
 	if not check(crate.get_node("Visuals/Bands/Iron").visible,"Resource band not shown"): return
 	crate.free()
-	# Truck 20 degrees off due north: deploys facing north, and its model starts from the truck.
+	# Truck 20 degrees off due north: the Depot still faces east like the map's, and its model starts from the
+	# truck's heading, turned 110 degrees from the Depot's.
 	truck.get_node("Visuals").rotation.y = deg_to_rad(20)
 	truck.set_selected(true)
 	if not check(network.deploy_selected_truck(),"Deploy failed"): return
@@ -52,13 +53,14 @@ func run() -> void:
 	var fold: Node3D = depot.get_node("Visuals/Model")
 	var player: AnimationPlayer = fold.player
 	if not check(fold.deploying() and player.assigned_animation == &"deploy" and not player.is_playing(),"Fold-out should wait for the line-up"): return
-	if not check(absf(rad_to_deg(fold.rotation.y)-20.0) < 0.5 and fold.position.length() > 1.0,"Fold-out should start from the truck: %s %s" % [fold.position,fold.rotation]): return
+	if not check(is_zero_approx(depot.get_node("Visuals").rotation.y),"A deployed Depot should face east"): return
+	if not check(absf(rad_to_deg(fold.rotation.y)-110.0) < 0.5 and fold.position.length() > 1.0,"Fold-out should start from the truck: %s %s" % [fold.position,fold.rotation]): return
 	var crate_part: Node3D = fold.find_child("warehouse_crate_01",true,false)
 	if not check(crate_part.scale.x < 0.01,"Fold-out should start closed"): return
 	await create_timer(fold.line_up_seconds+0.2).timeout
 	if not check(fold.position.length() < 0.01 and absf(fold.rotation.y) < 0.01 and player.is_playing(),"Line-up did not finish"): return
 	var direction := tractor_direction(depot)
-	if not check(direction.distance_to(Vector3(0,0,-1)) < 0.02,"Tractor should face the truck heading: %s" % direction): return
+	if not check(direction.distance_to(Vector3(1,0,0)) < 0.02,"The tractor should face east, as on the map's Depots: %s" % direction): return
 	player.seek(player.current_animation_length-0.001,true)
 	await create_timer(0.1).timeout
 	if not check(not fold.deploying() and crate_part.scale.x > 0.99,"Fold-out should end on the finished Depot"): return

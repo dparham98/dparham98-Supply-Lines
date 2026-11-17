@@ -280,6 +280,22 @@ func harvest_forest(cell: Vector2i, requested: int) -> int:
 	forest_reserves[cell] = forest_amount(cell)-taken
 	if forest_reserves[cell] == 0: clear_forest(cell)
 	return taken
+## The Forest cell to cut after `cell` runs out (docs/FOREST_HAND_ON.md): the nearest one with wood left within
+## harvesting_rules.forest_search_cells, or (-1,-1). Nearest to the cut cell first, so the worker keeps eating into
+## the edge it has opened; ties go to the worker's side.
+func next_forest_cell(cell: Vector2i, near: Vector3) -> Vector2i:
+	var reach: int = harvesting_rules.forest_search_cells
+	var best := Vector2i(-1,-1)
+	var best_distance := INF
+	for z in range(cell.y-reach,cell.y+reach+1):
+		for x in range(cell.x-reach,cell.x+reach+1):
+			var other := Vector2i(x,z)
+			if other == cell or forest_amount(other) <= 0: continue
+			var cells := cell.distance_squared_to(other)
+			if cells > reach*reach: continue
+			var d: float = cells+tile_to_world(other).distance_to(near)*0.001
+			if d < best_distance: best = other; best_distance = d
+	return best
 func forest_source(cell: Vector2i) -> Node3D:
 	if forest_amount(cell) <= 0: return null
 	if forest_sources.has(cell): return forest_sources[cell]
@@ -325,6 +341,27 @@ func harvest_coal(cell: Vector2i, requested: int) -> int:
 		_open_cell(cell)
 		coal_depleted.emit(cell)
 	return taken
+## Coal taken through a mine on the seam (docs/COAL_MINES.md): from anywhere in the field the cell belongs to, and
+## the ground is left as it is. Nothing is dug out or opened.
+func mine_coal(cell: Vector2i, requested: int) -> int:
+	var field := coal_field_at(cell)
+	if field.is_empty(): return 0
+	var taken := 0
+	for other in field.cells:
+		if taken >= requested: break
+		var part := mini(requested-taken,coal_amount(other))
+		if part <= 0: continue
+		coal_reserves[other] = coal_amount(other)-part
+		taken += part
+	return taken
+## The mine standing on a Coal cell's field, if there is one.
+func coal_mine_at(cell: Vector2i) -> Node3D:
+	var field := coal_field_at(cell)
+	if field.is_empty(): return null
+	for other in field.cells:
+		var mine = iron_mines.get(other)
+		if is_instance_valid(mine): return mine
+	return null
 ## The field a Coal cell belongs to, also after it has been dug out. Empty for any other cell.
 func coal_field_at(cell: Vector2i) -> Dictionary:
 	return coal_fields[_coal_field_of[cell]] if _coal_field_of.has(cell) else {}
@@ -373,14 +410,16 @@ func extract_iron(cell: Vector2i, requested: int) -> int:
 func ore_footprint_valid(start: Vector2i, size: Vector2i) -> bool:
 	if not is_tile_in_bounds(start) or not is_tile_in_bounds(start+size-Vector2i.ONE): return false
 	var reserves := 0
-	# All of one kind: an ore field, or a mine site, which must also have its back to a mountain.
+	# All of one kind: an ore field, a mine site (which must also have its back to a mountain), or a coal seam.
 	var kind := get_terrain(start)
-	if kind != Terrain.ORE and kind != Terrain.MINE_SITE: return false
+	if kind != Terrain.ORE and kind != Terrain.MINE_SITE and kind != Terrain.COAL: return false
 	for z in range(start.y,start.y+size.y):
 		for x in range(start.x,start.x+size.x):
 			var cell := Vector2i(x,z)
 			if get_terrain(cell) != kind or tiles[z*500+x].occupied_by != null or tiles[z*500+x].has("rail") or tiles[z*500+x].has("apron"): return false
 			reserves += iron_amount(cell)
+	# A coal mine draws on its whole seam, and a seam takes one mine.
+	if kind == Terrain.COAL: return coal_field_remaining(coal_field_at(start)) > 0 and coal_mine_at(start) == null
 	# A mine takes its whole site, which must open onto ground on one side.
 	if kind == Terrain.MINE_SITE and (mine_site_rect(start) != Rect2i(start,size) or mine_site_facing(start,size) == Vector2i.ZERO): return false
 	return reserves > 0
