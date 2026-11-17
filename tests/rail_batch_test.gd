@@ -21,6 +21,10 @@ func run() -> void:
 	for group in ["units","depots"]:
 		for node in get_nodes_in_group(group): node.set_process(false)
 	rails = game.get_node("RailNetwork")
+	# The fixture's Depots stand about 30 m apart. At half the old 35 m range their rail rings
+	# (docs/RAIL_PLANNING.md) would overlap and cutting the line would not separate them, so keep the rings at the
+	# 8.5 m this fixture was laid out for. In play Depots stand at least 52.5 m apart, so rings never overlap.
+	rails.rules.depot_reach_fraction = 8.5/35.0
 	var source = game.depot
 	var destination = game.get_node("Entities/Buildings/EastDepot")
 	var train = game.get_node("Entities/Units/Train")
