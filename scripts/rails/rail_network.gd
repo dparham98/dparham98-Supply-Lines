@@ -33,6 +33,11 @@ var _model_scales := {}
 ## between them.
 var route_from: Node3D
 var route_to: Node3D
+## Where the player dragged the suggested track through, or null for the shortest path.
+var route_via = null
+## True when the last drag point had no open path through it; the track keeps its last shape.
+var route_blocked := false
+var _drag_tried = null
 var _router
 ## Target rings shown while planning, keyed by the target's instance id.
 var _target_rings := {}
@@ -517,7 +522,7 @@ func route_status() -> String:
 	if pending.is_empty(): return "NO OPEN PATH · click another building"
 	var hud = game.get_node("Interface")
 	var blocker := plan_blocker(hud.global_payer if hud.global_pinned else null)
-	return "%d PIECE%s · %d IRON · %s" % [pending.size(),"" if pending.size() == 1 else "S",plan_cost(),"ENTER LAYS IT" if blocker.is_empty() else "NOT ENOUGH IRON"]
+	return ("NO PATH THROUGH HERE · " if route_blocked else "")+"%d PIECE%s · %d IRON · %s" % [pending.size(),"" if pending.size() == 1 else "S",plan_cost(),"ENTER LAYS IT" if blocker.is_empty() else "NOT ENOUGH IRON"]
 func target_name(node: Node3D) -> String:
 	if node.is_in_group("construction_plans"): return "%s site" % node.spec.title
 	if node.is_in_group("mines"): return "Mine"
@@ -635,6 +640,45 @@ func drop_route() -> void:
 	clear_plan()
 	route_from = null
 	route_to = null
+	route_via = null
+	route_blocked = false
+	_drag_tried = null
+## Whether `point` is on or beside the suggested track, within `within` metres of its centre line.
+func near_plan(point: Vector3, within := 4.0) -> bool:
+	for entry in pending:
+		var p: Node3D = probe(entry.kind)
+		var total: float = p.length()
+		for i in range(17):
+			var at: Vector3 = (entry.transform as Transform3D)*p.local_point(total*i/16.0)
+			if Vector2(at.x-point.x,at.z-point.z).length() <= within: return true
+	return false
+## Pulls the suggested track through `point` (docs/RAIL_PLANNING.md): the path is found again from the first
+## building, through the point, to the second, adding pieces as needed. When no open path passes there, the
+## track keeps its last shape. Returns whether the track now passes through the point.
+func drag_route(point: Vector3) -> bool:
+	if not is_instance_valid(route_from) or not is_instance_valid(route_to): return false
+	var flat := Vector3(point.x,0,point.z)
+	if _drag_tried != null and flat.distance_to(_drag_tried) < 1.2: return not route_blocked
+	_drag_tried = flat
+	if suggest_route(route_from,route_to,flat) == 0:
+		route_blocked = true
+		return false
+	route_via = flat
+	route_blocked = false
+	return true
+## Drops the dragged shape and suggests the shortest path again.
+func undrag_route() -> void:
+	route_via = null
+	route_blocked = false
+	_drag_tried = null
+	if is_instance_valid(route_from) and is_instance_valid(route_to): suggest_route(route_from,route_to)
+## What to tell the player when a drag ends.
+func drag_notice() -> String:
+	_drag_tried = null
+	if route_blocked:
+		route_blocked = false
+		return "No open path through there; the track keeps its last shape. Enter lays it."
+	return "Track moved: %d piece%s, %d iron. Enter lays it; Backspace straightens it again." % [pending.size(),"" if pending.size() == 1 else "s",plan_cost()]
 ## The rail target whose ring holds `point`, the nearest centre first, or null.
 func target_at(point: Vector3, team := "player") -> Node3D:
 	var best: Node3D = null
@@ -653,18 +697,21 @@ func pick_target(target: Node3D) -> String:
 		return "Connecting from %s: click the building to connect it to." % target_name(target)
 	if target == route_from: return "Click a different building to connect %s to." % target_name(target)
 	route_to = target
+	route_via = null
 	if suggest_route(route_from,route_to) == 0:
 		return "No open path from %s to %s. Click another building, or Backspace to choose again." % [target_name(route_from),target_name(target)]
 	var hud = game.get_node_or_null("Interface")
 	var blocker := plan_blocker(hud.global_payer if hud != null and hud.global_pinned else null)
-	return "Suggested track: %d piece%s, %d iron. %s" % [pending.size(),"" if pending.size() == 1 else "s",plan_cost(),"Enter lays it." if blocker.is_empty() else blocker]
+	return "Suggested track: %d piece%s, %d iron. %s Drag the track to move it." % [pending.size(),"" if pending.size() == 1 else "s",plan_cost(),"Enter lays it." if blocker.is_empty() else blocker]
 ## Replaces the plan with the shortest open path of straights and curves from `from` to `to`, touching both
-## rings. Returns the number of pieces, 0 when there is no open path.
-func suggest_route(from: Node3D, to: Node3D) -> int:
-	clear_plan()
+## rings, and through `via` when one is given. Returns the number of pieces, 0 when there is no open path. With
+## no path through `via`, the plan is left as it was.
+func suggest_route(from: Node3D, to: Node3D, via = null) -> int:
 	if _router == null: _router = preload("res://scripts/rails/rail_router.gd").new(self)
 	var width: float = probe("straight").half_width()
-	var path: Array[Dictionary] = _router.find(from,to,target_reach(from)+width,target_reach(to)+width)
+	var path: Array[Dictionary] = _router.find(from,to,target_reach(from)+width,target_reach(to)+width,via)
+	if path.is_empty() and via != null: return 0
+	clear_plan()
 	for piece in path:
 		pending.append({kind = piece.kind, transform = piece.transform, cells = cells_for(piece.kind,piece.transform), ghost = _plan_ghost(piece.kind,piece.transform)})
 	_tint_plan()

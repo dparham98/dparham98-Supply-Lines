@@ -26,6 +26,23 @@ func click_at(point: Vector2, shifted := false) -> void:
 	root.push_input(event,true)
 	for frame in range(3): await process_frame
 
+func drag(from: Vector2, to: Vector2) -> void:
+	var motion := InputEventMouseMotion.new()
+	motion.position = from
+	root.push_input(motion,true)
+	var press := InputEventMouseButton.new()
+	press.position = from; press.button_index = MOUSE_BUTTON_LEFT; press.pressed = true
+	root.push_input(press,true)
+	for frame in range(3): await process_frame
+	for i in range(1,9):
+		motion = InputEventMouseMotion.new()
+		motion.position = from.lerp(to,i/8.0); motion.button_mask = MOUSE_BUTTON_MASK_LEFT
+		root.push_input(motion,true)
+		await process_frame
+	var release := InputEventMouseButton.new()
+	release.position = to; release.button_index = MOUSE_BUTTON_LEFT; release.pressed = false
+	root.push_input(release,true)
+	for frame in range(3): await process_frame
 func click(node: Control) -> void:
 	var previous := Rect2()
 	var stable := 0
@@ -85,9 +102,18 @@ func run() -> void:
 	await click_at(rig.camera.unproject_position(site.global_position))
 	if not check(rails.route_to == site and not rails.pending.is_empty() and rails.pieces.size() == pieces_before and source.iron == iron_before,"A click on the site should suggest track, not lay it"): return
 	if not check(rails.plan_blocker().is_empty() and rails.plan_targets().has(source) and rails.plan_targets().has(site),"The suggested track should connect the Depot and the site: "+rails.plan_blocker()): return
+	await shot("rail_plan")
+	# Dragging the suggested track with the mouse pulls it through the cursor, adding pieces as needed.
+	var grab_entry: Dictionary = rails.pending[rails.pending.size()/2]
+	var grab_piece: Node3D = rails.probe(grab_entry.kind)
+	var grab: Vector3 = (grab_entry.transform as Transform3D)*grab_piece.local_point(grab_piece.length()*0.5)
+	var drop: Vector3 = grab+Vector3(-16,0,-12)
+	await drag(rig.camera.unproject_position(grab),rig.camera.unproject_position(drop))
+	if not check(rails.route_via != null and rails.near_plan(drop,2.6) and game.placing_rail,"Dragging the track should pull it through the cursor: %s, %d pieces" % [rails.route_via,rails.pending.size()]): return
+	if not check(rails.plan_targets().has(source) and rails.plan_targets().has(site),"The dragged track should still connect the Depot and the site"): return
 	var planned: int = rails.pending.size()
 	var cost: int = rails.plan_cost()
-	await shot("rail_plan")
+	await shot("rail_drag")
 	var enter := InputEventKey.new()
 	enter.keycode = KEY_ENTER; enter.physical_keycode = KEY_ENTER; enter.pressed = true
 	root.push_input(enter,true)

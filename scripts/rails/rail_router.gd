@@ -40,7 +40,7 @@ func _init(rail_network) -> void:
 			var piece: Node3D = network.probe(move.kind)
 			var samples: Array[Vector3] = []
 			var length: float = piece.length()
-			for i in range(9): samples.append(xf*piece.local_point(length*i/8.0))
+			for i in range(17): samples.append(xf*piece.local_point(length*i/16.0))
 			_moves[heading*3+m] = {delta = Vector2i(roundi(out.position.x/step),roundi(out.position.z/step)), heading = _heading_of(out.out), length = length, samples = samples, transform = xf}
 static func _heading_of(direction: Vector3) -> int:
 	var best := 0
@@ -91,27 +91,44 @@ func _touches(point: Vector2i, key: int, centre: Vector3, reach: float) -> bool:
 		if Vector2(at.x-centre.x,at.z-centre.z).length() <= reach: return true
 	return false
 ## The suggested path from `from` to `to` as planned pieces [{kind, transform}], or [] when there is none.
-## `from_reach` and `to_reach` are the rings' radii plus half the track's width.
-func find(from: Node3D, to: Node3D, from_reach: float, to_reach: float) -> Array[Dictionary]:
+## `from_reach` and `to_reach` are the rings' radii plus half the track's width. With a `via` point, the path
+## passes within a lattice step of it, and is the shortest that does.
+func find(from: Node3D, to: Node3D, from_reach: float, to_reach: float, via = null) -> Array[Dictionary]:
 	_read_clear()
-	var goal: Vector3 = to.global_position
+	var starts: Array = []
 	var start_centre: Vector3 = from.global_position
 	var local_start: Vector3 = ground.to_local(start_centre)
 	var span := int(ceil(from_reach/step))
 	var centre_point := Vector2i(roundi(local_start.x/step),roundi(local_start.z/step))
-	# Open set as a binary heap of [f, state]; state = (x, z, heading) packed into a key.
-	var heap: Array = []
-	var best_g := {}
-	var came := {}
 	for dx in range(-span,span+1):
 		for dz in range(-span,span+1):
 			var point := centre_point+Vector2i(dx,dz)
 			var at := world(point)
 			if Vector2(at.x-start_centre.x,at.z-start_centre.z).length() > from_reach: continue
-			for heading in range(4):
-				var key := _state_key(point,heading)
-				best_g[key] = 0.0
-				_push(heap,[_estimate(at,goal,to_reach),key,point,heading])
+			for heading in range(4): starts.append([point,heading])
+	var found := _search(starts,to.global_position,to_reach,via)
+	if found.is_empty(): return []
+	var path: Array[Dictionary] = found.path
+	# Shortest paths do not cross themselves; refuse the rare one that would rather than lay overlapping track.
+	var used := {}
+	for piece in path:
+		for cell in network.cells_for(piece.kind,piece.transform):
+			if used.has(cell): return []
+			used[cell] = true
+	return path
+## A* by track length from any of `starts` ([point, heading]) until a piece comes within `reach` of `goal`,
+## having first come within a lattice step of `via` when one is given: each state also records whether the track
+## has passed `via` yet. Returns {path, point, heading} for the state after the last piece, or {} when none.
+func _search(starts: Array, goal: Vector3, reach: float, via = null) -> Dictionary:
+	# Open set as a binary heap of [f, key, point, heading, passed]; the key packs all three.
+	var heap: Array = []
+	var best_g := {}
+	var came := {}
+	var start_passed := via == null
+	for start in starts:
+		var key := _state_key(start[0],start[1])*2+int(start_passed)
+		best_g[key] = 0.0
+		_push(heap,[_estimate_via(world(start[0]),goal,reach,via,start_passed),key,start[0],start[1],start_passed])
 	var expanded := 0
 	var closed := {}
 	while not heap.is_empty() and expanded < max_expansions:
@@ -122,22 +139,29 @@ func find(from: Node3D, to: Node3D, from_reach: float, to_reach: float) -> Array
 		expanded += 1
 		var point: Vector2i = entry[2]
 		var heading: int = entry[3]
+		var passed: bool = entry[4]
 		var g: float = best_g[key]
 		for m in range(3):
 			var move_key := heading*3+m
 			if not _move_clear(point,move_key): continue
 			var move: Dictionary = _moves[move_key]
 			var next: Vector2i = point+move.delta
-			var next_key := _state_key(next,move.heading)
+			var next_passed: bool = passed or (via != null and _touches(point,move_key,via,step))
+			var next_key := _state_key(next,move.heading)*2+int(next_passed)
 			var next_g: float = g+move.length
-			if _touches(point,move_key,goal,to_reach):
+			if next_passed and _touches(point,move_key,goal,reach):
 				came[next_key] = [key,point,move_key]
-				return _path(came,next_key)
+				return {path = _path(came,next_key), point = next, heading = move.heading}
 			if best_g.has(next_key) and best_g[next_key] <= next_g: continue
 			best_g[next_key] = next_g
 			came[next_key] = [key,point,move_key]
-			_push(heap,[next_g+_estimate(world(next),goal,to_reach),next_key,next,move.heading])
-	return []
+			_push(heap,[next_g+_estimate_via(world(next),goal,reach,via,next_passed),next_key,next,move.heading,next_passed])
+	return {}
+## Admissible estimate: straight to the goal ring, or by way of the via point when it is still to come.
+func _estimate_via(at: Vector3, goal: Vector3, reach: float, via, passed: bool) -> float:
+	if passed: return _estimate(at,goal,reach)
+	var to_via: float = maxf(0.0,Vector2(at.x-via.x,at.z-via.z).length()-step)
+	return to_via+_estimate(via,goal,reach)
 func _state_key(point: Vector2i, heading: int) -> int:
 	return ((point.x+1000)*4000+(point.y+1000))*4+heading
 func _estimate(at: Vector3, goal: Vector3, reach: float) -> float:
@@ -154,12 +178,6 @@ func _path(came: Dictionary, last: int) -> Array[Dictionary]:
 		reversed.append({kind = MOVES[move_key%3].kind, transform = xf})
 		key = link[0]
 	reversed.reverse()
-	# Shortest paths do not cross themselves; refuse the rare one that would rather than lay overlapping track.
-	var used := {}
-	for piece in reversed:
-		for cell in network.cells_for(piece.kind,piece.transform):
-			if used.has(cell): return []
-			used[cell] = true
 	return reversed
 static func _push(heap: Array, item: Array) -> void:
 	heap.append(item)

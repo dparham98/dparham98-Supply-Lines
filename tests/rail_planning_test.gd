@@ -154,6 +154,23 @@ func run() -> void:
 	var said: String = rails.pick_target(far_site)
 	if not check(rails.route_to == far_site and rails.pending.size() > 1 and said.begins_with("Suggested track"),"The second pick should suggest a path: "+said): return
 	if not check(rails.plan_targets().has(depot) and rails.plan_targets().has(far_site) and rails.pending_free_ends().size() == 2,"The path should be one joined line touching both rings"): return
+	# Dragging pulls the track through the cursor, adding pieces; a point no path can pass keeps the last shape,
+	# and Backspace's undrag gives the shortest path back.
+	var shortest: int = rails.pending.size()
+	var mid: Vector3 = (depot.global_position+far_site.global_position)*0.5
+	var side := Vector3(-(far_site.global_position-depot.global_position).z,0,(far_site.global_position-depot.global_position).x).normalized()
+	var pulled := Vector3.INF
+	for distance in [18.0,-18.0,12.0,-12.0,24.0,-24.0]:
+		if rails.drag_route(mid+side*distance): pulled = mid+side*distance; break
+	if not check(pulled != Vector3.INF,"No drag point found beside the path"): return
+	if not check(rails.near_plan(pulled,rails.probe("straight").length()*0.5+0.1) and rails.pending.size() > shortest and rails.pending_free_ends().size() == 2,"A dragged track should pass the cursor in one joined line: %d pieces" % rails.pending.size()): return
+	if not check(rails.plan_targets().has(depot) and rails.plan_targets().has(far_site),"A dragged track should still connect both buildings"): return
+	var dragged: int = rails.pending.size()
+	if not check(not rails.drag_route(depot.global_position) and rails.route_blocked and rails.pending.size() == dragged and rails.near_plan(pulled,3.0),"A point inside the Depot should keep the last shape"): return
+	rails.drag_notice()
+	rails.undrag_route()
+	if not check(rails.route_via == null and rails.pending.size() == shortest,"Undoing the drag should give the shortest path back"): return
+	if not check(rails.drag_route(pulled),"The track should drag again"): return
 	# Coloured by whether a Depot can pay: green with the iron, red without.
 	depot.iron = 0
 	rails._tint_plan()

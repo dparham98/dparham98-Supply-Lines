@@ -9,7 +9,8 @@ Rail starts from the Build page's Rail tile (R).
 | Action | What it does |
 | --- | --- |
 | Click a building | The first click picks where the track starts; the second picks where it goes, and the game suggests the track. A click after that starts again. A click lands on a building when it is inside the building's ring. |
-| Backspace | Takes back the second pick and its track, or the first pick when there is no second. |
+| Drag the track | Press on the suggested track and move the mouse: the track is found again through the cursor, adding pieces as needed. Releasing keeps that shape. Where no open path passes the cursor, the track keeps its last shape and the label says "NO PATH THROUGH HERE". |
+| Backspace | Straightens a dragged track back to the shortest path; otherwise takes back the second pick and its track, or the first pick when there is no second. |
 | Enter | Lays the suggested track. |
 | Esc, or leaving track laying any other way | Drops the picks and the track. Nothing was paid. |
 
@@ -23,6 +24,7 @@ While track laying is armed, Enter and Backspace go to it before the Build page'
   - The suggested track is green when a Depot can pay for it, and red when none has the iron.
   - Rings are amber, and green for the picked buildings and any the track touches.
 - **The cursor label** shows the next step, then the track's pieces and iron, and either "ENTER LAYS IT" or "NOT ENOUGH IRON".
+- **Dragging** (playtest of 2026-11-17) pulls the track through one point, the latest the player dragged to. It is the shortest open track that passes within a lattice step (2.4 m) of that point. The search is found again each time the cursor moves 1.2 m, so a long route can lag a little while dragged.
 - **Forks aren't suggested.** The suggested track doesn't join existing lines either: it runs beside them. Forks and joins are for a later change.
 
 ### How the path is found
@@ -33,6 +35,7 @@ While track laying is armed, Enter and Backspace go to it before the Build page'
   - a straight: two steps ahead;
   - a curve either way: five steps ahead and five aside, since the curve's radius is two and a half straights.
 - **Search:** A* by track length, with the straight-line distance to the second ring as the estimate, up to 60,000 states.
+- **Dragging:** with a point to pass through, each state also records whether the track has passed it yet, and the estimate runs by way of the point until it has. The result is the shortest track through the point overall, not just the shortest way to reach it.
 - **Open land:** each move's cells are worked out once for each alignment of the lattice against the 1 m cell grid. Each cell is read with the network's own rule the first time a move needs it.
 - **Speed:** a link to the starter mine takes about 20 ms. A path across the whole balanced map, 66 pieces, takes about half a second.
 
@@ -81,7 +84,7 @@ So a 100 m line costs 0.1 E/s idle and 0.3 E/s with two trains running. This is 
 
 ## Code
 
-- **Connecting:** `target_at`, `pick_target`, `suggest_route`, `drop_route` and `route_status` in `scripts/rails/rail_network.gd`. The path search is `scripts/rails/rail_router.gd`.
+- **Connecting:** `target_at`, `pick_target`, `suggest_route`, `drop_route` and `route_status` in `scripts/rails/rail_network.gd`. Dragging is `near_plan`, `drag_route`, `undrag_route` and `drag_notice`, driven by `_rail_dragging` in `skirmish.gd`. The path search is `scripts/rails/rail_router.gd`.
 - **The plan:** `pending`, `plan_targets`, `plan_payer`, `plan_blocker` and `commit_plan` in `rail_network.gd`. `plan_piece`, `plan_refusal` and `unplan_last` still plan single pieces for tests and tools; the player no longer uses them.
 - **Rings:** `show_target_rings` and `depot_reach`, with the saved ring scene `scenes/ui/rail_target_ring.tscn`.
 - **Train stops:** `stop_on` uses the Depot's rail ring; `Train.stop_reach` lets a train load anywhere on it.
@@ -100,7 +103,8 @@ So a 100 m line costs 0.1 E/s idle and 0.3 E/s with two trains running. This is 
   - mines are targets;
   - track touching a Depot's ring connects, and track clear of it doesn't;
   - a click inside a ring picks that building, and the second pick suggests one joined line touching both rings;
+  - dragging pulls the track through a point in one joined line still touching both rings, a point no path passes keeps the last shape, and undoing the drag gives the shortest path back;
   - the track is red when no Depot can pay and green when one can, and it lays and is paid for;
   - leaving track laying drops the plan and the rings.
 - **`tests/rail_keys_test.gd`** picks two Depots by real clicks, and checks Backspace on each pick and Enter, with the Build page open.
-- **`tests/rail_runtime_check.gd`** (rendered) picks the Depot and a build site, shows the suggested track (`rail_plan`), lays it with Enter and runs a train load at the larger ring.
+- **`tests/rail_runtime_check.gd`** (rendered) picks the Depot and a build site, shows the suggested track (`rail_plan`), drags it with the mouse (`rail_drag`), lays it with Enter and runs a train load at the larger ring.

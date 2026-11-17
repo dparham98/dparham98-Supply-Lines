@@ -41,7 +41,10 @@ var pending_unit_command := ""
 var placing_rail := false:
 	set(value):
 		placing_rail = value
+		_rail_dragging = false
 		if not value and is_inside_tree() and has_node("RailNetwork"): $RailNetwork.drop_route()
+## While the left button is held on the suggested track, moving the mouse pulls the track through the cursor.
+var _rail_dragging := false
 var placing_depot := false
 var placing_generator := false
 var placing_structure: StringName = &""
@@ -135,11 +138,14 @@ func _input(event: InputEvent) -> void:
 	if not event.physical_keycode in RAIL_KEYS: return
 	get_viewport().set_input_as_handled()
 	if not event.echo: _rail_key(event.physical_keycode)
-const RAIL_HELP := "Click two buildings (Depots, mines or build sites) to connect; the suggested track is green when a Depot can pay for it. Enter lays it; Backspace picks again; Esc stops."
+const RAIL_HELP := "Click two buildings (Depots, mines or build sites) to connect; the suggested track is green when a Depot can pay for it. Drag the track to move it. Enter lays it; Backspace undoes; Esc stops."
 func _rail_key(key: int) -> void:
 	var rails = $RailNetwork
 	if key == KEY_BACKSPACE:
-		if is_instance_valid(rails.route_to):
+		if rails.route_via != null:
+			rails.undrag_route()
+			notify("Track straightened to the shortest path again.")
+		elif is_instance_valid(rails.route_to):
 			rails.clear_plan(); rails.route_to = null
 			notify("Click the building to connect %s to." % rails.target_name(rails.route_from))
 		else:
@@ -165,12 +171,24 @@ func _unhandled_input(event: InputEvent) -> void:
 		if point != null: place_global_plan(point,event.shift_pressed)
 		get_viewport().set_input_as_handled()
 		return
+	# Dragging the suggested track: it follows the cursor while the button is held (docs/RAIL_PLANNING.md).
+	if placing_rail and _rail_dragging and (event is InputEventMouseMotion or (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed)):
+		var camera := get_viewport().get_camera_3d()
+		var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(event.position),camera.project_ray_normal(event.position))
+		if point != null: $RailNetwork.drag_route(point)
+		if event is InputEventMouseButton:
+			_rail_dragging = false
+			notify($RailNetwork.drag_notice())
+		get_viewport().set_input_as_handled()
+		return
 	if placing_rail and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var camera := get_viewport().get_camera_3d()
 		var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(event.position),camera.project_ray_normal(event.position))
-		# A click picks a building to connect; the second pick suggests the track. Nothing is laid or paid until
-		# Enter lays it.
-		if point != null: notify($RailNetwork.pick_target($RailNetwork.target_at(point)))
+		# A click picks a building to connect; the second pick suggests the track. A press on the suggested track
+		# starts dragging it instead. Nothing is laid or paid until Enter lays it.
+		if point != null:
+			if $RailNetwork.near_plan(point,2.5): _rail_dragging = true
+			else: notify($RailNetwork.pick_target($RailNetwork.target_at(point)))
 		get_viewport().set_input_as_handled()
 		return
 	if (placing_depot or placing_generator or not placing_structure.is_empty()) and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
