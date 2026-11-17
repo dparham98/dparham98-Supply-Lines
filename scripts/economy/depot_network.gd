@@ -267,6 +267,28 @@ func show_range(depot: bool) -> void:
 	var ring: Node3D = game.get_node("ConstructionPreview/Range")
 	ring.visible = depot
 	if depot: ring.scale = Vector3.ONE*depot_rules().construction_radius
+## Placement colours (docs/DEPOT_RANGE.md): green where it can be built and paid for, yellow where it can be
+## built but the stock in range can't pay for it, red where it can't be built.
+const PLACE_OK := Color(0.2,1,0.4,0.45)
+const PLACE_SHORT := Color(1,0.85,0.1,0.5)
+const PLACE_BLOCKED := Color(1,0.15,0.1,0.45)
+func placement_colour(buildable: bool, affordable: bool) -> Color:
+	if not buildable: return PLACE_BLOCKED
+	return PLACE_OK if affordable else PLACE_SHORT
+func placement_word(buildable: bool, affordable: bool) -> String:
+	if not buildable: return "BLOCKED"
+	return "BUILD" if affordable else "CAN'T AFFORD"
+const STOCK_KINDS: Array[StringName] = [&"energy",&"iron",&"wood",&"coal"]
+## What the given friendly stockpiles hold between them.
+func area_stock(sources: Array) -> Dictionary:
+	var total := {}
+	for kind in STOCK_KINDS: total[kind] = 0
+	for source in sources:
+		for kind in STOCK_KINDS: total[kind] += source.stockpile.amount(kind)
+	return total
+## One line of stock for the placement label, such as "In range: 120 E · 60 I · 40 W · 60 C".
+func stock_line(stock: Dictionary, label := "In range") -> String:
+	return "%s: %d E · %d I · %d W · %d C" % [label,stock[&"energy"],stock[&"iron"],stock[&"wood"],stock[&"coal"]]
 ## Deploy preview: the Depot footprint and range where the truck would set it down.
 func update_deploy_preview(point: Vector3, truck: Node3D) -> bool:
 	var ghost = game.get_node("ConstructionPreview")
@@ -279,7 +301,8 @@ func update_deploy_preview(point: Vector3, truck: Node3D) -> bool:
 	if preview_material == null:
 		preview_material = ghost.get_node("Footprint").mesh.material.duplicate()
 		ghost.get_node("Footprint").material_override = preview_material
-	preview_material.albedo_color = Color(0.2,1,0.4,0.45) if valid else Color(1,0.15,0.1,0.45)
+	# Deploying costs nothing, so it is only green or red.
+	preview_material.albedo_color = placement_colour(valid,true)
 	var reason := ""
 	if not valid: reason = " · " + (spacing_reason() if not depot_spacing_ok(point,truck.team,truck) else "needs empty buildable land")
 	ghost.get_node("Status").text = "%s · Depot%s" % ["DEPLOY" if valid else "BLOCKED",reason]
@@ -310,15 +333,18 @@ func update_preview(point: Vector3, generator: bool) -> bool:
 	ghost.position = game.ground.tile_to_world(start)+Vector3(size.x*0.5-0.5,0.2,size.y*0.5-0.5)
 	ghost.get_node("Footprint").scale = Vector3(size.x,1,size.y)
 	show_range(not generator and game.placing_structure.is_empty())
-	var valid: bool = builder_valid() and owned_selected() and can_place_size(point,selected,size) and selected.energy >= energy_cost and selected.iron >= iron_cost
-	if not generator and game.placing_structure.is_empty(): valid = valid and depot_spacing_ok(point)
-	if game.placing_structure == &"iron_mine": valid = builder_valid() and can_place_mine(point,selected) and selected.energy >= energy_cost and selected.iron >= iron_cost
+	# The selected Depot pays at once here, so what it holds is the stock in range.
+	var buildable: bool = builder_valid() and owned_selected() and can_place_size(point,selected,size)
+	if not generator and game.placing_structure.is_empty(): buildable = buildable and depot_spacing_ok(point)
+	if game.placing_structure == &"iron_mine": buildable = builder_valid() and owned_selected() and can_place_mine(point,selected)
+	var affordable: bool = owned_selected() and selected.energy >= energy_cost and selected.iron >= iron_cost
 	if preview_material == null:
 		preview_material = ghost.get_node("Footprint").mesh.material.duplicate()
 		ghost.get_node("Footprint").material_override = preview_material
-	preview_material.albedo_color = Color(0.2,1,0.4,0.45) if valid else Color(1,0.15,0.1,0.45)
-	ghost.get_node("Status").text = "%s · payer %s · %d E / %d I" % ["VALID" if valid else "BLOCKED / FUNDS",selected.name if owned_selected() else "none",energy_cost,iron_cost]
-	return valid
+	preview_material.albedo_color = placement_colour(buildable,affordable)
+	var stock := stock_line(area_stock([selected]),str(selected.name)) if owned_selected() else "No Depot selected"
+	ghost.get_node("Status").text = "%s · payer %s · %d E / %d I\n%s" % [placement_word(buildable,affordable),selected.name if owned_selected() else "none",energy_cost,iron_cost,stock]
+	return buildable and affordable
 
 func clear_builder() -> void:
 	construction_builder = null
@@ -494,12 +520,26 @@ func update_global_preview(point: Vector3) -> bool:
 	# A plan placed over piles adopts them: the preview says whether they already cover the build.
 	var on_site := materials_inside(Rect2i(start,spec.size))
 	var covered: bool = game.global_plan_kind != &"rail" and spec.iron > 0 and on_site.get(&"iron",0) >= spec.iron
-	preview_material.albedo_color = (Color(0.35,0.95,0.5,0.55) if covered else Color(1,0.75,0.1,0.5)) if valid else Color(1,0.15,0.1,0.45)
+	# Affordable here: one covering stockpile (the pinned one, if pinned) can pay all the energy, and the iron on
+	# site plus the iron held in range covers the iron (docs/DEPOT_RANGE.md).
+	var sources := covering_sources(start,spec.size)
+	var stock := area_stock(sources)
+	var hud = game.get_node_or_null("Interface")
+	var pinned = hud.global_payer if hud != null and hud.global_pinned and SupplySource.available(hud.global_payer,"player") else null
+	var energy_ok: bool = spec.energy <= 0
+	for source in sources:
+		if (pinned == null or source == pinned) and source.energy >= spec.energy: energy_ok = true
+	var iron_ok: bool = on_site.get(&"iron",0)+stock[&"iron"] >= spec.iron
+	var affordable := energy_ok and iron_ok
+	preview_material.albedo_color = placement_colour(valid,affordable)
 	var site_line := "" if game.global_plan_kind == &"rail" else " · iron on site %d/%d%s" % [on_site.get(&"iron",0),spec.iron," · READY" if covered else ""]
 	if not spaced: site_line = " · "+spacing_reason()
 	elif not valid and not strip_notice(point,spec.size,game.global_plan_kind).is_empty(): site_line = " · keep the Depot Truck strip clear"
-	elif valid and spec.energy > 0 and covering_sources(start,spec.size).is_empty(): site_line += " · no Depot range covers it: nothing pays its energy yet"
-	ghost.get_node("Status").text = "%s · %s · %d E / %d I%s" % ["PLAN" if valid else "BLOCKED",spec.title,spec.energy,spec.iron,site_line]
+	elif valid and spec.energy > 0 and sources.is_empty(): site_line += " · no Depot range covers it: nothing pays its energy yet"
+	elif valid and not energy_ok: site_line += " · no %s in range has %d E" % ["pinned payer" if pinned != null else "stockpile",spec.energy]
+	elif valid and not iron_ok: site_line += " · %d iron short in range" % (spec.iron-on_site.get(&"iron",0)-stock[&"iron"])
+	var area := stock_line(stock) if not sources.is_empty() else "No Depot range here"
+	ghost.get_node("Status").text = "%s · %s · %d E / %d I%s\n%s" % [placement_word(valid,affordable),spec.title,spec.energy,spec.iron,site_line,area]
 	return valid
 ## Piles and crates inside a footprint that still hold something (docs/SITE_CONSTRUCTION.md).
 func stores_inside(rect: Rect2i) -> Array[Node3D]:

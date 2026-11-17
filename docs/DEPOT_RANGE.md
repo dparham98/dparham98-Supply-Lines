@@ -14,6 +14,16 @@ The playtest of main at 9eaed10 (2026-11-15) set the range back up to 75% of the
 
 The playtest of PRs #88 and #89 together (2026-11-16) asked to see all Depot ranges while placing. Every friendly Depot's Territory ring now shows whenever the player places anything: a building or plan from the Build page, a Depot, a Generator, or a Depot Truck's Deploy site. Otherwise only the selected Depot's ring shows, as before. A Depot about to be placed still shows its own range ring around the cursor. Enemy Depots' rings never show.
 
+## Placement colours and stock in range
+
+The playtest of 2026-11-17 asked for the placement footprint to say whether a building can go there and be paid for:
+
+- **Green:** it can be built there, and the stock in range can pay for it.
+- **Yellow:** it can be built there, but the stock in range can't pay for it. A plan can still be placed; it waits for what it lacks.
+- **Red:** it can't be built there (terrain, overlap, Depot spacing or the Depot Truck strip).
+
+For a Build-page plan, "can pay" means one covering Depot or deployed Cargo truck (the pinned payer, if Pin is set) holds all the energy, and the iron on the site plus the iron held by every covering stockpile covers the iron. The label's second line lists what the covering stockpiles hold between them: energy, iron, wood and coal. Out of every range it says "No Depot range here". When placing from a selected Depot, the stock is that Depot's, as it pays at once. Deploying a Depot Truck costs nothing, so its preview is only green or red.
+
 The rest of this section records the halving that came first.
 
 ## Depot range halved
@@ -87,4 +97,5 @@ At 17.5 m no start or expansion on the balanced map had iron inside its range, s
   - that a Generator takes its covering Depot and finds another when that one is lost;
   - that the Assign Depot action and tile are gone;
   - the range ring and status in the Deploy preview.
+- `tests/plan_coverage_test.gd` checks the green, yellow and red placement colours and the stock line.
 - `command_cards_test` and `hud_hotkeys_test` no longer expect the Assign Depot tile.
