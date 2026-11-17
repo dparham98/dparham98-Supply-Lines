@@ -28,6 +28,10 @@ While track laying is armed, these keys go to it before the Build page's tiles. 
   - why it can't be planned there, if it can't;
   - the plan's total iron, and either "connects n/2" or "ENTER LAYS IT".
 
+## Preview size
+
+The playtest of PRs #88 and #89 together (2026-11-16) showed planned pieces drawn far too long, so they seemed to overlap or leave gaps when they were in fact joined. The track models are saved at 0.6 scale, the same as the laid track's model, but setting a model's global transform reset that to 1. The cursor preview on main had the same fault; it went unnoticed because each click laid the piece at once. The preview and the planned pieces now keep the saved scale (`model_scale`), so they are drawn at exactly the size the track is laid.
+
 ## Targets
 
 The plan can be laid only when it connects two targets. The laid track it joins counts as part of the plan, so extending a line that already reaches a Depot needs only one more target.

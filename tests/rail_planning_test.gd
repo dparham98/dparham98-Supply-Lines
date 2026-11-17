@@ -38,6 +38,15 @@ func run() -> void:
 	depot.iron = 1500
 	depot.energy = 1000
 	var radius: float = SupplySource.radius(depot)
+	# Draw the cursor preview once first, as the game does before any click: planned pieces must still be drawn
+	# at the laid track's size, not the larger size a bare global transform gives the model.
+	game.placing_rail = true
+	rails._process(0.016)
+	game.placing_rail = false
+	var sample: Node3D = rails.scene_for("straight").instantiate()
+	var laid_scale: Vector3 = sample.get_node("Visuals/Model").scale
+	sample.free()
+	if not check(game.get_node("RailPreview/Straight").global_transform.basis.get_scale().is_equal_approx(laid_scale),"The cursor preview should be drawn at the laid track's size"): return
 	# A line of seven straights (about 34 m) out from beside the Depot, past its range, on open land.
 	var start := Vector3.INF
 	var heading := Vector3.ZERO
@@ -48,6 +57,8 @@ func run() -> void:
 		if start != Vector3.INF: break
 	if not check(start != Vector3.INF,"No open line out from the Depot"): return
 	var pieces_before: int = rails.pieces.size()
+	for entry in rails.pending:
+		if not check(entry.ghost.global_transform.basis.get_scale().is_equal_approx(laid_scale),"Planned pieces should be drawn at the laid track's size: %s" % entry.ghost.global_transform.basis.get_scale()): return
 	var tip: Dictionary = far_end(start)
 	if not check(Vector2(tip.position.x-depot.global_position.x,tip.position.z-depot.global_position.z).length() > radius+5.0,"The plan should reach past the Depot's %.1f m range" % radius): return
 	if not check(rails.pending.size() == 7 and rails.pieces.size() == pieces_before and depot.iron == 1500,"Planning must not lay or pay anything"): return

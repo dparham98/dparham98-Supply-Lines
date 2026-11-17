@@ -26,6 +26,7 @@ var _poll_left := 0.0
 var _announced_depots := ""
 ## Planned track not laid yet (docs/RAIL_PLANNING.md): {kind, transform, cells, ghost}, in the order placed.
 var pending: Array[Dictionary] = []
+var _model_scales := {}
 ## Upkeep owed by each line, keyed by the line's lowest piece id; whole units are paid as they accrue.
 var _upkeep_owed := {}
 @onready var ground = get_tree().get_first_node_in_group("terrain_grid")
@@ -500,7 +501,7 @@ func _process(delta: float) -> void:
 		var show: bool = child.name.to_snake_case() == kind
 		child.visible = show
 		if not show: continue
-		child.global_transform = spot.transform
+		child.global_transform = spot.transform.scaled_local(model_scale(child))
 		_tint_ghost(child,refused.is_empty())
 	preview.get_node("Status").global_position = spot.transform*probe(kind).local_point(probe(kind).length()*0.5)+Vector3.UP*2.0
 	var hud = game.get_node("Interface")
@@ -517,6 +518,12 @@ func _poll_power() -> void:
 		_announce()
 	for piece in pieces:
 		if is_instance_valid(piece): piece.update_color()
+## The scale a preview model was saved with: the same as the laid track's model. Setting a global transform
+## replaces it, so it is read once, before the first placement, and applied again every time.
+func model_scale(model: Node3D) -> Vector3:
+	var key := model.get_instance_id()
+	if not _model_scales.has(key): _model_scales[key] = model.scale
+	return _model_scales[key]
 func _tint_ghost(ghost: Node3D, valid: bool, invalid_colour := Color(1.0,0.2,0.15,0.45)) -> void:
 	var colour := Color(0.3,1.0,0.5,0.45) if valid else invalid_colour
 	for item in ghost.find_children("*","MeshInstance3D",true,false):
@@ -596,8 +603,7 @@ func _plan_ghost(kind: String, xf: Transform3D) -> Node3D:
 	var parent: Node = game.get_node("Entities/Rails") if game.has_node("Entities/Rails") else game
 	parent.add_child(ghost,true)
 	ghost.visible = true
-	ghost.global_transform = xf
-	ghost.scale = model.scale
+	ghost.global_transform = xf.scaled_local(model_scale(model))
 	# The copy gets its own materials, so tinting it leaves the cursor preview alone.
 	for item in ghost.find_children("*","MeshInstance3D",true,false): item.material_override = null
 	return ghost
