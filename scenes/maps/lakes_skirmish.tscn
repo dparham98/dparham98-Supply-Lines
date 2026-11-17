@@ -67,12 +67,12 @@ preview_zoom = 72.0
 [node name="Sites" type="Node3D" parent="."]
 editor_description = "Where each side is meant to settle. Markers only: nothing reads them in play. The map test measures from them, and an opponent can be placed on EnemyStart later."
 [node name="PlayerStart" type="Marker3D" parent="Sites"]
-editor_description = "Start A. The player's Depot stands here."
-position = Vector3(-184,0,0)
+editor_description = "Start A. The player's Depot stands here, 8 m north of the yard's centre so the home mine is about 19 m away (playtest of 2026-11-17)."
+position = Vector3(-184,0,-8)
 gizmo_extents = 6.0
 [node name="EnemyStart" type="Marker3D" parent="Sites"]
 editor_description = "Start B: start A turned half a circle about the map centre. No opponent yet; a Depot placed here stands on the mirrored footprint."
-position = Vector3(184,0,0)
+position = Vector3(184,0,-8)
 gizmo_extents = 6.0
 [node name="StartNorthWest" type="Marker3D" parent="Sites"]
 position = Vector3(-153.5,0,-155.5)
@@ -89,7 +89,7 @@ gizmo_extents = 6.0
 [node name="Entities" type="Node3D" parent="."]
 [node name="Buildings" type="Node3D" parent="Entities"]
 [node name="Depot" parent="Entities/Buildings" instance=ExtResource("depot")]
-position = Vector3(-184,0,0)
+position = Vector3(-184,0,-8)
 initial_energy = 200
 initial_iron = 60
 initial_wood = 40
@@ -139,36 +139,36 @@ position = Vector3(18.5,0,173.5)
 [node name="Resources" type="Node3D" parent="Entities"]
 [node name="Units" type="Node3D" parent="Entities"]
 [node name="Infantry" parent="Entities/Units" instance=ExtResource("infantry")]
-position = Vector3(-181.5,0,9.5)
+position = Vector3(-181.5,0,1.5)
 [node name="StarterTruck" parent="Entities/Units" instance=ExtResource("cargo_start")]
-position = Vector3(-193.5,0,1.5)
+position = Vector3(-193.5,0,-6.5)
 [node name="EnemyInfantry" parent="Entities/Units" instance=ExtResource("infantry")]
 team = "enemy"
-position = Vector3(195.5,0,0.5)
+position = Vector3(195.5,0,-7.5)
 [node name="EnemyScout" parent="Entities/Units" instance=ExtResource("scout")]
 team = "enemy"
-position = Vector3(192.5,0,7.5)
+position = Vector3(192.5,0,-0.5)
 [node name="EnemyGrenadier" parent="Entities/Units" instance=ExtResource("grenadier")]
 team = "enemy"
-position = Vector3(185.5,0,10.5)
+position = Vector3(185.5,0,2.5)
 [node name="EnemyTank" parent="Entities/Units" instance=ExtResource("tank")]
 team = "enemy"
-position = Vector3(178.5,0,9.5)
+position = Vector3(178.5,0,1.5)
 [node name="EnemyMotorcycle" parent="Entities/Units" instance=ExtResource("motorcycle")]
 team = "enemy"
-position = Vector3(173.5,0,3.5)
+position = Vector3(173.5,0,-4.5)
 [node name="EnemyDrone" parent="Entities/Units" instance=ExtResource("drone")]
 team = "enemy"
-position = Vector3(173.5,0,-3.5)
+position = Vector3(173.5,0,-11.5)
 [node name="EnemyUbermech" parent="Entities/Units" instance=ExtResource("ubermech")]
 team = "enemy"
-position = Vector3(178.5,0,-9.5)
+position = Vector3(178.5,0,-17.5)
 [node name="EnemyCargoTruck" parent="Entities/Units" instance=ExtResource("cargo")]
 team = "enemy"
-position = Vector3(185.5,0,-10.5)
+position = Vector3(185.5,0,-18.5)
 [node name="EnemyDepotTruck" parent="Entities/Units" instance=ExtResource("truck")]
 team = "enemy"
-position = Vector3(192.5,0,-7.5)
+position = Vector3(192.5,0,-15.5)
 [node name="RailPreview" type="Node3D" parent="."]
 visible = false
 [node name="Straight" parent="RailPreview" instance=ExtResource("ghost_straight")]
