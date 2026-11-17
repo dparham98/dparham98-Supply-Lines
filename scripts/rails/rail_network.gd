@@ -11,6 +11,8 @@ signal changed
 @export var fork_left_scene: PackedScene
 @export var fork_right_scene: PackedScene
 @export var train_scene: PackedScene
+## The ring drawn round each rail target while track is planned: amber, green once the plan touches it.
+@export var target_ring_scene: PackedScene = preload("res://scenes/ui/rail_target_ring.tscn")
 ## Snap distance from the cursor to a free end of an existing piece.
 @export var snap_distance := 4.0
 const SAMPLE := 0.5
@@ -29,6 +31,8 @@ var pending: Array[Dictionary] = []
 var _model_scales := {}
 ## Whether the cursor piece snaps to a track end this frame; R then mirrors it instead of turning it.
 var preview_snapped := false
+## Target rings shown while planning, keyed by the target's instance id.
+var _target_rings := {}
 ## Upkeep owed by each line, keyed by the line's lowest piece id; whole units are paid as they accrue.
 var _upkeep_owed := {}
 @onready var ground = get_tree().get_first_node_in_group("terrain_grid")
@@ -359,7 +363,7 @@ static func line_point(track: Dictionary, s: float) -> Array:
 ## Where a train stops for a Depot on a piece: nearest centre-line point within the loading radius.
 func stop_on(piece: Node3D, depot: Node3D, lane := -1) -> Dictionary:
 	var hit: Dictionary = piece.nearest(depot.global_position,lane)
-	return hit if hit.gap <= depot.dropoff_range else {}
+	return hit if hit.gap <= depot.dropoff_range+piece.half_width() else {}
 ## Every lane of friendly track in `depot`'s loading area: {piece, lane, distance}.
 func loading_stops(depot: Node3D, team: String) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
@@ -434,7 +438,7 @@ func connects(kind: String, xf: Transform3D, team := "player") -> bool:
 			var total: float = p.length(lane)
 			for i in range(maxi(8,int(total/0.25))+1):
 				var at: Vector3 = xf*p.local_point(total*i/maxi(8,int(total/0.25)),lane)
-				if Vector2(at.x,at.z).distance_to(centre) <= depot.dropoff_range: return true
+				if Vector2(at.x,at.z).distance_to(centre) <= depot.dropoff_range+p.half_width(): return true
 	return false
 ## Whether `payer` can lay this piece here: a living friendly Depot whose territory covers every
 ## tile under it, open land with no other track, connected to a Depot, and the iron for it.
@@ -491,6 +495,7 @@ func _process(delta: float) -> void:
 	var active: bool = game.placing_rail
 	preview.visible = active
 	preview_snapped = false
+	show_target_rings(active)
 	if not active: return
 	var camera := game.get_viewport().get_camera_3d()
 	var mouse := game.get_viewport().get_mouse_position()
@@ -636,8 +641,11 @@ func joined_pieces() -> Array[Node3D]:
 			for piece in lines()[meets.piece.get_instance_id()].pieces:
 				if is_instance_valid(piece) and not result.has(piece): result.append(piece)
 	return result
-## How near a target's centre the track must pass: its footprint's half size plus the connect reach.
+## The radius of a target's ring. Track connects once its edge touches the ring: its centre line within the
+## radius plus half the track's width. A Depot's ring is its loading area, so a train can be built on any track
+## that connects to it; other targets take half their footprint plus the connect reach.
 func target_reach(node: Node3D) -> float:
+	if node.is_in_group("depots") and node.get("dropoff_range") != null: return node.dropoff_range
 	var size := Vector2i(2,2)
 	var depots = game.get_node_or_null("DepotNetwork")
 	if node.is_in_group("construction_plans"): size = node.spec.size
@@ -663,7 +671,7 @@ func _plan_passes(target: Node3D, reach: float) -> bool:
 			var steps := maxi(4,int(total/0.5))
 			for i in range(steps+1):
 				var at: Vector3 = (entry.transform as Transform3D)*p.local_point(total*i/steps,lane)
-				if Vector2(at.x,at.z).distance_to(centre) <= reach: return true
+				if Vector2(at.x,at.z).distance_to(centre) <= reach+p.half_width(): return true
 	return false
 ## The targets the plan, with the laid track it joins, connects.
 func plan_targets(team := "player") -> Array[Node3D]:
@@ -675,9 +683,32 @@ func plan_targets(team := "player") -> Array[Node3D]:
 		var hit := _plan_passes(target,reach)
 		for piece in laid:
 			if hit: break
-			if piece.nearest(target.global_position).gap <= reach: hit = true
+			if piece.nearest(target.global_position).gap <= reach+piece.half_width(): hit = true
 		if hit: result.append(target)
 	return result
+## While track is planned, rings every target at its reach: amber, green once the plan connects it. Rings go
+## when track laying ends.
+func show_target_rings(active: bool) -> void:
+	var seen := {}
+	if active:
+		var connected := plan_targets()
+		for target in plan_target_candidates():
+			var key := target.get_instance_id()
+			seen[key] = true
+			var ring = _target_rings.get(key)
+			if not is_instance_valid(ring):
+				ring = target_ring_scene.instantiate()
+				add_child(ring)
+				_target_rings[key] = ring
+			var reach := target_reach(target)
+			ring.global_position = target.global_position+Vector3.UP*0.2
+			ring.scale = Vector3(reach,1,reach)
+			ring.get_node("Open").visible = not connected.has(target)
+			ring.get_node("Connected").visible = connected.has(target)
+	for key in _target_rings.keys():
+		if seen.has(key): continue
+		if is_instance_valid(_target_rings[key]): _target_rings[key].queue_free()
+		_target_rings.erase(key)
 ## The Depot that pays for the plan: the pin when it can, else the connected Depot with all the iron nearest
 ## the plan's first piece, else the nearest friendly Depot with it.
 func plan_payer(pinned = null) -> Node3D:

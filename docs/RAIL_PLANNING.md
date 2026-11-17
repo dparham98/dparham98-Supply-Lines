@@ -42,7 +42,11 @@ The targets are:
 - mines (any Iron Mine; mines are being redesigned as caves elsewhere);
 - unfinished build sites, of any kind except rail. The playtest asked for sites that only have materials on them; for now any site counts, as agreed.
 
-**Connecting** doesn't mean ending there. The track's centre line only has to pass within reach of the target: half the target's footprint plus `connect_reach` (4 m) in `RailRules`.
+**Connecting** doesn't mean ending there. While track is planned, every target shows a ring: amber, turning green once the plan connects it. Track connects as soon as its edge touches the ring; it doesn't have to be inside it.
+
+- **A Depot's ring is its loading area** (`dropoff_range`, 8.5 m). That is where trains are built, load and unload, so a train can always be built on track that connects to a Depot. The playtest of 2026-11-16 found the two had differed: a plan could connect to a Depot a little outside its loading area, and then no train could be built there.
+- **A mine's or build site's ring** is half its footprint plus `connect_reach` (4 m) in `RailRules`.
+- "Touches" means the track's centre line comes within the ring's radius plus half the track's width (1.5 m). The loading area uses the same rule, so track whose edge reaches a Depot's ring is a loading stop.
 
 ## Payment
 

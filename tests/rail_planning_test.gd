@@ -66,6 +66,12 @@ func run() -> void:
 	var targets: Array[Node3D] = rails.plan_targets()
 	if not check(targets.size() == 1 and targets[0] == depot,"The plan should connect only the Depot so far: %s" % [targets]): return
 	if not check(rails.plan_blocker().contains("two targets"),"The plan should say it needs two targets: "+rails.plan_blocker()): return
+	# While planning, every target has a ring at its reach: the Depot's is its loading area, green once connected.
+	game.placing_rail = true
+	rails._process(0.016)
+	var ring = rails._target_rings.get(depot.get_instance_id())
+	if not check(rails._target_rings.size() == rails.plan_target_candidates().size() and ring != null,"Every rail target should have a ring while planning"): return
+	if not check(ring.get_node("Connected").visible and not ring.get_node("Open").visible and is_equal_approx(ring.scale.x,depot.dropoff_range),"The connected Depot's ring should be green, at its loading range"): return
 	if not check(rails.commit_plan().is_empty() and rails.pieces.size() == pieces_before and rails.pending.size() == 7 and depot.iron == 1500,"A plan with one target must not be laid"): return
 	# Backspace takes back a piece, and a piece off the plan's free ends is refused.
 	rails.unplan_last()
@@ -90,6 +96,9 @@ func run() -> void:
 	if not check(laid.size() == 7 and rails.pending.is_empty() and rails.pieces.size() == pieces_before+7 and depot.iron == 1500-cost,"Laying should place every piece and charge the Depot once: %d laid, %d iron" % [laid.size(),depot.iron]): return
 	var ghosts := game.find_children("PlannedTrack*","Node3D",true,false).filter(func(n): return not n.is_queued_for_deletion())
 	if not check(ghosts.is_empty(),"The planned ghosts should be gone: %d left" % ghosts.size()): return
+	# A train can be built on track that connects to the Depot: it is in the Depot's loading area.
+	var stopping: Array = rails.loading_stops(depot,"player").map(func(s): return s.piece)
+	if not check(laid.any(func(p): return stopping.has(p)) and not rails.spawn_stop(depot).is_empty(),"A train should be buildable on track connected to the Depot"): return
 	var outer: Node3D = laid[laid.size()-1]
 	if not check(outer.global_position.distance_to(depot.global_position) > radius and rails.friendly_piece(outer,"player") and rails.powered(outer,"player"),"Track past the range should be friendly and powered"): return
 	# Upkeep: 0.1 E/s per 100 m idle, twice that with one train running, paid from the Depot.
@@ -117,6 +126,20 @@ func run() -> void:
 	var mines := get_nodes_in_group("mines")
 	if not check(not mines.is_empty() and rails.plan_target_candidates().has(mines[0]),"Mines should be rail targets"): return
 	if not check(rails.target_reach(mines[0]) > rails.rules.connect_reach,"A mine's reach should include its footprint"): return
+	# Track connects once its edge touches the ring: a straight beside the Depot whose centre line is 1 m outside
+	# the loading range connects, and one 2.5 m outside does not.
+	var touched := 0
+	for side in [Vector3.RIGHT,Vector3.LEFT,Vector3.FORWARD,Vector3.BACK]:
+		var along := Vector3(-side.z,0,side.x)
+		var results := []
+		for gap in [1.0,2.5]:
+			var from: Vector3 = depot.global_position+side*(depot.dropoff_range+gap)-along*2.4
+			rails.clear_plan()
+			if rails.placement("straight",from,along).snapped or not rails.plan_piece("straight",from,along).is_empty(): break
+			results.append(rails.plan_targets().has(depot))
+		if results == [true,false]: touched += 1
+	rails.clear_plan()
+	if not check(touched > 0,"Track touching the Depot's ring should connect it, and track clear of it should not"): return
 	# Leaving track laying drops the plan.
 	game.placing_rail = true
 	rails.clear_plan()
@@ -127,5 +150,7 @@ func run() -> void:
 	if not check(open != Vector3.INF and rails.pending.size() == 1,"No spot for a last planned piece"): return
 	game.placing_rail = false
 	if not check(rails.pending.is_empty(),"Leaving track laying should drop the plan"): return
+	rails._process(0.016)
+	if not check(rails._target_rings.is_empty(),"The target rings should go when track laying ends"): return
 	print("RAIL_PLANNING_TEST_PASSED")
 	quit(0)

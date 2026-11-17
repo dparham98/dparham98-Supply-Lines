@@ -1,0 +1,36 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="open_mat"]
+shading_mode = 0
+albedo_color = Color(1,0.75,0.2,0.8)
+transparency = 1
+no_depth_test = true
+[sub_resource type="TorusMesh" id="open_mesh"]
+inner_radius = 0.96
+outer_radius = 1.0
+rings = 96
+ring_segments = 4
+material = SubResource("open_mat")
+[sub_resource type="StandardMaterial3D" id="connected_mat"]
+shading_mode = 0
+albedo_color = Color(0.3,1,0.5,0.85)
+transparency = 1
+no_depth_test = true
+[sub_resource type="TorusMesh" id="connected_mesh"]
+inner_radius = 0.96
+outer_radius = 1.0
+rings = 96
+ring_segments = 4
+material = SubResource("connected_mat")
+
+[node name="RailTargetRing" type="Node3D"]
+editor_description = "Shown around each rail target while track is planned (docs/RAIL_PLANNING.md). Scaled to the target's connect radius; track connects once its edge touches the ring."
+
+[node name="Open" type="MeshInstance3D" parent="."]
+mesh = SubResource("open_mesh")
+cast_shadow = 0
+
+[node name="Connected" type="MeshInstance3D" parent="."]
+visible = false
+mesh = SubResource("connected_mesh")
+cast_shadow = 0
