@@ -20,8 +20,15 @@ var builder_required := false
 func select_depot(node: Node3D) -> void:
 	selected = node
 	if not builder_required: game.selected_building = node if is_instance_valid(node) and node.is_in_group("depots") else null
+	show_territories(placing_anything())
+## Whether the player is placing anything: a building or plan, a Depot, a Generator, or a Depot Truck's site.
+func placing_anything() -> bool:
+	return not game.global_plan_kind.is_empty() or game.placing_depot or game.placing_generator or not game.placing_structure.is_empty() or deploying_truck() != null
+## Every friendly Depot's Territory ring shows while the player places anything, so they can see where it can
+## go (docs/DEPOT_RANGE.md). Otherwise only the selected Depot's ring shows.
+func show_territories(placing: bool) -> void:
 	for depot in get_tree().get_nodes_in_group("depots"):
-		depot.get_node("Territory").visible = depot == selected and depot.team == "player"
+		depot.get_node("Territory").visible = depot.team == "player" and (placing or depot == selected)
 func owned_selected() -> bool:
 	return SupplySource.available(selected,"player")
 ## The mine scene for a spot: the portal mine on a mine site, the pithead on an ore field.
@@ -236,6 +243,7 @@ func _process(_delta: float) -> void:
 	if ghost == null: return
 	var truck := deploying_truck()
 	ghost.visible = not game.global_plan_kind.is_empty() or game.placing_depot or game.placing_generator or not game.placing_structure.is_empty() or truck != null
+	show_territories(ghost.visible)
 	if not ghost.visible: return
 	var camera := game.get_viewport().get_camera_3d()
 	var mouse := game.get_viewport().get_mouse_position()

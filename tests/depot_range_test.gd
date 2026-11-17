@@ -41,6 +41,14 @@ func run() -> void:
 	await process_frame
 	if not lone.is_queued_for_deletion():
 		if not check(lone.assigned_depot == null,"A Generator outside every range should have no Depot"): return
+	# Placing a building shows every friendly Depot's range; finishing shows only the selected one's.
+	network.select_depot(depot)
+	game.global_plan_kind = &"generator"
+	network._process(0.0)
+	if not check(depot.get_node("Territory").visible and second.get_node("Territory").visible,"Placing a building should show every friendly Depot's range"): return
+	game.global_plan_kind = &""
+	network._process(0.0)
+	if not check(depot.get_node("Territory").visible and not second.get_node("Territory").visible,"After placing, only the selected Depot's range should show"): return
 	# Deploy preview: a selected Depot Truck waiting for a site shows the footprint and the range ring.
 	var truck: Node3D = load("res://scenes/gameplay/depot_truck.tscn").instantiate()
 	truck.position = depot.global_position+Vector3(-90,0,-90)
@@ -50,6 +58,8 @@ func run() -> void:
 	for unit in get_nodes_in_group("units"): unit.set_selected(unit == truck)
 	game.pending_unit_command = "deploy"
 	if not check(network.deploying_truck() == truck,"Deploy should find the selected truck"): return
+	network._process(0.0)
+	if not check(depot.get_node("Territory").visible and second.get_node("Territory").visible,"Choosing a Deploy site should show every friendly Depot's range"): return
 	var ghost = game.get_node("ConstructionPreview")
 	var far: Vector3 = truck.global_position
 	var valid: bool = network.update_deploy_preview(far,truck)

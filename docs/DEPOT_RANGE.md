@@ -10,6 +10,10 @@ The playtest of main at 9eaed10 (2026-11-15) set the range back up to 75% of the
 - Deployed Cargo trucks get 13.125 m.
 - The iron fields moved in for 17.5 m stay inside the larger range.
 
+## Every range shows while placing
+
+The playtest of PRs #88 and #89 together (2026-11-16) asked to see all Depot ranges while placing. Every friendly Depot's Territory ring now shows whenever the player places anything: a building or plan from the Build page, a Depot, a Generator, or a Depot Truck's Deploy site. Otherwise only the selected Depot's ring shows, as before. A Depot about to be placed still shows its own range ring around the cursor. Enemy Depots' rings never show.
+
 The rest of this section records the halving that came first.
 
 ## Depot range halved
