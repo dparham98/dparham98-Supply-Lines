@@ -32,3 +32,12 @@ The ground under and around the mountains uses the desert tiles darkened to ston
 - `tests/mountains_runtime_check.gd` (rendered): lit rock and shadow near the player Depot, and saves play-zoom, close and whole-map views.
 
 The look was set by eye against renders at the default camera angle. At the closest zoom the rock looks softer than it does at play distance.
+
+## Ledges and cut stone (2026-11-16)
+
+The mountains were restyled towards blocks and shelves, after a concept picture of that date. The original map's mesh was not rebuilt; the balanced, mine-site trial and Two Lakes meshes were.
+
+- **Ledges.** `build_mountain_mesh.gd` breaks the slope into steps of `LEDGE` (2.2 m) whose level wanders with noise, blended in by `LEDGE_STRENGTH` (0.8), and the foot rises faster (`RISE` 2.9, was 3.6). Steep faces stand between level shelves.
+- **Cut stone.** `mountain_rock.gdshader` bends the light towards each small face of the mesh (`facet`, 0.55), darkens steep faces a little against the shelves, deepens the strata, and puts rough grass on shelves above the foot (`shelf_grass`, `shelf_grass_amount`).
+- **Less snow.** The balanced map's rock material, which the newer maps share, raises `snow_line` to 8.7 m, so snow lies only on the highest shelves.
+- **Mine sites.** See [MINE_SITES.md](MINE_SITES.md) for how the rock is shaped round a cut.

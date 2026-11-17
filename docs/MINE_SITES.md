@@ -22,7 +22,7 @@ A mine built on a site is the portal mine of [PORTAL_MINE_MODEL.md](PORTAL_MINE_
 
 ## The cut in the mountain
 
-`scripts/tools/build_mountain_mesh.gd` shapes the mountain as if the site were still rock, so the mountain keeps its height around it. It then leaves the mesh open over the site's cells and closes the opening with sheer walls down to the ground. The mountain's outline normally wanders a few metres from the cells; within 6 m of a site it is held to the cells, so the cut lines up with the mine. The walls are low at the mouth and rise to the mountain's own height at the back.
+`scripts/tools/build_mountain_mesh.gd` shapes the mountain as if the site were still rock, so the mountain keeps its height around it. It then leaves the mesh open over the site's cells and closes the opening with sheer walls down to the ground. The mountain's outline normally wanders a few metres from the cells; within 6 m of a site it is held to the cells, so the cut lines up with the mine. Round a cut the rock is held down to meet a mine standing in it: about 4.7 m at the cut's back, which is where the portal mine's rock collar ends, 1.7 m at its mouth, and rising again by 1.15 m for each metre away. The cut's walls are sheer up to that height.
 
 The floor of the cut is the ground shader's kind 7: the stony ground of the mountain foot, stained with rust (`mine_site_stain`). No ore rocks stand on it.
 

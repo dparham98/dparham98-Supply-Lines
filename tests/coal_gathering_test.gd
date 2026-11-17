@@ -22,6 +22,9 @@ func run() -> void:
 		for node in get_nodes_in_group(group): node.set_process(false)
 	var ground = game.ground
 	var rules: HarvestingRules = ground.harvesting_rules
+	# This test covers digging coal by hand, the rule before coal mines (docs/COAL_MINES.md). tests/coal_mine_test.gd
+	# covers the mine.
+	rules.coal_needs_mine = false
 	var network = game.get_node("DepotNetwork")
 	if not check(ground.Terrain.COAL == 6 and ground.TERRAIN_NAMES.size() == 8 and ground.TERRAIN_NAMES[6].begins_with("Coal"), "Coal is not a terrain category"): return
 
@@ -34,7 +37,7 @@ func run() -> void:
 	var far: Vector2i = field.cells[0]
 	if not check(ground.get_terrain(far) == 6 and not ground.is_tile_valid(far) and not ground.is_footprint_valid(far, Vector2i.ONE), "Coal cells must not be buildable"): return
 	if not check(not ground.can_traverse(far, MobilityRules.Layer.GROUND) and not ground.can_traverse(far, MobilityRules.Layer.FOREST) and ground.can_traverse(far, MobilityRules.Layer.AIR), "Only air units may cross coal"): return
-	if not check(ground.forest_amount(far) == 0 and ground.iron_amount(far) == 0 and not ground.ore_footprint_valid(far, Vector2i.ONE), "Coal cells are neither forest nor iron"): return
+	if not check(ground.forest_amount(far) == 0 and ground.iron_amount(far) == 0, "Coal cells are neither forest nor iron"): return
 
 	# Finite and shared: both teams draw on the same cell.
 	var shared = ground.coal_source(far)
@@ -76,14 +79,15 @@ func run() -> void:
 
 	# The Infantry digs, delivers, and carries on into the next cell when the first is dug out.
 	var terrain: Node3D = game.get_node("Terrain")
-	if not check(terrain.coal_state != null and terrain.coal_state.indices[0].has(nearest), "Coal lumps are not bound to their cells"): return
+	# Coal lies in the ground: no lumps stand on it, and the ground shader draws the seam.
+	if not check(terrain.coal_state == null and not terrain.has_node("Landmarks/CoalDeposits"), "Coal should have no lumps standing on it"): return
 	var source = ground.coal_source(nearest)
 	worker.command_gather(source)
 	var goal: int = rules.coal_per_tile+10
 	step(worker, 60*240, func(): return depot.coal >= goal)
 	if not check(depot.coal == goal, "Infantry delivered %d coal, expected %d (state '%s')" % [depot.coal, goal, worker.state]): return
 	if not check(ground.get_terrain(nearest) == 0 and ground.can_traverse(nearest) and ground.is_tile_valid(nearest) and ground.cleared_coal.has(nearest) and ground.coal_source(nearest) == null, "A dug-out coal cell should become open ground"): return
-	if not check(not terrain.coal_state.indices[0].has(nearest), "The dug-out cell kept its coal lumps"): return
+	if not check(ground._clearing_mask.get_pixel(nearest.x, nearest.y).r > 0.5, "The dug-out cell is not drawn as bare ground"): return
 	if not check(worker.source != source and is_instance_valid(worker.source) and field.cells.has(worker.source.cell) and worker.order in ["gather", "return"], "Infantry did not move on to the next cell of the field"): return
 	if not check(ground.coal_field_remaining(field)+depot.coal+worker.cargo == 990, "Coal was created or lost: %d in the field, %d delivered, %d carried" % [ground.coal_field_remaining(field), depot.coal, worker.cargo]): return
 

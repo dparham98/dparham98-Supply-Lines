@@ -42,8 +42,9 @@ func run() -> void:
 			for dx in range(site.size.x): iron += ground.iron_amount(site.position+Vector2i(dx,dz))
 		if not check(iron == 7500,"Site %s holds %d iron" % [site,iron]): return
 		if ground.iron_mines.has(site.position): built += 1
-	# Each start in play has its mine, the portal mine, in the mountain north of its Depot.
-	if not check(built == 2,"Both starts in play should have their home mine built: %d" % built): return
+	# Every site has its mine from the start, and no coal lumps stand on the seams.
+	if not check(built == 20,"Every mine site should start with its mine: %d of 20" % built): return
+	if not check(not game.get_node("Terrain").has_node("Landmarks/CoalDeposits"),"Coal should lie in the ground, with no lumps on it"): return
 	for name in ["IronMine","IronMineB"]:
 		var mine = game.get_node("Entities/Buildings/"+name)
 		if not check(is_instance_valid(mine) and mine.cells.size() == 12 and mine.get_node("Visuals/Model").player.has_animation(&"Work"),"%s is not a portal mine on its site" % name): return

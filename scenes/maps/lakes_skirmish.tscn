@@ -33,7 +33,7 @@
 [ext_resource type="PackedScene" path="res://scenes/gameplay/material_pile.tscn" id="pile"]
 [ext_resource type="Texture2D" path="res://assets/maps/lakes/layout.png" id="layout"]
 [node name="LakesSkirmish" type="Node3D" groups=["skirmish"]]
-editor_description = "Two Lakes (docs/TWO_LAKES_MAP.md): six starts, a forested Crossing between two lakes in the middle and open ways round them. The player holds the West start; the East start has no opponent yet, only the EnemyStart marker and one enemy of each unit type. The east is the west mirrored: move a marker and move its partner to the same z with x negated."
+editor_description = "Two Lakes (docs/TWO_LAKES_MAP.md): six starts, a forested Crossing between two lakes in the middle and open ways round them. Every mine site has its mine from the start. The player holds the West start; the East start has no opponent yet, only the EnemyStart marker and one enemy of each unit type. The east is the west mirrored: move a marker and move its partner to the same z with x negated."
 script = ExtResource("game")
 tracer_scene = ExtResource("tracer")
 pile_scene = ExtResource("pile")
@@ -100,6 +100,42 @@ position = Vector3(-180.5,0,-26.5)
 [node name="IronMineB" parent="Entities/Buildings" instance=ExtResource("site_mine")]
 editor_description = "Starter mine on start B's iron field, mirroring start A's."
 position = Vector3(180.5,0,-26.5)
+[node name="Mine01" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-83.5,0,-217.5)
+[node name="Mine02" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(82.5,0,-217.5)
+[node name="Mine03" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-150.5,0,-182.5)
+[node name="Mine04" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(149.5,0,-182.5)
+[node name="Mine05" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-18.5,0,-154.5)
+[node name="Mine06" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(18.5,0,-154.5)
+[node name="Mine07" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-130.5,0,-71.5)
+[node name="Mine08" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(129.5,0,-71.5)
+[node name="Mine09" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-46.5,0,-24.5)
+[node name="Mine10" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(46.5,0,-24.5)
+[node name="Mine11" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-10.5,0,-23.5)
+[node name="Mine12" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(9.5,0,-23.5)
+[node name="Mine13" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-109.5,0,99.5)
+[node name="Mine14" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(108.5,0,99.5)
+[node name="Mine15" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-146.5,0,135.5)
+[node name="Mine16" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(145.5,0,135.5)
+[node name="Mine17" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-18.5,0,173.5)
+[node name="Mine18" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(18.5,0,173.5)
 [node name="Resources" type="Node3D" parent="Entities"]
 [node name="Units" type="Node3D" parent="Entities"]
 [node name="Infantry" parent="Entities/Units" instance=ExtResource("infantry")]

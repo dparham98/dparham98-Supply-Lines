@@ -52,7 +52,7 @@ The goal of a game is to take the middle and entrench there, and so out-produce 
 | `scripts/tools/draw_lakes_layout.gd` | Draws `assets/maps/lakes/layout.png` from scratch, measures it and writes `docs/images/two_lakes_layout.png`. Running it again overwrites hand edits to the layout. |
 | `assets/maps/lakes/` | The layout, the files built from it, the ground material, the mountain mesh and the sunken water's meshes. |
 | `scenes/maps/lakes_terrain.tscn`, `lakes_terrain_landmarks.tscn` | The terrain and its saved scenery. |
-| `scenes/maps/lakes_skirmish.tscn` | The playable scene. The player holds the West start with its mine built; the East start has its mine and one enemy of each unit type, as on the balanced map. The other four starts are markers under `Sites`. |
+| `scenes/maps/lakes_skirmish.tscn` | The playable scene. Every one of the 20 mine sites has its mine from the start (they are shared, so any side's Infantry can work them). The player holds the West start; the East start has one enemy of each unit type, as on the balanced map. The other four starts are markers under `Sites`. |
 | `tests/two_lakes_map_test.gd` | Headless: the mirror, the mine sites, the coal, the built home mines, and that the open way goes round a lake while the straight road is shut by forest. |
 | `tests/two_lakes_runtime_check.gd` | Rendered: the whole map, the West start, the Crossing, the Crag and a pass, and the frame rate. |
 
@@ -70,6 +70,11 @@ godot --headless --path . --script res://tests/two_lakes_map_test.gd
 ```
 
 The map's `terrain_data.png` and `ground_blend.png` must stay uncompressed (`detect_3d/compress_to=0` in their `.import` files), as on the other maps.
+
+## How it is drawn
+
+- **Mines stand from the start**, so the rock round each cut is shaped to meet one: about 4.7 m high at the cut's back, where the mine's own rock collar ends, falling to 1.7 m at its mouth and rising again away from the cut (`SITE_BACK`, `SITE_MOUTH`, `SITE_SLOPE` in `scripts/tools/build_mountain_mesh.gd`).
+- **Coal lies in the ground.** No lumps stand on it: the terrain's `coal_scene` slot is empty, and the ground shader draws each Coal cell as black, broken rock with a dull shine. A cell that is dug out is drawn as bare earth, as before.
 
 ## Not settled
 

@@ -19,13 +19,24 @@ const DENSITY := 2
 ## Highest point. Drones fly at 12 m, over the top of every peak.
 const PEAK := 11.0
 ## Metres from the foot at which the slope has risen most of the way.
-const RISE := 3.6
+const RISE := 2.9
+## Height of one ledge. The slope is broken into ledges with steep faces between, so the rock reads as blocks
+## and shelves, not as one smooth swell.
+const LEDGE := 2.2
+const LEDGE_STRENGTH := 0.8
+## Round a mine site the rock comes down to meet the mine that stands in the cut: this high at the cut's back and
+## at its mouth, rising by SITE_SLOPE for each metre away from the cut.
+const SITE_BACK := 4.7
+const SITE_MOUTH := 1.7
+const SITE_SLOPE := 1.15
 ## How far the outline wanders from the blocky map cells, in metres.
 const WARP := 1.8
 
 var cells: PackedByteArray
 var distance: PackedFloat32Array
 var sites: Array[Vector2] = []
+## Each whole mine site: {rect: Rect2, out: Vector2}, `out` pointing from its back to its mouth.
+var cuts: Array[Dictionary] = []
 var ridges := FastNoiseLite.new()
 var relief := FastNoiseLite.new()
 var spurs := FastNoiseLite.new()
@@ -38,6 +49,7 @@ func _initialize() -> void:
 		push_error("Unexpected terrain_cells.bin size"); quit(1); return
 	for i in range(WIDTH*WIDTH):
 		if cells[i] == MINE_SITE: sites.append(Vector2(i%WIDTH,i/WIDTH))
+	_find_cuts()
 	_setup_noise()
 	_measure_distance()
 	if not ToolArgs.given("mesh"): _save_textures()
@@ -79,6 +91,45 @@ func is_mountain(x: int, z: int) -> bool:
 
 func is_site(x: int, z: int) -> bool:
 	return x >= 0 and z >= 0 and x < WIDTH and z < WIDTH and cells[z*WIDTH+x] == MINE_SITE
+
+# Groups the site cells into whole sites and finds which way each opens: the side with no rock along it.
+func _find_cuts() -> void:
+	var seen := {}
+	for cell in sites:
+		if seen.has(cell): continue
+		var low := cell
+		var high := cell
+		var open: Array[Vector2] = [cell]
+		seen[cell] = true
+		while not open.is_empty():
+			var at: Vector2 = open.pop_back()
+			low = Vector2(minf(low.x,at.x),minf(low.y,at.y))
+			high = Vector2(maxf(high.x,at.x),maxf(high.y,at.y))
+			for step in [Vector2(1,0),Vector2(-1,0),Vector2(0,1),Vector2(0,-1)]:
+				var next: Vector2 = at+step
+				if is_site(int(next.x),int(next.y)) and not seen.has(next):
+					seen[next] = true
+					open.append(next)
+		var rect := Rect2(low,high-low+Vector2.ONE)
+		var out := Vector2.ZERO
+		for way in [Vector2(0,1),Vector2(0,-1),Vector2(1,0),Vector2(-1,0)]:
+			var beyond: Vector2 = rect.get_center()+way*((rect.size.y if way.x == 0.0 else rect.size.x)*0.5+0.5)
+			if not is_rock(floori(beyond.x),floori(beyond.y)): out = way
+		cuts.append({"rect": rect, "out": out})
+
+# The most the rock may stand at a point because of the mine sites near it.
+func site_ceiling(x: float, z: float) -> float:
+	var ceiling := INF
+	for cut in cuts:
+		var rect: Rect2 = cut.rect
+		var away := Vector2(maxf(maxf(rect.position.x-x,x-rect.end.x),0.0),maxf(maxf(rect.position.y-z,z-rect.end.y),0.0)).length()
+		if away > 14.0: continue
+		var out: Vector2 = cut.out
+		var depth: float = rect.size.y if out.x == 0.0 else rect.size.x
+		# 0 at the cut's back, 1 at its mouth.
+		var along := clampf(((Vector2(x,z)-rect.get_center()).dot(out)+depth*0.5)/depth,0.0,1.0)
+		ceiling = minf(ceiling,lerpf(SITE_BACK,SITE_MOUTH,along)+away*SITE_SLOPE)
+	return ceiling
 
 # Rock for the purpose of the mountain's shape: a site is cut out of it afterwards.
 func is_rock(x: int, z: int) -> bool:
@@ -137,8 +188,13 @@ func height_at(x: float, z: float) -> float:
 	var flank := clampf(d/2.5,0.0,1.0)
 	height += (spurs.get_noise_2d(x,z)*0.5+0.5)*2.6*flank*envelope-1.0*flank*envelope
 	height += relief.get_noise_2d(x,z)*1.5*flank
+	# Ledges: the slope climbs in steps whose level wanders, so shelves run round the rock without lining up.
+	var level := height/LEDGE+spurs.get_noise_2d(x*0.45+31.0,z*0.45-17.0)*0.55
+	var shelf := (floorf(level)+smoothstep(0.42,0.96,level-floorf(level)))*LEDGE
+	height = lerpf(height,shelf,LEDGE_STRENGTH*flank)
 	# Peaks flatten softly at the ceiling rather than being cut off.
 	height = PEAK*tanh(height/PEAK*1.15)
+	if not cuts.is_empty(): height = minf(height,site_ceiling(x,z))
 	return lerpf(-0.4,height,smoothstep(0.0,1.2,d))
 
 func _build_mesh() -> ArrayMesh:
