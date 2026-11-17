@@ -7,3 +7,6 @@ extends Resource
 @export_range(1,100000) var iron_per_site_tile := 625
 ## Coal in each Coal cell. Fields are drawn 20 cells large, so a field holds 1,000; contested fields are 40 cells.
 @export_range(1,10000) var coal_per_tile := 50
+## Coal is taken through a mine built on its seam (docs/COAL_MINES.md), as iron is. Off, Infantry dig it straight
+## out of the ground as they did before, and each emptied cell becomes open ground.
+@export var coal_needs_mine := true

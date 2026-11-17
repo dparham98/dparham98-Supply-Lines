@@ -351,13 +351,13 @@ func can_place_mine(point: Vector3, payer: Node3D) -> bool:
 func construct_mine(point: Vector3) -> bool:
 	if not builder_valid() or not can_place_mine(point,selected):
 		var strip := strip_notice(point,engineering_rules.mine_footprint,&"iron_mine")
-		game.notify(strip if not strip.is_empty() else "Mine requires a complete empty iron-deposit footprint inside the paying stockpile range."); return false
+		game.notify(strip if not strip.is_empty() else "A mine needs an empty mine site, iron deposit or coal seam under it, inside the paying stockpile range."); return false
 	if not selected.spend_local(engineering_rules.mine_energy_cost,engineering_rules.mine_iron_cost): game.notify("Paying stockpile lacks local mine resources."); return false
 	var spot := mine_spot(point)
 	var mine = mine_scene_for(spot).instantiate()
 	mine.rules = engineering_rules; mine.position = game.ground.tile_to_world(spot.position+spot.size/2)
 	game.get_node("Entities/Buildings").add_child(mine,true)
-	game.notify("Shared iron mine built. Any player's Infantry can gather or repair it.")
+	game.notify("Shared %s mine built. Any player's Infantry can gather or repair it." % ("coal" if game.ground.get_terrain(spot.position) == game.ground.Terrain.COAL else "iron"))
 	return true
 
 func depot_rules() -> DepotRules:
