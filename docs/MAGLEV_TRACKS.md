@@ -13,12 +13,12 @@ Rails are no longer one-tile squares. The network is built from the authored mag
 - A piece's centre line runs from end 0 to end 1; each end has an outward heading. Pieces connect where an end meets another piece's end head-on (within 5 cm, headings opposed). The curve bends toward its local +X, the left of its travel; laid mirrored it is traversed from end 1 and bends right.
 - Each piece marks the tiles whose centres lie within half the track width of its centre line, so buildings and plans keep off (`is_footprint_valid` still refuses tiles carrying `rail`). Ground units cross tracks freely.
 - Forks have an entry (end 0), a straight exit (end 1, lane 0) and a branch exit (end 2, lane 1). A train runs entry to either exit and never exit to exit; because trains do not reverse mid-route, going from one exit to the other needs a loop. Trains choose the lane from their route, and the switch blades move to match.
-- All joined pieces form a line. A Depot is connected when any piece's centre line is within its loading range (`dropoff_range`, 8.5 m). The line belongs to every team with a living Depot connected to it, replacing per-piece ownership; a line with no connected friendly Depot is unusable until one returns. `assigned_depot` only records who paid.
+- All joined pieces form a line. A Depot is connected when any piece's edge touches its rail ring, half the Depot's range (`docs/RAIL_PLANNING.md`). The line belongs to every team with a living Depot connected to it, replacing per-piece ownership; a line with no connected friendly Depot is unusable until one returns. `assigned_depot` only records who paid.
 - The plate on each piece shows power: cyan when a connected Depot has energy, dark without, red for a hostile line.
 
 ## Laying track
 
-Since the playtest of 9eaed10 the player plans track before any of it is laid; see `docs/RAIL_PLANNING.md` for the keys, the targets and the payment.
+Since the playtest of 9eaed10 the player plans track before any of it is laid, and since 2026-11-17 picks two buildings and lays the track the game suggests; see `docs/RAIL_PLANNING.md`.
 
 - `RailNetwork.place(kind, point, heading, join, pinned)` and `lay()` still lay a single piece at once. Tests and tools use them; the player no longer does. Their rule is unchanged: the payer's territory must cover every tile, and the piece must join connected track or a Depot's loading range.
 - `join` is the end that meets the track; `true` lays a curve from its far end. `placement()` gives the transform and snap for previews and plans.
@@ -26,7 +26,7 @@ Since the playtest of 9eaed10 the player plans track before any of it is laid; s
 ## Trains
 
 - A Train is one self-powered cargo car on two sleds that follow the centre line. Its indicators light as the 300 capacity fills (12 crates).
-- A train's position is a piece, a lane and a distance along it. Routes to a Depot pick the shortest connected line to a centre-line point within the Depot's loading radius (`dropoff_range`); the train runs along the sampled line at its speed.
+- A train's position is a piece, a lane and a distance along it. Routes to a Depot pick the shortest connected line to a centre-line point on track touching the Depot's rail ring; the train runs along the sampled line at its speed.
 - Trains burn no fuel. A train draws `train_energy_per_metre` (0.15, in `rail_rules.tres`) from the nearest connected friendly Depot with energy, moving to the next when that one is empty; there is no pooling. With no energy it holds position as "No power", keeping its cargo, and carries on when energy returns.
 - Trains take no part in ground occupancy; ground traffic does not block them and they do not block it. A cut line holds a route with its cargo, and the route resumes by itself when the line is whole.
 
@@ -42,6 +42,6 @@ Since the playtest of 9eaed10 the player plans track before any of it is laid; s
 
 - `tests/rail_batch_test.gd`: geometry and costs, head-on joins and free ends, tile marking, snapped laying and payment, refusals, left and mirrored curve exits, train print at a stop, cutting and restoring the centre piece, running the train to EastDepot with its consist on the line, ownership loss.
 - `tests/rail_fork_power_test.gd`: fork geometry and price, the laying rule, lane choice, no exit-to-exit, blades, energy by the metre, No power and resume, nearest paying Depot, cut line resume.
-- `tests/rail_keys_test.gd`: R, F and G by real key presses with the Build page open, a curve laid by Shift-click (laying stays armed) and a fork by plain click (laying finishes), and the Build page keys back afterwards.
-- `rail_runtime_check` lays two straights by real Shift-clicks (`rail_construction`), and the route and crate suites run on the new fixture.
+- `tests/rail_keys_test.gd`: connecting two Depots by real clicks, with Backspace and Enter, while the Build page is open (`docs/RAIL_PLANNING.md`).
+- `rail_runtime_check` picks the Depot and a build site by real clicks and lays the suggested track (`rail_plan`, `rail_construction`), and the route and crate suites run on the new fixture.
 - Not playtested: the feel of laying curves, train speed over the longer pieces and how the set reads next to the 0.6 vehicles need your eye.

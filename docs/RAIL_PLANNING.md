@@ -1,32 +1,40 @@
 # Rail planning
 
-From the playtest of main at 9eaed10 (2026-11-15). Track is planned first and laid all at once, and laid lines pay an energy upkeep.
+From the playtest of main at 9eaed10 (2026-11-15). Track is planned first and laid all at once, and laid lines pay an energy upkeep. Since the playtest of PRs #88 and #89 together (2026-11-17), the player doesn't plan track piece by piece: they pick two buildings and the game suggests the track between them.
 
-## Keys while laying rail
+## Connecting two buildings
 
 Rail starts from the Build page's Rail tile (R).
 
-| Key | What it does |
+| Action | What it does |
 | --- | --- |
-| Tab | Next piece: straight, left curve, right curve, left fork, right fork. |
-| R | At a track end, mirrors the piece: a left curve becomes a right curve, a left fork a right fork, and back. A straight has no mirror. A free piece turns 90 degrees instead. |
-| G | Changes which end of a fork joins the track. |
-| Click | Plans a piece. It snaps to a free end of laid track or of the plan. |
-| Backspace | Takes back the last planned piece. |
-| Enter | Lays the plan. |
-| Esc, or leaving track laying any other way | Drops the plan. Nothing was paid. |
+| Click a building | The first click picks where the track starts; the second picks where it goes, and the game suggests the track. A click after that starts again. A click lands on a building when it is inside the building's ring. |
+| Backspace | Takes back the second pick and its track, or the first pick when there is no second. |
+| Enter | Lays the suggested track. |
+| Esc, or leaving track laying any other way | Drops the picks and the track. Nothing was paid. |
 
-While track laying is armed, these keys go to it before the Build page's tiles. Tab does not move GUI focus.
+While track laying is armed, Enter and Backspace go to it before the Build page's tiles. Other Build page keys work as usual, so R or G start the Rail tile or a Generator plan again.
 
-## Planning
+- **The suggested track** is the shortest open path, in track length, made of straights and 90-degree curves. It starts touching the first building's ring and ends once it touches the second's.
+  - It needs open buildable land, clear of laid track and of buildings.
+  - It doesn't need to be in any Depot's range.
+  - When there is no open path, the game says so. Pick another building.
+- **Colour:**
+  - The suggested track is green when a Depot can pay for it, and red when none has the iron.
+  - Rings are amber, and green for the picked buildings and any the track touches.
+- **The cursor label** shows the next step, then the track's pieces and iron, and either "ENTER LAYS IT" or "NOT ENOUGH IRON".
+- **Forks aren't suggested.** The suggested track doesn't join existing lines either: it runs beside them. Forks and joins are for a later change.
 
-- **A click plans a piece; nothing is laid or paid yet.** Planned pieces show as amber copies of the track model, which turn green once the plan can be laid.
-- **Planned pieces need open land** clear of laid and planned track. They do not need to be in any Depot's range.
-- **After the first piece,** each new piece must join the plan at a free end. The first piece may stand alone or snap onto laid track.
-- **The cursor label** shows:
-  - the piece and its iron;
-  - why it can't be planned there, if it can't;
-  - the plan's total iron, and either "connects n/2" or "ENTER LAYS IT".
+### How the path is found
+
+`scripts/rails/rail_router.gd` searches a lattice of half a straight's length (2.4 m). A state is a lattice point and one of four headings.
+
+- **Moves from a state:**
+  - a straight: two steps ahead;
+  - a curve either way: five steps ahead and five aside, since the curve's radius is two and a half straights.
+- **Search:** A* by track length, with the straight-line distance to the second ring as the estimate, up to 60,000 states.
+- **Open land:** each move's cells are worked out once for each alignment of the lattice against the 1 m cell grid. Each cell is read with the network's own rule the first time a move needs it.
+- **Speed:** a link to the starter mine takes about 20 ms. A path across the whole balanced map, 66 pieces, takes about half a second.
 
 ## Preview size
 
@@ -42,11 +50,11 @@ The targets are:
 - mines (any Iron Mine; mines are being redesigned as caves elsewhere);
 - unfinished build sites, of any kind except rail. The playtest asked for sites that only have materials on them; for now any site counts, as agreed.
 
-**Connecting** doesn't mean ending there. While track is planned, every target shows a ring: amber, turning green once the plan connects it. Track connects as soon as its edge touches the ring; it doesn't have to be inside it.
+**Connecting** doesn't mean ending there. While track is laid, every target shows a ring: amber, turning green once it is picked or the track touches it. Track connects as soon as its edge touches the ring; it doesn't have to be inside it.
 
-- **A Depot's ring is its loading area** (`dropoff_range`, 8.5 m). That is where trains are built, load and unload, so a train can always be built on track that connects to a Depot. The playtest of 2026-11-16 found the two had differed: a plan could connect to a Depot a little outside its loading area, and then no train could be built there.
+- **A Depot's ring** is half its range (`depot_reach_fraction` 0.5 in `RailRules`): 13.125 m at the 26.25 m range, the same as a deployed Cargo truck's range. Trains are built, load and unload anywhere on track touching it, so a train can always be built on track that connects to a Depot. Ground units still use the Depot's 8.5 m loading distance.
 - **A mine's or build site's ring** is half its footprint plus `connect_reach` (4 m) in `RailRules`.
-- "Touches" means the track's centre line comes within the ring's radius plus half the track's width (1.5 m). The loading area uses the same rule, so track whose edge reaches a Depot's ring is a loading stop.
+- "Touches" means the track's centre line comes within the ring's radius plus half the track's width (1.5 m). Train stops use the same rule.
 
 ## Payment
 
@@ -73,21 +81,26 @@ So a 100 m line costs 0.1 E/s idle and 0.3 E/s with two trains running. This is 
 
 ## Code
 
-- **Planning:** `pending`, `plan_piece`, `plan_refusal`, `unplan_last`, `clear_plan`, `plan_targets`, `plan_payer`, `plan_blocker` and `commit_plan` in `scripts/rails/rail_network.gd`.
-- **Upkeep:** `upkeep_rate` and `charge_upkeep`, in the same file.
-- **Keys:** `_input` and `_rail_key` in `scripts/gameplay/skirmish.gd`. Clearing `placing_rail` drops the plan.
+- **Connecting:** `target_at`, `pick_target`, `suggest_route`, `drop_route` and `route_status` in `scripts/rails/rail_network.gd`. The path search is `scripts/rails/rail_router.gd`.
+- **The plan:** `pending`, `plan_targets`, `plan_payer`, `plan_blocker` and `commit_plan` in `rail_network.gd`. `plan_piece`, `plan_refusal` and `unplan_last` still plan single pieces for tests and tools; the player no longer uses them.
+- **Rings:** `show_target_rings` and `depot_reach`, with the saved ring scene `scenes/ui/rail_target_ring.tscn`.
+- **Train stops:** `stop_on` uses the Depot's rail ring; `Train.stop_reach` lets a train load anywhere on it.
+- **Upkeep:** `upkeep_rate` and `charge_upkeep`, in `rail_network.gd`.
+- **Keys:** `_input` and `_rail_key` in `scripts/gameplay/skirmish.gd`. Clearing `placing_rail` drops the picks and the plan.
 
 ## Tests
 
 - **`tests/rail_planning_test.gd`** (headless, balanced map) checks that:
   - a seven-piece plan reaching past the Depot's range lays and pays nothing;
   - one target is refused, with a reason;
-  - Backspace takes back a piece, and a piece off the plan's free ends is refused;
-  - a build site is the second target;
-  - Enter lays every piece and charges the Depot once;
+  - every target has a ring while laying, and the connected Depot's is green at half its range;
+  - a build site is the second target, Enter lays every piece and charges the Depot once, and a train can be built on the new track;
   - track beyond the range is friendly and powered;
   - idle upkeep follows the line's length and is paid from the Depot, and a running train doubles it;
   - mines are targets;
-  - leaving track laying drops the plan.
-- **`tests/rail_keys_test.gd`** checks Tab, R (four turns back round), G, click to plan, Backspace and Enter with real key presses.
-- **`tests/rail_runtime_check.gd`** (rendered) plans two pieces, adds a build site as the second target, and lays them with Enter.
+  - track touching a Depot's ring connects, and track clear of it doesn't;
+  - a click inside a ring picks that building, and the second pick suggests one joined line touching both rings;
+  - the track is red when no Depot can pay and green when one can, and it lays and is paid for;
+  - leaving track laying drops the plan and the rings.
+- **`tests/rail_keys_test.gd`** picks two Depots by real clicks, and checks Backspace on each pick and Enter, with the Build page open.
+- **`tests/rail_runtime_check.gd`** (rendered) picks the Depot and a build site, shows the suggested track (`rail_plan`), lays it with Enter and runs a train load at the larger ring.

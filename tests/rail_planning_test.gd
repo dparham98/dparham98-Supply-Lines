@@ -71,7 +71,7 @@ func run() -> void:
 	rails._process(0.016)
 	var ring = rails._target_rings.get(depot.get_instance_id())
 	if not check(rails._target_rings.size() == rails.plan_target_candidates().size() and ring != null,"Every rail target should have a ring while planning"): return
-	if not check(ring.get_node("Connected").visible and not ring.get_node("Open").visible and is_equal_approx(ring.scale.x,depot.dropoff_range),"The connected Depot's ring should be green, at its loading range"): return
+	if not check(ring.get_node("Connected").visible and not ring.get_node("Open").visible and is_equal_approx(ring.scale.x,depot.rules.construction_radius*0.5),"The connected Depot's ring should be green, at half its range"): return
 	if not check(rails.commit_plan().is_empty() and rails.pieces.size() == pieces_before and rails.pending.size() == 7 and depot.iron == 1500,"A plan with one target must not be laid"): return
 	# Backspace takes back a piece, and a piece off the plan's free ends is refused.
 	rails.unplan_last()
@@ -133,13 +133,40 @@ func run() -> void:
 		var along := Vector3(-side.z,0,side.x)
 		var results := []
 		for gap in [1.0,2.5]:
-			var from: Vector3 = depot.global_position+side*(depot.dropoff_range+gap)-along*2.4
+			var from: Vector3 = depot.global_position+side*(rails.depot_reach(depot)+gap)-along*2.4
 			rails.clear_plan()
 			if rails.placement("straight",from,along).snapped or not rails.plan_piece("straight",from,along).is_empty(): break
 			results.append(rails.plan_targets().has(depot))
 		if results == [true,false]: touched += 1
 	rails.clear_plan()
 	if not check(touched > 0,"Track touching the Depot's ring should connect it, and track clear of it should not"): return
+	# Connecting two buildings: the first pick, then the second suggests a joined path touching both rings.
+	if not check(rails.target_at(depot.global_position+Vector3(1,0,1)) == depot and rails.target_at(depot.global_position+Vector3(200,0,0)) == null,"A click inside the Depot's ring should pick it, and one far off nothing"): return
+	var far_site: Node3D = null
+	for offset in [Vector3(40,0,30),Vector3(-40,0,30),Vector3(40,0,-30),Vector3(-40,0,-30),Vector3(0,0,45),Vector3(0,0,-45)]:
+		far_site = network.queue_plan(depot.global_position+offset,&"generator")
+		if far_site != null: break
+	if not check(far_site != null,"No build site to route to"): return
+	far_site.set_process(false)
+	rails.drop_route()
+	rails.pick_target(depot)
+	if not check(rails.route_from == depot and rails.pending.is_empty(),"The first pick should start a route"): return
+	var said: String = rails.pick_target(far_site)
+	if not check(rails.route_to == far_site and rails.pending.size() > 1 and said.begins_with("Suggested track"),"The second pick should suggest a path: "+said): return
+	if not check(rails.plan_targets().has(depot) and rails.plan_targets().has(far_site) and rails.pending_free_ends().size() == 2,"The path should be one joined line touching both rings"): return
+	# Coloured by whether a Depot can pay: green with the iron, red without.
+	depot.iron = 0
+	rails._tint_plan()
+	var mesh: MeshInstance3D = rails.pending[0].ghost.find_children("*","MeshInstance3D",true,false)[0]
+	var red: Color = mesh.material_override.albedo_color
+	if not check(not rails.plan_blocker().is_empty() and red.r > 0.9 and red.g < 0.5,"Track no Depot can pay for should be red: %s" % red): return
+	depot.iron = 1500
+	rails._tint_plan()
+	if not check(rails.plan_blocker().is_empty() and mesh.material_override.albedo_color.g > 0.9,"Track a Depot can pay for should be green"): return
+	var cost_now: int = rails.plan_cost()
+	var laid_route: Array[Node3D] = rails.commit_plan()
+	if not check(laid_route.size() > 1 and depot.iron == 1500-cost_now,"The suggested path should lay and be paid for"): return
+	if not check(rails.lines()[laid_route[0].get_instance_id()].pieces.size() >= laid_route.size(),"The laid path should be one line"): return
 	# Leaving track laying drops the plan.
 	game.placing_rail = true
 	rails.clear_plan()

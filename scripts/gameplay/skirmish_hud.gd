@@ -868,11 +868,9 @@ func begin_global_placement(kind: StringName) -> void:
 	game.placing_rail = false; game.placing_depot = false; game.placing_generator = false; game.placing_structure = &""
 	game.global_plan_kind = &""
 	if kind == &"rail":
-		# Maglev track is planned piece by piece, then laid and paid at once (docs/RAIL_PLANNING.md).
+		# Track connects two buildings: the player picks them and the game suggests the path (docs/RAIL_PLANNING.md).
 		game.placing_rail = true
-		game.rail_piece = "straight"
-		var rails = game.get_node("RailNetwork")
-		game.notify("Plan track: a straight is %d iron, a curve %d. %s" % [rails.cost("straight"),rails.cost("curve"),game.RAIL_HELP])
+		game.notify(game.RAIL_HELP)
 		return
 	game.global_plan_kind = kind
 	game.notify("Click valid terrain to place an unpaid %s plan. Esc cancels placement; existing plans remain." % network.plan_spec(kind).title)

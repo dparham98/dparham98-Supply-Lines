@@ -15,6 +15,8 @@ var wood: int:
 	get: return stockpile.amount(&"wood")
 var coal: int:
 	get: return stockpile.amount(&"coal")
+## How near a stop this vehicle must be to load or unload there. Trains use a Depot's rail ring instead.
+func stop_reach(target: Node3D) -> float: return target.dropoff_range
 var dropoff_range: float:
 	get: return mobile_rules.dropoff_radius()
 ## Trains override this with their track position.
@@ -411,7 +413,7 @@ func _crate_job(delta: float) -> void:
 	_retry = maxf(0,_retry-delta)
 	if not _route.is_empty() or _moving_to.x >= 0:
 		_walk(delta); _update_display(); return
-	var reach: float = job_target.dropoff_range if is_instance_valid(job_target) else 3.0
+	var reach: float = stop_reach(job_target) if is_instance_valid(job_target) else 3.0
 	if global_position.distance_to(job_point) > reach:
 		transfer_timer = 0
 		if _retry <= 0:
@@ -624,11 +626,11 @@ func _vehicle_process(delta: float) -> void:
 		_walk(delta)
 		_update_display()
 		return
-	if global_position.distance_to(target.global_position) > target.dropoff_range:
+	if global_position.distance_to(target.global_position) > stop_reach(target):
 		transfer_timer = 0
 		if _retry <= 0:
 			state = "To %s · %s" % [target.name,stage]
-			if not _route_to_interaction(target,target.dropoff_range): state = "Route blocked · retrying"
+			if not _route_to_interaction(target,stop_reach(target)): state = "Route blocked · retrying"
 	else:
 		if stage == "unloading" and destination_depot.stockpile.space() <= 0:
 			transfer_timer = 0

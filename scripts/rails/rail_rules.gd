@@ -8,6 +8,9 @@ extends SupplyRules
 ## Planned track (docs/RAIL_PLANNING.md) connects to a mine or build site when its edge comes within this far
 ## of the target's footprint edge. A Depot instead uses its loading area, where trains are built and load.
 @export_range(0,50,0.1) var connect_reach := 4.0
+## A Depot's rail ring, as a fraction of its range: where track connects to it and trains are built, load and
+## unload. 0.5 matches a deployed Cargo truck's range, 13.125 m at the 26.25 m Depot range.
+@export_range(0.05,1,0.01) var depot_reach_fraction := 0.5
 ## Upkeep every line with a Depot pays from its Depots: this many energy a second per 100 m of track, while
 ## the line is idle (docs/RAIL_PLANNING.md).
 @export_range(0,100,0.01) var upkeep_per_100m := 0.1
