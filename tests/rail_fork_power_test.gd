@@ -42,7 +42,9 @@ func run() -> void:
 			if not check((xf*(end.position as Vector3)).distance_to(at) < 0.01 and (xf.basis*(end.out as Vector3)).distance_to(Vector3.LEFT) < 0.01,"%s end %d does not join" % [kind,join]): return
 	# Laying rule: only in a Depot's loading range or joined to connected track.
 	var near_xf: Transform3D = rails.transform_for("straight",source.global_position+Vector3(-6,0,-7),Vector3.RIGHT)
-	var far_xf: Transform3D = rails.transform_for("straight",source.global_position+Vector3(-6,0,-14),Vector3.RIGHT)
+	# Far: clear of the Depot's rail ring (half its range) by 3 m, whatever the range is.
+	var far_z: float = rails.depot_reach(source)+rails.probe("straight").half_width()+3.0
+	var far_xf: Transform3D = rails.transform_for("straight",source.global_position+Vector3(-6,0,-far_z),Vector3.RIGHT)
 	if not check(rails.connects("straight",near_xf) and not rails.connects("straight",far_xf) and not rails.can_place("straight",far_xf,source,false),"Connection rule wrong"): return
 	# A fork on a free end, with a straight on each exit.
 	# The fixture's west end has room for the fork; its exits run onto terrain cleared here for the test.

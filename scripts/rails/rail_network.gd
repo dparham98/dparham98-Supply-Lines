@@ -11,6 +11,8 @@ signal changed
 @export var fork_left_scene: PackedScene
 @export var fork_right_scene: PackedScene
 @export var train_scene: PackedScene
+## The ring drawn round each rail target while track is planned: amber, green once the plan touches it.
+@export var target_ring_scene: PackedScene = preload("res://scenes/ui/rail_target_ring.tscn")
 ## Snap distance from the cursor to a free end of an existing piece.
 @export var snap_distance := 4.0
 const SAMPLE := 0.5
@@ -24,6 +26,23 @@ var _lines := {}
 var _lines_key := ""
 var _poll_left := 0.0
 var _announced_depots := ""
+## Planned track not laid yet (docs/RAIL_PLANNING.md): {kind, transform, cells, ghost}, in the order placed.
+var pending: Array[Dictionary] = []
+var _model_scales := {}
+## The two targets the player picked to connect (docs/RAIL_PLANNING.md); the plan is the path suggested
+## between them.
+var route_from: Node3D
+var route_to: Node3D
+## Where the player dragged the suggested track through, or null for the shortest path.
+var route_via = null
+## True when the last drag point had no open path through it; the track keeps its last shape.
+var route_blocked := false
+var _drag_tried = null
+var _router
+## Target rings shown while planning, keyed by the target's instance id.
+var _target_rings := {}
+## Upkeep owed by each line, keyed by the line's lowest piece id; whole units are paid as they accrue.
+var _upkeep_owed := {}
 @onready var ground = get_tree().get_first_node_in_group("terrain_grid")
 @onready var game = get_parent()
 func _ready() -> void: add_to_group("rail_network")
@@ -41,8 +60,16 @@ func piece_length(kind: String) -> float: return probe(kind).total_length()
 func cost(kind: String) -> int: return ceili(piece_length(kind)*rules.rail_iron_cost)
 # ---- ownership
 ## Whether the piece's line has a living Depot of `team` connected to it.
+## A line with no Depot on it at all, such as one from a mine to a build site (docs/RAIL_PLANNING.md),
+## belongs to the side whose Depot paid for it.
 func friendly_piece(piece, team: String) -> bool:
-	return not connected_depots(piece,team).is_empty()
+	if not connected_depots(piece,team).is_empty(): return true
+	if not is_instance_valid(piece) or piece.is_queued_for_deletion(): return false
+	var entry = lines().get(piece.get_instance_id())
+	if entry == null or not entry.depots.is_empty(): return false
+	for other in entry.pieces:
+		if is_instance_valid(other) and is_instance_valid(other.assigned_depot) and other.assigned_depot.team == team: return true
+	return false
 func _depots() -> Array[Node]:
 	return get_tree().get_nodes_in_group("depots") if is_inside_tree() else []
 func _depot_key() -> String:
@@ -344,7 +371,10 @@ static func line_point(track: Dictionary, s: float) -> Array:
 ## Where a train stops for a Depot on a piece: nearest centre-line point within the loading radius.
 func stop_on(piece: Node3D, depot: Node3D, lane := -1) -> Dictionary:
 	var hit: Dictionary = piece.nearest(depot.global_position,lane)
-	return hit if hit.gap <= depot.dropoff_range else {}
+	return hit if hit.gap <= depot_reach(depot)+piece.half_width() else {}
+## A Depot's rail ring: where track connects to it and trains are built, load and unload (docs/RAIL_PLANNING.md).
+func depot_reach(depot: Node3D) -> float:
+	return depot.rules.construction_radius*rules.depot_reach_fraction
 ## Every lane of friendly track in `depot`'s loading area: {piece, lane, distance}.
 func loading_stops(depot: Node3D, team: String) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
@@ -388,7 +418,7 @@ func placement(kind: String, point: Vector3, heading: Vector3, join = 0) -> Dict
 	if cell == null: return {}
 	entry_position = ground.tile_to_world(cell)
 	var nearest := {}
-	for end in free_ends("player"):
+	for end in free_ends("player")+pending_free_ends():
 		var gap: float = Vector2(end.position.x,end.position.z).distance_to(Vector2(point.x,point.z))
 		if gap <= snap_distance and (nearest.is_empty() or gap < nearest.gap): nearest = {end = end, gap = gap}
 	if not nearest.is_empty():
@@ -419,7 +449,7 @@ func connects(kind: String, xf: Transform3D, team := "player") -> bool:
 			var total: float = p.length(lane)
 			for i in range(maxi(8,int(total/0.25))+1):
 				var at: Vector3 = xf*p.local_point(total*i/maxi(8,int(total/0.25)),lane)
-				if Vector2(at.x,at.z).distance_to(centre) <= depot.dropoff_range: return true
+				if Vector2(at.x,at.z).distance_to(centre) <= depot_reach(depot)+p.half_width(): return true
 	return false
 ## Whether `payer` can lay this piece here: a living friendly Depot whose territory covers every
 ## tile under it, open land with no other track, connected to a Depot, and the iron for it.
@@ -458,7 +488,7 @@ func lay(kind: String, xf: Transform3D, payer: Node3D) -> Node3D:
 		payer.stockpile.deposit(&"iron",cost(kind))
 		game.notify("Track could not be laid there.")
 		return null
-	game.notify("%s laid from %s for %d iron. R switches piece; Esc finishes." % [kind.capitalize(),payer.name,cost(kind)])
+	game.notify("%s laid from %s for %d iron." % [kind.capitalize(),payer.name,cost(kind)])
 	return piece
 ## Legacy entry: lays a straight at a point heading +X (tests and tools).
 func build(point: Vector3) -> bool:
@@ -470,27 +500,33 @@ func _process(delta: float) -> void:
 	if _poll_left <= 0.0:
 		_poll_left = 0.5
 		_poll_power()
+		charge_upkeep(0.5)
 	var preview = game.get_node_or_null("RailPreview")
 	if preview == null: return
 	var active: bool = game.placing_rail
 	preview.visible = active
+	show_target_rings(active)
 	if not active: return
+	# Only the label follows the cursor; the path itself is drawn by the planned pieces.
+	for child in preview.get_children(): child.visible = child.name == "Status"
 	var camera := game.get_viewport().get_camera_3d()
 	var mouse := game.get_viewport().get_mouse_position()
 	var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(mouse),camera.project_ray_normal(mouse))
 	if point == null: preview.visible = false; return
-	var kind: String = game.rail_kind()
-	var spot := placement(kind,point,game.rail_heading,game.rail_join())
-	if spot.is_empty(): preview.visible = false; return
-	var payer := payer_for(kind,spot.transform,game.get_node("Interface").global_payer if game.get_node("Interface").global_pinned else null)
-	for child in preview.get_children():
-		var show: bool = child.name.to_snake_case() == kind
-		child.visible = show
-		if not show: continue
-		child.global_transform = spot.transform
-		_tint_ghost(child,payer != null)
-	preview.get_node("Status").global_position = spot.transform*probe(kind).local_point(probe(kind).length()*0.5)+Vector3.UP*2.0
-	preview.get_node("Status").text = "%s · %d iron · %s%s" % [game.rail_piece.to_upper(),cost(kind),"payer "+payer.name if payer != null else "BLOCKED / NO DEPOT"," · snapped" if spot.snapped else ""]
+	preview.get_node("Status").global_position = point+Vector3.UP*2.0
+	preview.get_node("Status").text = route_status()
+## The cursor label while connecting buildings.
+func route_status() -> String:
+	if not is_instance_valid(route_from): return "RAIL · click a Depot, mine or build site"
+	if not is_instance_valid(route_to): return "FROM %s · click the building to connect" % target_name(route_from).to_upper()
+	if pending.is_empty(): return "NO OPEN PATH · click another building"
+	var hud = game.get_node("Interface")
+	var blocker := plan_blocker(hud.global_payer if hud.global_pinned else null)
+	return ("NO PATH THROUGH HERE · " if route_blocked else "")+"%d PIECE%s · %d IRON · %s" % [pending.size(),"" if pending.size() == 1 else "S",plan_cost(),"ENTER LAYS IT" if blocker.is_empty() else "NOT ENOUGH IRON"]
+func target_name(node: Node3D) -> String:
+	if node.is_in_group("construction_plans"): return "%s site" % node.spec.title
+	if node.is_in_group("mines"): return "Mine"
+	return String(node.name)
 ## Depots can appear, fall or run out of energy without the track changing.
 func _poll_power() -> void:
 	var depots := _depot_key()
@@ -499,8 +535,14 @@ func _poll_power() -> void:
 		_announce()
 	for piece in pieces:
 		if is_instance_valid(piece): piece.update_color()
-func _tint_ghost(ghost: Node3D, valid: bool) -> void:
-	var colour := Color(0.3,1.0,0.5,0.45) if valid else Color(1.0,0.2,0.15,0.45)
+## The scale a preview model was saved with: the same as the laid track's model. Setting a global transform
+## replaces it, so it is read once, before the first placement, and applied again every time.
+func model_scale(model: Node3D) -> Vector3:
+	var key := model.get_instance_id()
+	if not _model_scales.has(key): _model_scales[key] = model.scale
+	return _model_scales[key]
+func _tint_ghost(ghost: Node3D, valid: bool, invalid_colour := Color(1.0,0.2,0.15,0.45)) -> void:
+	var colour := Color(0.3,1.0,0.5,0.45) if valid else invalid_colour
 	for item in ghost.find_children("*","MeshInstance3D",true,false):
 		var key := item.get_instance_id()
 		if not _ghost_materials.has(key):
@@ -510,3 +552,341 @@ func _tint_ghost(ghost: Node3D, valid: bool) -> void:
 			item.material_override = material
 			_ghost_materials[key] = material
 		_ghost_materials[key].albedo_color = colour
+# ---- planning (docs/RAIL_PLANNING.md)
+## Track is planned piece by piece first and laid all at once. A plan can be committed only when the track it
+## forms, with any laid track it joins, connects two targets: friendly Depots, mines or unfinished build sites.
+## Planned pieces need not be in any Depot's range; the Depot that pays must have all the iron.
+func _pending_end(entry: Dictionary, index: int) -> Dictionary:
+	var end: Dictionary = probe(entry.kind).local_end(index)
+	var xf: Transform3D = entry.transform
+	return {position = xf*(end.position as Vector3), out = (xf.basis*(end.out as Vector3)).normalized()}
+func _ends_meet(a: Dictionary, b: Dictionary) -> bool:
+	return a.position.distance_to(b.position) <= JOIN_EPSILON and a.out.dot(b.out) < -0.99
+## Ends of planned pieces that meet nothing yet: {piece = null, pending, end, position, out}.
+func pending_free_ends() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for i in range(pending.size()):
+		for index in range(probe(pending[i].kind).end_count()):
+			var end := _pending_end(pending[i],index)
+			if _meets_anything(end,i).is_empty(): result.append({piece = null, pending = i, end = index, position = end.position, out = end.out})
+	return result
+## What an end meets head-on: {pending} for another planned piece, {piece, end} for laid track, or {}.
+func _meets_anything(end: Dictionary, skip := -1) -> Dictionary:
+	for j in range(pending.size()):
+		if j == skip: continue
+		for other in range(probe(pending[j].kind).end_count()):
+			if _ends_meet(end,_pending_end(pending[j],other)): return {pending = j}
+	for piece in pieces:
+		if not is_instance_valid(piece): continue
+		var piece_ends: Array[Dictionary] = piece.ends()
+		for index in range(piece_ends.size()):
+			if _ends_meet(end,piece_ends[index]): return {piece = piece, end = index}
+	return {}
+func _world_end(kind: String, xf: Transform3D, index: int) -> Dictionary:
+	var end: Dictionary = probe(kind).local_end(index)
+	return {position = xf*(end.position as Vector3), out = (xf.basis*(end.out as Vector3)).normalized()}
+## Adds a planned piece at the cursor, snapped like a laid one. Returns "" or why it was refused.
+func plan_piece(kind: String, point: Vector3, heading: Vector3, join = 0) -> String:
+	var spot := placement(kind,point,heading,join)
+	if spot.is_empty(): return "Off the map."
+	var xf: Transform3D = spot.transform
+	var refused := plan_refusal(kind,xf)
+	if not refused.is_empty(): return refused
+	pending.append({kind = kind, transform = xf, cells = cells_for(kind,xf), ghost = _plan_ghost(kind,xf)})
+	_tint_plan()
+	return ""
+## Why a piece of `kind` at `xf` cannot be planned, or "": it needs open land with no laid or planned track,
+## and after the first piece it must join the plan at a free end.
+func plan_refusal(kind: String, xf: Transform3D) -> String:
+	var cells := cells_for(kind,xf)
+	if not ground_clear(cells): return "Track needs open land with no other track."
+	for entry in pending:
+		for cell in cells:
+			if entry.cells.has(cell): return "Track would cross the planned track."
+	if not pending.is_empty():
+		var joins := false
+		for index in range(probe(kind).end_count()):
+			if _meets_anything(_world_end(kind,xf,index)).has("pending"): joins = true
+		if not joins: return "Plan the next piece from a free end of the planned track."
+	return ""
+## A copy of the preview's model for a planned piece, kept until the plan is laid or dropped.
+func _plan_ghost(kind: String, xf: Transform3D) -> Node3D:
+	var preview = game.get_node_or_null("RailPreview")
+	if preview == null: return null
+	var model: Node3D = preview.get_node_or_null(kind.to_pascal_case())
+	if model == null: return null
+	var ghost: Node3D = model.duplicate()
+	ghost.name = "PlannedTrack"
+	var parent: Node = game.get_node("Entities/Rails") if game.has_node("Entities/Rails") else game
+	parent.add_child(ghost,true)
+	ghost.visible = true
+	ghost.global_transform = xf.scaled_local(model_scale(model))
+	# The copy gets its own materials, so tinting it leaves the cursor preview alone.
+	for item in ghost.find_children("*","MeshInstance3D",true,false): item.material_override = null
+	return ghost
+## Removes the last planned piece.
+func unplan_last() -> void:
+	if pending.is_empty(): return
+	var entry: Dictionary = pending.pop_back()
+	if is_instance_valid(entry.ghost): entry.ghost.queue_free()
+	_tint_plan()
+## Drops the whole plan.
+func clear_plan() -> void:
+	for entry in pending:
+		if is_instance_valid(entry.ghost): entry.ghost.queue_free()
+	pending.clear()
+## Drops the plan and both picked buildings.
+func drop_route() -> void:
+	clear_plan()
+	route_from = null
+	route_to = null
+	route_via = null
+	route_blocked = false
+	_drag_tried = null
+## Whether `point` is on or beside the suggested track, within `within` metres of its centre line.
+func near_plan(point: Vector3, within := 4.0) -> bool:
+	for entry in pending:
+		var p: Node3D = probe(entry.kind)
+		var total: float = p.length()
+		for i in range(17):
+			var at: Vector3 = (entry.transform as Transform3D)*p.local_point(total*i/16.0)
+			if Vector2(at.x-point.x,at.z-point.z).length() <= within: return true
+	return false
+## Pulls the suggested track through `point` (docs/RAIL_PLANNING.md): the path is found again from the first
+## building, through the point, to the second, adding pieces as needed. When no open path passes there, the
+## track keeps its last shape. Returns whether the track now passes through the point.
+func drag_route(point: Vector3) -> bool:
+	if not is_instance_valid(route_from) or not is_instance_valid(route_to): return false
+	var flat := Vector3(point.x,0,point.z)
+	if _drag_tried != null and flat.distance_to(_drag_tried) < 1.2: return not route_blocked
+	_drag_tried = flat
+	if suggest_route(route_from,route_to,flat) == 0:
+		route_blocked = true
+		return false
+	route_via = flat
+	route_blocked = false
+	return true
+## Drops the dragged shape and suggests the shortest path again.
+func undrag_route() -> void:
+	route_via = null
+	route_blocked = false
+	_drag_tried = null
+	if is_instance_valid(route_from) and is_instance_valid(route_to): suggest_route(route_from,route_to)
+## What to tell the player when a drag ends.
+func drag_notice() -> String:
+	_drag_tried = null
+	if route_blocked:
+		route_blocked = false
+		return "No open path through there; the track keeps its last shape. Enter lays it."
+	return "Track moved: %d piece%s, %d iron. Enter lays it; Backspace straightens it again." % [pending.size(),"" if pending.size() == 1 else "s",plan_cost()]
+## The rail target whose ring holds `point`, the nearest centre first, or null.
+func target_at(point: Vector3, team := "player") -> Node3D:
+	var best: Node3D = null
+	var best_gap := INF
+	for target in plan_target_candidates(team):
+		var gap := Vector2(point.x-target.global_position.x,point.z-target.global_position.z).length()
+		if gap <= target_reach(target) and gap < best_gap: best = target; best_gap = gap
+	return best
+## Picks a building to connect. The first pick starts a route; the second suggests the path between them and
+## plans it. A pick after that starts again. Returns what to tell the player.
+func pick_target(target: Node3D) -> String:
+	if target == null: return "Click a Depot, mine or build site to connect."
+	if not is_instance_valid(route_from) or is_instance_valid(route_to):
+		drop_route()
+		route_from = target
+		return "Connecting from %s: click the building to connect it to." % target_name(target)
+	if target == route_from: return "Click a different building to connect %s to." % target_name(target)
+	route_to = target
+	route_via = null
+	if suggest_route(route_from,route_to) == 0:
+		return "No open path from %s to %s. Click another building, or Backspace to choose again." % [target_name(route_from),target_name(target)]
+	var hud = game.get_node_or_null("Interface")
+	var blocker := plan_blocker(hud.global_payer if hud != null and hud.global_pinned else null)
+	return "Suggested track: %d piece%s, %d iron. %s Drag the track to move it." % [pending.size(),"" if pending.size() == 1 else "s",plan_cost(),"Enter lays it." if blocker.is_empty() else blocker]
+## Replaces the plan with the shortest open path of straights and curves from `from` to `to`, touching both
+## rings, and through `via` when one is given. Returns the number of pieces, 0 when there is no open path. With
+## no path through `via`, the plan is left as it was.
+func suggest_route(from: Node3D, to: Node3D, via = null) -> int:
+	if _router == null: _router = preload("res://scripts/rails/rail_router.gd").new(self)
+	var width: float = probe("straight").half_width()
+	var path: Array[Dictionary] = _router.find(from,to,target_reach(from)+width,target_reach(to)+width,via)
+	if path.is_empty() and via != null: return 0
+	clear_plan()
+	for piece in path:
+		pending.append({kind = piece.kind, transform = piece.transform, cells = cells_for(piece.kind,piece.transform), ghost = _plan_ghost(piece.kind,piece.transform)})
+	_tint_plan()
+	return path.size()
+func plan_cost() -> int:
+	var total := 0
+	for entry in pending: total += cost(entry.kind)
+	return total
+## Laid pieces whose line the plan joins.
+func joined_pieces() -> Array[Node3D]:
+	var result: Array[Node3D] = []
+	for i in range(pending.size()):
+		for index in range(probe(pending[i].kind).end_count()):
+			var meets := _meets_anything(_pending_end(pending[i],index),i)
+			if not meets.has("piece"): continue
+			for piece in lines()[meets.piece.get_instance_id()].pieces:
+				if is_instance_valid(piece) and not result.has(piece): result.append(piece)
+	return result
+## The radius of a target's ring. Track connects once its edge touches the ring: its centre line within the
+## radius plus half the track's width. A Depot's ring is where trains are built, load and unload, so a train can
+## be built on any track that connects to it; other targets take half their footprint plus the connect reach.
+func target_reach(node: Node3D) -> float:
+	if node.is_in_group("depots") and node.get("rules") != null: return depot_reach(node)
+	var size := Vector2i(2,2)
+	var depots = game.get_node_or_null("DepotNetwork")
+	if node.is_in_group("construction_plans"): size = node.spec.size
+	elif node.is_in_group("depots") and depots != null: size = depots.depot_size()
+	elif node.is_in_group("mines") and depots != null: size = depots.engineering_rules.mine_footprint
+	return maxf(size.x,size.y)*0.5*ground.tile_size+rules.connect_reach
+## Everything planned track can connect to for `team`.
+func plan_target_candidates(team := "player") -> Array[Node3D]:
+	var result: Array[Node3D] = []
+	for depot in _depots():
+		if depot.team == team and depot.health > 0: result.append(depot)
+	for mine in get_tree().get_nodes_in_group("mines"):
+		if mine.get("health") == null or mine.health > 0: result.append(mine)
+	for plan in get_tree().get_nodes_in_group("construction_plans"):
+		if not plan.finished and plan.kind != &"rail": result.append(plan)
+	return result
+func _plan_passes(target: Node3D, reach: float) -> bool:
+	var centre := Vector2(target.global_position.x,target.global_position.z)
+	for entry in pending:
+		var p: Node3D = probe(entry.kind)
+		for lane in range(p.lane_count()):
+			var total: float = p.length(lane)
+			var steps := maxi(4,int(total/0.5))
+			for i in range(steps+1):
+				var at: Vector3 = (entry.transform as Transform3D)*p.local_point(total*i/steps,lane)
+				if Vector2(at.x,at.z).distance_to(centre) <= reach+p.half_width(): return true
+	return false
+## The targets the plan, with the laid track it joins, connects.
+func plan_targets(team := "player") -> Array[Node3D]:
+	var result: Array[Node3D] = []
+	if pending.is_empty(): return result
+	var laid := joined_pieces()
+	for target in plan_target_candidates(team):
+		var reach := target_reach(target)
+		var hit := _plan_passes(target,reach)
+		for piece in laid:
+			if hit: break
+			if piece.nearest(target.global_position).gap <= reach+piece.half_width(): hit = true
+		if hit: result.append(target)
+	return result
+## While track is planned, rings every target at its reach: amber, green once the plan connects it. Rings go
+## when track laying ends.
+func show_target_rings(active: bool) -> void:
+	var seen := {}
+	if active:
+		var connected := plan_targets()
+		for target in plan_target_candidates():
+			var key := target.get_instance_id()
+			seen[key] = true
+			var ring = _target_rings.get(key)
+			if not is_instance_valid(ring):
+				ring = target_ring_scene.instantiate()
+				add_child(ring)
+				_target_rings[key] = ring
+			var reach := target_reach(target)
+			ring.global_position = target.global_position+Vector3.UP*0.2
+			ring.scale = Vector3(reach,1,reach)
+			var lit: bool = connected.has(target) or target == route_from or target == route_to
+			ring.get_node("Open").visible = not lit
+			ring.get_node("Connected").visible = lit
+	for key in _target_rings.keys():
+		if seen.has(key): continue
+		if is_instance_valid(_target_rings[key]): _target_rings[key].queue_free()
+		_target_rings.erase(key)
+## The Depot that pays for the plan: the pin when it can, else the connected Depot with all the iron nearest
+## the plan's first piece, else the nearest friendly Depot with it.
+func plan_payer(pinned = null) -> Node3D:
+	var need := plan_cost()
+	var energy := rules.rail_energy_cost*pending.size()
+	var affords := func(depot) -> bool: return is_instance_valid(depot) and depot.is_in_group("depots") and depot.team == "player" and depot.health > 0 and depot.iron >= need and depot.energy >= energy
+	if pinned != null: return pinned if affords.call(pinned) else null
+	var start: Vector3 = (pending[0].transform as Transform3D).origin if not pending.is_empty() else Vector3.ZERO
+	var best: Node3D = null
+	for target in plan_targets():
+		if target.is_in_group("depots") and affords.call(target) and (best == null or target.global_position.distance_squared_to(start) < best.global_position.distance_squared_to(start)): best = target
+	if best != null: return best
+	for depot in _depots():
+		if affords.call(depot) and (best == null or depot.global_position.distance_squared_to(start) < best.global_position.distance_squared_to(start)): best = depot
+	return best
+## "" when the plan can be laid, else why not.
+func plan_blocker(pinned = null) -> String:
+	if pending.is_empty(): return "Plan some track first."
+	var targets := plan_targets()
+	if targets.size() < 2: return "Planned track must connect two targets (Depots, mines or build sites); it connects %d." % targets.size()
+	if plan_payer(pinned) == null: return "No Depot has the %d iron for this track." % plan_cost()
+	return ""
+## Lays every planned piece at once, charging one Depot. Returns the pieces laid.
+func commit_plan(pinned = null) -> Array[Node3D]:
+	var laid: Array[Node3D] = []
+	var blocker := plan_blocker(pinned)
+	if not blocker.is_empty(): game.notify(blocker); return laid
+	var payer := plan_payer(pinned)
+	var need := plan_cost()
+	if not payer.spend_local(rules.rail_energy_cost*pending.size(),need): game.notify("Paying Depot lacks local rail resources."); return laid
+	var parent: Node = game.get_node("Entities/Rails") if game.has_node("Entities/Rails") else game
+	var refund := 0
+	var plan := pending.duplicate()
+	clear_plan()
+	for entry in plan:
+		var piece = scene_for(entry.kind).instantiate()
+		piece.assigned_depot = payer
+		piece.transform = entry.transform
+		parent.add_child(piece,true)
+		if is_instance_valid(piece) and not piece.is_queued_for_deletion(): laid.append(piece)
+		else: refund += cost(entry.kind)
+	if refund > 0: payer.stockpile.deposit(&"iron",refund)
+	var note := " %d could not be laid; their iron went back." % (plan.size()-laid.size()) if refund > 0 else ""
+	game.notify("%d track pieces laid from %s for %d iron.%s" % [laid.size(),payer.name,need-refund,note])
+	return laid
+## Green when the plan can be laid, red when no Depot can pay for it.
+func _tint_plan() -> void:
+	var hud = game.get_node_or_null("Interface")
+	var ready := plan_blocker(hud.global_payer if hud != null and hud.global_pinned else null).is_empty()
+	for entry in pending:
+		if is_instance_valid(entry.ghost): _tint_ghost(entry.ghost,ready)
+# ---- upkeep (docs/RAIL_PLANNING.md)
+## The energy a second this piece's line costs now: upkeep_per_100m for its length, and that again times
+## upkeep_per_running_train for every train running on it. Lines with no Depot cost nothing; they have no
+## power either.
+func upkeep_rate(piece) -> float:
+	if not is_instance_valid(piece): return 0.0
+	var entry = lines().get(piece.get_instance_id())
+	if entry == null or entry.depots.is_empty(): return 0.0
+	var metres := 0.0
+	for other in entry.pieces:
+		if is_instance_valid(other): metres += other.total_length()
+	var running := 0
+	for train in get_tree().get_nodes_in_group("rail_trains"):
+		if is_instance_valid(train.piece) and entry.pieces.has(train.piece) and not train._route.is_empty(): running += 1
+	return rules.upkeep_per_100m*metres/100.0*(1.0+rules.upkeep_per_running_train*running)
+## Charges every line's upkeep for `seconds` from its Depots, the fullest first.
+func charge_upkeep(seconds: float) -> void:
+	var done := []
+	for piece in pieces:
+		if not is_instance_valid(piece): continue
+		var entry = lines().get(piece.get_instance_id())
+		if entry == null or done.has(entry) or entry.depots.is_empty(): continue
+		done.append(entry)
+		var key := piece.get_instance_id()
+		for other in entry.pieces:
+			if is_instance_valid(other): key = mini(key,other.get_instance_id())
+		var owed: float = _upkeep_owed.get(key,0.0)+upkeep_rate(piece)*seconds
+		var whole := floori(owed)
+		if whole > 0:
+			var sources: Array = entry.depots.filter(func(depot): return is_instance_valid(depot) and depot.energy > 0)
+			sources.sort_custom(func(a,b): return a.energy > b.energy)
+			for depot in sources:
+				var take: int = mini(whole,depot.energy)
+				depot.energy -= take
+				whole -= take
+				owed -= take
+				if whole <= 0: break
+			# What no Depot could pay is dropped, not carried: a line with no energy simply has no power.
+			owed = minf(owed,0.999)
+		_upkeep_owed[key] = owed

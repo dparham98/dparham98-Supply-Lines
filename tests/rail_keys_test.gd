@@ -1,7 +1,7 @@
 extends SceneTree
-# Headless: track laying by real key presses and clicks. The Build page stays open while laying, and its
-# tiles use R and G too, so the keys must reach track laying first. A click lays one piece and finishes;
-# Shift-click keeps laying (docs/MAGLEV_TRACKS.md).
+# Headless: connecting two buildings with rail by real key presses and clicks (docs/RAIL_PLANNING.md). A click
+# picks a building, the second pick suggests the track, Backspace takes a pick back and Enter lays the track. The
+# Build page stays open while laying, so Enter and Backspace must reach track laying first.
 var game: Node3D
 var hud: CanvasLayer
 var rails: Node
@@ -22,14 +22,10 @@ func click_at(point: Vector2, shift := false) -> void:
 		event.position = point; event.button_index = MOUSE_BUTTON_LEFT; event.pressed = down; event.shift_pressed = shift
 		root.push_input(event,true)
 		for frame in range(3): await process_frame
-func look_at_end(end: Dictionary) -> Vector2:
-	rig.focus_position(end.position,45)
+func look_at(point: Vector3) -> Vector2:
+	rig.focus_position(point,45)
 	for frame in range(180): rig.advance_camera(1.0/60)
-	return rig.camera.unproject_position(end.position+end.out*1.0)
-func free_end(piece: Node, index: int) -> Dictionary:
-	for end in rails.free_ends("player"):
-		if end.piece == piece and end.end == index: return end
-	return {}
+	return rig.camera.unproject_position(point)
 func run() -> void:
 	root.size = Vector2i(1280,900)
 	# A mechanics check on a map laid out for the old 35 m Depot range (docs/DEPOT_RANGE.md).
@@ -49,41 +45,35 @@ func run() -> void:
 	await process_frame
 	# Before laying starts, R is still the Rail tile.
 	await press(KEY_R)
-	if not check(game.placing_rail and game.rail_piece == "straight","R should start laying track from the Build page"): return
+	if not check(game.placing_rail and rails.route_from == null,"R should start laying track from the Build page"): return
 	if not check(hud.build_menu.get_node("Actions/Rail").is_visible_in_tree(),"The test needs the Rail tile on screen"): return
-	# While laying, R cycles every piece and comes back round.
-	for piece in ["left","right","fork_left","fork_right","straight"]:
-		await press(KEY_R)
-		if not check(game.rail_piece == piece,"R should reach %s, got %s" % [piece,game.rail_piece]): return
-	# F turns a free piece.
-	var heading: Vector3 = game.rail_heading
-	await press(KEY_F)
-	if not check(game.rail_heading.is_equal_approx(Vector3(-heading.z,0,heading.x)) and game.placing_rail,"F should turn a free piece"): return
-	# G does nothing on a straight, and must not start a Generator.
-	await press(KEY_G)
-	if not check(game.placing_rail and game.global_plan_kind.is_empty() and game.rail_fork_join == 0,"G on a straight should do nothing"): return
-	# A curve chosen by key is the piece a click lays.
-	var west: Dictionary = free_end(game.get_node("Entities/Rails/Track0"),0)
-	if not check(not west.is_empty(),"Fixture has no free west end"): return
-	await press(KEY_R)
+	var depot: Node3D = game.get_node("Entities/Buildings/Depot")
+	var east: Node3D = game.get_node("Entities/Buildings/EastDepot")
 	var before: int = rails.pieces.size()
-	await click_at(await look_at_end(west),true)
-	if not check(rails.pieces.size() == before+1 and rails.pieces[before].kind == "curve","A click after R should lay a curve"): return
-	if not check(game.placing_rail and game.rail_piece == "left","A Shift-click should keep laying the same piece"): return
-	# On to a fork: G walks its three joining ends and stays in track laying. Only the branch exit fits at the
-	# east end, inside the Depot radius, and the click lays it there.
-	for i in range(2): await press(KEY_R)
-	if not check(game.rail_piece == "fork_left","R should reach the left fork"): return
-	for join in [1,2,0,1,2]:
-		await press(KEY_G)
-		if not check(game.placing_rail and game.global_plan_kind.is_empty() and game.rail_fork_join == join,"G should move a fork to join %d" % join): return
-	var far: Dictionary = free_end(game.get_node("Entities/Rails/Track6"),1)
-	if not check(not far.is_empty(),"Fixture has no free east end"): return
-	before = rails.pieces.size()
-	await click_at(await look_at_end(far))
-	if not check(rails.pieces.size() == before+1 and rails.pieces[before].kind == "fork_left","A click after R should lay a fork"): return
-	# A plain click lays its piece and finishes: the Build page has its keys back.
-	if not check(not game.placing_rail and "laying finished" in game.message,"A plain click should finish track laying and say so: %s" % game.message): return
+	var iron: int = depot.iron+east.iron
+	# A click on open ground picks nothing; a click on a Depot picks it as the first building.
+	await click_at(await look_at(depot.global_position+Vector3(0,0,-60)))
+	if not check(rails.route_from == null and game.placing_rail,"Open ground should pick nothing"): return
+	await click_at(await look_at(depot.global_position))
+	if not check(rails.route_from == depot and rails.pending.is_empty(),"A click on the Depot should pick it: %s" % rails.route_from): return
+	# Backspace takes the pick back.
+	await press(KEY_BACKSPACE)
+	if not check(rails.route_from == null and game.placing_rail,"Backspace should drop the first pick"): return
+	await click_at(await look_at(depot.global_position))
+	# The second building gets a suggested path, planned but not laid or paid.
+	await click_at(await look_at(east.global_position))
+	if not check(rails.route_to == east and not rails.pending.is_empty() and rails.pieces.size() == before and depot.iron+east.iron == iron,"A click on the second Depot should suggest track, not lay it"): return
+	if not check(rails.plan_blocker().is_empty(),"The suggested track should be layable: "+rails.plan_blocker()): return
+	# Backspace drops the second pick and its track, keeping the first.
+	await press(KEY_BACKSPACE)
+	if not check(rails.route_from == depot and rails.route_to == null and rails.pending.is_empty(),"Backspace should drop the second pick and its track"): return
+	await click_at(await look_at(east.global_position))
+	var planned: int = rails.pending.size()
+	if not check(planned > 0,"The track should be suggested again"): return
+	# Enter lays it and finishes; the Build page has its keys back.
+	await press(KEY_ENTER)
+	if not check(rails.pieces.size() == before+planned and rails.pending.is_empty() and not game.placing_rail and rails.route_from == null,"Enter should lay the track and finish laying"): return
+	if not check(depot.iron+east.iron < iron,"A Depot should pay for the laid track"): return
 	await process_frame
 	await press(KEY_G)
 	if not check(not game.placing_rail and game.global_plan_kind == &"generator","G should be the Generator tile again"): return

@@ -143,6 +143,12 @@ func _route_to_point(point: Vector3) -> bool:
 	return _follow(rail_network.line(route,along,hit.distance,consist_length()+2.0))
 func _plan(goal: Vector2i) -> bool:
 	return _route_to_point(ground.tile_to_world(goal))
+## A train loads and unloads anywhere on track touching a Depot's rail ring (docs/RAIL_PLANNING.md), which is
+## wider than the ground loading area.
+func stop_reach(target: Node3D) -> float:
+	if target.is_in_group("depots") and target.get("rules") != null:
+		return rail_network.depot_reach(target)+rail_network.probe("straight").half_width()+0.1
+	return target.dropoff_range
 func _route_to_interaction(target: Node3D, radius: float) -> bool:
 	return _route_near(target,radius)
 func _route_near(target: Node3D, _radius: float) -> bool:
