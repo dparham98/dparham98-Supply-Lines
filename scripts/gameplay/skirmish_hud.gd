@@ -469,6 +469,9 @@ func update_portraits(units: Array[Node3D]) -> void:
 		health.value = unit.health
 		var ratio := float(unit.health)/maxf(unit.max_health,1)
 		health.get_theme_stylebox("fill").bg_color = Color(0.364,0.674,0.469) if ratio > 0.6 else (Color(1,0.72,0.2) if ratio > 0.3 else Color(0.95,0.3,0.25))
+		# The health as a number too (docs/SELECTION_PORTRAITS.md).
+		var number := str(unit.health)
+		if button.get_node("HealthText").text != number: button.get_node("HealthText").text = number
 		button.get_node("Primary").visible = unit == units[0]
 		var tip := "%s · Health %d / %d · %s\nClick: only this unit · Shift: remove it · Ctrl: only this type · Ctrl+Shift: remove this type" % [object_name(unit),unit.health,unit.max_health,unit.state]
 		if button.tooltip_text != tip: button.tooltip_text = tip
