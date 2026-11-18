@@ -401,10 +401,46 @@ func line_to_depot(from_piece: Node3D, from_d: float, depot: Node3D, team: Strin
 		var travel: float = track.total-track.start
 		if best.is_empty() or travel < best.total-best.start: best = track
 	return best
-func spawn_stop(depot: Node3D) -> Dictionary:
-	for stop in loading_stops(depot,depot.team):
+## Where a new train stands: in the Depot's loading area, on the line through `on_piece` when one was chosen
+## (docs/RAIL_PLANNING.md) and it still reaches the Depot, else on any line that does.
+func spawn_stop(depot: Node3D, on_piece: Node3D = null) -> Dictionary:
+	var stops := loading_stops(depot,depot.team)
+	if is_instance_valid(on_piece) and lines().has(on_piece.get_instance_id()):
+		var chosen = lines()[on_piece.get_instance_id()]
+		var on_line := stops.filter(func(stop): return is_same(lines().get(stop.piece.get_instance_id()),chosen))
+		if not on_line.is_empty(): stops = on_line
+	for stop in stops:
 		return {piece = stop.piece, lane = stop.lane, distance = stop.distance, position = stop.piece.point_at(stop.distance,stop.lane)}
 	return {}
+## The separate lines of track that reach `depot`'s loading area, one piece of each (its first loading piece).
+func depot_lines(depot: Node3D) -> Array[Node3D]:
+	var seen := []
+	var result: Array[Node3D] = []
+	for stop in loading_stops(depot,depot.team):
+		var entry = lines().get(stop.piece.get_instance_id())
+		if seen.any(func(other): return is_same(other,entry)): continue
+		seen.append(entry)
+		result.append(stop.piece)
+	return result
+## The laid piece of one of `depot`'s lines nearest `point` within `within` metres, or null: the line a train
+## queued there will start on.
+func depot_line_at(depot: Node3D, point: Vector3, within := 3.0) -> Node3D:
+	var reaching := depot_lines(depot)
+	var best: Node3D = null
+	var best_gap := within
+	for piece in pieces:
+		if not is_instance_valid(piece) or not friendly_piece(piece,depot.team): continue
+		var entry = lines().get(piece.get_instance_id())
+		var line_piece: Node3D = null
+		for other in reaching:
+			if is_same(lines().get(other.get_instance_id()),entry): line_piece = other
+		if line_piece == null: continue
+		var total: float = piece.length()
+		for i in range(17):
+			var at: Vector3 = piece.point_at(total*i/16.0,0)
+			var gap := Vector2(at.x-point.x,at.z-point.z).length()
+			if gap <= best_gap: best_gap = gap; best = line_piece
+	return best
 # ---- placement
 ## Transform for a piece of `kind` placed from `point`: snapped onto the nearest free friendly end,
 ## else free on the tile under the cursor heading `heading`. `join` is the piece's end that meets the
@@ -514,6 +550,7 @@ func _process(delta: float) -> void:
 	var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(mouse),camera.project_ray_normal(mouse))
 	if point == null: preview.visible = false; return
 	preview.get_node("Status").global_position = point+Vector3.UP*2.0
+	if is_instance_valid(route_from) and is_instance_valid(route_to) and cursor != null: follow_cursor(cursor,delta)
 	preview.get_node("Status").text = route_status()
 ## The cursor label while connecting buildings.
 func route_status() -> String:
@@ -522,7 +559,7 @@ func route_status() -> String:
 	if pending.is_empty(): return "NO OPEN PATH · click another building"
 	var hud = game.get_node("Interface")
 	var blocker := plan_blocker(hud.global_payer if hud.global_pinned else null)
-	return ("NO PATH THROUGH HERE · " if route_blocked else "")+"%d PIECE%s · %d IRON · %s" % [pending.size(),"" if pending.size() == 1 else "S",plan_cost(),"ENTER LAYS IT" if blocker.is_empty() else "NOT ENOUGH IRON"]
+	return ("NO PATH THROUGH HERE · " if route_blocked else "")+"%d PIECE%s · %d IRON · %s" % [pending.size(),"" if pending.size() == 1 else "S",plan_cost(),"CLICK LAYS IT" if blocker.is_empty() else "NOT ENOUGH IRON"]
 func target_name(node: Node3D) -> String:
 	if node.is_in_group("construction_plans"): return "%s site" % node.spec.title
 	if node.is_in_group("mines"): return "Mine"
@@ -643,6 +680,7 @@ func drop_route() -> void:
 	route_via = null
 	route_blocked = false
 	_drag_tried = null
+	cursor = null
 ## Whether `point` is on or beside the suggested track, within `within` metres of its centre line.
 func near_plan(point: Vector3, within := 4.0) -> bool:
 	for entry in pending:
@@ -666,19 +704,33 @@ func drag_route(point: Vector3) -> bool:
 	route_via = flat
 	route_blocked = false
 	return true
-## Drops the dragged shape and suggests the shortest path again.
-func undrag_route() -> void:
-	route_via = null
-	route_blocked = false
-	_drag_tried = null
-	if is_instance_valid(route_from) and is_instance_valid(route_to): suggest_route(route_from,route_to)
-## What to tell the player when a drag ends.
-func drag_notice() -> String:
-	_drag_tried = null
-	if route_blocked:
-		route_blocked = false
-		return "No open path through there; the track keeps its last shape. Enter lays it."
-	return "Track moved: %d piece%s, %d iron. Enter lays it; Backspace straightens it again." % [pending.size(),"" if pending.size() == 1 else "s",plan_cost()]
+## Seconds until the cursor may move the suggested track again; longer after a slow search.
+var _follow_left := 0.0
+## The ground under the mouse while laying track, set by mouse motion (skirmish.gd), or null.
+var cursor = null
+## Once both buildings are picked, the suggested track follows the cursor (docs/RAIL_PLANNING.md): it is found
+## again through the point under it, adding pieces as needed. Over either picked building's ring it is the
+## shortest track; over the track itself it keeps its shape. A search that takes long waits longer before the
+## next, so a long route does not hold the frame up.
+func follow_cursor(point: Vector3, delta: float) -> void:
+	_follow_left -= delta
+	if _follow_left > 0.0: return
+	var flat := Vector3(point.x,0,point.z)
+	for end in [route_from,route_to]:
+		if Vector2(flat.x-end.global_position.x,flat.z-end.global_position.z).length() <= target_reach(end):
+			if route_via != null or route_blocked:
+				route_via = null
+				route_blocked = false
+				_drag_tried = null
+				_timed_search(func(): suggest_route(route_from,route_to))
+			return
+	if near_plan(flat,1.5): return
+	if _drag_tried != null and flat.distance_to(_drag_tried) < 1.2: return
+	_timed_search(func(): drag_route(flat))
+func _timed_search(search: Callable) -> void:
+	var started := Time.get_ticks_usec()
+	search.call()
+	_follow_left = maxf(0.05,(Time.get_ticks_usec()-started)/1000000.0*3.0)
 ## The rail target whose ring holds `point`, the nearest centre first, or null.
 func target_at(point: Vector3, team := "player") -> Node3D:
 	var best: Node3D = null
@@ -702,7 +754,7 @@ func pick_target(target: Node3D) -> String:
 		return "No open path from %s to %s. Click another building, or Backspace to choose again." % [target_name(route_from),target_name(target)]
 	var hud = game.get_node_or_null("Interface")
 	var blocker := plan_blocker(hud.global_payer if hud != null and hud.global_pinned else null)
-	return "Suggested track: %d piece%s, %d iron. %s Drag the track to move it." % [pending.size(),"" if pending.size() == 1 else "s",plan_cost(),"Enter lays it." if blocker.is_empty() else blocker]
+	return "Suggested track: %d piece%s, %d iron. It follows the cursor; %s" % [pending.size(),"" if pending.size() == 1 else "s",plan_cost(),"click to lay it." if blocker.is_empty() else blocker]
 ## Replaces the plan with the shortest open path of straights and curves from `from` to `to`, touching both
 ## rings, and through `via` when one is given. Returns the number of pieces, 0 when there is no open path. With
 ## no path through `via`, the plan is left as it was.

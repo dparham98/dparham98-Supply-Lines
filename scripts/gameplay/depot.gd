@@ -43,6 +43,8 @@ var coal: int:
 var capture_team := ""
 var capture_progress := 0.0
 var pending: Array[String] = []
+## The chosen line for each queued train, in queue order: a piece of it, or null for any line.
+var train_lines: Array = []
 ## Enabled for newly constructed/deployed Depots, not prebuilt map fixtures.
 @export var grant_construction_infantry := false
 var construction_infantry_pending := false
@@ -140,9 +142,10 @@ func _process(delta: float) -> void:
 		if pending[0] != "train" and spawn.x < 0: $Progress.text = "Exit blocked · waiting"; return
 		var train_stop := {}
 		if pending[0] == "train":
-			train_stop = game.get_node("RailNetwork").spawn_stop(self)
+			train_stop = game.get_node("RailNetwork").spawn_stop(self,train_lines.front() if not train_lines.is_empty() else null)
 			if train_stop.is_empty(): $Progress.text = "Train needs friendly track in the Depot loading area"; return
 		var kind: String = pending.pop_front()
+		if kind == "train" and not train_lines.is_empty(): train_lines.pop_front()
 		var scene: PackedScene = infantry_scene
 		if kind == "cargo": scene = game.get_node("DepotNetwork").cargo_scene
 		elif kind == "train": scene = game.get_node("RailNetwork").train_scene
@@ -221,7 +224,9 @@ func _step_cancel(delta: float) -> void:
 		_release_truck_side()
 		_drop_current()
 func _drop_current() -> void:
-	var cost := _job_cost(pending.pop_front())
+	var kind: String = pending.pop_front()
+	if kind == "train" and not train_lines.is_empty(): train_lines.pop_front()
+	var cost := _job_cost(kind)
 	queue -= 1
 	progress = 0
 	cancelling = false
@@ -292,6 +297,7 @@ func update_capture(delta: float) -> void:
 			$Visuals/Model.show_truck(0.0)
 		cancelling = false
 		pending.clear()
+		train_lines.clear()
 		queue = 0
 		progress = 0
 		game.get_node("DepotNetwork").select_depot(game.get_node("DepotNetwork").selected)
@@ -334,10 +340,12 @@ func try_construction_infantry() -> bool:
 	game.notify("Construction infantry ready at %s." % name)
 	return true
 
-func request_train() -> bool:
+## `line`: a piece of the line the train starts on, when the Depot has more than one (docs/RAIL_PLANNING.md).
+func request_train(line: Node3D = null) -> bool:
 	var config = game.get_node("RailNetwork").rules
 	if team != "player" or health <= 0 or queue >= queue_limit: return false
 	if not spend_local(config.cargo_energy_cost,config.cargo_iron_cost): return false
 	pending.append("train"); queue += 1
-	game.notify("Train queued; needs friendly track in this Depot loading area.")
+	train_lines.append(line)
+	game.notify("Train queued%s; needs friendly track in this Depot loading area." % (" on the chosen line" if line != null else ""))
 	return true
