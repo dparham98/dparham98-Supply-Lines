@@ -26,23 +26,12 @@ func click_at(point: Vector2, shifted := false) -> void:
 	root.push_input(event,true)
 	for frame in range(3): await process_frame
 
-func drag(from: Vector2, to: Vector2) -> void:
+## Moves the mouse there, with no button held, and lets the track follow it.
+func hover(at: Vector2) -> void:
 	var motion := InputEventMouseMotion.new()
-	motion.position = from
+	motion.position = at
 	root.push_input(motion,true)
-	var press := InputEventMouseButton.new()
-	press.position = from; press.button_index = MOUSE_BUTTON_LEFT; press.pressed = true
-	root.push_input(press,true)
-	for frame in range(3): await process_frame
-	for i in range(1,9):
-		motion = InputEventMouseMotion.new()
-		motion.position = from.lerp(to,i/8.0); motion.button_mask = MOUSE_BUTTON_MASK_LEFT
-		root.push_input(motion,true)
-		await process_frame
-	var release := InputEventMouseButton.new()
-	release.position = to; release.button_index = MOUSE_BUTTON_LEFT; release.pressed = false
-	root.push_input(release,true)
-	for frame in range(3): await process_frame
+	for frame in range(30): await process_frame
 func click(node: Control) -> void:
 	var previous := Rect2()
 	var stable := 0
@@ -103,22 +92,28 @@ func run() -> void:
 	if not check(rails.route_to == site and not rails.pending.is_empty() and rails.pieces.size() == pieces_before and source.iron == iron_before,"A click on the site should suggest track, not lay it"): return
 	if not check(rails.plan_blocker().is_empty() and rails.plan_targets().has(source) and rails.plan_targets().has(site),"The suggested track should connect the Depot and the site: "+rails.plan_blocker()): return
 	await shot("rail_plan")
-	# Dragging the suggested track with the mouse pulls it through the cursor, adding pieces as needed.
+	# The suggested track follows the cursor, with no button held, adding pieces as needed.
 	var grab_entry: Dictionary = rails.pending[rails.pending.size()/2]
 	var grab_piece: Node3D = rails.probe(grab_entry.kind)
 	var grab: Vector3 = (grab_entry.transform as Transform3D)*grab_piece.local_point(grab_piece.length()*0.5)
-	var drop: Vector3 = grab+Vector3(-16,0,-12)
-	await drag(rig.camera.unproject_position(grab),rig.camera.unproject_position(drop))
-	if not check(rails.route_via != null and rails.near_plan(drop,2.6) and game.placing_rail,"Dragging the track should pull it through the cursor: %s, %d pieces" % [rails.route_via,rails.pending.size()]): return
-	if not check(rails.plan_targets().has(source) and rails.plan_targets().has(site),"The dragged track should still connect the Depot and the site"): return
+	# A point clear of both rings, where the track bends to pass it.
+	var drop := Vector3.INF
+	for offset in [Vector3(-16,0,-12),Vector3(16,0,12),Vector3(-12,0,16),Vector3(12,0,-16),Vector3(-24,0,-18),Vector3(24,0,18)]:
+		var at: Vector3 = grab+offset
+		var clear := true
+		for end in [source,site]:
+			if Vector2(at.x-end.global_position.x,at.z-end.global_position.z).length() <= rails.target_reach(end)+3.0: clear = false
+		if clear and rails.near_plan(at,4.0) == false: drop = at; break
+	if not check(drop != Vector3.INF,"No point clear of both rings to pull the track through"): return
+	await hover(rig.camera.unproject_position(drop))
+	if not check(rails.route_via != null and rails.near_plan(drop,2.6) and game.placing_rail,"The track should follow the cursor: %s, %d pieces" % [rails.route_via,rails.pending.size()]): return
+	if not check(rails.plan_targets().has(source) and rails.plan_targets().has(site),"The moved track should still connect the Depot and the site"): return
 	var planned: int = rails.pending.size()
 	var cost: int = rails.plan_cost()
 	await shot("rail_drag")
-	var enter := InputEventKey.new()
-	enter.keycode = KEY_ENTER; enter.physical_keycode = KEY_ENTER; enter.pressed = true
-	root.push_input(enter,true)
-	for frame in range(3): await process_frame
-	if not check(rails.pieces.size() == pieces_before+planned and rails.pending.is_empty() and source.iron == iron_before-cost and not game.placing_rail,"Enter should lay and pay the suggested track and finish laying"): return
+	# A left click lays it where it is.
+	await click_at(rig.camera.unproject_position(drop))
+	if not check(rails.pieces.size() == pieces_before+planned and rails.pending.is_empty() and source.iron == iron_before-cost and not game.placing_rail,"A click should lay and pay the suggested track and finish laying: %d of %d pieces" % [rails.pieces.size()-pieces_before,planned]): return
 	await shot("rail_construction")
 	game.placing_rail = true
 	# A fork on the fixture's west end, for art review.

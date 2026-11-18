@@ -9,9 +9,10 @@ Rail starts from the Build page's Rail tile (R).
 | Action | What it does |
 | --- | --- |
 | Click a building | The first click picks where the track starts; the second picks where it goes, and the game suggests the track. A click after that starts again. A click lands on a building when it is inside the building's ring. |
-| Drag the track | Press on the suggested track and move the mouse: the track is found again through the cursor, adding pieces as needed. Releasing keeps that shape. Where no open path passes the cursor, the track keeps its last shape and the label says "NO PATH THROUGH HERE". |
-| Backspace | Straightens a dragged track back to the shortest path; otherwise takes back the second pick and its track, or the first pick when there is no second. |
-| Enter | Lays the suggested track. |
+| Move the mouse | Once both buildings are picked, the track follows the cursor with no button held. It is found again through the point under the cursor, adding pieces as needed. Over either picked building's ring it is the shortest track; over the track itself it keeps its shape. Where no open path passes the cursor, the track keeps its last shape and the label says "NO PATH THROUGH HERE". |
+| Left click | With a track suggested, lays it where it is. |
+| Backspace | Takes back the second pick and its track, or the first pick when there is no second. |
+| Enter | Lays the suggested track, as a click does. |
 | Esc, or leaving track laying any other way | Drops the picks and the track. Nothing was paid. |
 
 While track laying is armed, Enter and Backspace go to it before the Build page's tiles. Other Build page keys work as usual, so R or G start the Rail tile or a Generator plan again.
@@ -23,8 +24,12 @@ While track laying is armed, Enter and Backspace go to it before the Build page'
 - **Colour:**
   - The suggested track is green when a Depot can pay for it, and red when none has the iron.
   - Rings are amber, and green for the picked buildings and any the track touches.
-- **The cursor label** shows the next step, then the track's pieces and iron, and either "ENTER LAYS IT" or "NOT ENOUGH IRON".
-- **Dragging** (playtest of 2026-11-17) pulls the track through one point, the latest the player dragged to. It is the shortest open track that passes within a lattice step (2.4 m) of that point. The search is found again each time the cursor moves 1.2 m, so a long route can lag a little while dragged.
+- **The cursor label** shows the next step, then the track's pieces and iron, and either "CLICK LAYS IT" or "NOT ENOUGH IRON".
+- **Following the cursor** (second playtest of 2026-11-17, which found press-and-drag unintuitive) pulls the track through one point, the one under the cursor. It is the shortest open track that passes within a lattice step (2.4 m) of that point. It is found again when the cursor has moved 1.2 m, and a search waits three times as long as the last one took (at least 0.05 s) before the next, so a long route does not hold the frame up. The cursor is read from mouse motion, so the track waits still while the mouse is over the HUD.
+
+## Trains on a Depot with several lines
+
+When the Depot's Train tile is pressed and more than one separate line of track reaches the Depot's ring, the train is not queued at once. The tile waits for a click on one of those lines (Esc or a right-click cancels), then queues the train and prints it on that line. With one line, or none, it queues at once as before. If the chosen line no longer reaches the Depot by the time the train is ready, it is printed on any line that does. The chosen lines are kept beside the production queue (`Depot.train_lines`), so cancelling a train drops its line.
 - **Forks aren't suggested.** The suggested track doesn't join existing lines either: it runs beside them. Forks and joins are for a later change.
 
 ### How the path is found
@@ -84,7 +89,8 @@ So a 100 m line costs 0.1 E/s idle and 0.3 E/s with two trains running. This is 
 
 ## Code
 
-- **Connecting:** `target_at`, `pick_target`, `suggest_route`, `drop_route` and `route_status` in `scripts/rails/rail_network.gd`. Dragging is `near_plan`, `drag_route`, `undrag_route` and `drag_notice`, driven by `_rail_dragging` in `skirmish.gd`. The path search is `scripts/rails/rail_router.gd`.
+- **Connecting:** `target_at`, `pick_target`, `suggest_route`, `drop_route` and `route_status` in `scripts/rails/rail_network.gd`. Following the cursor is `follow_cursor`, `near_plan` and `drag_route`; `skirmish.gd` sets `RailNetwork.cursor` from mouse motion and lays the track on a click (`lay_route`). The path search is `scripts/rails/rail_router.gd`.
+- **Trains' lines:** `depot_lines`, `depot_line_at` and `spawn_stop` in `rail_network.gd`; `queue_train` in `skirmish_hud.gd`; the `train_line` command in `skirmish.gd`; `Depot.request_train(line)`.
 - **The plan:** `pending`, `plan_targets`, `plan_payer`, `plan_blocker` and `commit_plan` in `rail_network.gd`. `plan_piece`, `plan_refusal` and `unplan_last` still plan single pieces for tests and tools; the player no longer uses them.
 - **Rings:** `show_target_rings` and `depot_reach`, with the saved ring scene `scenes/ui/rail_target_ring.tscn`.
 - **Train stops:** `stop_on` uses the Depot's rail ring; `Train.stop_reach` lets a train load anywhere on it.
@@ -103,8 +109,9 @@ So a 100 m line costs 0.1 E/s idle and 0.3 E/s with two trains running. This is 
   - mines are targets;
   - track touching a Depot's ring connects, and track clear of it doesn't;
   - a click inside a ring picks that building, and the second pick suggests one joined line touching both rings;
-  - dragging pulls the track through a point in one joined line still touching both rings, a point no path passes keeps the last shape, and undoing the drag gives the shortest path back;
+  - pulling the track through a point gives one joined line still touching both rings, a point no path passes keeps the last shape, the cursor over a picked building gives the shortest path back, and the cursor on the track keeps its shape;
   - the track is red when no Depot can pay and green when one can, and it lays and is paid for;
   - leaving track laying drops the plan and the rings.
 - **`tests/rail_keys_test.gd`** picks two Depots by real clicks, and checks Backspace on each pick and Enter, with the Build page open.
-- **`tests/rail_runtime_check.gd`** (rendered) picks the Depot and a build site, shows the suggested track (`rail_plan`), drags it with the mouse (`rail_drag`), lays it with Enter and runs a train load at the larger ring.
+- **`tests/rail_runtime_check.gd`** (rendered) picks the Depot and a build site, shows the suggested track (`rail_plan`), moves the mouse so the track follows it (`rail_drag`), lays it with a left click and runs a train load at the larger ring.
+- **`tests/train_line_test.gd`** queues trains at a Depot with one line, then two: it checks the click on a line, the refusal off the lines, and that each train is printed on its chosen line.

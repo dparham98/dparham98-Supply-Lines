@@ -41,10 +41,7 @@ var pending_unit_command := ""
 var placing_rail := false:
 	set(value):
 		placing_rail = value
-		_rail_dragging = false
 		if not value and is_inside_tree() and has_node("RailNetwork"): $RailNetwork.drop_route()
-## While the left button is held on the suggested track, moving the mouse pulls the track through the cursor.
-var _rail_dragging := false
 var placing_depot := false
 var placing_generator := false
 var placing_structure: StringName = &""
@@ -138,23 +135,22 @@ func _input(event: InputEvent) -> void:
 	if not event.physical_keycode in RAIL_KEYS: return
 	get_viewport().set_input_as_handled()
 	if not event.echo: _rail_key(event.physical_keycode)
-const RAIL_HELP := "Click two buildings (Depots, mines or build sites) to connect; the suggested track is green when a Depot can pay for it. Drag the track to move it. Enter lays it; Backspace undoes; Esc stops."
+const RAIL_HELP := "Click two buildings (Depots, mines or build sites) to connect; the suggested track follows the cursor and is green when a Depot can pay for it. Click (or Enter) lays it; Backspace undoes; Esc stops."
 func _rail_key(key: int) -> void:
 	var rails = $RailNetwork
 	if key == KEY_BACKSPACE:
-		if rails.route_via != null:
-			rails.undrag_route()
-			notify("Track straightened to the shortest path again.")
-		elif is_instance_valid(rails.route_to):
+		if is_instance_valid(rails.route_to):
 			rails.clear_plan(); rails.route_to = null
 			notify("Click the building to connect %s to." % rails.target_name(rails.route_from))
 		else:
 			rails.drop_route()
 			notify("Click a Depot, mine or build site to connect.")
-	else:
-		var laid: Array[Node3D] = rails.commit_plan(_rail_pin())
-		if not laid.is_empty():
-			placing_rail = false
+	else: lay_route()
+## Lays the suggested track; leaves rail mode once it is down.
+func lay_route() -> void:
+	var laid: Array[Node3D] = $RailNetwork.commit_plan(_rail_pin())
+	if not laid.is_empty():
+		placing_rail = false
 ## The pinned payer for track, or null.
 func _rail_pin():
 	return hud.global_payer if hud.global_pinned and is_instance_valid(hud.global_payer) else null
@@ -171,24 +167,19 @@ func _unhandled_input(event: InputEvent) -> void:
 		if point != null: place_global_plan(point,event.shift_pressed)
 		get_viewport().set_input_as_handled()
 		return
-	# Dragging the suggested track: it follows the cursor while the button is held (docs/RAIL_PLANNING.md).
-	if placing_rail and _rail_dragging and (event is InputEventMouseMotion or (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed)):
+	# The suggested track follows the cursor (docs/RAIL_PLANNING.md).
+	if placing_rail and event is InputEventMouseMotion:
 		var camera := get_viewport().get_camera_3d()
-		var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(event.position),camera.project_ray_normal(event.position))
-		if point != null: $RailNetwork.drag_route(point)
-		if event is InputEventMouseButton:
-			_rail_dragging = false
-			notify($RailNetwork.drag_notice())
-		get_viewport().set_input_as_handled()
-		return
+		$RailNetwork.cursor = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(event.position),camera.project_ray_normal(event.position))
 	if placing_rail and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var camera := get_viewport().get_camera_3d()
 		var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(event.position),camera.project_ray_normal(event.position))
-		# A click picks a building to connect; the second pick suggests the track. A press on the suggested track
-		# starts dragging it instead. Nothing is laid or paid until Enter lays it.
+		# A click picks a building to connect; the second pick suggests the track, which then follows the cursor.
+		# With a track suggested, a click lays it (docs/RAIL_PLANNING.md).
 		if point != null:
-			if $RailNetwork.near_plan(point,2.5): _rail_dragging = true
-			else: notify($RailNetwork.pick_target($RailNetwork.target_at(point)))
+			var rails = $RailNetwork
+			if is_instance_valid(rails.route_to) and not rails.pending.is_empty(): lay_route()
+			else: notify(rails.pick_target(rails.target_at(point)))
 		get_viewport().set_input_as_handled()
 		return
 	if (placing_depot or placing_generator or not placing_structure.is_empty()) and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
@@ -369,6 +360,15 @@ func issue_card_order(screen, queued := false) -> void:
 	var from_map: bool = screen is MapPick
 	var target: Node3D
 	# Pin: the build page's paying stockpile.
+	# The line a train queued at a Depot with several starts on (docs/RAIL_PLANNING.md).
+	if pending_unit_command == "train_line":
+		var depot: Node3D = hud.train_line_depot
+		var point = ground_at(screen)
+		var piece: Node3D = $RailNetwork.depot_line_at(depot,point) if is_instance_valid(depot) and point != null else null
+		if piece == null: notify("Click one of %s's rail lines for the train." % (depot.name if is_instance_valid(depot) else "the Depot")); return
+		pending_unit_command = ""
+		if not depot.request_train(piece): notify("Depot lacks local train funds or queue space.")
+		return
 	if pending_unit_command == "pin":
 		target = pick_target(screen,"depots",50)
 		var stockpile := pick_target(screen,"mobile_supplies",34)

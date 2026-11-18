@@ -144,8 +144,7 @@ func _ready() -> void:
 		if is_instance_valid(shown) and shown.is_in_group("production_buildings"): shown.request_unit(&"infantry"))
 	card.get_node("PrintTruck").pressed.connect(func():
 		if network.owned_selected() and not network.selected.request_truck(): game.notify("Depot lacks local funds or queue space."))
-	card.get_node("PrintTrain").pressed.connect(func():
-		if network.owned_selected() and not network.selected.request_train(): game.notify("Depot lacks local train funds or queue space."))
+	card.get_node("PrintTrain").pressed.connect(queue_train)
 	card.get_node("PrintCargo").pressed.connect(func():
 		if network.owned_selected() and not network.selected.request_cargo(): game.notify("Depot lacks local funds or queue space."))
 	for id in ["scout","grenadier","tank","motorcycle","drone","ubermech"]:
@@ -520,6 +519,20 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			get_viewport().push_input(plain)
 			return
 # Shortcuts only fire for visible, enabled buttons.
+## The Depot whose train waits for the player to click its line (docs/RAIL_PLANNING.md).
+var train_line_depot: Node3D
+## Queues a train at the selected Depot. With more than one line of track reaching it, the player first clicks
+## the line the train starts on.
+func queue_train() -> void:
+	if not network.owned_selected(): return
+	var depot: Node3D = network.selected
+	var reaching: Array = game.get_node("RailNetwork").depot_lines(depot)
+	if reaching.size() > 1:
+		train_line_depot = depot
+		game.pending_unit_command = "train_line"
+		game.notify("%s has %d rail lines: click the line the train starts on. Esc cancels." % [depot.name,reaching.size()])
+		return
+	if not depot.request_train(): game.notify("Depot lacks local train funds or queue space.")
 func hotkey_text(button: Button) -> String:
 	if button.shortcut == null or button.shortcut.events.is_empty() or not button.shortcut.events[0] is InputEventAction: return ""
 	var action: StringName = button.shortcut.events[0].action

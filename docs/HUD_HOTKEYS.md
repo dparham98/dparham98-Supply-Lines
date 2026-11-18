@@ -23,7 +23,7 @@ The current keys, as set on 2026-11-15. `scripts/tools/setup_command_actions.gd`
 | Generator | R Pause/Resume · W Burn wood · C Burn coal · E Burn either · F Focus Depot |
 | Construction plan | X Cancel plan |
 | Build page (B) and Worksite page | D Depot · G Generator · B Barracks · T Tank Factory · A Iron Mine · R Rail · P Pin payer (Build page only) · Esc Back |
-| Laying rail (`docs/RAIL_PLANNING.md`) | click two buildings to connect · drag the suggested track to move it · Backspace straighten it, or take back the last pick · Enter lay the suggested track · Esc stop |
+| Laying rail (`docs/RAIL_PLANNING.md`) | click two buildings to connect · the suggested track follows the cursor · click or Enter lays it · Backspace takes back the last pick · Esc stop |
 | Load page | A Iron · E Energy · W Wood · C Coal · X Clear · Esc Cancel. Shift fills free slots |
 | Make crates page | A Iron · E Energy · W Wood · C Coal · Esc Cancel. Shift makes five |
 

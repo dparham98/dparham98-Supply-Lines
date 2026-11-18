@@ -154,8 +154,8 @@ func run() -> void:
 	var said: String = rails.pick_target(far_site)
 	if not check(rails.route_to == far_site and rails.pending.size() > 1 and said.begins_with("Suggested track"),"The second pick should suggest a path: "+said): return
 	if not check(rails.plan_targets().has(depot) and rails.plan_targets().has(far_site) and rails.pending_free_ends().size() == 2,"The path should be one joined line touching both rings"): return
-	# Dragging pulls the track through the cursor, adding pieces; a point no path can pass keeps the last shape,
-	# and Backspace's undrag gives the shortest path back.
+	# Pulling the track through a point adds pieces; a point no path can pass keeps the last shape. The cursor
+	# does this as it moves (follow_cursor), and over a picked building's ring gives the shortest path back.
 	var shortest: int = rails.pending.size()
 	var mid: Vector3 = (depot.global_position+far_site.global_position)*0.5
 	var side := Vector3(-(far_site.global_position-depot.global_position).z,0,(far_site.global_position-depot.global_position).x).normalized()
@@ -167,10 +167,18 @@ func run() -> void:
 	if not check(rails.plan_targets().has(depot) and rails.plan_targets().has(far_site),"A dragged track should still connect both buildings"): return
 	var dragged: int = rails.pending.size()
 	if not check(not rails.drag_route(depot.global_position) and rails.route_blocked and rails.pending.size() == dragged and rails.near_plan(pulled,3.0),"A point inside the Depot should keep the last shape"): return
-	rails.drag_notice()
-	rails.undrag_route()
-	if not check(rails.route_via == null and rails.pending.size() == shortest,"Undoing the drag should give the shortest path back"): return
-	if not check(rails.drag_route(pulled),"The track should drag again"): return
+	rails._follow_left = 0.0
+	rails.follow_cursor(far_site.global_position,0.0)
+	if not check(rails.route_via == null and not rails.route_blocked and rails.pending.size() == shortest,"The cursor over a picked building should give the shortest path back: %d pieces" % rails.pending.size()): return
+	rails._follow_left = 0.0
+	rails.follow_cursor(pulled,0.0)
+	if not check(rails.route_via != null and rails.near_plan(pulled,rails.probe("straight").length()*0.5+0.1),"The cursor away from the track should pull it through: %s" % rails.route_via): return
+	# Over the track itself it keeps its shape.
+	var shape: int = rails.pending.size()
+	var on_track: Vector3 = (rails.pending[0].transform as Transform3D).origin
+	rails._follow_left = 0.0
+	rails.follow_cursor(on_track,0.0)
+	if not check(rails.pending.size() == shape and rails.route_via != null,"The cursor on the track should keep its shape"): return
 	# Coloured by whether a Depot can pay: green with the iron, red without.
 	depot.iron = 0
 	rails._tint_plan()
