@@ -1,0 +1,81 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://review.gd" id="review"]
+[ext_resource type="PackedScene" path="res://assets/models/units/streamliner.glb" id="new"]
+[ext_resource type="PackedScene" path="res://assets/models/units/maglev_train_cargo.glb" id="old"]
+[ext_resource type="PackedScene" path="res://assets/models/units/cargo_truck.glb" id="truck"]
+[ext_resource type="PackedScene" path="res://rail_strip.tscn" id="rails"]
+[ext_resource type="PackedScene" path="res://lighting.tscn" id="lighting"]
+[ext_resource type="Shader" path="res://floor.gdshader" id="grid"]
+[ext_resource type="Material" path="res://grass_stage.tres" id="terrain"]
+[ext_resource type="PackedScene" path="res://yard_extensions.tscn" id="yard"]
+[sub_resource type="ShaderMaterial" id="mat_grid"]
+shader = ExtResource("grid")
+[sub_resource type="PlaneMesh" id="ground"]
+size = Vector2(220,220)
+material = SubResource("mat_grid")
+[sub_resource type="PlaneMesh" id="map"]
+size = Vector2(500,500)
+[node name="StreamlinerReview" type="Node3D"]
+script = ExtResource("review")
+[node name="Lighting" parent="." instance=ExtResource("lighting")]
+[node name="StudioFill" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-36,25,0)
+light_color = Color(0.90,0.95,1.0,1)
+light_energy = 0.70
+light_specular = 0.70
+[node name="Ground" type="MeshInstance3D" parent="."]
+position = Vector3(0,-0.015,0)
+mesh = SubResource("ground")
+[node name="GameplayGround" type="MeshInstance3D" parent="."]
+position = Vector3(160,-0.015,10)
+visible = false
+material_override = ExtResource("terrain")
+mesh = SubResource("map")
+[node name="Camera" type="Camera3D" parent="."]
+projection = 1
+size = 13.0
+near = 0.05
+far = 320.0
+current = true
+position = Vector3(0,71.7,78.6)
+rotation_degrees = Vector3(-42,0,0)
+[node name="Red" type="Node3D" parent="."]
+rotation_degrees = Vector3(0,-60,0)
+position = Vector3(0,0,2.7)
+[node name="Model" parent="Red" instance=ExtResource("new")]
+scale = Vector3(0.6,0.6,0.6)
+[node name="Rails" parent="Red" instance=ExtResource("rails")]
+[node name="YardExtensions" parent="Red" instance=ExtResource("yard")]
+visible = false
+[node name="Blue" type="Node3D" parent="."]
+rotation_degrees = Vector3(0,-60,0)
+position = Vector3(0,0,-2.7)
+[node name="Model" parent="Blue" instance=ExtResource("new")]
+scale = Vector3(0.6,0.6,0.6)
+[node name="Rails" parent="Blue" instance=ExtResource("rails")]
+[node name="YardExtensions" parent="Blue" instance=ExtResource("yard")]
+visible = false
+[node name="Original" type="Node3D" parent="."]
+visible = false
+rotation_degrees = Vector3(0,-60,0)
+[node name="Model" parent="Original" instance=ExtResource("old")]
+scale = Vector3(0.6,0.6,0.6)
+[node name="Rails" parent="Original" instance=ExtResource("rails")]
+[node name="YardExtensions" parent="Original" instance=ExtResource("yard")]
+visible = false
+[node name="Truck" type="Node3D" parent="."]
+visible = false
+rotation_degrees = Vector3(0,120,0)
+[node name="Model" parent="Truck" instance=ExtResource("truck")]
+rotation_degrees = Vector3(0,180,0)
+scale = Vector3(0.6,0.6,0.6)
+[node name="HUD" type="CanvasLayer" parent="."]
+[node name="Controls" type="Label" parent="HUD"]
+offset_left = 18.0
+offset_top = 14.0
+theme_override_colors/font_color = Color(1,1,1,1)
+theme_override_colors/font_shadow_color = Color(0,0,0,0.8)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 16
+text = "Team comparison     ·     ← → views     R front paint     B back paint     L cargo     H controls"

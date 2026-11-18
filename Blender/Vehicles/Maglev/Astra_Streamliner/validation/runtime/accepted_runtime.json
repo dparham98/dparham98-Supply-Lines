@@ -1,0 +1,130 @@
+{
+  "axial_coupler_marker_margin_authored_m": [
+    0.0500001907348633,
+    0.0500001907348633
+  ],
+  "cargo": {
+    "indicator_rise_at_one_crate_authored_m": 0.319999933242798,
+    "indicator_rise_authored_m": 0.319999933242798,
+    "indicator_rise_world_m": 0.191999959945679,
+    "iron_delivered": 300,
+    "unloaded_indicator_local": [
+      0.0,
+      3.59999990463257,
+      -3.55000019073486
+    ]
+  },
+  "consist": {
+    "capacity": 300,
+    "cars": 1,
+    "crate_slots": 12,
+    "ride_height_pivot_world_m": 0.599999964237213,
+    "sled_chord_world_m": 3.6,
+    "speed_m_per_s": 8.0,
+    "wrapper_scale": 0.6
+  },
+  "curve_radius_world_m": 12.0,
+  "failures": [],
+  "guideway_half_width_world_m": 1.5,
+  "imported_mesh_bounds_xyz": {
+    "max": [
+      1.82999992370605,
+      3.97000002861023,
+      5.44999980926514
+    ],
+    "min": [
+      -1.82999992370605,
+      0.680000007152557,
+      -5.44999980926514
+    ],
+    "size": [
+      3.65999984741211,
+      3.28999996185303,
+      10.8999996185303
+    ]
+  },
+  "imported_pivots_author_metres_xyz": {
+    "cargo_body": [
+      0.0,
+      2.5,
+      0.0
+    ],
+    "cargo_car_indicator": [
+      0.0,
+      3.59999990463257,
+      -3.55000019073486
+    ],
+    "cargo_coupler_F": [
+      0.0,
+      1.66999995708466,
+      5.5
+    ],
+    "cargo_coupler_R": [
+      0.0,
+      1.66999995708466,
+      -5.5
+    ],
+    "sled_cargo_front": [
+      0.0,
+      1.0,
+      3.0
+    ],
+    "sled_cargo_rear": [
+      0.0,
+      1.0,
+      -3.0
+    ]
+  },
+  "inbound": {
+    "curve_interior_frames": 67,
+    "max_body_forward_error_deg": 0.000495829045060613,
+    "max_bogie_relative_yaw_deg": 19.4613297191036,
+    "max_radial_extent_from_centreline_m": 1.22104930877686,
+    "max_ride_height_error_m": 9.53674316184205e-08,
+    "max_sled_centreline_error_m": 3.41196900990326e-05,
+    "max_sled_span_error_m": 3.80516052249646e-05,
+    "max_sled_tangent_error_deg": 6.83018917001275e-06,
+    "target_error_m": 0.0263214111328125,
+    "travelled_m": 49.3175882548094
+  },
+  "new_return_route_heading_change_deg": 180.000005008956,
+  "outbound": {
+    "curve_interior_frames": 66,
+    "max_body_forward_error_deg": 0.000541292491723511,
+    "max_bogie_relative_yaw_deg": 19.4608498983144,
+    "max_radial_extent_from_centreline_m": 1.22104930877686,
+    "max_ride_height_error_m": 9.53674316184205e-08,
+    "max_sled_centreline_error_m": 3.41196900990326e-05,
+    "max_sled_span_error_m": 3.13758850101209e-05,
+    "max_sled_tangent_error_deg": 6.83018998423475e-06,
+    "target_error_m": 0.031585693359375,
+    "travelled_m": 39.801789984107
+  },
+  "team_color": {
+    "blue_rgba": "1f57b8ff",
+    "painted_surfaces_per_actor": 1,
+    "reassignment": "simultaneous player + enemy, then enemy -> neutral -> enemy",
+    "red_rgba": "9e2921ff",
+    "shared_mesh_instances_checked": 4
+  },
+  "engine": "4.7.2.stable.official.ed1daf0bf",
+  "glb_sha256": "b69e52fdd769aacc8625087599c5975c53357a85345b9af0ec57346582a8eb7d",
+  "reference_script_scene_import_sha256": {
+    "scripts/rails/train.gd": "2113b7e7d1c31a34726c92bd6ce41da82179b2dbe32ccaf89495e2dfb5dc7546",
+    "scripts/rails/train_consist.gd": "e92f403125217c13370e1dbb1d4b8514bd70898d9753224c610a8fb464b1e039",
+    "scripts/rails/rail_network.gd": "be04e4ecd055d81e11d3423bbcc7a6b270d9e8d41c66b963e7d49bc6eeefa3c5",
+    "scripts/rails/rail_line.gd": "40f2299a44f184a6a61f29241c76889d0ded1cac823c43b09a0f9c57b35864ed",
+    "scripts/rails/track_piece.gd": "235c624bf27b2bf9309594b2315429c26e840e80eb205521fdac8f9fea32aa94",
+    "scripts/components/team_paint.gd": "f212799ecd483c8574e04a6765591f6192f45a0d3d11df6b3286f633a028c600",
+    "scripts/gameplay/unit_agent.gd": "f94baa06c52c059452be41c0b6ea5a1d13031af5d42c4c56fcee52a6f2b938bf",
+    "scripts/economy/cargo_vehicle.gd": "8ff2efd0ad1bd8a2d8d78e361cec7f1fca2fd9ea6d6c7da831b4b5de50f2dcaf",
+    "scenes/models/train_model.tscn": "402fca4357e650bb518a4abca54996e5b7766d6ed4b85f89d6b1a3b4509ec657",
+    "scenes/gameplay/train.tscn": "6cdcd6b93841af22095193728ad599dfee6e67a6d9589df2988890da4cd788be",
+    "assets\\models\\units\\maglev_train_cargo.glb.import": "d06a7454c439df47532eb755d2f978f291d82efad8106cd1f4466da661e04bb4"
+  },
+  "art_palette_override": "isolated player paint only",
+  "stock_test_markers": [
+    "RAIL_FORK_POWER_TEST_PASSED",
+    "RAIL_RUNTIME_CHECKS_PASSED"
+  ]
+}

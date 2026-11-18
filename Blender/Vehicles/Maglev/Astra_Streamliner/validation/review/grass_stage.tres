@@ -1,0 +1,20 @@
+[gd_resource type="ShaderMaterial" format=3]
+[ext_resource type="Shader" path="res://assets/shaders/terrain_surface.gdshader" id="terrain"]
+[ext_resource type="Texture2DArray" path="res://assets/textures/terrain/ground_tiles_albedo.png" id="albedo"]
+[ext_resource type="Texture2DArray" path="res://assets/textures/terrain/ground_tiles_normal.png" id="normal"]
+[sub_resource type="Gradient" id="field"]
+colors = PackedColorArray(0,0,0,1, 0,0,0,1)
+[sub_resource type="GradientTexture2D" id="uniform_grass"]
+width = 2
+height = 2
+gradient = SubResource("field")
+[resource]
+shader = ExtResource("terrain")
+shader_parameter/surface_map = SubResource("uniform_grass")
+shader_parameter/category_map = SubResource("uniform_grass")
+shader_parameter/ground_blend = SubResource("uniform_grass")
+shader_parameter/tile_albedo = ExtResource("albedo")
+shader_parameter/tile_normal = ExtResource("normal")
+shader_parameter/surface_tint = 0.0
+shader_parameter/ground_saturation = 0.82
+shader_parameter/ground_value = 0.9
