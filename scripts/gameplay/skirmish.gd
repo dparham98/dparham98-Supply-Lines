@@ -359,10 +359,11 @@ func issue_order(screen, queued := false) -> void:
 	elif is_instance_valid(coal_ordered): notify("Dig coal and deliver it to a friendly Depot. %d left in this field; workers fell any trees in their way and move on through it cell by cell." % coal_ordered.field_remaining())
 	elif resource: notify("Gather %s and deliver to a friendly Depot." % resource.resource_kind)
 	elif dropoff and not from_map: notify("Return carried resources or repair this Depot.")
-func show_shot(start: Vector3, end: Vector3, team: String, projectile: PackedScene = null) -> void:
+func show_shot(start: Vector3, end: Vector3, team: String, projectile: PackedScene = null) -> Node3D:
 	var shot = (projectile if projectile != null else tracer_scene).instantiate()
 	add_child(shot)
 	shot.configure(start,end,team)
+	return shot
 
 func issue_card_order(screen, queued := false) -> void:
 	var from_map: bool = screen is MapPick

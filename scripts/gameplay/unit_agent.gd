@@ -718,6 +718,8 @@ func _shoot(target: Node3D) -> void:
 			animator.play_action(&"shoot",lead-_cooldown)
 			_aim_body(target,turret,animator)
 		return
+	# A turret fires only once it is round on the target (docs/TURRET_AIM.md); the reload is done meanwhile.
+	if turret and turret.has_method("on_target") and not turret.on_target(): return
 	_cooldown = CombatResolver.interval_for(self,target)
 	if animator and (lead <= 0.0 or not animator.acting()): animator.play_action(&"shoot",lead)
 	_aim_body(target,turret,animator)
@@ -725,11 +727,17 @@ func _shoot(target: Node3D) -> void:
 	var model := $Visuals.get_node_or_null("Model")
 	var muzzle: Vector3 = model.muzzle_position() if model != null and model.has_method("muzzle_position") else global_position+Vector3.UP*1.7+$Visuals.position
 	if turret and turret.has_method("fire"): turret.fire()
-	game.show_shot(muzzle,_shot_end(muzzle,target,target.global_position+Vector3.UP*1.7+target_height),team,projectile_scene)
-	CombatResolver.strike(self,target,_forced_on(target))
+	var shot: Node3D = game.show_shot(muzzle,_shot_end(muzzle,target,target.global_position+Vector3.UP*1.7+target_height),team,projectile_scene)
+	var forced := _forced_on(target)
+	# A shell or grenade hurts when it gets there; a shooter gone by then takes its shot with it.
+	if shot != null and shot.get("damage_on_impact") == true: shot.on_impact = _strike_on_impact.bind(target,forced)
+	else: CombatResolver.strike(self,target,forced)
 	if is_instance_valid(target) and game.has_method("mark_attacked"): game.mark_attacked(target)
 	if is_instance_valid(target) and target.is_in_group("selectable_buildings") and target.get("team") == "player" and team != "player" and game.has_method("alert"):
 		game.alert("%s under attack" % target.name,target.global_position,"attack:%d" % target.get_instance_id(),"attack")
+## A shell's or grenade's damage, when it lands. The target may have died or gone meanwhile.
+func _strike_on_impact(target: Node3D, forced: bool) -> void:
+	if is_instance_valid(target): CombatResolver.strike(self,target,forced)
 ## Where a modelled projectile stops: on the near face of the target's body, so its impact is not buried inside.
 func _shot_end(muzzle: Vector3, target: Node3D, fallback: Vector3) -> Vector3:
 	if projectile_scene == null: return fallback

@@ -1,7 +1,8 @@
 extends Node3D
 ## A shot that flies from the muzzle to its aim point, then disappears. Same configure() as tracer.gd, so
-## either can be handed to skirmish.show_shot(). Damage lands when the shot is fired (CombatResolver);
-## this is only what the player sees. Meshes with "trail" in their name take the team colour.
+## either can be handed to skirmish.show_shot(). Meshes with "trail" in their name take the team colour.
+## With damage_on_impact the shooter's damage (CombatResolver) lands when the shot gets there, through
+## `on_impact`; otherwise it landed when the shot was fired and this is only what the player sees.
 @export_range(5,200,1) var speed := 42.0
 ## Half the model's length: the tail starts at the muzzle and the nose stops on the target.
 @export_range(0,2,0.01) var half_length := 0.33
@@ -10,6 +11,10 @@ extends Node3D
 @export var enemy_color := Color(1,0.2,0.15)
 ## Leave the body in its authored, lit material; only the trail is repainted.
 @export var keep_body_material := false
+## Tank shells and grenade rounds (docs/TURRET_AIM.md): damage lands when the shot connects, not when it leaves
+## the barrel. The shooter sets `on_impact`.
+@export var damage_on_impact := false
+var on_impact: Callable
 ## Spawned where the shot lands, leaning back toward the shooter (the scene's -Z).
 @export var impact_scene: PackedScene
 ## A lobbed shot rises above the straight line by this share of its length; 0 flies straight.
@@ -52,6 +57,7 @@ func _process(delta: float) -> void:
 	else: global_position += -global_transform.basis.z*step
 	if _spinner: _spinner.rotate_object_local(Vector3.RIGHT,deg_to_rad(spin_speed)*delta)
 	if _left > 0.0: return
+	if on_impact.is_valid(): on_impact.call()
 	_land()
 	queue_free()
 ## A parabola over the straight line from muzzle to target, pointing along its own slope.

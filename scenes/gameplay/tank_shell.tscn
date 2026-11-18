@@ -6,6 +6,7 @@
 
 [node name="TankShell" type="Node3D"]
 script = ExtResource("projectile")
+damage_on_impact = true
 speed = 40.0
 half_length = 0.28
 keep_body_material = true
