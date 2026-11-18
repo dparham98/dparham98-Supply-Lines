@@ -81,9 +81,14 @@ func run() -> void:
 	unit.state = "Idle"; unit._animate(); model._process(1.0/60)
 	if not check(model.current_clip() == &"Rest" and is_zero_approx(model.teeth.get_instance_shader_parameter(&"speed")),"Teeth should stop and Rest resume when idle"): return
 	# A shot plays Shoot once from the pistol, then Rest returns.
-	var foe := actor("hostile","enemy",origin+Vector3(3,0,0))
+	# 2 m ahead of where the walk stopped, whatever the walking speed.
+	var foe := actor("hostile","enemy",Vector3(unit.global_position.x+2,origin.y,origin.z))
 	await process_frame
 	var health_before: int = foe.health
+	# Let Rest settle: at twice the walking pace the blend out of Run still swings the arm a second later.
+	for i in range(60):
+		model._process(1.0/60)
+		player.advance(1.0/60)
 	var muzzle: Vector3 = model.muzzle_position()
 	if not check(muzzle.y > 0.5 and muzzle.y < 1.3 and Vector2(muzzle.x-unit.global_position.x,muzzle.z-unit.global_position.z).length() < 0.8,"Muzzle should be at the pistol: %s" % (muzzle-unit.global_position)): return
 	step(unit,model,2)

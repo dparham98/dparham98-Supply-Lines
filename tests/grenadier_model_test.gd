@@ -85,14 +85,15 @@ func run() -> void:
 	unit.global_position = origin
 	var health_before: int = foe.health
 	step(unit,model,2)
-	if not check(foe.health < health_before,"Grenadier did not fire"): return
+	# The grenade does its damage when it lands (docs/TURRET_AIM.md), checked below.
+	if not check(foe.health == health_before,"The grenade should not hurt before it lands"): return
 	if not check(model.acting() and model.current_clip() == &"Shoot","A shot should play Shoot, got %s" % model.current_clip()): return
 	if not check(model.skeleton.get_bone_pose_scale(flash_bone).x > 0.5 and model.flash_light.visible and model.flash_light.light_energy > 0.4,"The shot should light the muzzle flash (scale %.2f)" % model.skeleton.get_bone_pose_scale(flash_bone).x): return
 	var muzzle: Vector3 = model.muzzle_position()-unit.global_position
 	if not check(muzzle.y > 1.2 and muzzle.y < 2.0 and Vector2(muzzle.x,muzzle.z).length() < 1.4,"The launcher should be shouldered when it fires: %s" % muzzle): return
 	# One grenade leaves the barrel, lobs above the straight line, tumbles, and bursts where it lands.
 	var shots := game.get_children().filter(func(n): return n.scene_file_path == "res://scenes/gameplay/grenade_round.tscn")
-	if not check(shots.size() == 1,"One grenade should fire, got %d" % shots.size()): return
+	if not check(shots.size() == 1,"Grenadier did not fire: one grenade should fire, got %d" % shots.size()): return
 	var grenade: Node3D = shots[0]
 	if not check(grenade.global_position.distance_to(model.muzzle_position()) < 0.7,"The grenade should leave the barrel"): return
 	var body: Node3D = grenade.get_node("Model/grenade_round")
@@ -107,6 +108,7 @@ func run() -> void:
 		peak = maxf(peak,grenade.global_position.y-lerpf(chord_from.y,chord_to.y,along))
 		if i == 5 and not check(not body.transform.basis.is_equal_approx(body_start),"The grenade should tumble"): return
 	if not check(grenade.is_queued_for_deletion(),"The grenade should land"): return
+	if not check(foe.health < health_before,"The grenade should hurt the hostile when it lands"): return
 	if not check(peak > 0.1*chord_from.distance_to(chord_to),"The grenade should arc, rose %.2f m" % peak): return
 	var blasts := game.get_children().filter(func(n): return n.scene_file_path == "res://scenes/gameplay/grenade_blast.tscn")
 	if not check(blasts.size() == 1 and blasts[0].global_position.distance_to(chord_to) < 0.05,"One blast should go off where the grenade lands"): return

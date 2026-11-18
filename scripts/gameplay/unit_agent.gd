@@ -146,6 +146,50 @@ func command_gather(node: Node3D) -> void:
 	state = "To "+str(node.resource_kind)
 	if cargo > 0 and cargo_kind != node.resource_kind: _head_home()
 	_work_timer = 0
+## Fell (docs/FELL.md): cut down the trees at a Forest cell and the ones round it, keeping no wood. The worker
+## keeps any load it already carries.
+var _fell_origin := Vector2i(-1,-1)
+func command_fell(node: Node3D) -> void:
+	if not can_gather or is_depot_truck or is_cargo_vehicle or not is_instance_valid(node) or not node.get("cell") is Vector2i: return
+	_stop_route()
+	order = "fell"
+	source = node
+	order_target = node
+	_dig_source = null
+	_fell_origin = node.cell
+	state = "To fell"
+	_work_timer = 0
+## The next Forest cell to fell: the nearest to the worker within fell_radius_cells of the clicked cell, or null.
+func _next_fell() -> Node3D:
+	var reach: int = ground.harvesting_rules.fell_radius_cells
+	var best: Node3D
+	var best_distance := INF
+	for z in range(_fell_origin.y-reach,_fell_origin.y+reach+1):
+		for x in range(_fell_origin.x-reach,_fell_origin.x+reach+1):
+			var cell := Vector2i(x,z)
+			if _fell_origin.distance_squared_to(cell) > reach*reach or ground.forest_amount(cell) <= 0: continue
+			var d := global_position.distance_squared_to(ground.tile_to_world(cell))
+			if d < best_distance: best_distance = d; best = ground.forest_source(cell)
+	return best
+func _fell(delta: float) -> void:
+	if not is_instance_valid(source) or source.remaining <= 0:
+		source = _next_fell()
+		order_target = source
+		if source == null: order = "idle"; state = "Felled"; return
+	if global_position.distance_to(source.global_position) > interaction_range:
+		if _retry <= 0:
+			state = "To fell"
+			if not _route_to_interaction(source,interaction_range):
+				# A tree with no way to it is skipped for now: the next one may open the way.
+				state = "Trees unreachable"; order = "idle"
+		return
+	state = "Felling"
+	_face(source.global_position)
+	_work_timer += delta
+	if _work_timer >= harvest_interval:
+		_work_timer = 0
+		# The wood is left where it falls.
+		source.extract(harvest_amount,team)
 ## `forced`: the player's explicit Attack command, which may target friendly units and buildings.
 func command_attack(node: Node3D, forced := false) -> void:
 	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or not CombatResolver.can_attack(self,node,forced): return
@@ -211,7 +255,7 @@ func _animate(delta: float = 1.0/60) -> void:
 	var value := 0.0
 	if _animated_from != Vector3.INF and here != _animated_from: kind = &"run"; value = move_speed
 	elif _aimed_frame == Engine.get_process_frames(): kind = &"aim"
-	elif state == "Gathering" or state.begins_with("Constructing"): kind = &"work"; value = harvest_interval
+	elif state in ["Gathering","Felling"] or state.begins_with("Constructing"): kind = &"work"; value = harvest_interval
 	elif state.begins_with("Repairing"): kind = &"work"; value = engineering_rules.repair_interval if engineering_rules else 0.0
 	model.set_motion(kind,value)
 	if kind == &"work" and _work_timer == 0.0 and model.has_method("sync_work"): model.sync_work()
@@ -272,6 +316,7 @@ func _order_process(delta: float) -> void:
 			elif _retry <= 0:
 				if not _route_to_point(move_goal): state = "No route"; order = "idle"
 		"gather": _gather(delta)
+		"fell": _fell(delta)
 		"return": _return_cargo()
 		"attack": _attack_order()
 		"repair": _repair(delta)
@@ -295,6 +340,7 @@ func run_order(entry: Dictionary) -> void:
 		"move": command_move(entry.point)
 		"attack": command_attack(entry.target,entry.get("forced",false))
 		"gather": command_gather(entry.target)
+		"fell": command_fell(entry.target)
 		"return": command_return(entry.get("target"))
 		"repair": command_repair(entry.target)
 		"capture": command_capture(entry.target)
@@ -309,7 +355,7 @@ func _start_next_order() -> void:
 	# Skip entries whose target is gone or that the unit refuses, such as an unreachable attack.
 	while order == "idle" and not order_queue.is_empty():
 		var entry: Dictionary = order_queue.pop_front()
-		if entry.kind in ["attack","gather","repair","capture","construct","fetch","load","unload"] and not is_instance_valid(entry.get("target")) and not (entry.kind in ["load","unload"] and entry.get("point") != null): continue
+		if entry.kind in ["attack","gather","fell","repair","capture","construct","fetch","load","unload"] and not is_instance_valid(entry.get("target")) and not (entry.kind in ["load","unload"] and entry.get("point") != null): continue
 		run_order(entry)
 func order_point(entry: Dictionary) -> Variant:
 	if entry.kind in ["move","attack_move","deploy"]: return entry.point
@@ -672,6 +718,8 @@ func _shoot(target: Node3D) -> void:
 			animator.play_action(&"shoot",lead-_cooldown)
 			_aim_body(target,turret,animator)
 		return
+	# A turret fires only once it is round on the target (docs/TURRET_AIM.md); the reload is done meanwhile.
+	if turret and turret.has_method("on_target") and not turret.on_target(): return
 	_cooldown = CombatResolver.interval_for(self,target)
 	if animator and (lead <= 0.0 or not animator.acting()): animator.play_action(&"shoot",lead)
 	_aim_body(target,turret,animator)
@@ -679,11 +727,17 @@ func _shoot(target: Node3D) -> void:
 	var model := $Visuals.get_node_or_null("Model")
 	var muzzle: Vector3 = model.muzzle_position() if model != null and model.has_method("muzzle_position") else global_position+Vector3.UP*1.7+$Visuals.position
 	if turret and turret.has_method("fire"): turret.fire()
-	game.show_shot(muzzle,_shot_end(muzzle,target,target.global_position+Vector3.UP*1.7+target_height),team,projectile_scene)
-	CombatResolver.strike(self,target,_forced_on(target))
+	var shot: Node3D = game.show_shot(muzzle,_shot_end(muzzle,target,target.global_position+Vector3.UP*1.7+target_height),team,projectile_scene)
+	var forced := _forced_on(target)
+	# A shell or grenade hurts when it gets there; a shooter gone by then takes its shot with it.
+	if shot != null and shot.get("damage_on_impact") == true: shot.on_impact = _strike_on_impact.bind(target,forced)
+	else: CombatResolver.strike(self,target,forced)
 	if is_instance_valid(target) and game.has_method("mark_attacked"): game.mark_attacked(target)
 	if is_instance_valid(target) and target.is_in_group("selectable_buildings") and target.get("team") == "player" and team != "player" and game.has_method("alert"):
 		game.alert("%s under attack" % target.name,target.global_position,"attack:%d" % target.get_instance_id(),"attack")
+## A shell's or grenade's damage, when it lands. The target may have died or gone meanwhile.
+func _strike_on_impact(target: Node3D, forced: bool) -> void:
+	if is_instance_valid(target): CombatResolver.strike(self,target,forced)
 ## Where a modelled projectile stops: on the near face of the target's body, so its impact is not buried inside.
 func _shot_end(muzzle: Vector3, target: Node3D, fallback: Vector3) -> Vector3:
 	if projectile_scene == null: return fallback

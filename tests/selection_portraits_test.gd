@@ -82,6 +82,7 @@ func run() -> void:
 	var bar: ProgressBar = shown[1].get_node("Health")
 	if not check(bar.value == hurt.health and bar.get_theme_stylebox("fill").bg_color.r > 0.9 and shown[0].get_node("Health").get_theme_stylebox("fill").bg_color.g > 0.6,"A badly hurt unit's portrait bar should be red, the others green"): return
 	if not check(shown[1].tooltip_text.begins_with(hud.object_name(hurt)),"The portrait tooltip should name the unit: "+shown[1].tooltip_text): return
+	if not check(shown[1].get_node("HealthText").text == str(hurt.health),"The portrait should show its health as a number: "+shown[1].get_node("HealthText").text): return
 	# Shift-click removes one unit; a click keeps only that unit.
 	var count := selected.size()
 	var removed: Node3D = hud.portrait_units[1]

@@ -10,6 +10,9 @@ func step(model: Node3D, frames: int, aim = null) -> void:
 	for i in range(frames):
 		if aim != null: model.aim_at(aim)
 		model._process(1.0/60)
+## Shells in flight.
+func shots() -> Array:
+	return root.find_children("*","",true,false).filter(func(node): return node.get_script() == preload("res://scripts/gameplay/projectile.gd") and not node.is_queued_for_deletion())
 func run() -> void:
 	var model = load("res://scenes/models/tank_model.tscn").instantiate()
 	root.add_child(model)
@@ -65,9 +68,15 @@ func run() -> void:
 	var turret = tank._turret()
 	if not check(turret != null,"Tank agent does not see its turret"): return
 	var health_before: int = foe.health
-	for i in range(90):
+	# The turret starts at rest, a quarter turn off the hostile: the Tank holds its shot until it is round.
+	for i in range(5):
 		tank._process(1.0/60)
 		turret._process(1.0/60)
+	if not check(not turret.on_target() and tank._cooldown <= 0.0 and shots().is_empty(),"The Tank should not fire before its turret is on target"): return
+	for i in range(85):
+		tank._process(1.0/60)
+		turret._process(1.0/60)
+		for shot in shots(): shot._process(1.0/60)
 	if not check(turret.aiming(),"Tank should be aiming at the hostile in range"): return
 	if not check(absf(tank.get_node("Visuals").rotation.y) < 0.001,"Hull turned toward the target; the turret should turn instead"): return
 	var barrel_dir: Vector3 = turret.muzzle_position()-turret.turret.global_position; barrel_dir.y = 0

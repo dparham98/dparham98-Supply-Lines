@@ -29,6 +29,22 @@ func click_at(point: Vector2) -> void:
 	event.pressed = false
 	root.push_input(event,true)
 	for frame in range(3): await process_frame
+const Projectile = preload("res://scripts/gameplay/projectile.gd")
+## Lands every shell and grenade in flight at once.
+func land() -> void:
+	for shot in root.find_children("*","",true,false):
+		if shot.get_script() == Projectile and shot.on_impact.is_valid():
+			shot.on_impact.call()
+			shot.on_impact = Callable()
+			shot.queue_free()
+## One shot, as play would have it: a turret is brought round first (Tanks fire only on target), and the shot lands.
+func fire(unit: Node3D, target: Node3D) -> void:
+	var turret = unit._turret()
+	if turret != null:
+		turret.aim_at(target.global_position)
+		turret._yaw = turret.goal_yaw()
+	unit._shoot(target)
+	land()
 func run() -> void:
 	root.size = Vector2i(1280,900)
 	game = load("res://scenes/maps/resource_skirmish.tscn").instantiate()
@@ -48,23 +64,26 @@ func run() -> void:
 	mine.team = "enemy"
 	var mine_hp: int = mine.health
 	grenadier._shoot(target)
+	# The grenade hurts when it lands, not when it is fired (docs/TURRET_AIM.md).
+	if not check(target.health == 55 and mine.health == mine_hp,"A grenade should not hurt before it lands"): return
+	land()
 	if not check(target.health == 35 and tank.health == 110 and friend.health == 55 and outside.health == 55 and mine.health == mine_hp-40,"Splash class damage, radius, no friendly fire, or dedup failed"): return
 	if not check(grenadier._cooldown == 3,"Grenadier interval incorrect"): return
-	grenadier._shoot(target)
+	fire(grenadier,target)
 	if not check(target.health == 35,"Cooldown allowed duplicate shot"): return
 	mine.team = "neutral"
 	grenadier._cooldown = 0
-	grenadier._shoot(target)
+	fire(grenadier,target)
 	if not check(mine.health == mine_hp-40,"Neutral mine received damage"): return
 	var shooter = actor("tank","player",origin)
-	shooter._shoot(tank)
+	fire(shooter,tank)
 	if not check(tank.health == 20 and shooter._cooldown == 3,"Tank heavy attack/cadence incorrect"): return
 	shooter._cooldown = 0
 	outside.global_position = origin+Vector3(0,0,shooter.attack_range+1)
-	shooter._shoot(outside)
+	fire(shooter,outside)
 	if not check(outside.health == 55,"Out-of-range shot accepted"): return
 	outside.global_position = origin+Vector3(-4,0,0)
-	shooter._shoot(outside)
+	fire(shooter,outside)
 	if not check(outside.health == 43 and shooter._cooldown == 1,"Tank base attack incorrect"): return
 	shooter.command_attack(friend)
 	if not check(shooter.order != "attack","Friendly attack command accepted"): return
@@ -78,9 +97,18 @@ func run() -> void:
 		mover._route.assign([goal])
 		mover.order = "move"
 		mover.get_node("Visuals").rotation.y = PI  # already facing the goal, so it moves at once
-		var victim = actor("tank","enemy",origin+Vector3(1,0,0))
+		var victim = actor("tank","enemy",origin+Vector3(4,0,0))
 		var before: int = victim.health
-		mover._process(0.1)
+		# A turret already on the victim, so the Tank can fire at once; its shell lands before the check.
+		var turret = mover._turret()
+		if turret != null:
+			turret.aim_at(victim.global_position)
+			turret._yaw = turret.goal_yaw()
+		# A few frames, with the turret tracking between them, since it must stay on the close victim as it moves.
+		for frame in range(6):
+			mover._process(1.0/60)
+			if turret != null: turret._process(1.0/60)
+		land()
 		if not check(mover.global_position != origin and mover.order == "move","Movement was interrupted by combat"): return
 		if not check((victim.health < before) == (id != "infantry"),"Moving-fire roster incorrect: "+id): return
 		mover.free(); victim.free()
@@ -112,7 +140,7 @@ func run() -> void:
 	mine.team = "enemy"
 	mine.health = 40
 	grenadier._cooldown = 0
-	grenadier._shoot(mine)
+	fire(grenadier,mine)
 	if not check(mine.health == 0 and not mine.is_in_group("selectable_buildings"),"Building destruction failed"): return
 	var occupied: Array = mine.cells.duplicate()
 	await process_frame

@@ -14,9 +14,9 @@ const STORAGE_WARNING := 0.9
 const POPUP_SECONDS := 1.5
 const PING_SECONDS := 0.6
 const HIGHLIGHT_SECONDS := 0.8
-const ORDER_COLORS := {"move": Color(0.498,0.827,0.902), "attack": Color(0.89,0.35,0.31), "attack_move": Color(0.89,0.35,0.31), "gather": Color(0.435,0.682,0.353), "return": Color(0.941,0.698,0.29), "repair": Color(0.941,0.698,0.29), "capture": Color(0.91,0.96,0.98), "construct": Color(0.941,0.698,0.29), "load": Color(0.498,0.827,0.902), "unload": Color(0.941,0.698,0.29), "deploy": Color(0.941,0.698,0.29)}
+const ORDER_COLORS := {"move": Color(0.498,0.827,0.902), "attack": Color(0.89,0.35,0.31), "attack_move": Color(0.89,0.35,0.31), "gather": Color(0.435,0.682,0.353), "fell": Color(0.435,0.682,0.353), "return": Color(0.941,0.698,0.29), "repair": Color(0.941,0.698,0.29), "capture": Color(0.91,0.96,0.98), "construct": Color(0.941,0.698,0.29), "load": Color(0.498,0.827,0.902), "unload": Color(0.941,0.698,0.29), "deploy": Color(0.941,0.698,0.29)}
 ## Icon shown beside the pointer while a command or placement is armed.
-const ARMED_ICONS := {"move": "move", "attack": "attack", "gather": "gather", "repair": "repair", "capture": "capture", "construct": "build", "load": "load", "unload": "unload", "deploy": "deploy", "build": "build", "pin": "depot"}
+const ARMED_ICONS := {"move": "move", "attack": "attack", "gather": "gather", "fell": "gather", "repair": "repair", "capture": "capture", "construct": "build", "load": "load", "unload": "unload", "deploy": "deploy", "build": "build", "pin": "depot"}
 var _armed_icons := {}
 ## Groups whose authored text labels this overlay replaces. Placement ghosts and waypoints keep theirs.
 const LABELLED_GROUPS := ["units","selectable_buildings","resources","material_piles","supply_crates","iron_deposits","construction_plans"]
@@ -80,7 +80,7 @@ func team_color(node: Node) -> Color:
 	return TEAM_COLORS.get(str(node.get("team")),TEAM_COLORS["neutral"])
 # What to draw for one actor; tests read this instead of pixels.
 func status_for(node: Node3D) -> Dictionary:
-	var entry := {node = node, health = -1.0, progress = -1.0, icons = [], capture = -1.0, carry = {}, storage = {}, crate = {}, pips = []}
+	var entry := {node = node, health = -1.0, health_text = "", progress = -1.0, icons = [], capture = -1.0, carry = {}, storage = {}, crate = {}, pips = []}
 	# Crates on the map always show their fill; vehicles show one pip per crate slot.
 	if node.is_in_group("supply_crates"):
 		entry.crate = {color = RESOURCE_COLORS.get(node.resource_kind,CRATE_COLOR), ratio = float(node.amount)/node.CAPACITY}
@@ -92,6 +92,8 @@ func status_for(node: Node3D) -> Dictionary:
 	if health != null and max_health != null and max_health > 0:
 		var damaged: bool = health < max_health
 		if damaged or is_selected(node) or node == hovered or show_all(): entry.health = float(health)/max_health
+		# Selected actors also show their health as a number beside the bar.
+		if is_selected(node): entry.health_text = str(health)
 	if node.is_in_group("depots"):
 		if node.queue > 0: entry.progress = node.progress/node.current_seconds()
 		if node.capture_progress > 0: entry.capture = node.capture_progress/node.rules.capture_seconds
@@ -216,6 +218,8 @@ func _draw() -> void:
 		if entry.health >= 0:
 			draw_rect(Rect2(x,y,bar_width,4),TRACK)
 			draw_rect(Rect2(x,y,bar_width*clampf(entry.health,0,1),4),team_color(node))
+			if not entry.health_text.is_empty(): draw_string_outline(font,Vector2(x+bar_width+4,y+6),entry.health_text,HORIZONTAL_ALIGNMENT_LEFT,-1,11,3,Color(0.08,0.06,0.05))
+			if not entry.health_text.is_empty(): draw_string(font,Vector2(x+bar_width+4,y+6),entry.health_text,HORIZONTAL_ALIGNMENT_LEFT,-1,11,Color(0.96,0.94,0.83))
 			if show_all(): draw_string(font,Vector2(x,y-4),hud_name(node),HORIZONTAL_ALIGNMENT_LEFT,-1,11,Color(0.9,0.93,0.94))
 		if not entry.storage.is_empty():
 			draw_storage(entry.storage.stockpile,Rect2(x,y+(10 if entry.progress >= 0 else 6),bar_width,4))

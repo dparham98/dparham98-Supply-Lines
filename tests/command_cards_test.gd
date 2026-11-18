@@ -31,7 +31,7 @@ func run() -> void:
 			tiles += 1
 			if not check(art(button).begins_with("sl_") and button.icon.get_width() == 128,"%s has no card art" % button.name): return
 			if not check(button.expand_icon and button.theme_type_variation == &"CommandCard" and button.text.is_empty() and button.has_node("Key"),"%s is not set up as a card" % button.name): return
-	if not check(tiles == 46,"Expected 46 card tiles, found %d" % tiles): return
+	if not check(tiles == 47,"Expected 47 card tiles, found %d" % tiles): return
 	# Commands with their own art.
 	var names := {"Return":"sl_deliver.png","DropMaterials":"sl_drop.png","DeployTruck":"sl_deploy_depot.png","ProduceUbermech":"sl_produce_ubermech.png","PrintTruck":"sl_produce_truck.png"}
 	for id in names:

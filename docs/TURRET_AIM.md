@@ -19,7 +19,14 @@ The Tank's turret turns toward whatever the tank is shooting at and swings gentl
 
 - `scripts/components/tank_rig.gd` has `fire()`, which `unit_agent.gd` calls when a shot goes off. The barrel slides back and runs out (`recoil_distance`, `recoil_kick_time`, `recoil_return_time`) and the hull rocks and settles (`rock_degrees`, `rock_hertz`, `rock_damping`). Both are done in code; `tank.glb` has no animation.
 - `scenes/models/tank_muzzle_fx.tscn` is the muzzle flash and smoke, on the end of the barrel. It sits on `Barrel_Mount`, so it stays put while the barrel recoils. `scenes/gameplay/tank_shell_impact.tscn` is the flash, smoke and debris where the shell lands. Both play clips authored in `Blender/Vehicles/Tank/Tank.blend` (collections `tank_fire_fx` and `tank_impact`) through `scripts/components/burst_effect.gd`, which also drives each light from the scale of the flash mesh.
-- `scenes/gameplay/tank_shell.tscn` is the shell, `projectile_scene` on `tank.tscn`. It flies at 20 m/s and stops on the near face of the target body (`_shot_end` in `unit_agent.gd`). Damage still lands when the gun fires, so a target killed by the shot has its impact appear after it is gone.
+- `scenes/gameplay/tank_shell.tscn` is the shell, `projectile_scene` on `tank.tscn`. It flies at 20 m/s and stops on the near face of the target body (`_shot_end` in `unit_agent.gd`).
+
+## Firing on target and damage on impact
+
+The playtest of 2026-11-17 asked for two changes:
+
+- **The Tank waits for its turret.** `_shoot` in `unit_agent.gd` asks the turret `on_target()` (within 4 degrees, `turret_aim.gd`) and does not fire, or start its cooldown, until it is. A Tank that turns hard while moving may hold its fire for a moment.
+- **Shells and grenades hurt when they land.** `projectile.gd` has `damage_on_impact`, set on `tank_shell.tscn` and `grenade_round.tscn`. The shot carries an `on_impact` callback (`_strike_on_impact` in `unit_agent.gd`) that deals the damage when it arrives, so health drops with the impact. A target that dies or leaves before the shell lands takes nothing from it. The Infantry bullet and Motorcycle spike still hurt when fired.
 - Tank `attack_range` is now 30 (see PATHING.md); before that it was 10 (was 5). The barrel tip is about 4.3 m from the centre of the Tank, so at 5 the shell had almost no flight. It is longer than any other unit's range and is provisional until playtested.
 - Check: `tests/tank_fire_test.gd` (headless).
 

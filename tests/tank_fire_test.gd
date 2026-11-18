@@ -57,9 +57,11 @@ func run() -> void:
 	var rest_world := barrel.global_position
 	for i in range(80):
 		tank._process(1.0/60)
-		if foe.health < health_before: break
+		if not of_script(Projectile).is_empty(): break
 		turret._process(1.0/60)
-	if not check(foe.health < health_before,"Tank did not fire"): return
+	if not check(not of_script(Projectile).is_empty(),"Tank did not fire"): return
+	# The shell does its damage when it lands, not as it leaves (docs/TURRET_AIM.md).
+	if not check(foe.health == health_before,"The shell should not hurt before it lands"): return
 	# The shell leaves the tip, pointing at the middle of the target.
 	var shells := of_script(Projectile)
 	if not check(shells.size() == 1 and shells[0].scene_file_path == "res://scenes/gameplay/tank_shell.tscn","One shell should fire, got %d" % shells.size()): return
@@ -96,6 +98,7 @@ func run() -> void:
 		steps += 1
 		if not check(shell.global_position.distance_to(box.get_center()) <= was+0.001,"Shell should close on the target"): return
 	if not check(steps > 12 and steps < 60,"Shell should be seen flying, took %d frames" % steps): return
+	if not check(foe.health < health_before,"The shell should hurt the target when it lands"): return
 	if not check(shell.global_position.distance_to(start) > 5.0,"Shell should travel: %.1f m" % shell.global_position.distance_to(start)): return
 	var impacts := of_script(Burst)
 	if not check(impacts.size() == 1,"One impact should appear, got %d" % impacts.size()): return
