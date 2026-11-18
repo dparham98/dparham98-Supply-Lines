@@ -1,0 +1,65 @@
+[gd_scene format=3]
+[ext_resource type="PackedScene" path="res://scenes/models/infantry_model.tscn" id="infantry"]
+[ext_resource type="Script" path="res://review.gd" id="review"]
+[sub_resource type="Environment" id="environment"]
+background_mode = 1
+background_color = Color(0.48,0.47,0.45,1)
+ambient_light_source = 2
+ambient_light_color = Color(0.91,0.94,1,1)
+ambient_light_energy = 0.32
+reflected_light_source = 1
+tonemap_mode = 3
+ssao_enabled = true
+ssao_radius = 0.12
+ssao_intensity = 1.1
+ssao_power = 1.4
+[sub_resource type="StandardMaterial3D" id="clay"]
+albedo_color = Color(0.38,0.38,0.37,1)
+roughness = 0.97
+[sub_resource type="PlaneMesh" id="floor"]
+material = SubResource("clay")
+size = Vector2(200,200)
+[node name="CyborgReview" type="Node3D"]
+script = ExtResource("review")
+[node name="World" type="WorldEnvironment" parent="."]
+environment = SubResource("environment")
+[node name="Floor" type="MeshInstance3D" parent="."]
+position = Vector3(0,-0.005,0)
+mesh = SubResource("floor")
+[node name="Softbox" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-45,145,0)
+light_color = Color(1.0,0.971,0.937,1.0)
+light_energy = 0.97
+shadow_enabled = true
+shadow_blur = 1.8
+directional_shadow_max_distance = 15.0
+[node name="Fill" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-25,-122,0)
+light_color = Color(0.8,0.88,1.0,1.0)
+light_energy = 0.32
+[node name="Edge" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-32,28,0)
+light_color = Color(1.0,0.94,0.83,1.0)
+light_energy = 0.66
+[node name="Red" type="Node3D" parent="."]
+position = Vector3(0.66,0,0)
+rotation_degrees = Vector3(0,23,0)
+[node name="Model" parent="Red" instance=ExtResource("infantry")]
+[node name="Blue" type="Node3D" parent="."]
+position = Vector3(-0.66,0,0)
+rotation_degrees = Vector3(0,-20,0)
+[node name="Model" parent="Blue" instance=ExtResource("infantry")]
+[node name="Camera" type="Camera3D" parent="."]
+current = true
+projection = 1
+size = 2.22
+near = 0.06
+far = 40.0
+position = Vector3(0,2.10,-6.5)
+rotation_degrees = Vector3(-10.2,180,0)
+[node name="Help" type="Label" parent="."]
+offset_left = 22
+offset_top = 16
+theme_override_colors/font_color = Color(0.12,0.12,0.12,1)
+theme_override_font_sizes/font_size = 17
+text = "Rest    ·    ← → action    A/D turn    R/B team"

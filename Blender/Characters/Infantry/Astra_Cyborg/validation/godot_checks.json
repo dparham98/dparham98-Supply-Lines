@@ -1,0 +1,64 @@
+{
+  "animator_path": "res://scripts/components/character_animator.gd",
+  "attachment_bones": [
+    "pistol",
+    "chainsaw",
+    "flash"
+  ],
+  "bones": 22,
+  "clips": {
+    "Die": {
+      "joint_swing_degrees": 140.765376680409,
+      "length_seconds": 4.16666650772095,
+      "loops": false
+    },
+    "Hack": {
+      "joint_swing_degrees": 136.175011444918,
+      "length_seconds": 1.25,
+      "loops": true
+    },
+    "Rest": {
+      "joint_swing_degrees": 0.0395646811852521,
+      "length_seconds": 0.0833333358168602,
+      "loops": true
+    },
+    "Run": {
+      "joint_swing_degrees": 72.0665553668551,
+      "length_seconds": 0.708333313465118,
+      "loops": true
+    },
+    "Shoot": {
+      "joint_swing_degrees": 5.22089585626749,
+      "length_seconds": 0.583333313465118,
+      "loops": false
+    }
+  },
+  "failures": [],
+  "muzzle_light_rest": 0.0,
+  "muzzle_light_shoot": 1.46906971931458,
+  "paint_framebuffer": {
+    "blue_pixels_changed_over_four_levels": 0,
+    "blue_pixels_reassigned_red": 5230,
+    "left_max_delta_when_right_changed_255": 0,
+    "red_pixels_reassigned_blue": 4980,
+    "right_max_delta_when_left_changed_255": 0
+  },
+  "team_surfaces_per_actor": 1,
+  "renderer": "Vulkan 1.4.341 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 5070 Ti",
+  "godot": "4.7.2.stable.official.ed1daf0bf",
+  "glb_sha256": "110cd6ac655cec33042d700ddc64bad2c82640d636f7a6b4d24d2136a481a4fb",
+  "project_zip_sha256": "4de82a84758c0301822493458a24fc5282069545ec33beb04cf86cba8aba3ba6",
+  "staged_game_files": [
+    "scenes/models/infantry_model.tscn",
+    "scenes/models/infantry_death_fx.tscn",
+    "scripts/components/character_animator.gd",
+    "scripts/components/burst_effect.gd",
+    "scripts/components/team_paint.gd",
+    "assets/shaders/chainsaw_teeth.gdshader",
+    "assets/materials/units/team_paint_enemy.tres",
+    "assets/materials/units/team_paint_neutral.tres",
+    "assets\\models\\units\\infantry.glb.import",
+    "assets/models/effects/infantry_death_oil.glb",
+    "assets/models/effects/infantry_death_oil.glb.import"
+  ]
+}

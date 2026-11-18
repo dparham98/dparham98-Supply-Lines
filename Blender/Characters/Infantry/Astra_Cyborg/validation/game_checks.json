@@ -1,0 +1,16 @@
+{
+  "glb_sha256": "110cd6ac655cec33042d700ddc64bad2c82640d636f7a6b4d24d2136a481a4fb",
+  "stock_checks_passed": [
+    "INFANTRY_MODEL_TEST_PASSED",
+    "CYBORG_DEATH_TEST_PASSED",
+    "INFANTRY_MODEL_RUNTIME_CHECK_PASSED"
+  ],
+  "rendered_skirmish_frames": [
+    "infantry_hack.png",
+    "infantry_idle.png",
+    "infantry_run.png",
+    "infantry_shoot.png"
+  ],
+  "palette": "Original gameplay palette",
+  "infantry_model_wrapper_sha256": "8cad71088cea8757953ff8a12e9fb771b55d5dd322395a33ca58345ac80e86e6"
+}
