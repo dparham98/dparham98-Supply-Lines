@@ -15,6 +15,7 @@ These changes come from the playtest of main at 8ee9b55 (2026-11-15).
   - The state line says which unit the card and stats show; its portrait is outlined.
 - **Portraits:**
   - Each one shows the unit's icon and a health bar: green, amber below 60%, red below 30%.
+  - Its health as a number sits in the top-left corner (`HealthText`, since the playtest of 2026-11-17).
   - They are grouped by type, in the order the types were first selected, so the outlined unit is always first.
   - There are 33 authored slots (`Info/Portraits/P1`–`P33`, 11 by 3). A larger selection says how many more are not shown.
 - **Clicks:**
@@ -23,6 +24,7 @@ These changes come from the playtest of main at 8ee9b55 (2026-11-15).
   - Ctrl-click: only that unit's type.
   - Ctrl+Shift-click: remove that type.
 - The tooltip names the unit, its health and its state.
+- **On the map,** every selected unit and building shows its health as a number beside its health bar (`health_text` in `scripts/ui/map_overlay.gd`).
 - **The header type strip (`Infantry ×9`, …) is gone.**
   - With five or more types it overflowed the header and pushed the Restart button off screen.
   - The portraits show the same breakdown, and Ctrl-click narrows by type as the strip did.

@@ -19,6 +19,10 @@ The pick radius is 4 minimap pixels, `ORDER_PICK_RADIUS`, about 10 m on the 500 
 
 Building placement (plans, rail, Depots, Generators, production buildings) is not done from the minimap. While one is armed, a left-click on the minimap still moves the camera and a right-click cancels.
 
+## Shift held before the command key
+
+The playtest of 2026-11-17 found that queueing on the minimap and its Attack command did nothing. The cause was the keyboard, not the minimap: holding Shift and then pressing A (or M, or any command key) did not arm the command, because a button's shortcut matches only the exact key with no Shift. `_unhandled_key_input` in `skirmish_hud.gd` now passes such a key on without Shift when it is the shortcut of a visible, enabled button, so Shift+A arms Attack and the Shift-clicks that follow queue. `tests/minimap_orders_test.gd` sends a real Shift+A and two Shift-clicks and checks both attack-moves are queued.
+
 ## Limits
 
 - Markers are a few pixels across, and units in a group overlap, so a right-click near a crowd targets whichever marker is nearest.
