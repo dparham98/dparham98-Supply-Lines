@@ -1,6 +1,6 @@
 # Two Lakes
 
-Two Lakes is a 500 x 500 m map for up to six players, playable as `scenes/maps/lakes_skirmish.tscn`. It is not the main scene; the balanced map (`BALANCED_MAP.md`) still is. The design was agreed in conversation on 2026-11-15 and 16.
+Two Lakes is a 500 x 500 m map for up to six players, playable as `scenes/maps/lakes_skirmish.tscn`. It is the game's main scene since 2026-11-17: **F5** runs it. The balanced map (`BALANCED_MAP.md`) was the main scene before and is still playable with **F6** on its scene. The design was agreed in conversation on 2026-11-15 and 16.
 
 ![layout](images/two_lakes_layout.png)
 

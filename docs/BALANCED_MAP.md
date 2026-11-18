@@ -4,7 +4,7 @@ A second map, built for a fair two-player match, and the first map with coal in 
 
 ![Layout with starts, expansions and coal fields](images/balanced_map_preview.png)
 
-This is the game's main scene: **F5** runs it. The original map, `resource_skirmish.tscn`, is unchanged and still playable with **F6** on its scene; most tests still use it. There is no scene picker in the game.
+This was the game's main scene until 2026-11-17, when Two Lakes (`TWO_LAKES_MAP.md`) took over **F5**; run this one with **F6** on its scene. The original map, `resource_skirmish.tscn`, is unchanged and still playable with **F6** on its scene; most tests still use it. There is no scene picker in the game.
 
 ## Layout
 

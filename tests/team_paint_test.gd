@@ -3,8 +3,8 @@ extends SceneTree
 ## the unit's side, nothing else is overridden, and models with no team surface are left alone.
 const TeamPaint = preload("res://scripts/components/team_paint.gd")
 ## Unit scene and the least number of surfaces it paints.
-const PAINTED := {"scout": 1, "grenadier": 1, "motorcycle": 2, "drone": 2, "cargo_vehicle": 3, "depot_truck": 3, "train": 1}
-const UNPAINTED := ["infantry", "tank", "ubermech", "hostile"]
+const PAINTED := {"infantry": 1, "scout": 1, "grenadier": 1, "motorcycle": 2, "drone": 2, "cargo_vehicle": 3, "depot_truck": 3, "train": 1}
+const UNPAINTED := ["tank", "ubermech", "hostile"]
 func _initialize() -> void:
 	for id in PAINTED:
 		for team in ["player","enemy"]:
