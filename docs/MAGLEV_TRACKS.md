@@ -31,6 +31,12 @@ blender -b Blender/Vehicles/Maglev/MaglevTracks.blend --python-exit-code 1 -P Bl
 
 The [kit sheet](../Blender/Vehicles/Maglev/Guideway/preview/guideway_kit.png) shows the four Godot pieces. The [straight comparison](../Blender/Vehicles/Maglev/Guideway/preview/straight_comparison.png) uses the same light and camera on the previous and revised meshes.
 
+The full-detail exports contain 1,228 triangles for a straight, 6,316 for a curve and 7,936 for either fork. The existing Godot import settings generate levels of detail. The [clearance measurements](../Blender/Vehicles/Maglev/Guideway/validation/clearance.json) cover 920 Streamliner poses across all six lanes, including both travel orientations and the ends of each piece. The smallest sampled vertical gap was 0.131 m on the forks.
+
+```sh
+blender -b --factory-startup --python-exit-code 1 -P Blender/Vehicles/Maglev/Guideway/validation/clearance.py
+```
+
 ## Laying track
 
 Since the playtest of 9eaed10 the player plans track before any of it is laid, and since 2026-11-17 picks two buildings and lays the track the game suggests; see `docs/RAIL_PLANNING.md`.
