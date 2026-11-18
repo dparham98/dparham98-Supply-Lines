@@ -1,0 +1,140 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/gameplay/track_straight.tscn" id="straight"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/track_curve.tscn" id="curve"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/track_fork_left.tscn" id="fork_left"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/track_fork_right.tscn" id="fork_right"]
+[ext_resource type="Script" path="res://review.gd" id="script"]
+[ext_resource type="PackedScene" path="res://original.tscn" id="old"]
+[ext_resource type="PackedScene" path="res://scenes/models/train_model.tscn" id="train"]
+[ext_resource type="PackedScene" path="res://scenes/maps/lighting.tscn" id="lighting"]
+[ext_resource type="Material" path="res://grass_stage.tres" id="grass"]
+
+[sub_resource type="StandardMaterial3D" id="floor"]
+albedo_color = Color(0.66, 0.67, 0.63, 1)
+roughness = 0.96
+
+[sub_resource type="PlaneMesh" id="surface"]
+size = Vector2(380, 380)
+material = SubResource("floor")
+
+[node name="Guideway" type="Node3D" groups=["rail_network"]]
+script = ExtResource("script")
+
+[node name="Lighting" parent="." instance=ExtResource("lighting")]
+
+[node name="Fill" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-40, 15, 0)
+light_color = Color(0.87, 0.92, 1, 1)
+light_energy = 0.68
+light_specular = 0.64
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.016, 0)
+mesh = SubResource("surface")
+
+[node name="GameplayGround" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.016, 0)
+mesh = SubResource("surface")
+material_override = ExtResource("grass")
+visible = false
+
+[node name="Camera" type="Camera3D" parent="."]
+projection = 1
+current = true
+far = 160.0
+
+[node name="Yard" type="Node3D" parent="."]
+
+[node name="LeftTurnout" parent="Yard" instance=ExtResource("fork_left")]
+
+[node name="RightTurnout" parent="Yard" instance=ExtResource("fork_right")]
+position = Vector3(0, 0, 28.8)
+rotation_degrees = Vector3(0, 180, 0)
+
+[node name="Inbound0" parent="Yard" instance=ExtResource("straight")]
+position = Vector3(0, 0, -4.8)
+
+[node name="Inbound1" parent="Yard" instance=ExtResource("straight")]
+position = Vector3(0, 0, -9.6)
+
+[node name="Inbound2" parent="Yard" instance=ExtResource("straight")]
+position = Vector3(0, 0, -14.4)
+
+[node name="Trunk0" parent="Yard" instance=ExtResource("straight")]
+position = Vector3(0, 0, 28.8)
+
+[node name="Branch0" parent="Yard" instance=ExtResource("straight")]
+position = Vector3(12.0, 0, 12)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="Bypass0" parent="Yard" instance=ExtResource("straight")]
+position = Vector3(12.0, 0, 16.8)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="Trunk1" parent="Yard" instance=ExtResource("straight")]
+position = Vector3(0, 0, 33.6)
+
+[node name="Branch1" parent="Yard" instance=ExtResource("straight")]
+position = Vector3(16.8, 0, 12)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="Bypass1" parent="Yard" instance=ExtResource("straight")]
+position = Vector3(16.8, 0, 16.8)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="Curve" parent="Yard" instance=ExtResource("curve")]
+position = Vector3(21.6, 0, 12)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="Outbound0" parent="Yard" instance=ExtResource("straight")]
+position = Vector3(33.6, 0, 0)
+rotation_degrees = Vector3(0, 180, 0)
+
+[node name="Outbound1" parent="Yard" instance=ExtResource("straight")]
+position = Vector3(33.6, 0, -4.8)
+rotation_degrees = Vector3(0, 180, 0)
+
+[node name="CurveTrain" parent="Yard" instance=ExtResource("train")]
+
+[node name="MainTrain" parent="Yard" instance=ExtResource("train")]
+
+[node name="Straight" type="Node3D" parent="."]
+
+[node name="Track" parent="Straight" instance=ExtResource("straight")]
+
+[node name="Curve" type="Node3D" parent="."]
+
+[node name="Track" parent="Curve" instance=ExtResource("curve")]
+
+[node name="Left" type="Node3D" parent="."]
+
+[node name="Track" parent="Left" instance=ExtResource("fork_left")]
+
+[node name="Right" type="Node3D" parent="."]
+
+[node name="Track" parent="Right" instance=ExtResource("fork_right")]
+
+[node name="NewStraight" type="Node3D" parent="."]
+
+[node name="Panel0" parent="NewStraight" instance=ExtResource("straight")]
+position = Vector3(0, 0, -4.8)
+metadata/review_power = "off"
+
+[node name="Panel1" parent="NewStraight" instance=ExtResource("straight")]
+
+[node name="Panel2" parent="NewStraight" instance=ExtResource("straight")]
+position = Vector3(0, 0, 4.8)
+metadata/review_power = "hostile"
+
+[node name="OldStraight" type="Node3D" parent="."]
+
+[node name="Panel0" parent="OldStraight" instance=ExtResource("old")]
+position = Vector3(0, 0, -4.8)
+metadata/review_power = "off"
+
+[node name="Panel1" parent="OldStraight" instance=ExtResource("old")]
+
+[node name="Panel2" parent="OldStraight" instance=ExtResource("old")]
+position = Vector3(0, 0, 4.8)
+metadata/review_power = "hostile"

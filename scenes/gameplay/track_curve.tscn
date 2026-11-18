@@ -7,7 +7,7 @@ emission_enabled = true
 emission = Color(0.3,0.9,1,1)
 emission_energy_multiplier = 1.2
 [sub_resource type="BoxMesh" id="owner_mesh"]
-size = Vector3(0.6,0.08,0.6)
+size = Vector3(0.249,0.024,0.568)
 material = SubResource("owner_mat")
 [node name="TrackCurve" type="Node3D"]
 script = ExtResource("piece")
@@ -16,5 +16,6 @@ kind = "curve"
 [node name="Model" parent="Visuals" instance=ExtResource("model")]
 transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
 [node name="Owner" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(3.515,0.7,8.485)
+position = Vector3(2.625885,0.332,9.374115)
+rotation = Vector3(0,0.7853981634,0)
 mesh = SubResource("owner_mesh")
