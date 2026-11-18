@@ -14,7 +14,28 @@ Rails are no longer one-tile squares. The network is built from the authored mag
 - Each piece marks the tiles whose centres lie within half the track width of its centre line, so buildings and plans keep off (`is_footprint_valid` still refuses tiles carrying `rail`). Ground units cross tracks freely.
 - Forks have an entry (end 0), a straight exit (end 1, lane 0) and a branch exit (end 2, lane 1). A train runs entry to either exit and never exit to exit; because trains do not reverse mid-route, going from one exit to the other needs a loop. Trains choose the lane from their route, and the switch blades move to match.
 - All joined pieces form a line. A Depot is connected when any piece's edge touches its rail ring, half the Depot's range (`docs/RAIL_PLANNING.md`). The line belongs to every team with a living Depot connected to it, replacing per-piece ownership; a line with no connected friendly Depot is unusable until one returns. `assigned_depot` only records who paid.
-- The plate on each piece shows power: cyan when a connected Depot has energy, dark without, red for a hostile line.
+- Each piece has a signal window on its shoulder. It glows cyan when a connected friendly Depot has energy, goes dark without power and turns red on a hostile line. On forks the window sits outside the junction near the entry.
+
+### Guideway art
+
+The Industrial Streamliner runs between two burnished guide rails on segmented concrete slabs. The dark ceramic pads down the centre have paired bronze contacts. Shoulder clamps and expansion joints repeat through snapped pieces. The metal and ceramic keep their neutral colours when the signal changes.
+
+Open [MaglevTracks.blend](../Blender/Vehicles/Maglev/MaglevTracks.blend) to inspect the assembled fork layout. The four export roots are in the `maglev_tracks` collection. Each fork has a common concrete bed through the junction and two moving bronze-striped blades. The script on the Godot piece raises the blade for the selected route and lowers the other below the deck.
+
+From the repository root, run the following to rebuild the Blender meshes and export the four GLBs. To export hand edits directly, open the saved Blender file with the second command.
+
+```sh
+blender -b --factory-startup --python-exit-code 1 -P Blender/Vehicles/Maglev/Guideway/build_tracks.py
+blender -b Blender/Vehicles/Maglev/MaglevTracks.blend --python-exit-code 1 -P Blender/Vehicles/Maglev/Guideway/export_tracks.py
+```
+
+The [kit sheet](../Blender/Vehicles/Maglev/Guideway/preview/guideway_kit.png) shows the four Godot pieces. The [straight comparison](../Blender/Vehicles/Maglev/Guideway/preview/straight_comparison.png) uses the same light and camera on the previous and revised meshes.
+
+The full-detail exports contain 1,228 triangles for a straight, 6,316 for a curve and 7,936 for either fork. The existing Godot import settings generate levels of detail. The [clearance measurements](../Blender/Vehicles/Maglev/Guideway/validation/clearance.json) cover 920 Streamliner poses across all six lanes, including both travel orientations and the ends of each piece. The smallest sampled vertical gap was 0.131 m on the forks.
+
+```sh
+blender -b --factory-startup --python-exit-code 1 -P Blender/Vehicles/Maglev/Guideway/validation/clearance.py
+```
 
 ## Laying track
 

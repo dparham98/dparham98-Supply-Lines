@@ -1,0 +1,72 @@
+{
+  "train_sha256": "a32e53951adeb7a3e61027bd0904c29723985e3aebe0703aeb56d3510ea16393",
+  "pose_step_world_m": 0.3,
+  "directions": [
+    "nose first",
+    "nose last"
+  ],
+  "pieces": {
+    "straight": {
+      "glb_sha256": "00321dea29109321ecd07485cb29126576ef72a211b8c71b643bd9a065e8470c",
+      "triangles": 1228,
+      "end_markers": 2,
+      "lane_0": {
+        "poses": 86,
+        "train_vs_rail_contacts": 0,
+        "train_vs_power_plate_contacts": 0,
+        "sampled_vertical_gap_world_m": 0.213,
+        "visible_power_plate_samples": 9
+      }
+    },
+    "curve": {
+      "glb_sha256": "c86fcac54cb282211987207f1db3bde98e08548fc1633549facd54794b19649e",
+      "triangles": 6316,
+      "end_markers": 2,
+      "lane_0": {
+        "poses": 178,
+        "train_vs_rail_contacts": 0,
+        "train_vs_power_plate_contacts": 0,
+        "sampled_vertical_gap_world_m": 0.213,
+        "visible_power_plate_samples": 9
+      }
+    },
+    "fork_left": {
+      "glb_sha256": "42e35eea67a8d46d76226f4e86703874bcc63cd1fba3bedf197db53c8d28b577",
+      "triangles": 7936,
+      "end_markers": 3,
+      "lane_0": {
+        "poses": 150,
+        "train_vs_rail_contacts": 0,
+        "train_vs_power_plate_contacts": 0,
+        "sampled_vertical_gap_world_m": 0.1308,
+        "visible_power_plate_samples": 9
+      },
+      "lane_1": {
+        "poses": 178,
+        "train_vs_rail_contacts": 0,
+        "train_vs_power_plate_contacts": 0,
+        "sampled_vertical_gap_world_m": 0.1308,
+        "visible_power_plate_samples": 9
+      }
+    },
+    "fork_right": {
+      "glb_sha256": "2303844e07638638d33cb0d2b5fb1a4d6936772f5961949281463c9d518a9996",
+      "triangles": 7936,
+      "end_markers": 3,
+      "lane_0": {
+        "poses": 150,
+        "train_vs_rail_contacts": 0,
+        "train_vs_power_plate_contacts": 0,
+        "sampled_vertical_gap_world_m": 0.1308,
+        "visible_power_plate_samples": 9
+      },
+      "lane_1": {
+        "poses": 178,
+        "train_vs_rail_contacts": 0,
+        "train_vs_power_plate_contacts": 0,
+        "sampled_vertical_gap_world_m": 0.1308,
+        "visible_power_plate_samples": 9
+      }
+    }
+  }
+}
