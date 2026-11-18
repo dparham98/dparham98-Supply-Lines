@@ -27,6 +27,11 @@ func aim_at(point: Vector3) -> void:
 	_aim_frame = Engine.get_process_frames()
 func aiming() -> bool:
 	return Engine.get_process_frames()-_aim_frame <= 1
+## Whether the turret points at the aim point to within `tolerance_degrees`. A Tank fires only then
+## (docs/TURRET_AIM.md), so a turret slewing onto a new target holds its shot until it is round.
+func on_target(tolerance_degrees := 4.0) -> bool:
+	if turret == null: return true
+	return aiming() and absf(angle_difference(_yaw,goal_yaw())) <= deg_to_rad(tolerance_degrees)
 func turret_yaw() -> float:
 	return _yaw
 func muzzle_position() -> Vector3:

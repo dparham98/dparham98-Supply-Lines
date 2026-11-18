@@ -28,7 +28,7 @@ func run() -> void:
 	var source = game.depot
 	var destination = game.get_node("Entities/Buildings/EastDepot")
 	var train = game.get_node("Entities/Units/Train")
-	if not check(rails.pieces.size() == 7 and train.is_in_group("rail_trains") and train.move_speed == 8,"Rail fixture or train config incorrect"): return
+	if not check(rails.pieces.size() == 7 and train.is_in_group("rail_trains") and train.move_speed == 16,"Rail fixture or train config incorrect"): return
 	# Geometry at world scale 0.6: straights 4.8 m, curves radius 12 m, 3 m wide, costed by length.
 	if not check(is_equal_approx(rails.piece_length("straight"),4.8) and is_equal_approx(rails.piece_length("curve"),12.0*PI*0.5) and rails.cost("straight") == 10 and rails.cost("curve") == 38,"Piece geometry or cost wrong: %.2f %.2f %d %d" % [rails.piece_length("straight"),rails.piece_length("curve"),rails.cost("straight"),rails.cost("curve")]): return
 	# The seven fixture pieces join head-on into one line with a free end at each extreme.

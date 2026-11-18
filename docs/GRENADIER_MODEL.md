@@ -27,6 +27,6 @@ Clips start at frame 0, so a loop closes without a held frame. The model has no 
 
 ## Grenade shot
 
-`scenes/gameplay/grenade_round.tscn` is the model file's grenade, enlarged 1.8 times to read from the game camera, with a team-coloured trail. It flies at 11 m/s in an arc (`arc_ratio` on `scripts/gameplay/projectile.gd`) and tumbles. `scenes/gameplay/grenade_blast.tscn` plays where it lands, with smoke thrown out to about the weapon's 3 m splash radius. Damage lands when the shot is fired, as with every other weapon, so the health change comes slightly before the grenade arrives.
+`scenes/gameplay/grenade_round.tscn` is the model file's grenade, enlarged 1.8 times to read from the game camera, with a team-coloured trail. It flies at 11 m/s in an arc (`arc_ratio` on `scripts/gameplay/projectile.gd`) and tumbles. `scenes/gameplay/grenade_blast.tscn` plays where it lands, with smoke thrown out to about the weapon's 3 m splash radius. Damage lands when the grenade arrives (`damage_on_impact`, see `docs/TURRET_AIM.md`), since the playtest of 2026-11-17.
 
 `tests/grenadier_model_test.gd` covers the clips, facing and size, motion, the shot, the grenade and the death. Review renders are `animation_ingame.png` and `grenade_shot_ingame.png` in `Blender/Previews/Grenadier/`.

@@ -44,9 +44,11 @@ func run() -> void:
 	worker.health = worker.max_health
 	worker.set_selected(true)
 	if not check(overlay.status_for(worker).health >= 0,"Selected unit has no bar"): return
+	if not check(overlay.status_for(worker).health_text == str(worker.health),"A selected unit should show its health as a number: '%s'" % overlay.status_for(worker).health_text): return
 	worker.set_selected(false)
 	overlay.hovered = worker
 	if not check(overlay.status_for(worker).health >= 0,"Hovered unit has no bar"): return
+	if not check(overlay.status_for(worker).health_text.is_empty(),"Only selected units show the number"): return
 	overlay.hovered = null
 	Input.action_press("map_show_all")
 	if not check(overlay.status_for(worker).health >= 0 and overlay.status_for(depot).health >= 0,"Alt does not show all bars"): return

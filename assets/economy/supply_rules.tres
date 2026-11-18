@@ -4,3 +4,4 @@
 script = ExtResource("rules")
 generator_energy_cost = 0
 generator_iron_cost = 40
+cargo_speed = 8.0

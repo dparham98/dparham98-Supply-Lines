@@ -15,7 +15,7 @@ The current keys, as set on 2026-11-15. `scripts/tools/setup_command_actions.gd`
 
 | Card or page | Keys |
 | --- | --- |
-| Infantry and combat units | M Move · S Stop · A Attack · G Gather · V Deliver · X Drop materials · R Repair · C Capture · T Auto-refuel (vehicles) |
+| Infantry and combat units | M Move · S Stop · A Attack · G Gather · F Fell (`docs/FELL.md`) · V Deliver · X Drop materials · R Repair · C Capture · T Auto-refuel (vehicles) |
 | Cargo truck / Train | M Move · S Stop · T Auto-refuel · D Deploy/Pack supplies · E Load · V Unload · C Trips · W Worksite (not Trains) |
 | Depot truck | M Move · S Stop · T Auto-refuel · D Deploy |
 | Depot | D Depot truck · V Cargo vehicle · T Train · C Make crates · X Cancel production (the Generator settings are sliders on the Depot panel, docs/DEPOT_PANELS.md) |

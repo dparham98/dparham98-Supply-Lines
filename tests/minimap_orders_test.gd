@@ -1,7 +1,7 @@
 extends SceneTree
 # Headless: the minimap gives orders (docs/MINIMAP_ORDERS.md). Right-click orders the selected units to the
 # clicked point or marker, Shift queues, a waiting command takes its point from a left-click, and a left-click
-# with nothing waiting still only moves the camera.
+# with nothing waiting still only moves the camera. A command key pressed with Shift held still arms its command.
 var game: Node3D
 var minimap: Control
 func _initialize() -> void: call_deferred("run")
@@ -115,5 +115,20 @@ func run() -> void:
 	worker.set_selected(true)
 	click(a,MOUSE_BUTTON_LEFT)
 	if not check(worker.order == "move" and Vector2(rig._focus_target.x-a.x,rig._focus_target.z-a.z).length() < 1.0,"A plain left-click should only move the camera"): return
+	# Shift held before the command key still arms it, through real input, so the Shift-clicks that follow queue
+	# (the playtest of 2026-11-17 found Shift+A matched no shortcut and the clicks panned instead).
+	game.selected_building = null
+	game.get_node("Interface")._process(0)
+	worker.order_queue.clear()
+	var shift_a := InputEventKey.new()
+	shift_a.keycode = KEY_A; shift_a.physical_keycode = KEY_A; shift_a.pressed = true; shift_a.shift_pressed = true
+	root.push_input(shift_a,true)
+	await process_frame
+	if not check(game.pending_unit_command == "attack","Shift+A should arm Attack: '%s'" % game.pending_unit_command): return
+	click(a,MOUSE_BUTTON_LEFT,true)
+	click(b,MOUSE_BUTTON_LEFT,true)
+	# The worker is still on its move, so both attack-moves queue behind it, and Attack stays armed for more.
+	if not check(game.pending_unit_command == "attack" and worker.order_queue.size() == 2 and worker.order_queue.all(func(entry): return entry.kind == "attack_move"),"Shift-clicks on the minimap should queue two attack-moves: %s, %d queued" % [worker.order,worker.order_queue.size()]): return
+	game.cancel_armed()
 	print("MINIMAP_ORDERS_TEST_PASSED")
 	quit()

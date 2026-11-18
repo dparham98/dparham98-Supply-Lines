@@ -121,8 +121,16 @@ func run() -> void:
 	game.issue_card_order(screen(goal))
 	if not check(tank.order == "attack_move" and tank.waypoint_points().size() == 1,"Ground Attack did not attack-move"): return
 	var start_health: int = hostile.health
+	# The Tank fires once its turret is on the foe, and the shell hurts when it lands (docs/TURRET_AIM.md).
+	var turret = tank._turret()
+	turret.aim_at(hostile.global_position)
+	turret._yaw = turret.goal_yaw()
 	tank._cooldown = 0
 	tank._process(1.0/60)
+	for shot in root.find_children("*","",true,false):
+		if shot.get_script() == preload("res://scripts/gameplay/projectile.gd") and shot.on_impact.is_valid():
+			shot.on_impact.call()
+			shot.on_impact = Callable()
 	if not check(hostile.health < start_health and tank.state.contains("engaging"),"Attack-move did not engage a foe in range"): return
 	hostile.global_position = tank.global_position+Vector3(-60,0,0)
 	if not check(run_until(tank,func(): return tank.order == "idle",30) and tank.global_position.distance_to(goal) < 2.5,"Attack-move did not continue to its goal"): return

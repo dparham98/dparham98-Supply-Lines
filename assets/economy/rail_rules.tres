@@ -7,6 +7,6 @@ rail_iron_cost = 2
 cargo_energy_cost = 150
 cargo_iron_cost = 30
 cargo_capacity = 300
-cargo_speed = 8.0
+cargo_speed = 16.0
 cargo_health = 80
 transfer_seconds = 2.0
