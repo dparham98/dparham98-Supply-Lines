@@ -126,8 +126,18 @@ func _place_consist() -> void:
 # ---- movement along the line
 func _follow(track: Dictionary) -> bool:
 	if track.is_empty(): return false
+	# A line that sets off against the way the train last ran is a reversal: the train's far end now
+	# leads, so the run starts there and the consist stays where it stands (it then runs backwards).
+	var before: Dictionary = _line if not _line.is_empty() else _rest_line
+	var tail := Vector3.INF
+	var model := $Visuals.get_node_or_null("Model")
+	if not before.is_empty() and model != null and model.has_method("length"):
+		var was: Vector3 = RailLine.point(before,_s)[1]
+		var now: Vector3 = RailLine.point(track,track.start)[1]
+		if was.x*now.x+was.z*now.z < 0.0: tail = RailLine.point(before,model.chord_back(before,_s,model.length()))[0]
 	_line = track
 	_s = track.start
+	if tail != Vector3.INF: _s = minf(track.total,RailLine.nearest(track,tail,track.start))
 	_goal = track.total
 	_route = [LINE_SENTINEL]
 	_moving_to = Vector2i(-1,-1)
