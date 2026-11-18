@@ -2,6 +2,10 @@
 
 The Infantry uses the rigged cyborg from `Blender/Characters/Infantry/Infantry.blend`: a 1.8 m figure with a pistol on one arm and a chainsaw on the other, exported with four clips. The unit agent reports what it is doing each frame and the model plays the matching clip.
 
+## Cyborg redesign (2026-11-17)
+
+`assets/models/units/infantry.glb` is now the cyborg infantry from `Blender/Characters/Infantry/Astra_Cyborg/` (its `README.md` has the edit and export commands). It is built on the same 22-bone rig with the same clips (Rest, Run, Hack, Shoot, Die), named props, teeth, flash bone and light, so `infantry_model.tscn` is unchanged. Its helmet stripe, epaulettes and back yoke are one `team_color` surface, so the Infantry now takes team paint (green for the player); the eye implant stays red for both sides. It has 7,564 triangles (the earlier model 9,336), 25 solid materials and no textures. `Infantry.blend` still holds the earlier model and is the rig the cyborg is rebuilt from. The pieces below describe the shared rig.
+
 ## Pieces
 
 - `assets/models/units/infantry.glb` holds the `rig_artpose` collection: skinned body, pistol, chainsaw, eye lens, the `chainsaw_teeth_rig` mesh attached to the `chainsaw` bone, and the animations `Rest` (2 frames), `Run` (0.71 s), `Hack` (1.25 s) and `Shoot` (14 frames, 0.58 s). The import marks Rest, Run and Hack as looping.
