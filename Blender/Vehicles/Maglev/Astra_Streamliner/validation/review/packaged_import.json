@@ -1,0 +1,48 @@
+{
+  "archive": "Streamliner_Godot_Review.zip",
+  "archive_sha256": "68ef5c907363cdae9fe920a236e547a9ff15d8a3a0c368abbba2618580fa04c3",
+  "entries": 21,
+  "archive_size_bytes": 10740626,
+  "imported_from_clean_extraction": true,
+  "glb_sha256": "a32e53951adeb7a3e61027bd0904c29723985e3aebe0703aeb56d3510ea16393",
+  "renderer": "Vulkan 1.4.341 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 5070 Ti",
+  "engine": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org",
+  "script_or_resource_errors": 0,
+  "native_frame_dimensions": [
+    1280,
+    900
+  ],
+  "frames_captured": [
+    "elevated.png",
+    "front_recolored.png",
+    "game.png",
+    "hero.png",
+    "loaded_indicator.png",
+    "mask_new_roof.png",
+    "mask_new_side.png",
+    "mask_truck_roof.png",
+    "mask_truck_side.png",
+    "match_new.png",
+    "match_old.png",
+    "match_truck.png",
+    "side.png",
+    "teams.png"
+  ],
+  "empty_vs_loaded": {
+    "pixels_with_luma_delta_over_24": 2391,
+    "bounding_box_left_top_right_bottom": [
+      854,
+      226,
+      934,
+      306
+    ]
+  },
+  "plate_sha256": {
+    "01_streamliner.png": "fa06306327258c0aed2b2ff4482a7fec68e2decceb6e1bab3d2dd9091fdf2b35",
+    "02_side_and_elevated.png": "d4a8bfe78a56c72308e973e0759ec44b06af1fed9837a8ab74af6e0dc0c19cb4",
+    "03_vehicle_comparison.png": "c5763b44bd4c30d716320585da308a478b861efd85804d37febd80e322e0b7cd",
+    "04_team_colors.png": "cba74b32ac3fe344730d54c81e020b6b16aa8653aedc30b5f09ab2bb1dcf2bf6",
+    "05_gameplay_distance.png": "bca8e9d6dd51c2f818d5ab45def12508643e9cfe46b45b49c7704355f0f42222",
+    "06_silhouettes.png": "ba086e15b4fded087dae1a700ac89ae6fc99df73ffda1c2de463936583030afc"
+  }
+}

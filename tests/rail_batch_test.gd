@@ -104,6 +104,26 @@ func run() -> void:
 	if not check(train.on_friendly_track() and absf(train.global_position.z-156.5) < 0.05,"Train left the track: %s" % train.global_position): return
 	var car: Node3D = model.cars()[0].node
 	if not check(absf(car.global_position.z-156.5) < 0.3 and absf(car.global_position.y) < 0.01,"Car is not on the track: %s" % car.global_position): return
+	# Going back, the car runs backwards rather than turning round: its nose keeps pointing the same way,
+	# and the nose sled now trails.
+	var nose: Vector3 = car.global_basis.z
+	var car_before: Vector3 = car.global_position
+	if not check(train._route_near(source,source.dropoff_range),"Train could not route back to the Depot"): return
+	train._process(0.0)
+	if not check(car.global_position.distance_to(car_before) < 0.05,"The car should not jump when it sets off back: %.2f m" % car.global_position.distance_to(car_before)): return
+	var away: Vector3 = train.global_position
+	var turned := 0.0
+	for i in range(60*30):
+		train._process(1.0/60)
+		turned = maxf(turned,1.0-car.global_basis.z.normalized().dot(nose.normalized()))
+		if train._route.is_empty(): break
+	if not check(train.global_position.distance_to(source.global_position) <= source.dropoff_range+0.05,"Train did not come back to the Depot: %s" % train.global_position): return
+	if not check(turned < 0.01,"The car turned round to go back: nose moved by %.3f" % turned): return
+	var back_dir: Vector3 = (train.global_position-away)*Vector3(1,0,1)
+	var nose_sled: Vector3 = car.find_child("sled_cargo_front",true,false).global_position
+	var tail_sled: Vector3 = car.find_child("sled_cargo_rear",true,false).global_position
+	if not check((nose_sled-tail_sled).dot(back_dir) < 0.0 and (nose_sled-tail_sled).dot(nose) > 0.0,"The nose sled should trail on the way back"): return
+	if not check(absf(car.global_position.z-156.5) < 0.3,"Car left the track going back: %s" % car.global_position): return
 	# Losing one Depot leaves the line usable through the other; both enemies have a Depot on it then.
 	destination.team = "enemy"; destination.ownership_changed.emit()
 	if not check(rails.friendly_piece(last,"player") and rails.friendly_piece(last,"enemy"),"A line belongs to every team with a connected Depot"): return

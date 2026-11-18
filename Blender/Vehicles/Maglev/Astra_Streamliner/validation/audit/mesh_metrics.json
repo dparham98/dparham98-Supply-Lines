@@ -1,0 +1,533 @@
+{
+  "blender": "4.5.3 LTS",
+  "baseline": {
+    "file": "assets/models/units/maglev_train_cargo.glb",
+    "sha256": "b69e52fdd769aacc8625087599c5975c53357a85345b9af0ec57346582a8eb7d",
+    "bytes": 89752,
+    "asset_bounds_xyz": {
+      "min": [
+        -1.83,
+        0.68,
+        -5.45
+      ],
+      "max": [
+        1.83,
+        3.97,
+        5.45
+      ],
+      "size": [
+        3.66,
+        3.29,
+        10.9
+      ]
+    },
+    "world_bounds_xyz_at_0_6": {
+      "min": [
+        -1.098,
+        0.408,
+        -3.27
+      ],
+      "max": [
+        1.098,
+        2.382,
+        3.27
+      ],
+      "size": [
+        2.196,
+        1.974,
+        6.54
+      ]
+    },
+    "node_count": 7,
+    "mesh_nodes": 4,
+    "unique_meshes": 4,
+    "unique_surfaces": 15,
+    "unique_triangles": 1516,
+    "surface_instances": 15,
+    "instanced_triangles": 1516,
+    "exported_position_entries_including_surface_splits": 2964,
+    "materials": [
+      "armor_olive",
+      "chassis_gunmetal",
+      "rust_oxide",
+      "warning_amber",
+      "sensor_red",
+      "team_color",
+      "cargo_signal",
+      "maglev_field"
+    ],
+    "images": 0,
+    "textures": 0,
+    "skins": 0,
+    "animations": 0,
+    "cameras": 0,
+    "punctual_lights": 0,
+    "visible_team_percent_at_50deg_pitch_by_yaw": {
+      "0": 6.58,
+      "45": 7.42,
+      "90": 8.0,
+      "135": 7.39,
+      "180": 6.61,
+      "225": 7.39,
+      "270": 8.0,
+      "315": 7.42
+    },
+    "visible_indicator_percent_at_50deg_pitch_by_yaw": {
+      "empty": {
+        "0": 0.0,
+        "45": 0.0,
+        "90": 0.0,
+        "135": 0.0,
+        "180": 0.0,
+        "225": 0.0,
+        "270": 0.0,
+        "315": 0.0
+      },
+      "loaded": {
+        "0": 1.761,
+        "45": 1.388,
+        "90": 0.853,
+        "135": 1.387,
+        "180": 1.765,
+        "225": 1.387,
+        "270": 0.853,
+        "315": 1.388
+      }
+    },
+    "loaded_world_bounds_xyz_at_0_6": {
+      "min": [
+        -1.098,
+        0.408,
+        -3.27
+      ],
+      "max": [
+        1.098,
+        2.568,
+        3.27
+      ],
+      "size": [
+        2.196,
+        2.16,
+        6.54
+      ]
+    },
+    "estimated_exposed_body_paint_area": {
+      "percent": 5.82,
+      "samples": 50000,
+      "visible_samples": 14985,
+      "directions": 17,
+      "scope": "Area-weighted samples on the fixed cargo_body mesh, front-facing and unobstructed in at least one upper-hemisphere or horizontal direction. Excludes underside, moving parts and occluded underlying paint panels."
+    },
+    "analytic_curve_mesh_clearance": {
+      "poses": 55,
+      "angular_step_deg": 1,
+      "chassis_centre_heading_range_deg": [
+        18,
+        72
+      ],
+      "rail_half_width_world_m": 1.5,
+      "minimum_lateral_vertex_margin_to_ideal_edge_world_m": 0.28168,
+      "train_nodes_meeting_exported_rail_triangles_by_number_of_poses": {},
+      "minimum_sampled_vertical_gap_over_rail_mesh_world_m": 0.048,
+      "vertical_sample": "4.5 cm grid in car frame at 25, 45, 65 degrees, uppermost rail to lowest train surface.",
+      "train_nodes_meeting_owner_marker_triangles_by_number_of_poses": {
+        "cargo_body": 33,
+        "sled_cargo_front": 12,
+        "sled_cargo_rear": 12
+      },
+      "scope": "curve GLB and separate owner indicator, tangent-following sleds. Forks use settled branch-lane switch positions. Runtime movement is tested separately."
+    },
+    "straight_mesh_clearance": {
+      "poses": 77,
+      "step_world_m": 0.15,
+      "train_nodes_meeting_exported_rail_triangles_by_number_of_poses": {},
+      "train_nodes_meeting_owner_marker_triangles_by_number_of_poses": {
+        "cargo_body": 45,
+        "sled_cargo_front": 15,
+        "sled_cargo_rear": 15
+      }
+    },
+    "analytic_fork_branch_mesh_clearance": {
+      "fork_left": {
+        "poses": 55,
+        "angular_step_deg": 1,
+        "chassis_centre_heading_range_deg": [
+          18,
+          72
+        ],
+        "rail_half_width_world_m": 1.5,
+        "minimum_lateral_vertex_margin_to_ideal_edge_world_m": 0.28168,
+        "train_nodes_meeting_exported_rail_triangles_by_number_of_poses": {},
+        "minimum_sampled_vertical_gap_over_rail_mesh_world_m": 0.048,
+        "vertical_sample": "4.5 cm grid in car frame at 25, 45, 65 degrees, uppermost rail to lowest train surface.",
+        "train_nodes_meeting_owner_marker_triangles_by_number_of_poses": {
+          "sled_cargo_rear": 11,
+          "cargo_body": 13
+        },
+        "scope": "fork_left GLB and separate owner indicator, tangent-following sleds. Forks use settled branch-lane switch positions. Runtime movement is tested separately."
+      },
+      "fork_right": {
+        "poses": 55,
+        "angular_step_deg": 1,
+        "chassis_centre_heading_range_deg": [
+          18,
+          72
+        ],
+        "rail_half_width_world_m": 1.5,
+        "minimum_lateral_vertex_margin_to_ideal_edge_world_m": 0.28168,
+        "train_nodes_meeting_exported_rail_triangles_by_number_of_poses": {},
+        "minimum_sampled_vertical_gap_over_rail_mesh_world_m": 0.048,
+        "vertical_sample": "4.5 cm grid in car frame at 25, 45, 65 degrees, uppermost rail to lowest train surface.",
+        "train_nodes_meeting_owner_marker_triangles_by_number_of_poses": {
+          "sled_cargo_rear": 11,
+          "cargo_body": 13
+        },
+        "scope": "fork_right GLB and separate owner indicator, tangent-following sleds. Forks use settled branch-lane switch positions. Runtime movement is tested separately."
+      }
+    }
+  },
+  "truck": {
+    "file": "assets/models/units/cargo_truck.glb",
+    "sha256": "7d094e4e5cb366d5744518288fe9ab26ed9c519f9227f37ccf2141828388847a",
+    "bytes": 282476,
+    "asset_bounds_xyz": {
+      "min": [
+        -1.5,
+        0.0,
+        -4.01495
+      ],
+      "max": [
+        1.5,
+        3.255,
+        3.9951
+      ],
+      "size": [
+        3.0,
+        3.255,
+        8.01005
+      ]
+    },
+    "world_bounds_xyz_at_0_6": {
+      "min": [
+        -0.9,
+        0.0,
+        -2.40897
+      ],
+      "max": [
+        0.9,
+        1.953,
+        2.39706
+      ],
+      "size": [
+        1.8,
+        1.953,
+        4.80603
+      ]
+    },
+    "node_count": 16,
+    "mesh_nodes": 13,
+    "unique_meshes": 13,
+    "unique_surfaces": 35,
+    "unique_triangles": 5076,
+    "surface_instances": 35,
+    "instanced_triangles": 5076,
+    "exported_position_entries_including_surface_splits": 9854,
+    "materials": [
+      "armor_olive",
+      "chassis_gunmetal",
+      "sensor_red",
+      "warning_amber",
+      "team_color",
+      "rust_oxide",
+      "cargo_signal",
+      "tires"
+    ],
+    "images": 0,
+    "textures": 0,
+    "skins": 0,
+    "animations": 0,
+    "cameras": 0,
+    "punctual_lights": 0
+  },
+  "curve": {
+    "file": "assets/models/rails/maglev_track_curve.glb",
+    "sha256": "65a632bdb2fea55cf473d72ddb4a5aa2cf0d625dde74295fa9cc4fdf26e60014",
+    "bytes": 72064,
+    "asset_bounds_xyz": {
+      "min": [
+        -2.41651,
+        0.0,
+        0.0
+      ],
+      "max": [
+        20.0,
+        1.06,
+        22.41651
+      ],
+      "size": [
+        22.41651,
+        1.06,
+        22.41651
+      ]
+    },
+    "world_bounds_xyz_at_0_6": {
+      "min": [
+        -1.4499,
+        0.0,
+        0.0
+      ],
+      "max": [
+        12.0,
+        0.636,
+        13.4499
+      ],
+      "size": [
+        13.4499,
+        0.636,
+        13.4499
+      ]
+    },
+    "node_count": 3,
+    "mesh_nodes": 1,
+    "unique_meshes": 1,
+    "unique_surfaces": 5,
+    "unique_triangles": 1336,
+    "surface_instances": 5,
+    "instanced_triangles": 1336,
+    "exported_position_entries_including_surface_splits": 2482,
+    "materials": [
+      "armor_olive",
+      "chassis_gunmetal",
+      "rust_oxide",
+      "maglev_field",
+      "warning_amber"
+    ],
+    "images": 0,
+    "textures": 0,
+    "skins": 0,
+    "animations": 0,
+    "cameras": 0,
+    "punctual_lights": 0
+  },
+  "prototype": {
+    "file": "Blender/Vehicles/Maglev/Astra_Streamliner/export/maglev_train_cargo.glb",
+    "sha256": "a32e53951adeb7a3e61027bd0904c29723985e3aebe0703aeb56d3510ea16393",
+    "bytes": 334728,
+    "asset_bounds_xyz": {
+      "min": [
+        -1.829,
+        0.68,
+        -5.45
+      ],
+      "max": [
+        1.829,
+        3.97,
+        5.45
+      ],
+      "size": [
+        3.658,
+        3.29,
+        10.9
+      ]
+    },
+    "world_bounds_xyz_at_0_6": {
+      "min": [
+        -1.0974,
+        0.408,
+        -3.27
+      ],
+      "max": [
+        1.0974,
+        2.382,
+        3.27
+      ],
+      "size": [
+        2.1948,
+        1.974,
+        6.54
+      ]
+    },
+    "node_count": 9,
+    "mesh_nodes": 6,
+    "unique_meshes": 4,
+    "unique_surfaces": 21,
+    "unique_triangles": 6244,
+    "surface_instances": 29,
+    "instanced_triangles": 7212,
+    "exported_position_entries_including_surface_splits": 13431,
+    "materials": [
+      "graphite_enamel",
+      "underframe",
+      "gunmetal",
+      "edge_steel",
+      "amber",
+      "exposed_alloy",
+      "service_ink",
+      "team_color",
+      "armoured_glass",
+      "headlight_porcelain",
+      "cargo_signal",
+      "field_ceramic"
+    ],
+    "images": 0,
+    "textures": 0,
+    "skins": 0,
+    "animations": 0,
+    "cameras": 0,
+    "punctual_lights": 0,
+    "visible_team_percent_at_50deg_pitch_by_yaw": {
+      "0": 19.6,
+      "45": 20.56,
+      "90": 21.33,
+      "135": 20.6,
+      "180": 19.16,
+      "225": 20.56,
+      "270": 21.28,
+      "315": 20.51
+    },
+    "visible_indicator_percent_at_50deg_pitch_by_yaw": {
+      "empty": {
+        "0": 0.0,
+        "45": 0.0,
+        "90": 0.0,
+        "135": 0.0,
+        "180": 0.0,
+        "225": 0.0,
+        "270": 0.0,
+        "315": 0.0
+      },
+      "loaded": {
+        "0": 1.575,
+        "45": 1.227,
+        "90": 0.829,
+        "135": 1.288,
+        "180": 1.625,
+        "225": 1.288,
+        "270": 0.829,
+        "315": 1.227
+      }
+    },
+    "loaded_world_bounds_xyz_at_0_6": {
+      "min": [
+        -1.0974,
+        0.408,
+        -3.27
+      ],
+      "max": [
+        1.0974,
+        2.382,
+        3.27
+      ],
+      "size": [
+        2.1948,
+        1.974,
+        6.54
+      ]
+    },
+    "estimated_exposed_body_paint_area": {
+      "percent": 16.06,
+      "samples": 50000,
+      "visible_samples": 12102,
+      "directions": 17,
+      "scope": "Area-weighted samples on the fixed cargo_body mesh, front-facing and unobstructed in at least one upper-hemisphere or horizontal direction. Excludes underside, moving parts and occluded underlying paint panels."
+    },
+    "analytic_curve_mesh_clearance": {
+      "poses": 55,
+      "angular_step_deg": 1,
+      "chassis_centre_heading_range_deg": [
+        18,
+        72
+      ],
+      "rail_half_width_world_m": 1.5,
+      "minimum_lateral_vertex_margin_to_ideal_edge_world_m": 0.27746,
+      "train_nodes_meeting_exported_rail_triangles_by_number_of_poses": {},
+      "minimum_sampled_vertical_gap_over_rail_mesh_world_m": 0.048,
+      "vertical_sample": "4.5 cm grid in car frame at 25, 45, 65 degrees, uppermost rail to lowest train surface.",
+      "train_nodes_meeting_owner_marker_triangles_by_number_of_poses": {},
+      "scope": "curve GLB and separate owner indicator, tangent-following sleds. Forks use settled branch-lane switch positions. Runtime movement is tested separately."
+    },
+    "straight_mesh_clearance": {
+      "poses": 77,
+      "step_world_m": 0.15,
+      "train_nodes_meeting_exported_rail_triangles_by_number_of_poses": {},
+      "train_nodes_meeting_owner_marker_triangles_by_number_of_poses": {}
+    },
+    "analytic_fork_branch_mesh_clearance": {
+      "fork_left": {
+        "poses": 55,
+        "angular_step_deg": 1,
+        "chassis_centre_heading_range_deg": [
+          18,
+          72
+        ],
+        "rail_half_width_world_m": 1.5,
+        "minimum_lateral_vertex_margin_to_ideal_edge_world_m": 0.27746,
+        "train_nodes_meeting_exported_rail_triangles_by_number_of_poses": {},
+        "minimum_sampled_vertical_gap_over_rail_mesh_world_m": 0.048,
+        "vertical_sample": "4.5 cm grid in car frame at 25, 45, 65 degrees, uppermost rail to lowest train surface.",
+        "train_nodes_meeting_owner_marker_triangles_by_number_of_poses": {},
+        "scope": "fork_left GLB and separate owner indicator, tangent-following sleds. Forks use settled branch-lane switch positions. Runtime movement is tested separately."
+      },
+      "fork_right": {
+        "poses": 55,
+        "angular_step_deg": 1,
+        "chassis_centre_heading_range_deg": [
+          18,
+          72
+        ],
+        "rail_half_width_world_m": 1.5,
+        "minimum_lateral_vertex_margin_to_ideal_edge_world_m": 0.27746,
+        "train_nodes_meeting_exported_rail_triangles_by_number_of_poses": {},
+        "minimum_sampled_vertical_gap_over_rail_mesh_world_m": 0.048,
+        "vertical_sample": "4.5 cm grid in car frame at 25, 45, 65 degrees, uppermost rail to lowest train surface.",
+        "train_nodes_meeting_owner_marker_triangles_by_number_of_poses": {},
+        "scope": "fork_right GLB and separate owner indicator, tangent-following sleds. Forks use settled branch-lane switch positions. Runtime movement is tested separately."
+      }
+    }
+  },
+  "accepted_node_contracts": {
+    "train_cargo_root": {
+      "present": true,
+      "asset_pivot_matches": true,
+      "parent_matches": true,
+      "local_transform_matches": true
+    },
+    "cargo_body": {
+      "present": true,
+      "asset_pivot_matches": true,
+      "parent_matches": true,
+      "local_transform_matches": true
+    },
+    "cargo_car_indicator": {
+      "present": true,
+      "asset_pivot_matches": true,
+      "parent_matches": true,
+      "local_transform_matches": true
+    },
+    "cargo_coupler_F": {
+      "present": true,
+      "asset_pivot_matches": true,
+      "parent_matches": true,
+      "local_transform_matches": true
+    },
+    "cargo_coupler_R": {
+      "present": true,
+      "asset_pivot_matches": true,
+      "parent_matches": true,
+      "local_transform_matches": true
+    },
+    "sled_cargo_front": {
+      "present": true,
+      "asset_pivot_matches": true,
+      "parent_matches": true,
+      "local_transform_matches": true
+    },
+    "sled_cargo_rear": {
+      "present": true,
+      "asset_pivot_matches": true,
+      "parent_matches": true,
+      "local_transform_matches": true
+    }
+  },
+  "reference_hashes_match_before_after": true
+}

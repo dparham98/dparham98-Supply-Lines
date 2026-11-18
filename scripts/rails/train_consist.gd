@@ -12,6 +12,10 @@ extends Node3D
 @export var car_paths: Array[NodePath] = [NodePath("Car1")]
 var _cars: Array[Dictionary] = []
 var _indicator_rest := {}
+## Where each placed car's nose points, flat, by car instance id. A placed car keeps it: when the line it
+## is given runs the other way (a return trip), it drives backwards instead of turning round. Kept here
+## because the train turns its Visuals to the travel, which turns the cars' transforms with it.
+var _noses := {}
 func _ready() -> void:
 	for path in car_paths:
 		var car := get_node_or_null(path)
@@ -55,11 +59,18 @@ func place(track: Dictionary, s_front: float, load := 0.0) -> void:
 		head = head.normalized()
 		var node: Node3D = car.node
 		var mid: Vector3 = (front[0]+rear[0])*0.5
-		node.global_transform = Transform3D(Basis.looking_at(head,Vector3.UP,true).scaled(Vector3.ONE*world_scale),Vector3(mid.x,0,mid.z))
+		# Backwards when the nose, as last placed, points against the travel; it then trails, and the
+		# nose sled rides the rear point.
+		var backwards: bool = _noses.has(node.get_instance_id()) and (_noses[node.get_instance_id()] as Vector3).dot(head) < 0.0
+		var nose_at: Array = rear if backwards else front
+		var tail_at: Array = front if backwards else rear
+		var turn := -1.0 if backwards else 1.0
+		_noses[node.get_instance_id()] = head*turn
+		node.global_transform = Transform3D(Basis.looking_at(head*turn,Vector3.UP,true).scaled(Vector3.ONE*world_scale),Vector3(mid.x,0,mid.z))
 		var sled_a: Node3D = node.find_child(car.front,true,false)
 		var sled_b: Node3D = node.find_child(car.rear,true,false)
-		if sled_a: sled_a.global_transform = Transform3D(Basis.looking_at(_flat(front[1]),Vector3.UP,true).scaled(Vector3.ONE*world_scale),Vector3(front[0].x,sled_height*world_scale,front[0].z))
-		if sled_b: sled_b.global_transform = Transform3D(Basis.looking_at(_flat(rear[1]),Vector3.UP,true).scaled(Vector3.ONE*world_scale),Vector3(rear[0].x,sled_height*world_scale,rear[0].z))
+		if sled_a: sled_a.global_transform = Transform3D(Basis.looking_at(_flat(nose_at[1])*turn,Vector3.UP,true).scaled(Vector3.ONE*world_scale),Vector3(nose_at[0].x,sled_height*world_scale,nose_at[0].z))
+		if sled_b: sled_b.global_transform = Transform3D(Basis.looking_at(_flat(tail_at[1])*turn,Vector3.UP,true).scaled(Vector3.ONE*world_scale),Vector3(tail_at[0].x,sled_height*world_scale,tail_at[0].z))
 		var indicator: Node3D = node.find_child("cargo_car_indicator",true,false)
 		if indicator and _indicator_rest.has(node.get_instance_id()):
 			var lit: bool = car.front == "sled_cargo_front" and load > float(cargo_index)/cargo_total+0.001

@@ -1,0 +1,9 @@
+{
+  "test": "Two native 1280 x 900 Godot framebuffers before and after toggling only the front train from enemy red to review-player blue via R",
+  "renderer": "Godot Forward+",
+  "red_pixels_changed_to_blue_on_front_train": 15572,
+  "blue_pixels_sampled_on_rear_train": 18243,
+  "rear_pixels_with_any_channel_difference_over_4_of_255": 0,
+  "rear_largest_channel_difference_of_255": 0,
+  "pass": true
+}
