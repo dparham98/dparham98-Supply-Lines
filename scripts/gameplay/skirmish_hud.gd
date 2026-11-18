@@ -36,7 +36,7 @@ var _tip_since := 0.0
 ## Fixed command slots, row-major in the 4 × 3 grid. Commands that never share a card may share a slot.
 const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 4, "Return": 5, "DropMaterials": 6, "Build": 7,
 	"BurnWood": 4, "BurnCoal": 5, "BurnEither": 6, "MakeCrates": 3, "Worksite": 7,
-	"Repair": 8, "Capture": 9, "DeployTruck": 10, "CancelPlan": 11,
+	"Repair": 8, "Capture": 9, "DeployTruck": 10, "Fell": 10, "CancelPlan": 11,
 	"DeployCargo": 2, "Load": 4, "Unload": 5, "Trips": 6,
 	"PrintTruck": 0, "PrintCargo": 1, "PrintTrain": 2,
 	"PrintInfantry": 0, "ProduceScout": 1, "ProduceGrenadier": 2, "ProduceTank": 3, "ProduceMotorcycle": 4, "ProduceDrone": 5, "ProduceUbermech": 6,
@@ -136,7 +136,7 @@ func _ready() -> void:
 	context.get_node("AssignedSource").item_selected.connect(func(index):
 		if is_instance_valid(shown) and index >= 0 and index < assignment_sources.size():
 			game.notify("Depot assigned." if shown.assign_source(assignment_sources[index]) else "Assignment requires an empty production queue and a friendly covering Depot."))
-	for mode in ["move","attack","gather","repair","capture"]:
+	for mode in ["move","attack","gather","fell","repair","capture"]:
 		card.get_node(mode.capitalize()).pressed.connect(func(): game.pending_unit_command = mode; game.notify("Click a target for %s. Esc cancels." % mode))
 	card.get_node("Stop").pressed.connect(stop_units)
 	card.get_node("Return").pressed.connect(return_units)
@@ -501,6 +501,21 @@ func set_alert_style(button: Button, kind: String) -> void:
 	button.add_theme_color_override("icon_hover_color",style[1])
 func focus_alert(index: int) -> void:
 	if index < feed_points.size(): game.get_node("CameraRig").focus_position(feed_points[index])
+## Command keys pressed with Shift already held (docs/MINIMAP_ORDERS.md). A button's shortcut needs an exact key
+## match, so Shift+A matched nothing and the command never armed: the Shift-clicks meant to queue orders then
+## panned the minimap or boxed a selection. No action is bound to Shift, so a Shift-held key that is some visible,
+## enabled button's shortcut is sent again without Shift. The clicks that follow carry their own Shift and queue.
+func _unhandled_key_input(event: InputEvent) -> void:
+	if not event is InputEventKey or not event.pressed or event.echo or not event.shift_pressed: return
+	if event.keycode == KEY_SHIFT: return
+	var plain: InputEventKey = event.duplicate()
+	plain.shift_pressed = false
+	for button in find_children("*","BaseButton",true,false):
+		if button.shortcut == null or button.disabled or not button.is_visible_in_tree(): continue
+		if button.shortcut.matches_event(plain):
+			get_viewport().set_input_as_handled()
+			get_viewport().push_input(plain)
+			return
 # Shortcuts only fire for visible, enabled buttons.
 func hotkey_text(button: Button) -> String:
 	if button.shortcut == null or button.shortcut.events.is_empty() or not button.shortcut.events[0] is InputEventAction: return ""
@@ -666,6 +681,7 @@ func update_contents() -> void:
 			if node._attack_enabled: show_button("Attack","Attack")
 			if node.can_gather:
 				show_button("Gather","Gather")
+				show_button("Fell","Fell")
 				show_button("Return","Deliver")
 				show_button("DropMaterials","Drop")
 				explain(card.get_node("DropMaterials"),node.cargo <= 0,"Nothing carried to drop.")

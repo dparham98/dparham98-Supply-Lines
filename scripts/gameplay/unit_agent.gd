@@ -146,6 +146,50 @@ func command_gather(node: Node3D) -> void:
 	state = "To "+str(node.resource_kind)
 	if cargo > 0 and cargo_kind != node.resource_kind: _head_home()
 	_work_timer = 0
+## Fell (docs/FELL.md): cut down the trees at a Forest cell and the ones round it, keeping no wood. The worker
+## keeps any load it already carries.
+var _fell_origin := Vector2i(-1,-1)
+func command_fell(node: Node3D) -> void:
+	if not can_gather or is_depot_truck or is_cargo_vehicle or not is_instance_valid(node) or not node.get("cell") is Vector2i: return
+	_stop_route()
+	order = "fell"
+	source = node
+	order_target = node
+	_dig_source = null
+	_fell_origin = node.cell
+	state = "To fell"
+	_work_timer = 0
+## The next Forest cell to fell: the nearest to the worker within fell_radius_cells of the clicked cell, or null.
+func _next_fell() -> Node3D:
+	var reach: int = ground.harvesting_rules.fell_radius_cells
+	var best: Node3D
+	var best_distance := INF
+	for z in range(_fell_origin.y-reach,_fell_origin.y+reach+1):
+		for x in range(_fell_origin.x-reach,_fell_origin.x+reach+1):
+			var cell := Vector2i(x,z)
+			if _fell_origin.distance_squared_to(cell) > reach*reach or ground.forest_amount(cell) <= 0: continue
+			var d := global_position.distance_squared_to(ground.tile_to_world(cell))
+			if d < best_distance: best_distance = d; best = ground.forest_source(cell)
+	return best
+func _fell(delta: float) -> void:
+	if not is_instance_valid(source) or source.remaining <= 0:
+		source = _next_fell()
+		order_target = source
+		if source == null: order = "idle"; state = "Felled"; return
+	if global_position.distance_to(source.global_position) > interaction_range:
+		if _retry <= 0:
+			state = "To fell"
+			if not _route_to_interaction(source,interaction_range):
+				# A tree with no way to it is skipped for now: the next one may open the way.
+				state = "Trees unreachable"; order = "idle"
+		return
+	state = "Felling"
+	_face(source.global_position)
+	_work_timer += delta
+	if _work_timer >= harvest_interval:
+		_work_timer = 0
+		# The wood is left where it falls.
+		source.extract(harvest_amount,team)
 ## `forced`: the player's explicit Attack command, which may target friendly units and buildings.
 func command_attack(node: Node3D, forced := false) -> void:
 	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or not CombatResolver.can_attack(self,node,forced): return
@@ -211,7 +255,7 @@ func _animate(delta: float = 1.0/60) -> void:
 	var value := 0.0
 	if _animated_from != Vector3.INF and here != _animated_from: kind = &"run"; value = move_speed
 	elif _aimed_frame == Engine.get_process_frames(): kind = &"aim"
-	elif state == "Gathering" or state.begins_with("Constructing"): kind = &"work"; value = harvest_interval
+	elif state in ["Gathering","Felling"] or state.begins_with("Constructing"): kind = &"work"; value = harvest_interval
 	elif state.begins_with("Repairing"): kind = &"work"; value = engineering_rules.repair_interval if engineering_rules else 0.0
 	model.set_motion(kind,value)
 	if kind == &"work" and _work_timer == 0.0 and model.has_method("sync_work"): model.sync_work()
@@ -272,6 +316,7 @@ func _order_process(delta: float) -> void:
 			elif _retry <= 0:
 				if not _route_to_point(move_goal): state = "No route"; order = "idle"
 		"gather": _gather(delta)
+		"fell": _fell(delta)
 		"return": _return_cargo()
 		"attack": _attack_order()
 		"repair": _repair(delta)
@@ -295,6 +340,7 @@ func run_order(entry: Dictionary) -> void:
 		"move": command_move(entry.point)
 		"attack": command_attack(entry.target,entry.get("forced",false))
 		"gather": command_gather(entry.target)
+		"fell": command_fell(entry.target)
 		"return": command_return(entry.get("target"))
 		"repair": command_repair(entry.target)
 		"capture": command_capture(entry.target)
@@ -309,7 +355,7 @@ func _start_next_order() -> void:
 	# Skip entries whose target is gone or that the unit refuses, such as an unreachable attack.
 	while order == "idle" and not order_queue.is_empty():
 		var entry: Dictionary = order_queue.pop_front()
-		if entry.kind in ["attack","gather","repair","capture","construct","fetch","load","unload"] and not is_instance_valid(entry.get("target")) and not (entry.kind in ["load","unload"] and entry.get("point") != null): continue
+		if entry.kind in ["attack","gather","fell","repair","capture","construct","fetch","load","unload"] and not is_instance_valid(entry.get("target")) and not (entry.kind in ["load","unload"] and entry.get("point") != null): continue
 		run_order(entry)
 func order_point(entry: Dictionary) -> Variant:
 	if entry.kind in ["move","attack_move","deploy"]: return entry.point

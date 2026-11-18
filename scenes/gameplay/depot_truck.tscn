@@ -20,7 +20,7 @@ fuel_rules = ExtResource("fuel")
 is_depot_truck = true
 deployment_rules = ExtResource("stats")
 max_health = 80
-move_speed = 3.0
+move_speed = 6.0
 turn_rate = 120.0
 attack_damage = 0
 

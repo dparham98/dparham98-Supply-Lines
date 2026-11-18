@@ -394,6 +394,12 @@ func issue_card_order(screen, queued := false) -> void:
 					target = ground.coal_mine_at(cell)
 					if target == null: notify("Build a Mine on this coal seam before gathering coal."); return
 				else: target = ground.coal_source(cell) if ground.get_terrain(cell) == 6 else ground.forest_source(cell)
+	elif pending_unit_command == "fell":
+		# Fell takes a Forest cell (docs/FELL.md).
+		var point = ground_at(screen)
+		var cell = ground.get_tile_at_position(point) if point != null else null
+		if cell == null or ground.forest_amount(cell) <= 0: notify("Click a forest to fell."); return
+		target = ground.forest_source(cell)
 	elif pending_unit_command == "repair": target = pick_target(screen,"selectable_buildings",50)
 	elif pending_unit_command == "capture": target = pick_target(screen,"capturable_buildings",50)
 	elif pending_unit_command in ["load","unload"]:
