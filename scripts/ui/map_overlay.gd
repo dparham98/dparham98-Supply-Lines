@@ -183,6 +183,30 @@ func _on_order(kind: String, point: Vector3, target: Node3D, queued: bool) -> vo
 	for ping in pings:
 		if ping.frame == frame and ping.kind == kind and ping.queued == queued and ping.point.distance_to(point) < 0.5: return
 	pings.append({kind = kind, point = point, target = target, queued = queued, time = msec/1000.0, msec = msec, frame = frame})
+## Coal fields (docs/COAL_LOOK.md): a ring on the ground round each field with coal left, drawn over the trees,
+## this many metres outside its outermost cell.
+const COAL_RING_MARGIN := 1.5
+const COAL_RING_COLOR := Color(0.788,0.541,0.29,0.85)
+var _coal_rings: Array[Dictionary] = []
+func coal_rings() -> Array[Dictionary]:
+	if _coal_rings.is_empty() and game != null and game.ground != null:
+		for field in game.ground.coal_fields:
+			var radius := 0.0
+			for cell in field.cells: radius = maxf(radius,game.ground.tile_to_world(cell).distance_to(field.center))
+			_coal_rings.append({"field": field, "center": field.center, "radius": radius+COAL_RING_MARGIN})
+	return _coal_rings.filter(func(ring): return game.ground.coal_field_remaining(ring.field) > 0)
+func draw_coal_rings(camera: Camera3D) -> void:
+	for ring in coal_rings():
+		var points := PackedVector2Array()
+		for i in range(49):
+			var at: Vector3 = ring.center+Vector3(cos(i*TAU/48),0,sin(i*TAU/48))*ring.radius
+			if camera.is_position_behind(at):
+				points.clear()
+				break
+			points.append(camera.unproject_position(at))
+		if points.is_empty(): continue
+		draw_polyline(points,Color(0.08,0.06,0.05,0.6),4,true)
+		draw_polyline(points,COAL_RING_COLOR,2,true)
 # Unfilled ellipse outline (CanvasItem.draw_ellipse with filled off).
 func draw_ring(center: Vector2, radius: Vector2, color: Color, width: float) -> void:
 	draw_ellipse(center,radius.x,radius.y,color,false,width,true)
@@ -204,6 +228,7 @@ func _draw() -> void:
 	var camera := get_viewport().get_camera_3d()
 	if camera == null or game == null: return
 	var font := get_theme_default_font()
+	draw_coal_rings(camera)
 	for plan in get_tree().get_nodes_in_group("construction_plans"):
 		var corners := plan_outline(plan,camera)
 		var ready: bool = plan.kind != &"rail" and plan.materials_covered()

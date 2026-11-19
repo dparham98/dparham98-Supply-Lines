@@ -47,6 +47,8 @@ func run() -> void:
 	if not check(not game.get_node("Terrain").has_node("Landmarks/CoalDeposits"),"Coal should lie in the ground, with no lumps on it"): return
 	# The forest tiles read the match's clearing mask, so their leaves thin over coal (docs/COAL_LOOK.md).
 	var batch: MultiMeshInstance3D = game.get_node("Terrain/Landmarks/Forests").get_child(0)
+	var rings: Array = game.get_node("Interface/MapOverlay").coal_rings()
+	if not check(rings.size() == 17 and rings.all(func(ring): return ring.radius > 2.0),"Every coal field should have a ring round it: %d" % rings.size()): return
 	if not check(batch.material_override is ShaderMaterial and batch.material_override.get_shader_parameter("cleared_cells") == ground.material_override.get_shader_parameter("cleared_cells"),"The forest tiles do not read the clearing mask"): return
 	for name in ["IronMine","IronMineB"]:
 		var mine = game.get_node("Entities/Buildings/"+name)
