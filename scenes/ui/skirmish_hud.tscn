@@ -19,6 +19,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_attack.png" id="card_attack"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_gather.png" id="card_gather"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_fell.png" id="card_fell"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_derail.png" id="card_derail"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_deliver.png" id="card_deliver"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_drop.png" id="card_drop"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_repair.png" id="card_repair"]
@@ -317,6 +318,10 @@ events = [SubResource("key_command_gather")]
 action = &"command_fell"
 [sub_resource type="Shortcut" id="shortcut_command_fell"]
 events = [SubResource("key_command_fell")]
+[sub_resource type="InputEventAction" id="key_command_derail"]
+action = &"command_derail"
+[sub_resource type="Shortcut" id="shortcut_command_derail"]
+events = [SubResource("key_command_derail")]
 [sub_resource type="InputEventAction" id="key_command_move"]
 action = &"command_move"
 [sub_resource type="Shortcut" id="shortcut_command_move"]
@@ -2903,6 +2908,31 @@ icon = ExtResource("card_fell")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Fell"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="Derail" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+tooltip_text = "Click a piece of rail. The Derailer drives a spike into it; the next train onto it derails, and the track there is wrecked."
+shortcut = SubResource("shortcut_command_derail")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_derail")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Derail"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0

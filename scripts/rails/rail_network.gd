@@ -197,6 +197,13 @@ func unregister(piece: Node3D, quiet := false) -> void:
 		for cell in piece.cells:
 			if ground.is_tile_in_bounds(cell) and ground.tiles[cell.y*500+cell.x].get("rail") == piece: ground.tiles[cell.y*500+cell.x].erase("rail")
 	if not quiet: _announce()
+## A train derailed on this piece (docs/DERAILER.md): the piece is wrecked and goes, splitting its line. Rebuild it
+## from the track either side.
+func wreck(piece: Node3D) -> void:
+	if not is_instance_valid(piece) or not pieces.has(piece): return
+	game.notify("A train derailed: the track there is wrecked. Rebuild it from the track either side.")
+	unregister(piece)
+	piece.queue_free()
 func _owner_changed() -> void:
 	for piece in pieces:
 		if is_instance_valid(piece): piece.update_color()
