@@ -163,8 +163,9 @@ transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
 transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
 [node name="Status" type="Label3D" parent="RailPreview"]
 billboard = 1
-font_size = 30
-pixel_size = 0.03
+fixed_size = true
+font_size = 36
+pixel_size = 0.0014
 no_depth_test = true
 modulate = Color(0.75,1,0.85,1)
 text = "RAIL"
