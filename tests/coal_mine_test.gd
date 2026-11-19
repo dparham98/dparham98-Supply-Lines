@@ -1,7 +1,7 @@
 extends SceneTree
 # Coal mines (docs/COAL_MINES.md): coal lies in the ground and is taken through a mine built on its seam, the old
 # pithead. Checks that a mine fits on a seam and only one to a seam, that it yields the whole seam's coal without
-# opening the ground, that a worker gathers coal from it, and that coal cannot be dug by hand while the rule is on.
+# opening the ground, that a worker gathers coal from it, that one fells its way to a seam behind trees, and that coal cannot be dug by hand while the rule is on.
 func _initialize() -> void: call_deferred("run")
 func check(value: bool, message: String) -> bool:
 	if value: return true
@@ -46,16 +46,16 @@ func run() -> void:
 	if not check(mine.extract(30,"player") == 30 and mine.extract(30,"enemy") == 30 and mine.reserves() == whole-60,"The coal mine is not shared or loses coal"): return
 	for cell in seam.cells:
 		if not check(ground.get_terrain(cell) == ground.Terrain.COAL and not ground.cleared_coal.has(cell),"Mining opened the ground at %s" % cell): return
-	# A worker sent to the mine behind uncut trees fells a lane to it and brings coal home.
+	# A worker sent to the starter mine brings coal home. Its seam is screened by two trees, but a mine is worked from
+	# a few metres away, so on Two Lakes it is reached from open ground (docs/TWO_LAKES_MAP.md).
 	var worker = game.get_node("Entities/Units/Infantry")
 	var before: int = depot.coal
-	var felled_before: int = ground.cleared_forest.size()
 	worker.command_gather(mine)
 	for i in range(60*240):
 		worker._process(1.0/60)
 		mine._process(1.0/60)
 		if depot.coal > before: break
-	if not check(depot.coal > before and worker.cargo_kind == &"coal" and ground.cleared_forest.size() > felled_before,"The worker did not cut its way to the coal mine and bring coal (state '%s')" % worker.state): return
+	if not check(depot.coal > before and worker.cargo_kind == &"coal","The worker did not bring coal from the starter mine (state '%s')" % worker.state): return
 	# Emptied, the mine is worked out and the seam is still ground nobody walks on.
 	mine.extract(mine.reserves()+10,"player")
 	if not check(mine.reserves() == 0 and mine.extract(5,"player") == 0 and ground.get_terrain(seam.cells[0]) == ground.Terrain.COAL,"An emptied seam should stay as it is"): return
@@ -77,12 +77,13 @@ func run() -> void:
 	worker.command_move(worker.global_position)
 	worker.cargo = 10
 	worker.cargo_kind = &"iron"
+	var felled_before: int = ground.cleared_forest.size()
 	worker.command_construct(plan)
 	for i in range(60*300):
 		worker._process(1.0/60)
 		plan._process(1.0/60)
 		if ground.coal_mine_at(other.cells[0]) != null: break
-	if not check(ground.coal_mine_at(other.cells[0]) != null and game.get_node("Interface").object_name(ground.coal_mine_at(other.cells[0])) == "Coal Mine" and worker.cargo == 0 and depot.energy == 0,"The 0 E / 25 I coal mine plan did not build behind trees (state '%s')" % worker.state): return
+	if not check(ground.coal_mine_at(other.cells[0]) != null and game.get_node("Interface").object_name(ground.coal_mine_at(other.cells[0])) == "Coal Mine" and worker.cargo == 0 and depot.energy == 0 and ground.cleared_forest.size() > felled_before,"The 0 E / 25 I coal mine plan was not built by cutting a way in behind the trees (state '%s')" % worker.state): return
 	# By hand: the old rule still works when it is switched back on.
 	ground.harvesting_rules.coal_needs_mine = false
 	if not check(ground.harvest_coal(other.cells[0],10) == 10,"Digging by hand should still work with the rule off"): return

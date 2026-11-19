@@ -58,9 +58,18 @@ func run() -> void:
 	if not check(depot.global_position.distance_to(home.global_position) < 32.0,"The home mine is not beside the start"): return
 	# Coal: seventeen fields (six starter, six by the home lakes, two in the passes, two inside the mouths and the mother seam); the mother seam in the middle is the largest.
 	if not check(ground.coal_fields.size() == 17,"Expected seventeen coal fields: %d" % ground.coal_fields.size()): return
+	var starter := {}
 	var largest := {}
 	for field in ground.coal_fields:
+		if starter.is_empty() or field.center.distance_to(depot.global_position) < starter.center.distance_to(depot.global_position): starter = field
 		if largest.is_empty() or field.cells.size() > largest.cells.size(): largest = field
+	# The starter seam lies inside the starting Depot's range, behind a screen of trees: no seam cell touches open ground.
+	if not check(starter.center.distance_to(depot.global_position) <= 22.0,"The starter coal should lie inside the starting Depot's range: %.1f m" % starter.center.distance_to(depot.global_position)): return
+	for cell in starter.cells:
+		for dz in range(-1,2):
+			for dx in range(-1,2):
+				var next: Vector2i = cell+Vector2i(dx,dz)
+				if not check(ground.get_terrain(next) in [ground.Terrain.FOREST,ground.Terrain.COAL],"The starter coal should stand behind trees: %s is open" % next): return
 	if not check(largest.cells.size() >= 110 and largest.center.distance_to(Vector3(0,0,19)) < 12.0,"The mother seam should be the largest field, at the middle: %d cells at %s" % [largest.cells.size(),largest.center]): return
 	# Sunk water is in the saved scenery.
 	if not check(game.find_child("Bed",true,false) != null and game.find_child("Surface",true,false) != null,"The lakes are not sunk"): return
