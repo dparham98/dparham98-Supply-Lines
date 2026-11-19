@@ -316,6 +316,16 @@ func set_icon(id: String) -> void:
 	if id.is_empty(): info.get_node("Head/Icon").texture = null; return
 	if not _icons.has(id): _icons[id] = load("res://assets/ui/icons/%s.svg" % id)
 	info.get_node("Head/Icon").texture = _icons[id]
+## The shown unit's painted portrait in the Ornament frame, where it has one in assets/ui/portraits
+## (docs/UNIT_PORTRAITS.md); the frame's emblem otherwise.
+func update_portrait(node) -> void:
+	var frame: TextureRect = $Bottom/Body/Row/Ornament/Portrait
+	var path := ""
+	if is_instance_valid(node) and node.is_in_group("units"): path = "res://assets/ui/portraits/%s.png" % icon_name(node)
+	if path.is_empty() or not ResourceLoader.exists(path): frame.visible = false; return
+	if not _icons.has(path): _icons[path] = load(path)
+	frame.texture = _icons[path]
+	frame.visible = true
 func icon_name(node: Node) -> String:
 	if node.is_in_group("depots"): return "depot"
 	if node.is_in_group("mines"): return "mine"
@@ -553,6 +563,7 @@ func update_contents() -> void:
 	info.get_node("Warning").visible = false
 	state_label.text = ""
 	set_icon("")
+	update_portrait(node)
 	hint_text = ""
 	var show_build := global_build_open
 	build_menu.visible = show_build
