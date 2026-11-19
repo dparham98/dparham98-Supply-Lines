@@ -136,7 +136,7 @@ func run() -> void:
 	right.button_index = MOUSE_BUTTON_RIGHT; right.pressed = true
 	button.gui_input.emit(right)
 	if not check(worker.fell_autocast and button.get_node("Auto").visible,"A right-click on the Fell card should switch autocast on"): return
-	rules.fell_radius_cells = 2
+	rules.autocast_fell_radius_cells = 2
 	var spot: Vector2i = ground.get_tile_at_position(worker.global_position)
 	var standing := patch(spot,2)
 	var beyond := patch(spot,5)-standing
@@ -154,6 +154,6 @@ func run() -> void:
 	step([worker],20.0,func(): return worker.order == "idle")
 	step([worker],3.0,func(): return false)
 	if not check(worker.order == "idle","With autocast off the worker should not fell"): return
-	rules.fell_radius_cells = 4
+	rules.autocast_fell_radius_cells = 4
 	print("RALLY_AUTOFELL_TEST_PASSED")
 	quit(0)

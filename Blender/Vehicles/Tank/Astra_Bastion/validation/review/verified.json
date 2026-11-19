@@ -1,0 +1,26 @@
+{
+  "camera": {
+    "game_distance_m": 110,
+    "game_pitch_deg": 50,
+    "game_span_m": 72.0,
+    "game_yaw_deg": 0
+  },
+  "frames": [
+    "front",
+    "side",
+    "rear",
+    "teams",
+    "original",
+    "gameplay"
+  ],
+  "paint": {
+    "blue_restored": true,
+    "changed_team_surfaces": 6,
+    "other_surfaces_unchanged": 117,
+    "red_instance_unchanged_after_blue_repaint": true
+  },
+  "renderer": "forward_plus",
+  "version": "4.7.2-stable (official)",
+  "project_zip_sha256": "453f877b7fda9211334985946cee0570a58660477653b525edfc65a51531883d",
+  "prototype_glb_sha256": "38f43fdfe9d072dd5ef12a294139fb2655bbfcefd4bf14f7d757e0643dba9382"
+}

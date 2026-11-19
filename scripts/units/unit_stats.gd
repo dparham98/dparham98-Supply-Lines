@@ -10,6 +10,8 @@ extends Resource
 @export_range(1, 3600, 1) var turn_rate: float = 360.0
 ## -1 means unspecified (Drone).
 @export var attack_range: float = -1.0
+## The main weapon cannot fire at anything nearer than this; 0 is no minimum (the Tank, docs/BASTION_TANK.md).
+@export_range(0, 1000, 0.1) var min_attack_range: float = 0.0
 ## Set both only after interpreting/confirming the original notation.
 @export var damage: int = -1
 @export var attack_interval: float = -1.0
@@ -43,6 +45,7 @@ func validation_errors() -> PackedStringArray:
 	if attack_interval <= 0 and attack_interval != -1: errors.append("Interval must be positive or -1")
 	if (damage == -1) != (attack_interval == -1): errors.append("Resolve damage and interval together")
 	if splash_radius < 0: errors.append("Splash radius cannot be negative")
+	if min_attack_range < 0 or (min_attack_range > 0 and min_attack_range >= attack_range): errors.append("Minimum range must be below the range")
 	if (heavy_target_damage == -1) != (heavy_target_interval == -1): errors.append("Resolve heavy damage and interval together")
 	if heavy_target_damage < -1 or (heavy_target_interval <= 0 and heavy_target_interval != -1): errors.append("Invalid heavy attack")
 	if mobility != null and mobility.clears_forest and mobility.layer != MobilityRules.Layer.FOREST: errors.append("Forest clearing requires forest mobility")

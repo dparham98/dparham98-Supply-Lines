@@ -160,7 +160,7 @@ func _ready() -> void:
 	for id in ["scout","grenadier","tank","motorcycle","drone","ubermech"]:
 		card.get_node("Produce"+id.capitalize()).pressed.connect(func():
 			if is_instance_valid(shown) and shown.is_in_group("production_buildings"): shown.request_unit(StringName(id)))
-	for pair in [["Depot",&"depot"],["Generator",&"generator"],["Barracks",&"barracks"],["TankFactory",&"tank_factory"],["Mine",&"iron_mine"],["Rail",&"rail"]]:
+	for pair in [["Depot",&"depot"],["Generator",&"generator"],["Barracks",&"barracks"],["TankFactory",&"tank_factory"],["Mine",&"iron_mine"],["CoalMine",&"coal_mine"],["Rail",&"rail"]]:
 		build_menu.get_node("Actions/"+pair[0]).pressed.connect(begin_global_placement.bind(pair[1]))
 	build_menu.get_node("Actions/Pin").pressed.connect(toggle_pin)
 	card.get_node("DeployTruck").pressed.connect(func(): game.pending_unit_command = "deploy"; game.notify("Click a site for the Depot. Only an empty Depot footprint is accepted; Shift queues."))
@@ -188,7 +188,7 @@ func selected_cargo() -> Node3D:
 	var node = selected_object()
 	return node if is_instance_valid(node) and node.is_in_group("units") and node.is_cargo_vehicle else null
 func object_name(node: Node3D) -> String:
-	if node.is_in_group("mines"): return "Iron Mine"
+	if node.is_in_group("mines"): return "Coal Mine" if node.get("on_coal") == true else "Iron Mine"
 	if node.is_in_group("production_buildings"): return node.stats.display_name
 	if node.is_in_group("depots"): return "Depot" if node.name == "Depot" else "%s · Depot" % node.name
 	if node.is_in_group("energy_generators"): return "%s · Generator" % node.name
@@ -207,6 +207,10 @@ func _process(_delta: float) -> void:
 	var manager = get_node("/root/SelectionManager")
 	$SelectionBox.visible = manager.selecting and manager.drag_distance >= 6.0
 	var rect := Rect2(manager.start_pos,manager.end_pos-manager.start_pos).abs()
+	# A Fell box (docs/FELL.md) shows in the same outline.
+	if game.fell_dragging and game.fell_drag_from.distance_to(game.fell_drag_to) >= game.FELL_DRAG:
+		$SelectionBox.visible = true
+		rect = Rect2(game.fell_drag_from,game.fell_drag_to-game.fell_drag_from).abs()
 	$SelectionBox.position = rect.position
 	$SelectionBox.size = rect.size
 	desired_buttons.clear()
@@ -423,7 +427,7 @@ func update_unit_sections(node: Node3D) -> void:
 	if node.is_cargo_vehicle or node.is_depot_truck:
 		abilities.append("Non-combat vehicle")
 	elif node._attack_enabled:
-		pairs.insert(1,["Range","%.1f" % node.attack_range])
+		pairs.insert(1,["Range","%.0f–%.0f" % [node.min_attack_range,node.attack_range] if node.min_attack_range > 0 else "%.1f" % node.attack_range])
 		pairs.insert(2,["Damage","%d / %.1fs" % [node.attack_damage,node.shot_interval]])
 		if node.unit_stats != null:
 			var stats: UnitStats = node.unit_stats
@@ -432,6 +436,10 @@ func update_unit_sections(node: Node3D) -> void:
 				pairs.append(["Splash","%.1f" % stats.splash_radius])
 			if stats.fire_while_moving: abilities.append("Fires while moving")
 			if not stats.has_resolved_attack(): abilities.append("Fallback attack stats")
+		var roof: Node = node.get_node_or_null("CloseDefense")
+		if roof != null:
+			# The stat grid is full on a Tank, so the roof gun goes on the abilities line.
+			abilities.insert(0,"Roof gun %d / %.2fs at units within %.0f" % [roof.damage,roof.shot_interval,roof.attack_range])
 	else: abilities.append("Attack unavailable · unresolved stats")
 	if node.mobility_layer() == MobilityRules.Layer.AIR: abilities.append("Flies on a separate air layer")
 	elif node.unit_stats != null and node.unit_stats.mobility != null and node.unit_stats.mobility.clears_forest: abilities.append("Clears forest")
@@ -964,7 +972,7 @@ func refresh_global_menu() -> void:
 	if worksite_open:
 		build_menu.get_node("Bank").text = "DELIVERS: EXACT MATERIALS"
 		build_menu.get_node("Bank").tooltip_text = "The selected trucks load exactly what the building needs and unload it on the footprint. A covering stockpile pays the energy as Infantry build."
-		for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"iron_mine","Mine"]]:
+		for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"]]:
 			var spec: Dictionary = network.plan_spec(pair[0])
 			var button: Button = build_menu.get_node("Actions/"+pair[1])
 			button.disabled = false
@@ -977,7 +985,7 @@ func refresh_global_menu() -> void:
 	build_menu.get_node("Bank").tooltip_text = "One covering Depot or deployed Cargo truck pays each plan's energy as Infantry build it. Iron must be delivered to the footprint first. Rails pay fully from Depots. No pooled resources."
 	set_card(build_menu.get_node("Actions/Pin"),"unpin_payer" if global_pinned else "pin_payer")
 	set_tile(build_menu.get_node("Actions/Pin"),"Unpin payer (back to Auto)" if global_pinned else "Pin payer","New plans pay from the nearest covering stockpile that can pay." if global_pinned else "Pick one Depot or deployed Cargo truck on the map or minimap; new plans pay only from it.")
-	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"iron_mine","Mine"],[&"rail","Rail"]]:
+	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"],[&"rail","Rail"]]:
 		var spec: Dictionary = network.plan_spec(pair[0])
 		var button: Button = build_menu.get_node("Actions/"+pair[1])
 		button.disabled = false
