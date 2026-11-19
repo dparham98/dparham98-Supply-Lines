@@ -290,6 +290,13 @@ func give_order(unit: Node3D, entry: Dictionary, queued: bool) -> void:
 	else:
 		unit.order_queue.clear()
 		unit.run_order(entry)
+func _coal_plan_at(cell: Vector2i) -> Node3D:
+	var field: Dictionary = ground.coal_field_at(cell)
+	if field.is_empty(): return null
+	for plan in get_tree().get_nodes_in_group("construction_plans"):
+		if not is_instance_valid(plan) or plan.finished or plan.kind != &"iron_mine": continue
+		if field.get("cells",[]).has(plan.start): return plan
+	return null
 func issue_order(screen, queued := false) -> void:
 	# From the minimap a click lands near markers rather than on them, so the orders that only make sense
 	# when aimed at a model are left out (docs/MINIMAP_ORDERS.md).
@@ -304,6 +311,10 @@ func issue_order(screen, queued := false) -> void:
 	if is_instance_valid(plan) and (plan.finished or plan.kind == &"rail"): plan = null
 	var crate := pick_crate(screen)
 	var point = ground_at(screen)
+	if plan == null and point != null:
+		var coal_cell = ground.get_tile_at_position(point)
+		if coal_cell != null and ground.get_terrain(coal_cell) == 6 and ground.harvesting_rules.coal_needs_mine:
+			plan = _coal_plan_at(coal_cell)
 	var selected := 0
 	var forest_ordered := false
 	var coal_ordered: Node3D
@@ -396,9 +407,26 @@ func issue_card_order(screen, queued := false) -> void:
 					if target == null: notify("Build a Mine on this coal seam before gathering coal."); return
 				else: target = ground.coal_source(cell) if ground.get_terrain(cell) == 6 else ground.forest_source(cell)
 	elif pending_unit_command == "fell":
-		# Fell takes a Forest cell (docs/FELL.md).
+		# Fell takes a Forest cell, or an enclosed Coal cell (docs/FELL.md).
 		var point = ground_at(screen)
 		var cell = ground.get_tile_at_position(point) if point != null else null
+		if cell != null and ground.get_terrain(cell) == 6:
+			var coal_approach := preload("res://scripts/terrain/coal_approach.gd")
+			var from_cell = null
+			for unit in get_tree().get_nodes_in_group("units"):
+				if unit.team == "player" and unit.is_selected and unit.can_gather:
+					from_cell = ground.get_tile_at_position(unit.global_position)
+					if from_cell != null:
+						var way: Dictionary = coal_approach.way_to_seam(ground,from_cell,cell,unit.mobility_layer(),unit._owner_key())
+						var fell: Array = way.get("fell",[])
+						if not fell.is_empty(): cell = fell.back(); break
+			if from_cell == null and is_instance_valid(depot):
+				var depot_cell = ground.get_tile_at_position(depot.global_position)
+				var fallback: Vector2i = ground.nearest_actor_cell(depot_cell,MobilityRules.Layer.GROUND) if depot_cell != null else Vector2i(-1,-1)
+				if fallback.x >= 0:
+					var way: Dictionary = coal_approach.way_to_seam(ground,fallback,cell,MobilityRules.Layer.GROUND,"")
+					var fell: Array = way.get("fell",[])
+					if not fell.is_empty(): cell = fell.back()
 		if cell == null or ground.forest_amount(cell) <= 0: notify("Click a forest to fell."); return
 		target = ground.forest_source(cell)
 	elif pending_unit_command == "repair": target = pick_target(screen,"selectable_buildings",50)

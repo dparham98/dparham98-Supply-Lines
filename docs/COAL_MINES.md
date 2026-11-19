@@ -6,13 +6,13 @@ No coal seam has a mine at the start of a game. Iron is different: on Two Lakes 
 
 ## Rules
 
-- **Building.** Build, then Mine, and place it on Coal cells. It takes the mine's ordinary 2 x 2 footprint, all of it on coal, inside the paying stockpile's range, for the mine's ordinary cost. The same button builds an Iron Mine on a mine site or an ore field; what is under it decides (`DepotNetwork.mine_spot`, `mine_scene_for`, `TerrainGrid.ore_footprint_valid`).
+- **Building.** Build, then Mine, and place it on Coal cells. It takes the mine's ordinary 2 x 2 footprint, all of it on coal, and costs **0 energy / 25 iron** (`EngineeringRules.mine_energy_cost`, `mine_iron_cost`). Because a queued mine plan needs no energy, it needs no covering Depot range: any truck or Infantry carrying 25 iron to the footprint can establish a mine on a distant seam. The same button builds an Iron Mine on a mine site or an ore field; what is under it decides (`DepotNetwork.mine_spot`, `mine_scene_for`, `TerrainGrid.ore_footprint_valid`).
 - **One mine to a seam.** A seam that has a mine takes no second one (`TerrainGrid.coal_mine_at`).
 - **It yields the whole seam.** The mine's reserve is everything left in the connected field of Coal cells it stands on, not just the cells under it (`TerrainGrid.mine_coal`, `coal_field_remaining`).
 - **Shared.** Like every mine, any side's Infantry can gather from it and repair it.
 - **The ground stays.** Mining does not dig cells out. A seam stays ground that nothing walks or builds on, also when it is empty; the mine then shows its worked-out state.
-- **Gathering.** Right-click the mine, or right-click any cell of its seam. A right-click on a seam with no mine says "Build a Mine on this coal seam before gathering coal."
-- **Trees.** Seams lie inside forest. Nothing fells a way to a mine for the worker, as the old digging order did: the trees between the stockpile and the seam have to be felled first.
+- **Gathering.** Right-click the mine, or right-click any cell of its seam. A right-click on a seam with an unfinished Mine plan orders selected trucks to fetch iron and Infantry to construct it; on a seam with no mine or plan it says "Build a Mine on this coal seam before gathering coal."
+- **Trees.** Seams lie inside forest. Workers ordered to construct a mine plan or gather from a built coal mine behind uncut trees automatically fell the shortest lane of trees in their way (leaving the wood where it falls and keeping any carried iron), or the player can open a lane first with Fell (`docs/FELL.md`).
 
 ## The old rule
 

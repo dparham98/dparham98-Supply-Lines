@@ -72,8 +72,12 @@ var source: Node3D:
 	set(value):
 		source = value
 		_dig_source = null
+		_coal_mine_standing = false
 ## The coal a worker goes back to once the tree in its way is felled (see _cut_way_in).
 var _dig_source: Node3D
+var _coal_mine_standing := false
+var _site_tree_blocked := false
+var _site_tree_checked: Node3D
 var move_goal := Vector3.ZERO
 var _route: Array[Vector2i] = []
 var _claimed: Array[Vector2i] = []
@@ -155,24 +159,36 @@ func command_fell(node: Node3D) -> void:
 	if not can_gather or is_depot_truck or is_cargo_vehicle or not is_instance_valid(node) or not node.get("cell") is Vector2i: return
 	_stop_route()
 	order = "fell"
-	source = node
-	order_target = node
 	_dig_source = null
 	_fell_origin = node.cell
+	source = _next_fell()
+	if source == null: source = node
+	order_target = source
 	state = "To fell"
 	_work_timer = 0
-## The next Forest cell to fell: the nearest to the worker within fell_radius_cells of the clicked cell, or null.
+## The next Forest cell to fell: the clicked cell first, then the nearest within fell_radius_cells, cutting a
+## lane from open ground when trees stand in the way (docs/FELL.md).
 func _next_fell() -> Node3D:
-	var reach: int = ground.harvesting_rules.fell_radius_cells
-	var best: Node3D
-	var best_distance := INF
-	for z in range(_fell_origin.y-reach,_fell_origin.y+reach+1):
-		for x in range(_fell_origin.x-reach,_fell_origin.x+reach+1):
-			var cell := Vector2i(x,z)
-			if _fell_origin.distance_squared_to(cell) > reach*reach or ground.forest_amount(cell) <= 0: continue
-			var d := global_position.distance_squared_to(ground.tile_to_world(cell))
-			if d < best_distance: best_distance = d; best = ground.forest_source(cell)
-	return best
+	var goal_cell := Vector2i(-1,-1)
+	if ground.forest_amount(_fell_origin) > 0:
+		goal_cell = _fell_origin
+	else:
+		var reach: int = ground.harvesting_rules.fell_radius_cells
+		var best_distance := INF
+		for z in range(_fell_origin.y-reach,_fell_origin.y+reach+1):
+			for x in range(_fell_origin.x-reach,_fell_origin.x+reach+1):
+				var cell := Vector2i(x,z)
+				if _fell_origin.distance_squared_to(cell) > reach*reach or ground.forest_amount(cell) <= 0: continue
+				var d := global_position.distance_squared_to(ground.tile_to_world(cell))
+				if d < best_distance: best_distance = d; goal_cell = cell
+	if goal_cell.x < 0: return null
+	if Approach.touch_path(self,Rect2i(goal_cell,Vector2i.ONE)).is_empty():
+		var here = ground.get_tile_at_position(global_position)
+		if here != null:
+			var way: Dictionary = CoalApproach.way_to_rect(ground,here,Rect2i(goal_cell,Vector2i.ONE),mobility_layer(),_owner_key(),false)
+			var fell: Array = way.get("fell",[])
+			if not fell.is_empty(): return ground.forest_source(fell[0])
+	return ground.forest_source(goal_cell)
 func _fell(delta: float) -> void:
 	if not is_instance_valid(source) or source.remaining <= 0:
 		source = _next_fell()
@@ -402,11 +418,14 @@ func _route_to_standing(target: Node3D, radius: float, keep_off := Rect2i()) -> 
 	path.remove_at(0)
 	_route = path
 	return true
-## To the nearest cell touching a build site's footprint; failing that, anywhere in the old reach of its centre.
+## To the nearest cell touching a build site's footprint; failing that (unless trees block the way), anywhere in
+## the old reach of its centre.
 func _route_to_site(keep_off: Rect2i) -> bool:
 	_retry = 0.5
 	var path: Array[Vector2i] = Approach.touch_path(self,keep_off)
-	if path.is_empty(): return _route_to_standing(order_target,_construct_reach(),keep_off)
+	if path.is_empty():
+		if not _way_to_site(keep_off).is_empty(): return false
+		return _route_to_standing(order_target,_construct_reach(),keep_off)
 	path.remove_at(0)
 	_route = path
 	return true
@@ -557,8 +576,18 @@ func _source_left() -> bool:
 ## Starts a trip home with a load. A worker whose drop-off the player did not choose picks the nearest one
 ## afresh each trip, so moving it to another resource does not leave it walking back to the old stockpile.
 func _head_home() -> void:
+	_coal_mine_standing = false
 	order = "return"
 	if not return_explicit: return_depot = null
+func _mine_rect(target: Node3D) -> Rect2i:
+	var cells: Array = target.get("cells") if target.get("cells") is Array else []
+	if cells.is_empty(): return Rect2i()
+	var low: Vector2i = cells[0]
+	var high: Vector2i = cells[0]
+	for cell in cells:
+		low = Vector2i(mini(low.x,cell.x),mini(low.y,cell.y))
+		high = Vector2i(maxi(high.x,cell.x),maxi(high.y,cell.y))
+	return Rect2i(low,high-low+Vector2i.ONE)
 func _gather(delta: float) -> void:
 	_source_left()
 	if not is_instance_valid(source) or source.remaining <= 0:
@@ -569,29 +598,84 @@ func _gather(delta: float) -> void:
 		if cargo > 0: _head_home()
 		else: order = "idle"; state = "A working mine is required before extracting iron"
 		return
-	if cargo == 0: cargo_kind = source.resource_kind
-	if cargo_kind != source.resource_kind or cargo >= carry_capacity:
-		_head_home()
-		return
-	if global_position.distance_to(source.global_position) > interaction_range:
+	var felling_for_mine := is_instance_valid(_dig_source) and _dig_source.is_in_group("mines")
+	if not felling_for_mine:
+		if cargo == 0: cargo_kind = source.resource_kind
+		if cargo_kind != source.resource_kind or cargo >= carry_capacity:
+			_head_home()
+			return
+	var coal_mine: bool = is_instance_valid(source) and source.is_in_group("mines") and bool(source.get("on_coal"))
+	var mine_rect := _mine_rect(source) if coal_mine else Rect2i()
+	var mine_touching: bool = coal_mine and mine_rect.has_area() and Approach.distance_to_rect(ground,global_position,mine_rect) <= Approach.TOUCH+0.05
+	var need_move: bool = (not mine_touching and not _coal_mine_standing) if coal_mine else (global_position.distance_to(source.global_position) > interaction_range)
+	if need_move:
 		if _retry <= 0:
 			state = "Felling a way to the coal" if is_instance_valid(_dig_source) else "To "+str(source.resource_kind)
-			if not _route_to_interaction(source,interaction_range) and not _cut_way_in(): state = "Coal unreachable" if is_instance_valid(_dig_source) else str(source.resource_kind).capitalize()+" unreachable"
-		return
-	state = "Gathering"
+			var routed := false
+			if coal_mine and mine_rect.has_area():
+				var path: Array[Vector2i] = Approach.touch_path(self,mine_rect)
+				if not path.is_empty():
+					path.remove_at(0)
+					_route = path
+					_retry = 0.5
+					routed = true
+			else:
+				routed = _route_to_interaction(source,interaction_range)
+			if not routed and not _cut_way_in():
+				if coal_mine and _route_to_interaction(source,interaction_range):
+					routed = true
+					if _route.is_empty() and global_position.distance_to(source.global_position) <= interaction_range:
+						_coal_mine_standing = true
+				else:
+					state = "Coal unreachable" if (is_instance_valid(_dig_source) or coal_mine) else str(source.resource_kind).capitalize()+" unreachable"
+		if not _coal_mine_standing: return
+	state = "Felling" if felling_for_mine else "Gathering"
 	_face(source.global_position)
 	_work_timer += delta
 	if _work_timer >= harvest_interval:
 		_work_timer = 0
-		cargo += source.extract(mini(harvest_amount,carry_capacity-cargo),team)
-		# A cell that runs out hands the worker on to the next one (coal, wood) before it walks home part-loaded.
-		if cargo >= carry_capacity or not _source_left(): _head_home()
-## Coal that no open path leads to (docs/BALANCED_MAP.md): the worker fells the tree in its way and then goes
-## back to the coal. One tree at a time, so the way is worked out again as the forest changes. False when
-## there is nothing to cut: the coal is not behind forest, or no way through exists.
+		if felling_for_mine:
+			# Felling a lane to a built coal mine leaves the wood where it falls.
+			source.extract(harvest_amount,team)
+			if not _source_left(): _head_home()
+		else:
+			cargo += source.extract(mini(harvest_amount,carry_capacity-cargo),team)
+			# A cell that runs out hands the worker on to the next one (coal, wood) before it walks home part-loaded.
+			if cargo >= carry_capacity or not _source_left(): _head_home()
+## Coal that no open path leads to (docs/BALANCED_MAP.md, docs/COAL_MINES.md): the worker fells the tree in its way
+## and then goes back to the coal (a Coal cell or a built Coal mine). One tree at a time, so the way is worked out
+## again as the forest changes. False when there is nothing to cut: no forest in the way, or no way through exists.
 func _cut_way_in() -> bool:
 	# While felling, the source is a tree; the way is still worked out to the coal behind it.
 	var goal: Node3D = _dig_source if is_instance_valid(_dig_source) else source
+	if is_instance_valid(goal) and goal.is_in_group("mines") and goal.get("on_coal") == true:
+		var here = ground.get_tile_at_position(global_position)
+		var rect := _mine_rect(goal)
+		if here == null or not rect.has_area(): return false
+		var mine_way: Dictionary = CoalApproach.way_to_rect(ground,here,rect,mobility_layer(),_owner_key(),true)
+		if mine_way.is_empty(): mine_way = CoalApproach.way_to_reach(ground,here,rect,interaction_range,mobility_layer(),_owner_key())
+		if mine_way.is_empty():
+			_retry = 3.0
+			return false
+		var fell: Array = mine_way.get("fell",[])
+		if fell.is_empty():
+			if goal == source: return false
+			source = goal
+			order_target = goal
+			_retry = 0
+			state = "To coal"
+			return true
+		var tree: Node3D = ground.forest_source(fell[0])
+		if tree == null: return false
+		if tree == source:
+			_retry = 3.0
+			return false
+		source = tree
+		order_target = tree
+		_dig_source = goal
+		_retry = 0
+		state = "Felling a way to the coal"
+		return true
 	if not is_instance_valid(goal) or not goal.has_method("field_remaining"): return false
 	var here = ground.get_tile_at_position(global_position)
 	if here == null: return false
@@ -869,26 +953,90 @@ func command_construct(plan: Node3D) -> void:
 	if not can_construct or is_depot_truck or is_cargo_vehicle or not is_instance_valid(plan) or not plan.is_in_group("construction_plans") or plan.finished or plan.kind == &"rail": return
 	_stop_route()
 	source = null
+	_site_tree_blocked = false
+	_site_tree_checked = null
 	order = "construct"
 	order_target = plan
 	_work_timer = 0
 	state = "To build site"
 func _construct_reach() -> float:
 	return order_target.dropoff_range+2.0
+func _way_to_site(keep_off: Rect2i) -> Array[Vector2i]:
+	var here = ground.get_tile_at_position(global_position)
+	if here == null: return []
+	var way: Dictionary = CoalApproach.way_to_rect(ground,here,keep_off,mobility_layer(),_owner_key(),true)
+	if way.is_empty(): way = CoalApproach.way_to_reach(ground,here,keep_off,_construct_reach(),mobility_layer(),_owner_key())
+	var fell: Array[Vector2i] = []
+	for cell in way.get("fell",[]): fell.append(cell)
+	return fell
 func _construct(delta: float) -> void:
 	if not is_instance_valid(order_target) or not order_target.is_in_group("construction_plans") or order_target.finished:
+		source = null
+		_site_tree_blocked = false
+		_site_tree_checked = null
 		order = "idle"; state = "Construction complete" if is_instance_valid(order_target) and order_target.finished else "Build site lost"; return
+	if is_instance_valid(source) and source.remaining <= 0:
+		source = null
+		_site_tree_blocked = false
+		_site_tree_checked = null
+		_retry = 0
 	# Builders stand within reach but off the footprint: one standing on it keeps the site from being clear.
 	var keep_off: Rect2i = order_target.footprint()
 	var here = ground.get_tile_at_position(global_position)
 	var on_site: bool = here != null and keep_off.has_point(here)
+	if not on_site and is_instance_valid(source):
+		if global_position.distance_to(source.global_position) > interaction_range:
+			_work_timer = 0
+			if _retry <= 0:
+				state = "Felling a way to the build site"
+				if not _route_to_interaction(source,interaction_range):
+					source = null
+					_site_tree_checked = null
+					_retry = 1.0
+					state = "Build site unreachable"
+			return
+		if not _route.is_empty() or _moving_to.x >= 0: _stop_route()
+		state = "Felling"
+		_face(source.global_position)
+		_work_timer += delta
+		if _work_timer < harvest_interval: return
+		_work_timer = 0
+		# Wood is left where it falls while clearing a lane to the build site; carried cargo stays aboard.
+		source.extract(harvest_amount,team)
+		if source.remaining <= 0:
+			source = null
+			_site_tree_blocked = false
+			_site_tree_checked = null
+			_retry = 0
+		return
 	# A builder starts as soon as it touches the footprint, from whichever side it comes (docs/BUILDER_TOUCH.md).
-	# One that cannot reach the edge works from anywhere in the old reach, at the end of its walk.
+	# One that cannot reach the edge works from anywhere in the old reach, at the end of its walk, unless trees
+	# block the way (in which case it fells a lane through them first).
 	var touching: bool = not on_site and Approach.distance_to_rect(ground,global_position,keep_off) <= Approach.TOUCH
-	var in_reach: bool = touching or (_route.is_empty() and _moving_to.x < 0 and global_position.distance_to(order_target.global_position) <= _construct_reach())
+	if not on_site and not touching and _site_tree_checked != order_target and _route.is_empty() and _moving_to.x < 0:
+		_site_tree_checked = order_target
+		_site_tree_blocked = Approach.touch_path(self,keep_off).is_empty() and not _way_to_site(keep_off).is_empty()
+	var in_reach: bool = touching or (not _site_tree_blocked and _route.is_empty() and _moving_to.x < 0 and global_position.distance_to(order_target.global_position) <= _construct_reach())
 	if on_site or not in_reach:
 		_work_timer = 0
 		if _retry <= 0:
+			if not on_site:
+				var path: Array[Vector2i] = Approach.touch_path(self,keep_off)
+				if not path.is_empty():
+					_site_tree_blocked = false
+					path.remove_at(0)
+					_route = path
+					_retry = 0.5
+					state = "To build site"
+					return
+				var fell := _way_to_site(keep_off)
+				if not fell.is_empty():
+					_site_tree_blocked = true
+					source = ground.forest_source(fell[0])
+					_retry = 0
+					state = "Felling a way to the build site"
+					return
+				_site_tree_blocked = false
 			state = "Stepping off the build site" if on_site else "To build site"
 			if not _route_to_site(keep_off): state = "No room beside the build site" if on_site else "Build site unreachable"
 		return

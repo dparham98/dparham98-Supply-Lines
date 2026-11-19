@@ -32,7 +32,7 @@ func run() -> void:
 	var depot: Node3D = game.depot
 	depot.set_process(false)
 	var rules = ground.harvesting_rules
-	if not check(rules.fell_radius_cells == 4,"Fell should clear 4 cells round the clicked one"): return
+	if not check(rules.fell_radius_cells == 1,"Fell should clear 1 cell round the clicked one"): return
 	# A forest edge cell near the Depot.
 	var home: Vector2i = ground.get_tile_at_position(depot.global_position)
 	var first := Vector2i(-1,-1)
@@ -76,6 +76,45 @@ func run() -> void:
 	if not check(worker.cargo == 3 and worker.cargo_kind == &"iron" and depot.wood == wood_before,"Felling keeps no wood and leaves the load alone: cargo %d %s, wood %d" % [worker.cargo,worker.cargo_kind,depot.wood-wood_before]): return
 	# Cells beyond the radius still stand.
 	if not check(patch(first,3) == beyond,"Felling should stop at its radius: %d of %d cells beyond it left" % [patch(first,3),beyond]): return
-	rules.fell_radius_cells = 4
+	# Deep forest: clicking a tree enclosed behind other trees cuts a lane from the edge in instead of failing.
+	var deep := Vector2i(-1,-1)
+	for field in ground.coal_fields:
+		var candidate: Vector2i = ground.get_tile_at_position(field.center)
+		for dz in range(-6,7):
+			for dx in range(-6,7):
+				var cell := candidate+Vector2i(dx,dz)
+				if ground.forest_amount(cell) <= 0: continue
+				var surrounded := true
+				for oz in range(-2,3):
+					for ox in range(-2,3):
+						if ground.can_traverse(cell+Vector2i(ox,oz)): surrounded = false
+				if surrounded: deep = cell; break
+			if deep.x >= 0: break
+		if deep.x >= 0: break
+	if not check(deep.x >= 0,"No deep forest cell for lane-felling check"): return
+	var start_cell: Vector2i = ground.nearest_actor_cell(ground.get_tile_at_position(depot.global_position),MobilityRules.Layer.GROUND)
+	for cell in worker._claimed.duplicate(): worker._release(cell)
+	worker.global_position = ground.tile_to_world(start_cell)
+	worker._stop_route()
+	worker._claim(start_cell)
+	game.pending_unit_command = "fell"
+	game.issue_map_order(ground.tile_to_world(deep),1.0,true)
+	if not check(worker.order == "fell" and worker.source.cell != deep,"Felling a deep forest cell should start on the outer lane tree, not '%s'" % worker.state): return
+	if not check(step([worker],300.0,func(): return worker.order != "fell"),"Lane-felling never finished: state '%s'" % worker.state): return
+	if not check(ground.forest_amount(deep) == 0 and worker.state == "Felled" and depot.wood == wood_before,"Deep cell should be felled without carrying wood home"): return
+	# Coal seam: Fell clicked on an enclosed coal seam cuts a lane to touch a 2 x 2 mine spot.
+	var seam := {}
+	for field in ground.coal_fields:
+		var here: Vector2i = ground.get_tile_at_position(worker.global_position)
+		if not preload("res://scripts/terrain/coal_approach.gd").way_to_seam(ground,here,field.cells[0],MobilityRules.Layer.GROUND,worker._owner_key()).get("fell",[]).is_empty():
+			seam = field; break
+	if not check(not seam.is_empty(),"No enclosed coal seam found for Fell check"): return
+	game.pending_unit_command = "fell"
+	game.issue_map_order(seam.center,1.0,true)
+	if not check(worker.order == "fell","Fell on an enclosed coal seam should order the worker: '%s'" % game.message): return
+	if not check(step([worker],300.0,func(): return worker.order != "fell"),"Fell to a coal seam never finished: state '%s'" % worker.state): return
+	var after_here: Vector2i = ground.get_tile_at_position(worker.global_position)
+	if not check(preload("res://scripts/terrain/coal_approach.gd").way_to_seam(ground,after_here,seam.cells[0],MobilityRules.Layer.GROUND,worker._owner_key()).get("fell",[]).is_empty(),"Fell on a coal seam should open a lane to touch a 2 x 2 mine spot"): return
+	rules.fell_radius_cells = 1
 	print("FELL_TEST_PASSED")
 	quit(0)

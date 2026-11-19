@@ -2,15 +2,15 @@
 
 The playtest of 2026-11-17 asked for a way to clear trees with Infantry without carrying the wood home.
 
-- **The command:** Fell (F) on the Infantry card, and on any unit that can gather. Click a Forest cell, on the map or the minimap.
-- **What the workers do:** they cut down the trees on that cell, then the Forest cells within `fell_radius_cells` (4) of it, nearest first. The wood is left where it falls: they carry nothing and never walk to a Depot. They stop with the state "Felled" when no Forest is left in that circle.
-- **Trees they cannot reach:** the worker stops with "Trees unreachable". Felling a nearer cell first may open the way.
+- **The command:** Fell (F) on the Infantry card, and on any unit that can gather. Click a Forest cell—even deep inside a forest—or an enclosed Coal seam, on the map or the minimap.
+- **What the workers do:** when the target lies behind standing trees, they cut the shortest minimum-tree lane from open ground in to that cell (or to touch a 2 x 2 mine spot on a clicked Coal seam), then clear any remaining Forest cells within `fell_radius_cells` (1) of the destination, nearest first. The wood is left where it falls: they carry nothing and never walk to a Depot. They stop with the state "Felled" when the lane and patch are clear.
+- **Trees they cannot reach:** the worker stops with "Trees unreachable".
 - **Queueing:** Shift queues Fell like the other orders.
 - **Not a Forest:** a click elsewhere says "Click a forest to fell." and keeps the command waiting.
 
 ## Provisional
 
-- The 4-cell radius is a first guess.
+- The 1-cell end radius (`fell_radius_cells = 1`) keeps lane cuts narrow while clearing a small pocket at the target.
 - The axe card (`assets/ui/command_cards/sl_fell.png`) is a stand-in drawn in code by a scratch script, not final art.
 
 ## Code and checks
