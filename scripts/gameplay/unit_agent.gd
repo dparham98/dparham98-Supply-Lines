@@ -335,7 +335,7 @@ func _order_process(delta: float) -> void:
 		state = "Attack target lost"
 		_update_display()
 		return
-	if order == "repair" and (not is_instance_valid(order_target) or order_target.health <= 0 or (order_target.team != team and not order_target.is_in_group("mines")) or not SupplySource.available(repair_payer,team)):
+	if order == "repair" and (not EngineeringWork.repairable(order_target,team) or not SupplySource.available(repair_payer,team)):
 		_stop_route()
 		_repair(delta)
 		_update_display()
@@ -972,19 +972,21 @@ func has_ability(ability_id: StringName) -> bool:
 
 
 func command_repair(target: Node3D, payer: Node3D = null) -> void:
-	if not can_repair or engineering_rules == null or not is_instance_valid(target) or not target.is_in_group("selectable_buildings") or (target.team != team and not target.is_in_group("mines")) or target.health <= 0: return
+	if not can_repair or engineering_rules == null or target == self or not EngineeringWork.repairable(target,team): return
 	_stop_route()
 	order_target = target
 	source = null
 	# Without an explicit payer, pay from the nearest stockpile covering this unit, as delivery does.
 	var nearest := SupplySource.candidates(get_tree(),global_position,team)
+	# A vehicle needs a stockpile covering both ends, so take the nearest one that does.
+	if EngineeringWork.is_vehicle(target): nearest.assign(nearest.filter(func(node): return SupplySource.covers(node,target.global_position,team)))
 	repair_payer = payer if is_instance_valid(payer) else (supply_payer if supply_payer_explicit else (nearest[0] if not nearest.is_empty() else EngineeringWork.payer_for(target,team)))
 	_work_timer = 0
 	order = "repair"
 	state = "Repair ordered"
 	game.notify("Repair %s; payer %s only." % [target.name,repair_payer.name if is_instance_valid(repair_payer) else "unavailable"])
 func _repair(delta: float) -> void:
-	if not is_instance_valid(order_target) or not order_target.is_in_group("selectable_buildings") or (order_target.team != team and not order_target.is_in_group("mines")) or order_target.health <= 0:
+	if not EngineeringWork.repairable(order_target,team):
 		order = "idle"; state = "Repair target lost"; return
 	if order_target.health >= order_target.max_health: order = "idle"; state = "Repair complete"; return
 	if not SupplySource.available(repair_payer,team):
