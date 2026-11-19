@@ -31,6 +31,7 @@ var ore: int:
 		if is_instance_valid(depot): depot.iron = value
 var global_plan_kind: StringName = &""
 ## The selected building shows its team marker (docs/TEAM_MARKERS.md).
+const Rally = preload("res://scripts/production/rally.gd")
 var selected_building: Node3D:
 	set(value):
 		_show_team_marker(selected_building,false)
@@ -290,10 +291,31 @@ func give_order(unit: Node3D, entry: Dictionary, queued: bool) -> void:
 	else:
 		unit.order_queue.clear()
 		unit.run_order(entry)
+## Your selected building that takes a rally point, when no units are selected (docs/RALLY_POINTS.md).
+func rally_building() -> Node3D:
+	if not is_instance_valid(selected_building) or selected_building.get("team") != "player" or not "rally_points" in selected_building: return null
+	for unit in get_tree().get_nodes_in_group("units"):
+		if unit.team == "player" and unit.is_selected: return null
+	return selected_building
+## Right-click on the ground or the minimap sets the rally point; on a resource or forest the workers gather
+## there; on the building itself it is cleared. Shift adds a stop.
+func set_rally(screen, queued := false) -> void:
+	var building := rally_building()
+	if not screen is MapPick and pick_target(screen,"selectable_buildings",50) == building:
+		building.rally_points.clear(); notify("Rally point cleared: new units stay by %s." % building.name); return
+	var point = ground_at(screen)
+	var cell = ground.get_tile_at_position(point) if point != null else null
+	if cell == null: notify("Right-click on the map to set a rally point."); return
+	var target: Node3D = pick_target(screen,"resources",48)
+	if target == null and ground.get_terrain(cell) == 3: target = ground.forest_source(cell)
+	Rally.add(building,point,target,queued)
+	order_given.emit("move",point,target,queued)
+	notify("Rally %s: new units %s." % ["stop added" if queued else "point set","gather here (workers) or go here" if target != null else "go here"])
 func issue_order(screen, queued := false) -> void:
 	# From the minimap a click lands near markers rather than on them, so the orders that only make sense
 	# when aimed at a model are left out (docs/MINIMAP_ORDERS.md).
 	var from_map: bool = screen is MapPick
+	if rally_building() != null: set_rally(screen,queued); return
 	var enemy := pick_target(screen,"enemies")
 	var resource := pick_target(screen,"resources",48)
 	var dropoff := pick_target(screen,"depots",50)

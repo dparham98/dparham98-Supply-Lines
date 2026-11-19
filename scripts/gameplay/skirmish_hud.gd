@@ -144,6 +144,11 @@ func _ready() -> void:
 	for mode in ["move","attack","gather","fell","repair","capture"]:
 		card.get_node(mode.capitalize()).pressed.connect(func(): game.pending_unit_command = mode; game.notify("Click a target for %s. Esc cancels." % mode))
 	card.get_node("Stop").pressed.connect(stop_units)
+	# Right-click on the Fell card switches autocast (docs/FELL.md).
+	card.get_node("Fell").gui_input.connect(func(event: InputEvent):
+		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+			toggle_fell_autocast()
+			card.get_node("Fell").accept_event())
 	card.get_node("Return").pressed.connect(return_units)
 	card.get_node("PrintInfantry").pressed.connect(func():
 		if is_instance_valid(shown) and shown.is_in_group("production_buildings"): shown.request_unit(&"infantry"))
@@ -728,6 +733,7 @@ func update_contents() -> void:
 			if node.can_gather:
 				show_button("Gather","Gather")
 				show_button("Fell","Fell")
+				card.get_node("Fell/Auto").visible = fell_autocast_on()
 				show_button("Return","Deliver")
 				show_button("DropMaterials","Drop")
 				explain(card.get_node("DropMaterials"),node.cargo <= 0,"Nothing carried to drop.")
@@ -826,6 +832,21 @@ func close_build() -> void:
 	game.placing_generator = false
 	game.placing_structure = &""
 	network.clear_builder()
+## Selected player units that can fell.
+func fellers() -> Array:
+	return get_tree().get_nodes_in_group("units").filter(func(u): return u.team == "player" and u.is_selected and u.can_gather and not u.is_cargo_vehicle and not u.is_depot_truck)
+## True when every selected unit that can fell has autocast on.
+func fell_autocast_on() -> bool:
+	var units := fellers()
+	return not units.is_empty() and units.all(func(u): return u.fell_autocast)
+## Autocast Fell on for the selection, or off when it is already on for all of it.
+func toggle_fell_autocast() -> void:
+	var units := fellers()
+	if units.is_empty(): return
+	var on := not fell_autocast_on()
+	for unit in units: unit.set_fell_autocast(on)
+	card.get_node("Fell/Auto").visible = on
+	game.notify("Autocast Fell on: idle Infantry fell the trees round where they are left." if on else "Autocast Fell off.")
 func stop_units() -> void:
 	for unit in selected_units():
 		unit.order_queue.clear()

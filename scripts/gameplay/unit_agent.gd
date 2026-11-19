@@ -149,6 +149,31 @@ func command_gather(node: Node3D) -> void:
 ## Fell (docs/FELL.md): cut down the trees at a Forest cell and the ones round it, keeping no wood. The worker
 ## keeps any load it already carries.
 var _fell_origin := Vector2i(-1,-1)
+## Autocast: while idle with no orders, fell the Forest within fell_radius_cells of where it was left. The
+## player switches it with a right-click on the Fell card.
+var fell_autocast := false
+## The cell it was left at, round which it fells; a new order moves it.
+var _auto_home := Vector2i(-1,-1)
+var _auto_wait := 0.0
+func set_fell_autocast(on: bool) -> void:
+	fell_autocast = on and can_gather and not is_cargo_vehicle and not is_depot_truck
+	_auto_home = Vector2i(-1,-1)
+	_auto_wait = 0.0
+## Looks for Forest round its spot about once a second (ten after a tree it could not reach).
+func _auto_fell(delta: float) -> void:
+	_auto_wait -= delta
+	if _auto_wait > 0: return
+	_auto_wait = 1.0
+	if _auto_home.x < 0:
+		var here = ground.get_tile_at_position(global_position)
+		if here == null: return
+		_auto_home = here
+	_fell_origin = _auto_home
+	var tree := _next_fell()
+	if tree == null: return
+	command_fell(tree)
+	_fell_origin = _auto_home
+	state = "Auto-felling"
 func command_fell(node: Node3D) -> void:
 	if not can_gather or is_depot_truck or is_cargo_vehicle or not is_instance_valid(node) or not node.get("cell") is Vector2i: return
 	_stop_route()
@@ -323,10 +348,14 @@ func _order_process(delta: float) -> void:
 		"capture": _capture_order()
 		"construct": _construct(delta)
 		_:
+			var unreachable := state == "Trees unreachable"
 			state = "Idle"
 			# Hold ground and defend even when deselected; working units keep working.
 			var enemy = _nearest_opponent()
 			if enemy: _shoot(enemy)
+			elif fell_autocast and order_queue.is_empty() and not out_of_fuel:
+				if unreachable: _auto_wait = 10.0
+				_auto_fell(delta)
 	_update_display()
 # Queue an order behind the current one, or start it now when idle.
 func queue_order(entry: Dictionary) -> void:
@@ -336,6 +365,8 @@ func queue_order(entry: Dictionary) -> void:
 	if order == "idle" and order_queue.is_empty() and not out_of_fuel: run_order(entry)
 	else: order_queue.append(entry)
 func run_order(entry: Dictionary) -> void:
+	# An order moves the spot autocast Fell works round to wherever the unit is next left.
+	_auto_home = Vector2i(-1,-1)
 	match entry.kind:
 		"move": command_move(entry.point)
 		"attack": command_attack(entry.target,entry.get("forced",false))
