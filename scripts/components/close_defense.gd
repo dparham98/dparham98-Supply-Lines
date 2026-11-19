@@ -87,6 +87,9 @@ func _process(delta: float) -> void:
 	_reload_left = shot_interval
 	var victim := _target
 	var origin := _muzzle.global_position
+	# Stop on the near face of the target, as the main gun's shells do, so the hit burst shows outside its body.
+	if _actor.has_method("_shot_end"):
+		end = _actor._shot_end(origin, victim, end)
 	if _flash != null:
 		_flash.play()
 	var bullet: Node3D = _actor.game.show_shot(origin, end, _actor.team, BULLET)
