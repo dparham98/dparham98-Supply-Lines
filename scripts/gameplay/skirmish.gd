@@ -32,11 +32,30 @@ var ore: int:
 var global_plan_kind: StringName = &""
 ## The selected building shows its team marker (docs/TEAM_MARKERS.md).
 const Rally = preload("res://scripts/production/rally.gd")
+## The selected building, or an enemy unit being inspected (docs/SELECTION_INSPECT.md). Your buildings of one type
+## can be selected together: selected_buildings holds them all, selected_building is the first.
+var selected_buildings: Array[Node3D] = []
 var selected_building: Node3D:
 	set(value):
-		_show_team_marker(selected_building,false)
+		for node in _marked(): _show_team_marker(node,false)
 		selected_building = value
-		_show_team_marker(value,true)
+		if not selected_buildings.has(value):
+			selected_buildings.clear()
+			if is_instance_valid(value) and value.is_in_group("selectable_buildings") and value.get("team") == "player": selected_buildings.append(value)
+		for node in _marked(): _show_team_marker(node,true)
+func _marked() -> Array[Node3D]:
+	var nodes: Array[Node3D] = selected_buildings.filter(func(node): return is_instance_valid(node))
+	if is_instance_valid(selected_building) and not nodes.has(selected_building): nodes.append(selected_building)
+	return nodes
+## Selects your buildings of one type together; the first is the one the card shows.
+func select_buildings(nodes: Array[Node3D]) -> void:
+	for node in _marked(): _show_team_marker(node,false)
+	selected_buildings = nodes.duplicate()
+	selected_building = nodes[0] if not nodes.is_empty() else null
+## The selected buildings still standing.
+func building_selection() -> Array[Node3D]:
+	var nodes: Array[Node3D] = selected_buildings.filter(func(node): return is_instance_valid(node) and node.is_inside_tree())
+	return nodes
 var pending_unit_command := ""
 ## Track laying (docs/RAIL_PLANNING.md). Leaving it, however it is left, drops any track still only planned.
 var placing_rail := false:
@@ -301,14 +320,19 @@ func rally_building() -> Node3D:
 ## there; on the building itself it is cleared. Shift adds a stop.
 func set_rally(screen, queued := false) -> void:
 	var building := rally_building()
-	if not screen is MapPick and pick_target(screen,"selectable_buildings",50) == building:
-		building.rally_points.clear(); notify("Rally point cleared: new units stay by %s." % building.name); return
+	# Every selected building of the type takes the same rally (docs/SELECTION_INSPECT.md).
+	var rallied: Array[Node3D] = building_selection().filter(func(node): return node.get("team") == "player" and "rally_points" in node)
+	if not rallied.has(building): rallied.append(building)
+	var clicked = pick_target(screen,"selectable_buildings",50) if not screen is MapPick else null
+	if clicked != null and rallied.has(clicked):
+		for node in rallied: node.rally_points.clear()
+		notify("Rally point cleared: new units stay by %s." % ("their buildings" if rallied.size() > 1 else building.name)); return
 	var point = ground_at(screen)
 	var cell = ground.get_tile_at_position(point) if point != null else null
 	if cell == null: notify("Right-click on the map to set a rally point."); return
 	var target: Node3D = pick_target(screen,"resources",48)
 	if target == null and ground.get_terrain(cell) == 3: target = ground.forest_source(cell)
-	Rally.add(building,point,target,queued)
+	for node in rallied: Rally.add(node,point,target,queued)
 	order_given.emit("move",point,target,queued)
 	notify("Rally %s: new units %s." % ["stop added" if queued else "point set","gather here (workers) or go here" if target != null else "go here"])
 func issue_order(screen, queued := false) -> void:

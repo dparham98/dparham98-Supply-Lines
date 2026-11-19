@@ -79,7 +79,7 @@ func _draw() -> void:
 			else:
 				draw_circle(point,3.2,EDGE)
 				draw_circle(point,2.3,color)
-			if (group == "units" and node.is_selected) or node == game.selected_building: draw_arc(point,6,0,TAU,16,Color.WHITE,1.5)
+			if (group == "units" and node.is_selected) or node == game.selected_building or game.selected_buildings.has(node): draw_arc(point,6,0,TAU,16,Color.WHITE,1.5)
 	# Recent alerts pulse where they happened.
 	var now := Time.get_ticks_msec()/1000.0
 	# Stops a waiting Load, Unload or Pin can pick: a steady ring with a pulse.

@@ -77,7 +77,7 @@ func hover_target(screen: Vector2) -> Node3D:
 		if cell != null and game.ground.get_terrain(cell) == 6: return game.ground.coal_source(cell)
 	return best
 func is_selected(node: Node) -> bool:
-	return node.get("is_selected") == true or node == game.selected_building
+	return node.get("is_selected") == true or node == game.selected_building or game.selected_buildings.has(node)
 func team_color(node: Node) -> Color:
 	return TEAM_COLORS.get(str(node.get("team")),TEAM_COLORS["neutral"])
 # What to draw for one actor; tests read this instead of pixels.
