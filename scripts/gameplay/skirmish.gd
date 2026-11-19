@@ -310,7 +310,7 @@ func _coal_plan_at(cell: Vector2i) -> Node3D:
 	var field: Dictionary = ground.coal_field_at(cell)
 	if field.is_empty(): return null
 	for plan in get_tree().get_nodes_in_group("construction_plans"):
-		if not is_instance_valid(plan) or plan.finished or plan.kind != &"iron_mine": continue
+		if not is_instance_valid(plan) or plan.finished or plan.kind != &"coal_mine": continue
 		if field.get("cells",[]).has(plan.start): return plan
 	return null
 func issue_order(screen, queued := false) -> void:
@@ -425,7 +425,7 @@ func order_fell(cell: Vector2i, area: Rect2i, point: Vector3, queued := false) -
 		trees = trees or queued or _fell_has_trees(unit,cell,area)
 	if workers.is_empty(): return
 	if not trees:
-		notify("No trees to fell in that box." if area.has_area() else "Nothing to fell: the way there is already open.")
+		alert("No trees to fell in that box." if area.has_area() else "Nothing to fell: the way there is already open.",point)
 		return
 	for unit in workers: give_order(unit,{kind = "fell", cell = cell, area = area, point = point},queued)
 	notify("Fell %s. %s" % ["queued" if queued else "ordered","Shift-click adds more; Esc stops." if queued else "The wood is left where it falls."])

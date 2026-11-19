@@ -429,18 +429,23 @@ func _route_to_standing(target: Node3D, radius: float, keep_off := Rect2i()) -> 
 	path.remove_at(0)
 	_route = path
 	return true
-## To the nearest cell touching a build site's footprint; failing that, anywhere in the old reach of its centre;
-## failing that, it fells the trees on a roughly straight line to the site (docs/COAL_MINES.md).
+## Set while trees stand between the builder and a site it has no way to touch: it fells them instead of
+## working from the old reach of the site's centre (docs/BUILDER_TOUCH.md, docs/COAL_MINES.md).
+var _site_blocked := false
+## To the nearest cell touching a build site's footprint; failing that, it fells the trees on a roughly straight
+## line to the site (docs/COAL_MINES.md); failing that, anywhere in the old reach of its centre.
 func _route_to_site(keep_off: Rect2i) -> bool:
 	_retry = 0.5
 	var path: Array[Vector2i] = Approach.touch_path(self,keep_off)
+	_site_blocked = false
 	if path.is_empty():
-		if _route_to_standing(order_target,_construct_reach(),keep_off): return true
 		source = _lane_tree(keep_off)
-		if source == null: return false
-		_retry = 0
-		state = "Felling a way to the build site"
-		return true
+		if source != null:
+			_site_blocked = true
+			_retry = 0
+			state = "Felling a way to the build site"
+			return true
+		return _route_to_standing(order_target,_construct_reach(),keep_off)
 	path.remove_at(0)
 	_route = path
 	return true
@@ -957,6 +962,7 @@ func command_construct(plan: Node3D) -> void:
 	if not can_construct or is_depot_truck or is_cargo_vehicle or not is_instance_valid(plan) or not plan.is_in_group("construction_plans") or plan.finished or plan.kind == &"rail": return
 	_stop_route()
 	source = null
+	_site_blocked = false
 	order = "construct"
 	order_target = plan
 	_work_timer = 0
@@ -978,7 +984,7 @@ func _construct(delta: float) -> void:
 	# A builder starts as soon as it touches the footprint, from whichever side it comes (docs/BUILDER_TOUCH.md).
 	# One that cannot reach the edge works from anywhere in the old reach, at the end of its walk.
 	var touching: bool = not on_site and Approach.distance_to_rect(ground,global_position,keep_off) <= Approach.TOUCH
-	var in_reach: bool = touching or (_route.is_empty() and _moving_to.x < 0 and global_position.distance_to(order_target.global_position) <= _construct_reach())
+	var in_reach: bool = touching or (not _site_blocked and _route.is_empty() and _moving_to.x < 0 and global_position.distance_to(order_target.global_position) <= _construct_reach())
 	if on_site or not in_reach:
 		_work_timer = 0
 		if _retry <= 0:

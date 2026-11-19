@@ -66,7 +66,7 @@ func run() -> void:
 	# The armed command refuses a spot with no trees on the way to it.
 	game.pending_unit_command = "fell"
 	game.issue_map_order(depot.global_position+Vector3(0,0,4),1.0,true)
-	if not check(worker.order != "fell" and "already open" in game.message,"Fell on open ground should be refused: '%s'" % game.message): return
+	if not check(worker.order != "fell" and not game.alerts.is_empty() and "already open" in game.alerts[0].text,"Fell on open ground should be refused with an alert: %s" % [game.alerts]): return
 	game.pending_unit_command = "fell"
 	game.issue_map_order(ground.tile_to_world(first),1.0,true)
 	if not check(worker.order == "fell" and worker.source.cell == first and game.pending_unit_command.is_empty(),"Fell on a forest should order the worker: %s, %s from %s, %s" % [first,worker.source.cell,ground.get_tile_at_position(worker.global_position),game.message]): return
@@ -125,7 +125,7 @@ func run() -> void:
 	# The way to the seam is open now: Fell there again says so instead of asking for a forest.
 	game.pending_unit_command = "fell"
 	game.issue_map_order(seam.center,1.0,true)
-	if not check(worker.order != "fell" and "already open" in game.message,"Fell on an open seam should say the way is open: '%s'" % game.message): return
+	if not check(worker.order != "fell" and game.alerts.size() >= 2 and "already open" in game.alerts[0].text,"Fell on an open seam should say the way is open: %s" % [game.alerts]): return
 	# A box: every Forest cell in it is felled.
 	var here_cell: Vector2i = ground.get_tile_at_position(worker.global_position)
 	var area := Rect2i()

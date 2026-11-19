@@ -68,8 +68,10 @@ func run() -> void:
 		if ground.ore_footprint_valid(cell,size): other_start = cell; break
 	if not check(other_start.x >= 0,"No mine spot on the lake coal seam"): return
 	var other_centre: Vector3 = ground.tile_to_world(other_start+size/2)
-	var plan = network.queue_plan(other_centre,&"iron_mine")
-	if not check(plan != null,"A mine plan on an enclosed coal seam outside Depot range was refused"): return
+	# Coal takes the Coal Mine (C on the build page); the Iron Mine tile refuses a seam.
+	if not check(network.queue_plan(other_centre,&"iron_mine") == null,"An Iron Mine plan should not go on a coal seam"): return
+	var plan = network.queue_plan(other_centre,&"coal_mine")
+	if not check(plan != null and plan.spec.title == "Coal Mine","A Coal Mine plan on an enclosed coal seam outside Depot range was refused"): return
 	depot.energy = 0
 	plan.receive(&"iron",15)
 	worker.command_move(worker.global_position)
@@ -80,7 +82,7 @@ func run() -> void:
 		worker._process(1.0/60)
 		plan._process(1.0/60)
 		if ground.coal_mine_at(other.cells[0]) != null: break
-	if not check(ground.coal_mine_at(other.cells[0]) != null and worker.cargo == 0 and depot.energy == 0,"The 0 E / 25 I coal mine plan did not build behind trees (state '%s')" % worker.state): return
+	if not check(ground.coal_mine_at(other.cells[0]) != null and game.get_node("Interface").object_name(ground.coal_mine_at(other.cells[0])) == "Coal Mine" and worker.cargo == 0 and depot.energy == 0,"The 0 E / 25 I coal mine plan did not build behind trees (state '%s')" % worker.state): return
 	# By hand: the old rule still works when it is switched back on.
 	ground.harvesting_rules.coal_needs_mine = false
 	if not check(ground.harvest_coal(other.cells[0],10) == 10,"Digging by hand should still work with the rule off"): return
