@@ -53,3 +53,5 @@ The building's progress bar, its Status label and the minimap production rings a
 - checks a Depot with no energy printing at 1x and the power coming back;
 - checks a Tank at 4x (7 s, 450 E extra);
 - checks the panel and slider.
+
+`tests/production_power_runtime_check.gd` (rendered) selects a Barracks with a real click and saves the panel at 1x and at 3x part way through an Infantry (`production_power_work/`). It checks that the panel fits the window and does not overlap the Depot panel.

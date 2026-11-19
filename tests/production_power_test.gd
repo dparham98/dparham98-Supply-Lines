@@ -111,5 +111,5 @@ func run() -> void:
 	game.selected_building = null
 	for frame in range(4): await process_frame
 	if not check(not panel.visible,"The panel goes with the selection"): return
-	print("PRODUCTION POWER PASS")
+	print("PRODUCTION_POWER_CHECKS_PASSED")
 	quit(0)
