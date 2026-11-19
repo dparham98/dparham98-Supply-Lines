@@ -75,7 +75,7 @@ A fork's branch only leads one way along the line: a train off the branch comes 
 
 ## Ready for derailing
 
-Derailing is not in yet. These are the parts it can build on:
+The Derailer's spike derails a train onto that piece (`docs/DERAILER.md`). These are the parts that and later derailing build on:
 
 - **Train position:** each train knows the piece, lane and distance it is on (`Train.piece`, `lane`, `along`). These are updated every frame from its line's spans (`RailNetwork.locate`). Each leg's `spans` list every piece and lane the train will cross, in order.
 - **Switches:** each fork has a switch (`route_lane`), set by the train's run as each leg starts (`set_route`). A reversal is its own leg, so a switch is never thrown under a train mid-leg by its own run.

@@ -15,11 +15,11 @@ The current keys, as set on 2026-11-15. `scripts/tools/setup_command_actions.gd`
 
 | Card or page | Keys |
 | --- | --- |
-| Infantry and combat units | M Move · S Stop · A Attack · G Gather · F Fell (`docs/FELL.md`) · V Deliver · X Drop materials · R Repair · C Capture · T Auto-refuel (vehicles) |
+| Infantry and combat units | M Move · S Stop · A Attack · G Gather · F Fell (`docs/FELL.md`) · V Deliver · X Drop materials · R Repair · C Capture · E Derail (Derailer, `docs/DERAILER.md`) · T Auto-refuel (vehicles) |
 | Cargo truck / Train | M Move · S Stop · T Auto-refuel · D Deploy/Pack supplies · E Load · V Unload · C Trips · W Worksite (not Trains) |
 | Depot truck | M Move · S Stop · T Auto-refuel · D Deploy |
 | Depot | D Depot truck · V Cargo vehicle · T Train · C Make crates · X Cancel production (the Generator settings are sliders on the Depot panel, docs/DEPOT_PANELS.md) |
-| Production building | F Infantry · S Scout · G Grenadier · T Tank · C Motorcycle · D Drone · Q Übermech |
+| Production building | F Infantry · S Scout · G Grenadier · T Tank · C Derailer · D Drone · Q Übermech |
 | Generator | R Pause/Resume · W Burn wood · C Burn coal · E Burn either · F Focus Depot |
 | Construction plan | X Cancel plan |
 | Build page (B) and Worksite page | D Depot · G Generator · B Barracks · T Tank Factory · A Iron Mine · R Rail · P Pin payer (Build page only) · Esc Back |
