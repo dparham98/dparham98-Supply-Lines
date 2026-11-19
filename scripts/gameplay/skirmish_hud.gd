@@ -39,7 +39,7 @@ var _tip_since := 0.0
 ## Fixed command slots, row-major in the 4 × 3 grid. Commands that never share a card may share a slot.
 const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 4, "Return": 5, "DropMaterials": 6, "Build": 7,
 	"BurnWood": 4, "BurnCoal": 5, "BurnEither": 6, "MakeCrates": 3, "Worksite": 7,
-	"Repair": 8, "Capture": 9, "DeployTruck": 10, "Fell": 10, "CancelPlan": 11,
+	"Repair": 8, "Derail": 8, "Capture": 9, "DeployTruck": 10, "Fell": 10, "CancelPlan": 11,
 	"DeployCargo": 2, "Load": 4, "Unload": 5, "Trips": 6,
 	"PrintTruck": 0, "PrintCargo": 1, "PrintTrain": 2,
 	"PrintInfantry": 0, "ProduceScout": 1, "ProduceGrenadier": 2, "ProduceTank": 3, "ProduceMotorcycle": 4, "ProduceDrone": 5, "ProduceUbermech": 6,
@@ -145,7 +145,7 @@ func _ready() -> void:
 	context.get_node("AssignedSource").item_selected.connect(func(index):
 		if is_instance_valid(shown) and index >= 0 and index < assignment_sources.size():
 			game.notify("Depot assigned." if shown.assign_source(assignment_sources[index]) else "Assignment requires an empty production queue and a friendly covering Depot."))
-	for mode in ["move","attack","gather","fell","repair","capture"]:
+	for mode in ["move","attack","gather","fell","repair","capture","derail"]:
 		card.get_node(mode.capitalize()).pressed.connect(func(): game.pending_unit_command = mode; game.notify("Click a target for %s. Esc cancels." % mode))
 	card.get_node("Stop").pressed.connect(stop_units)
 	# Right-click on the Fell card switches autocast (docs/FELL.md).
@@ -798,6 +798,9 @@ func update_contents() -> void:
 				show_button("Repair","Repair")
 				card.get_node("Repair").tooltip_text = "Restore up to %d HP every %.1fs for %d energy / %d iron from the selected local supply source. No wood is spent." % [node.engineering_rules.repair_hp,node.engineering_rules.repair_interval,node.engineering_rules.repair_energy,node.engineering_rules.repair_iron]
 			if node.can_capture_depots: show_button("Capture","Capture")
+			if node.has_ability(&"derail"):
+				show_button("Derail","Derail")
+				explain(card.get_node("Derail"),node.derail_cooldown > 0.0,"Recharging: %d s" % ceili(node.derail_cooldown))
 			hint_text = "Right-click to move, gather or attack. Workers pay from and deliver to the nearest stockpile unless you right-click a Depot. Build plans with B."
 # Card art that follows the state of a button. Unchanged art is not reassigned, so buttons do not redraw each frame.
 func set_card(button: Button, id: String) -> void:

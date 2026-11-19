@@ -200,7 +200,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if point != null:
 			var rails = $RailNetwork
 			if is_instance_valid(rails.route_to) and not rails.pending.is_empty(): lay_route()
-			else: notify(rails.pick_target(rails.target_at(point)))
+			else: notify(rails.pick_target(rails.pick_at(point)))
 		get_viewport().set_input_as_handled()
 		return
 	if (placing_depot or placing_generator or not placing_structure.is_empty()) and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
@@ -522,6 +522,12 @@ func issue_card_order(screen, queued := false) -> void:
 		return
 	elif pending_unit_command == "repair": target = pick_target(screen,"selectable_buildings",50)
 	elif pending_unit_command == "capture": target = pick_target(screen,"capturable_buildings",50)
+	elif pending_unit_command == "derail":
+		# Derail takes a piece of track, anyone's (docs/DERAILER.md).
+		var on = ground_at(screen)
+		var picked = $RailNetwork.pick_at(on) if on != null else null
+		if not picked is RailAnchor: notify("Click a piece of rail to spike."); return
+		target = picked.piece
 	elif pending_unit_command in ["load","unload"]:
 		# Crate stops: a crate, a friendly Depot, or a deployed Cargo vehicle under the pointer.
 		target = pick_crate(screen)
@@ -579,6 +585,7 @@ func issue_card_order(screen, queued := false) -> void:
 		if pending_unit_command == "move":
 			if point != null: give_order(unit,{kind = "move", point = point},queued)
 		elif pending_unit_command == "attack" and target.get("team") == unit.team: give_order(unit,{kind = "attack", target = target, forced = true},queued)
+		elif pending_unit_command == "derail" and not unit.has_ability(&"derail"): continue
 		else: give_order(unit,{kind = pending_unit_command, target = target},queued)
 	# Shift keeps the command armed so several targets can be queued.
 	notify(pending_unit_command.capitalize()+(" order queued. Shift-click adds more; Esc stops." if queued else " order issued."))

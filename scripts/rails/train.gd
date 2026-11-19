@@ -18,6 +18,10 @@ var _line := {}
 var _s := 0.0
 var _goal := 0.0
 var _rest_line := {}
+## Off the track after running onto a spiked piece (docs/DERAILER.md): it stays where it fell, tipped over.
+var derailed := false
+const DERAIL_SLEW := 22.0
+const DERAIL_ROLL := 30.0
 const LINE_SENTINEL := Vector2i(-2,-2)
 @onready var rail_network = get_tree().get_first_node_in_group("rail_network")
 func _ready() -> void:
@@ -63,6 +67,7 @@ func power_source() -> Node3D:
 	return rail_network.power_source(piece,global_position,team) if on_friendly_track() else null
 func _rail_changed() -> void:
 	_checked_revision = rail_network.revision
+	if derailed: return
 	# The piece under the train may be leaving the tree right now; it stops counting as soon as it unregisters.
 	if (not is_instance_valid(piece) or not rail_network.pieces.has(piece)) and game.is_node_ready():
 		_stop_route()
@@ -106,6 +111,9 @@ func supplies_available() -> bool:
 	return deployed and supply_transition.is_empty() and health > 0 and not _dead and (not route_active or route_paused) and _route.is_empty() and _moving_to.x < 0
 func _process(delta: float) -> void:
 	if _dead: return
+	if derailed:
+		_update_display()
+		return
 	if _checked_revision != rail_network.revision: _rail_changed()
 	if route_active and waiting_for_rail and not route_paused:
 		if not endpoints_friendly(): pause_supply_route()
@@ -146,6 +154,7 @@ func _follow(track: Dictionary) -> bool:
 	for span in track.get("spans",[]): span.piece.set_route(span.lane)
 	return true
 func _route_to_point(point: Vector3) -> bool:
+	if derailed: return false
 	var hit: Dictionary = rail_network.nearest_piece(point,6.0)
 	if hit.is_empty() or not is_instance_valid(piece): return false
 	var route: Array = rail_network.chain(piece,hit.piece,team,lane,hit.lane)
@@ -162,7 +171,7 @@ func stop_reach(target: Node3D) -> float:
 func _route_to_interaction(target: Node3D, radius: float) -> bool:
 	return _route_near(target,radius)
 func _route_near(target: Node3D, _radius: float) -> bool:
-	if not is_instance_valid(piece): return false
+	if derailed or not is_instance_valid(piece): return false
 	_retry = 0.5
 	return _follow(rail_network.line_to_depot(piece,along,target,team,consist_length()+2.0,lane))
 func _stop_route() -> void:
@@ -186,10 +195,34 @@ func _walk(delta: float) -> void:
 	$Visuals.rotation.y = atan2(-here[1].x,-here[1].z)
 	var hit: Dictionary = rail_network.locate(_line,_s)
 	if not hit.is_empty(): piece = hit.piece; along = hit.distance; lane = hit.lane
+	if not hit.is_empty() and hit.piece.is_spiked():
+		derail(hit.piece)
+		return
 	if _s >= _goal-0.001:
+		# A line that reverses at a fork goes on with its next leg, the train backing into the other lane.
+		var then: Dictionary = _line.get("then",{})
+		if not then.is_empty() and then.spans.all(func(span): return is_instance_valid(span.piece) and rail_network.pieces.has(span.piece)):
+			_follow(then)
+			return
 		_rest_line = _line
 		_line = {}
 		_route.clear()
+## Runs onto a spiked piece: the train leaves the track, tips over where it is and loses a share of its health; the
+## piece is wrecked. Its cargo stays aboard. Re-railing is not in yet.
+func derail(at: Node3D) -> void:
+	if derailed: return
+	derailed = true
+	_place_consist()
+	_stop_route()
+	_route.clear()
+	if route_active and not route_paused: pause_supply_route()
+	state = "Derailed"
+	# Slewed off the line and rolled onto its side, so it reads as off the rails from the camera above.
+	$Visuals.rotation.y += deg_to_rad(DERAIL_SLEW)
+	$Visuals.rotation.z = deg_to_rad(DERAIL_ROLL)
+	$Visuals.position.y -= 0.6
+	rail_network.wreck(at)
+	take_damage(roundi(max_health*rail_network.rules.derail_damage))
 func _pay_for_power(source: Node3D, distance: float) -> void:
 	_power_owed += distance*rail_network.rules.train_energy_per_metre
 	var whole := floori(_power_owed)

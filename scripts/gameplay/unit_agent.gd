@@ -286,6 +286,7 @@ func command_return(target: Node3D = null) -> void:
 	state = "Returning "+str(cargo_kind)
 func _process(delta: float) -> void:
 	if _dead: return
+	if derail_cooldown > 0.0: derail_cooldown = maxf(0.0,derail_cooldown-delta)
 	fuel_tick(delta)
 	_order_process(delta)
 	_animate(delta)
@@ -385,6 +386,7 @@ func _order_process(delta: float) -> void:
 		"repair": _repair(delta)
 		"capture": _capture_order()
 		"construct": _construct(delta)
+		"derail": _derail_order(delta)
 		_:
 			var unreachable := state == "Trees unreachable"
 			state = "Idle"
@@ -414,6 +416,7 @@ func run_order(entry: Dictionary) -> void:
 		"repair": command_repair(entry.target)
 		"capture": command_capture(entry.target)
 		"construct": command_construct(entry.target)
+		"derail": command_derail(entry.target)
 		"attack_move": command_attack_move(entry.point)
 		"deploy": command_deploy_at(entry.point)
 		"load", "unload":
@@ -424,7 +427,7 @@ func _start_next_order() -> void:
 	# Skip entries whose target is gone or that the unit refuses, such as an unreachable attack.
 	while order == "idle" and not order_queue.is_empty():
 		var entry: Dictionary = order_queue.pop_front()
-		if entry.kind in ["attack","gather","repair","capture","construct","fetch","load","unload"] and not is_instance_valid(entry.get("target")) and not (entry.kind in ["load","unload"] and entry.get("point") != null): continue
+		if entry.kind in ["attack","gather","repair","capture","construct","fetch","load","unload","derail"] and not is_instance_valid(entry.get("target")) and not (entry.kind in ["load","unload"] and entry.get("point") != null): continue
 		run_order(entry)
 func order_point(entry: Dictionary) -> Variant:
 	if entry.kind in ["move","attack_move","deploy"]: return entry.point
@@ -1064,6 +1067,41 @@ func _capture_order() -> void:
 		if _retry <= 0 and not _route_near(order_target,radius): state = "Capture target unreachable"
 	else: state = "Capturing · stay uncontested"
 
+## Derail (docs/DERAILER.md): the unit goes to a piece of track and spikes it; the next train onto it derails.
+## Seconds until it can spike again.
+var derail_cooldown := 0.0
+func command_derail(target: Node3D) -> void:
+	if not has_ability(&"derail") or not is_instance_valid(target) or not target.is_in_group("rails"): return
+	if derail_cooldown > 0.0: state = "Derail recharging · %d s" % ceili(derail_cooldown); return
+	_stop_route()
+	source = null
+	order_target = target
+	order = "derail"
+	_work_timer = 0.0
+	state = "To the track"
+## Where on the piece the spike goes: its middle.
+func derail_spot() -> Vector3:
+	return order_target.point_at(order_target.length()*0.5)
+func _derail_order(delta: float) -> void:
+	if not is_instance_valid(order_target) or not order_target.is_inside_tree() or order_target.is_spiked():
+		order = "idle"; state = "Track gone" if not is_instance_valid(order_target) or not order_target.is_inside_tree() else "Track already spiked"; return
+	var spot := derail_spot()
+	var reach: float = order_target.half_width()+2.5
+	if Vector2(global_position.x,global_position.z).distance_to(Vector2(spot.x,spot.z)) > reach:
+		_work_timer = 0.0
+		if _retry <= 0 and not _route_to_point(spot) and not _route_near(order_target,reach):
+			order = "idle"; state = "Track unreachable"
+		return
+	_stop_route()
+	var rules = game.get_node("RailNetwork").rules
+	_work_timer += delta
+	state = "Spiking track · %d%%" % roundi(minf(1.0,_work_timer/maxf(0.01,rules.derail_seconds))*100)
+	if _work_timer < rules.derail_seconds: return
+	order_target.spike(team)
+	derail_cooldown = rules.derail_cooldown
+	order = "idle"
+	state = "Track spiked"
+	if team == "player": game.notify("Track spiked: the next train onto it derails.")
 func mobility_layer() -> int:
 	return unit_stats.mobility.layer if unit_stats != null and unit_stats.mobility != null else MobilityRules.Layer.GROUND
 func selection_point() -> Vector3:
