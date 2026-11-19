@@ -1,7 +1,7 @@
 extends SceneTree
 # Rendered check of the placement guide (docs/PLACEMENT_GUIDE.md): saves guide_rail_start, guide_rail_lay and
 # guide_place while laying rail and placing a Barracks, and checks the guide sits in the bottom panel, off the map,
-# in place of the info columns. guide_place also shows the Depot's stock above it.
+# in place of the info columns. depot_plate_idle shows the Depot's stock plate with nothing being placed.
 const TestOutput = preload("res://tests/test_output.gd")
 var game: Node3D
 func _initialize() -> void: call_deferred("run")
@@ -24,6 +24,9 @@ func run() -> void:
 	var guide: Control = hud.get_node("Bottom/Body/Row/Guide")
 	var rails = game.get_node("RailNetwork")
 	var network = game.get_node("DepotNetwork")
+	# Nothing placed: the guide hides and the Depot shows its stock plate anyway (docs/DEPOT_STOCK_PLATE.md).
+	await shot("depot_plate_idle")
+	if not check(not guide.visible and hud.info.visible,"The guide hides when nothing is placed"): return
 	game.placing_rail = true
 	await shot("guide_rail_start")
 	var box := guide.get_global_rect()

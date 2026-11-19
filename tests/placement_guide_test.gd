@@ -34,13 +34,17 @@ func run() -> void:
 	if not check(mouse_free.call(),"The guide must let clicks through to the map"): return
 	hud._process(0)
 	var overlay = hud.get_node("MapOverlay")
-	if not check(not guide.visible and hud.info.visible and overlay.status_for(game.depot).readout.is_empty(),"The guide and the Depot readout hide when nothing is being placed"): return
+	if not check(not guide.visible and hud.info.visible,"The guide hides when nothing is being placed"): return
+	# Your Depot always shows its stock above it; an enemy Depot does not.
+	if not check(not overlay.status_for(game.depot).readout.is_empty() and overlay.entries().any(func(e): return e.node == game.depot and not e.readout.is_empty()),"Your Depot should always show its stock above it"): return
+	game.depot.team = "enemy"
+	if not check(overlay.status_for(game.depot).readout.is_empty(),"An enemy Depot shows no stock plate"): return
+	game.depot.team = "player"
 	# Rail: three steps.
 	game.placing_rail = true
 	hud._process(0)
 	if not check(guide.visible and guide.get_node("Body/Title").text == "LAY RAIL" and lit(guide) == 0,"Laying rail shows the guide at step 1"): return
 	if not check(not hud.info.visible and not hud.context.visible and guide.get_parent() == hud.get_node("Bottom/Body/Row"),"The guide sits in the bottom panel in place of the info columns"): return
-	if not check(not overlay.status_for(game.depot).readout.is_empty(),"While building, the Depot shows its stock above it"): return
 	if not check(guide.get_node("Body/Status").text == rails.route_status() and guide.get_node("Body/Steps/Arrow1").visible,"The guide shows the track line and the arrows"): return
 	rails.pick_target(game.depot)
 	hud._process(0)
@@ -71,9 +75,5 @@ func run() -> void:
 	game.global_plan_kind = &""
 	hud._process(0)
 	if not check(not guide.visible and hud.info.visible and hud.context.visible,"Leaving placement hides the guide and brings the info back"): return
-	# The Build page alone also shows the Depot's stock.
-	hud.global_build_open = true
-	if not check(not overlay.status_for(game.depot).readout.is_empty(),"With the Build page open the Depot shows its stock"): return
-	hud.global_build_open = false
 	print("PLACEMENT_GUIDE_TEST_PASSED")
 	quit(0)

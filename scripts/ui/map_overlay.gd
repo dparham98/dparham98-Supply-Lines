@@ -108,19 +108,14 @@ func status_for(node: Node3D) -> Dictionary:
 	if game.recently_attacked(node): entry.icons.append(["attack",RED])
 	if stockpile is ResourceStockpile and (node.is_in_group("depots") or node.get("is_cargo_vehicle") == true) and (node == hovered or is_selected(node) or show_all()):
 		entry.storage = {stockpile = stockpile}
-	# While building, your Depots show what they hold above them (docs/PLACEMENT_GUIDE.md).
-	if stockpile is ResourceStockpile and node.is_in_group("depots") and node.get("team") == "player" and building_open():
+	# Your Depots always show what they hold above them (docs/DEPOT_STOCK_PLATE.md).
+	if stockpile is ResourceStockpile and node.is_in_group("depots") and node.get("team") == "player":
 		entry.readout = {stockpile = stockpile}
 	if node.get("can_gather") == true and node.get("cargo") != null and node.cargo > 0:
 		entry.carry = {color = RESOURCE_COLORS.get(node.cargo_kind,Color.WHITE), ratio = float(node.cargo)/maxi(1,node.carry_capacity)}
 	if node.get("out_of_fuel") == true: entry.icons.append(["refuel",RED])
 	elif node.has_method("fuel_low") and node.fuel_low(): entry.icons.append(["refuel",AMBER])
 	return entry
-## The Build page is open, or a building, plan or track is being placed.
-func building_open() -> bool:
-	var hud = game.get_node_or_null("Interface")
-	var depots = game.get_node_or_null("DepotNetwork")
-	return (hud != null and hud.get("global_build_open") == true) or game.placing_rail or (depots != null and depots.has_method("placement_active") and depots.placement_active())
 const READOUT_KINDS: Array[StringName] = [&"energy",&"iron",&"wood",&"coal"]
 const READOUT_LETTERS := {&"energy": "E", &"iron": "I", &"wood": "W", &"coal": "C"}
 ## A Depot's stock as one line above it: a swatch and amount per resource, on a dark plate.
