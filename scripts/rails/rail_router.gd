@@ -94,32 +94,54 @@ func _touches(point: Vector2i, key: int, centre: Vector3, reach: float) -> bool:
 ## `from_reach` and `to_reach` are the rings' radii plus half the track's width. With a `via` point, the path
 ## passes within a lattice step of it, and is the shortest that does.
 func find(from: Node3D, to: Node3D, from_reach: float, to_reach: float, via = null) -> Array[Dictionary]:
-	_read_clear()
+	var found := route(ring_starts(from.global_position,from_reach),{centre = to.global_position, reach = to_reach},via)
+	return found.get("path",[] as Array[Dictionary])
+## Every lattice state inside a ring: [point, heading, null] for each heading.
+func ring_starts(centre: Vector3, reach: float) -> Array:
 	var starts: Array = []
-	var start_centre: Vector3 = from.global_position
-	var local_start: Vector3 = ground.to_local(start_centre)
-	var span := int(ceil(from_reach/step))
+	var local_start: Vector3 = ground.to_local(centre)
+	var span := int(ceil(reach/step))
 	var centre_point := Vector2i(roundi(local_start.x/step),roundi(local_start.z/step))
 	for dx in range(-span,span+1):
 		for dz in range(-span,span+1):
 			var point := centre_point+Vector2i(dx,dz)
 			var at := world(point)
-			if Vector2(at.x-start_centre.x,at.z-start_centre.z).length() > from_reach: continue
-			for heading in range(4): starts.append([point,heading])
-	var found := _search(starts,to.global_position,to_reach,via)
-	if found.is_empty(): return []
+			if Vector2(at.x-centre.x,at.z-centre.z).length() > reach: continue
+			for heading in range(4): starts.append([point,heading,null])
+	return starts
+## The lattice point at `position`, or null when it is not on the lattice (track laid off it cannot be joined).
+func lattice_point(position: Vector3):
+	var local: Vector3 = ground.to_local(position)/step
+	var point := Vector2i(roundi(local.x),roundi(local.z))
+	if absf(local.x-point.x) > 0.02 or absf(local.z-point.y) > 0.02: return null
+	return point
+func heading_of(direction: Vector3) -> int: return _heading_of(direction)
+func state_key(point: Vector2i, heading: int) -> int: return _state_key(point,heading)
+## The shortest open path from any of `starts` ([point, heading, tag]: the first piece leaves `point` heading
+## that way) to `goal`: {centre, reach}, a ring the last piece touches, or with `states` ({state key: tag}) one
+## of those exact states, the last piece arriving at the point heading that way (docs/RAIL_PLANNING.md, joining
+## track). Returns {path, start, goal}: the pieces and the tags of the start and goal states used, or {}.
+func route(starts: Array, goal: Dictionary, via = null) -> Dictionary:
+	_read_clear()
+	var found := _search(starts,goal,via)
+	if found.is_empty(): return {}
 	var path: Array[Dictionary] = found.path
 	# Shortest paths do not cross themselves; refuse the rare one that would rather than lay overlapping track.
 	var used := {}
 	for piece in path:
 		for cell in network.cells_for(piece.kind,piece.transform):
-			if used.has(cell): return []
+			if used.has(cell): return {}
 			used[cell] = true
-	return path
-## A* by track length from any of `starts` ([point, heading]) until a piece comes within `reach` of `goal`,
-## having first come within a lattice step of `via` when one is given: each state also records whether the track
-## has passed `via` yet. Returns {path, point, heading} for the state after the last piece, or {} when none.
-func _search(starts: Array, goal: Vector3, reach: float, via = null) -> Dictionary:
+	return {path = path, start = found.start, goal = found.goal}
+## A* by track length from any of `starts` ([point, heading, tag]) until a piece comes within `goal.reach` of
+## `goal.centre`, or arrives at one of `goal.states`, having first come within a lattice step of `via` when one is
+## given: each state also records whether the track has passed `via` yet. Returns {path, point, heading, start,
+## goal} for the state after the last piece and the tags of the start and goal, or {} when none.
+func _search(starts: Array, target: Dictionary, via = null) -> Dictionary:
+	var goal: Vector3 = target.centre
+	var reach: float = target.reach
+	var states: Dictionary = target.get("states",{})
+	var tags := {}
 	# Open set as a binary heap of [f, key, point, heading, passed]; the key packs all three.
 	var heap: Array = []
 	var best_g := {}
@@ -128,6 +150,7 @@ func _search(starts: Array, goal: Vector3, reach: float, via = null) -> Dictiona
 	for start in starts:
 		var key := _state_key(start[0],start[1])*2+int(start_passed)
 		best_g[key] = 0.0
+		tags[key] = start[2] if start.size() > 2 else null
 		_push(heap,[_estimate_via(world(start[0]),goal,reach,via,start_passed),key,start[0],start[1],start_passed])
 	var expanded := 0
 	var closed := {}
@@ -149,9 +172,12 @@ func _search(starts: Array, goal: Vector3, reach: float, via = null) -> Dictiona
 			var next_passed: bool = passed or (via != null and _touches(point,move_key,via,step))
 			var next_key := _state_key(next,move.heading)*2+int(next_passed)
 			var next_g: float = g+move.length
-			if next_passed and _touches(point,move_key,goal,reach):
+			var arrived: bool = states.has(_state_key(next,move.heading)) if not states.is_empty() else _touches(point,move_key,goal,reach)
+			if next_passed and arrived:
 				came[next_key] = [key,point,move_key]
-				return {path = _path(came,next_key), point = next, heading = move.heading}
+				var first := next_key
+				while came.has(first): first = came[first][0]
+				return {path = _path(came,next_key), point = next, heading = move.heading, start = tags.get(first), goal = states.get(_state_key(next,move.heading))}
 			if best_g.has(next_key) and best_g[next_key] <= next_g: continue
 			best_g[next_key] = next_g
 			came[next_key] = [key,point,move_key]

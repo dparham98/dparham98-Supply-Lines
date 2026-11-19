@@ -17,6 +17,9 @@ signal changed
 @export var snap_distance := 4.0
 const SAMPLE := 0.5
 const JOIN_EPSILON := 0.05
+## Track a train runs past a fork before it reverses into the fork's other lane (docs/RAIL_PLANNING.md): longer
+## than any train, so its tail has cleared the switch.
+const REVERSE_ROOM := 24.0
 var revision := 0
 var pieces: Array[Node3D] = []
 var subscribed: Dictionary = {}
@@ -31,14 +34,19 @@ var pending: Array[Dictionary] = []
 var _model_scales := {}
 ## The two targets the player picked to connect (docs/RAIL_PLANNING.md); the plan is the path suggested
 ## between them.
-var route_from: Node3D
-var route_to: Node3D
+## Either can be a RailAnchor: a pick on laid track, which the new track joins.
+var route_from
+var route_to
 ## Where the player dragged the suggested track through, or null for the shortest path.
 var route_via = null
 ## True when the last drag point had no open path through it; the track keeps its last shape.
 var route_blocked := false
 var _drag_tried = null
 var _router
+## Laid pieces hidden while the plan shows a fork in their place.
+var _hidden: Array[Node3D] = []
+## How far along the line from a click on track a join may be placed (docs/RAIL_PLANNING.md).
+const JOIN_WINDOW := 30.0
 ## Target rings shown while planning, keyed by the target's instance id.
 var _target_rings := {}
 ## Upkeep owed by each line, keyed by the line's lowest piece id; whole units are paid as they accrue.
@@ -166,7 +174,7 @@ func ground_clear(cells: Array[Vector2i], ignore = null) -> bool:
 		var tile: Dictionary = ground.tiles[cell.y*500+cell.x]
 		if not tile.buildable or (tile.occupied_by != null and not str(tile.occupied_by).begins_with("agent_")): return false
 		var rail = tile.get("rail")
-		if is_instance_valid(rail) and rail != ignore: return false
+		if is_instance_valid(rail) and not (ignore.has(rail) if ignore is Array else rail == ignore): return false
 	return true
 func register(piece: Node3D) -> bool:
 	if not is_instance_valid(piece.assigned_depot): return false
@@ -182,13 +190,13 @@ func register(piece: Node3D) -> bool:
 		piece.assigned_depot.tree_exiting.connect(_owner_changed)
 	_announce()
 	return true
-func unregister(piece: Node3D) -> void:
+func unregister(piece: Node3D, quiet := false) -> void:
 	if not pieces.has(piece): return
 	pieces.erase(piece)
 	if is_instance_valid(ground):
 		for cell in piece.cells:
 			if ground.is_tile_in_bounds(cell) and ground.tiles[cell.y*500+cell.x].get("rail") == piece: ground.tiles[cell.y*500+cell.x].erase("rail")
-	_announce()
+	if not quiet: _announce()
 func _owner_changed() -> void:
 	for piece in pieces:
 		if is_instance_valid(piece): piece.update_color()
@@ -232,6 +240,13 @@ func _search(start: Node3D, team: String, start_lane := 0) -> Dictionary:
 		var state: Dictionary = seen[key]
 		var ends: Array = state.piece.lane_ends(state.lane)
 		var exits: Array = ends if state.enter == -1 else ([ends[1]] if state.enter == ends[0] else [ends[0]])
+		# Out of a fork by its entry: the train can run on past it, reverse and come back into the other lane.
+		if state.piece.is_fork() and state.enter > 0 and _room_past(state.piece) >= REVERSE_ROOM-0.01:
+			var other: int = 1-state.lane
+			var back := _state(state.piece,other,0)
+			if not seen.has(back):
+				seen[back] = {piece = state.piece, lane = other, enter = 0, from = key, reverse = true}
+				frontier.append(back)
 		for exit_end in exits:
 			var link := connection(state.piece,exit_end)
 			if link.is_empty() or not friendly_piece(link.piece,team): continue
@@ -245,6 +260,27 @@ func _found(seen: Dictionary, goal: Node3D, goal_lane: int) -> String:
 	for key in seen:
 		if seen[key].piece == goal and (goal_lane < 0 or seen[key].lane == goal_lane): return key
 	return ""
+## Metres of track straight on from a fork's entry (end 0), up to REVERSE_ROOM: where a train can stand clear of it
+## to reverse.
+func _room_past(fork: Node3D) -> float:
+	return _runs_past(fork,REVERSE_ROOM).reduce(func(total, run): return total+absf(run.to_d-run.from_d),0.0)
+## The track straight on from a fork's entry, up to `wanted` metres: [{piece, lane, from_d, to_d}] in travel order.
+func _runs_past(fork: Node3D, wanted: float) -> Array:
+	var runs: Array = []
+	var remaining := wanted
+	var link := connection(fork,0)
+	while remaining > 0.001 and not link.is_empty() and friendly_piece(link.piece,fork.assigned_depot.team if is_instance_valid(fork.assigned_depot) else "player"):
+		var piece: Node3D = link.piece
+		var lane: int = piece.lanes_at(link.end)[0]
+		var total: float = piece.length(lane)
+		var forward: bool = link.end == piece.lane_ends(lane)[0]
+		var take := minf(total,remaining)
+		var from_d := 0.0 if forward else total
+		runs.append({piece = piece, lane = lane, from_d = from_d, to_d = from_d+take if forward else from_d-take})
+		remaining -= take
+		var ends: Array = piece.lane_ends(lane)
+		link = connection(piece,ends[1] if forward else ends[0])
+	return runs
 func reachable(start: Node3D, goal: Node3D, team: String, start_lane := 0) -> bool:
 	return is_instance_valid(goal) and not _found(_search(start,team,start_lane),goal,-1).is_empty()
 ## Pieces from `start` to `goal` as [{piece, enter, lane}] where `enter` is the end the train comes
@@ -257,7 +293,9 @@ func chain(start: Node3D, goal: Node3D, team: String, start_lane := 0, goal_lane
 	var result: Array = []
 	while not key.is_empty():
 		var entry: Dictionary = seen[key]
-		result.push_front({piece = entry.piece, enter = entry.enter, lane = entry.lane})
+		var step := {piece = entry.piece, enter = entry.enter, lane = entry.lane}
+		if entry.get("reverse",false): step.reverse = true
+		result.push_front(step)
 		key = entry.from
 	return result
 # ---- lines for trains
@@ -270,9 +308,10 @@ func _sample(piece: Node3D, from_d: float, to_d: float, points: PackedVector3Arr
 		if points.is_empty() or points[points.size()-1].distance_to(p) > 0.001: points.append(p)
 ## A line {points, cum, total, start, spans} along a chain, starting `start_d` along the first piece and ending
 ## `end_d` along the last (the whole piece when -1), with up to `tail` metres of track behind the
-## start so a long train has somewhere to stand.
+## start so a long train has somewhere to stand. Where the chain reverses at a fork (docs/RAIL_PLANNING.md) the line
+## runs on REVERSE_ROOM past the fork and stops; the next leg, from there back into the fork's other lane, is its
+## `then`, and so on.
 func line(chain_pieces: Array, start_d: float, end_d := -1.0, tail := 0.0) -> Dictionary:
-	var points := PackedVector3Array()
 	if chain_pieces.is_empty(): return {}
 	var first: Node3D = chain_pieces[0].piece
 	var first_lane: int = chain_pieces[0].get("lane",0)
@@ -282,11 +321,11 @@ func line(chain_pieces: Array, start_d: float, end_d := -1.0, tail := 0.0) -> Di
 		var next: Dictionary = chain_pieces[1]
 		var joined := connection(first,first.lane_ends(first_lane)[1])
 		forward = not joined.is_empty() and joined.piece == next.piece and joined.end == next.enter
+		# Reversing into a fork's other lane straight from the start: the train first runs out through the entry.
+		if next.get("reverse",false) and next.piece == first: forward = false
 	elif end_d >= 0.0: forward = end_d >= start_d
-	var behind := PackedVector3Array()
-	_tail(first,start_d,forward,tail,behind,first_lane)
-	for i in range(behind.size()-1,-1,-1): points.append(behind[i])
-	var spans: Array[Dictionary] = []
+	# The pieces in travel order as runs {piece, lane, from_d, to_d}; a leg ends at each reversal.
+	var legs: Array = [[]]
 	for k in range(chain_pieces.size()):
 		var entry: Dictionary = chain_pieces[k]
 		var piece: Node3D = entry.piece
@@ -294,24 +333,55 @@ func line(chain_pieces: Array, start_d: float, end_d := -1.0, tail := 0.0) -> Di
 		var total: float = piece.length(lane)
 		var from_d: float
 		var to_d: float
+		if entry.get("reverse",false):
+			# On past the fork, then back from there: the overshoot closes this leg and opens the next one.
+			var past := _runs_past(piece,REVERSE_ROOM)
+			legs[legs.size()-1].append_array(past)
+			legs.append([])
+			for i in range(past.size()-1,-1,-1):
+				var run: Dictionary = past[i]
+				legs[legs.size()-1].append({piece = run.piece, lane = run.lane, from_d = run.to_d, to_d = run.from_d})
 		if k == 0:
 			from_d = start_d
 			to_d = total if forward else 0.0
 		else:
-			forward = entry.enter == piece.lane_ends(lane)[0]
-			from_d = 0.0 if forward else total
-			to_d = total if forward else 0.0
+			var ahead: bool = entry.enter == piece.lane_ends(lane)[0]
+			from_d = 0.0 if ahead else total
+			to_d = total if ahead else 0.0
 		if k == chain_pieces.size()-1 and end_d >= 0.0: to_d = end_d
-		var begin := maxi(0,points.size()-1)
-		_sample(piece,from_d,to_d,points,lane)
-		spans.append({piece = piece, lane = lane, from_d = from_d, to_d = to_d, begin = begin, end = points.size()-1})
-	var cum := PackedFloat32Array()
-	var running := 0.0
-	for i in range(points.size()):
-		if i > 0: running += points[i-1].distance_to(points[i])
-		cum.append(running)
-	var start_offset: float = cum[behind.size()-1] if behind.size() > 0 else 0.0
-	return {points = points, cum = cum, total = running, start = start_offset, spans = spans}
+		legs[legs.size()-1].append({piece = piece, lane = lane, from_d = from_d, to_d = to_d})
+	var behind := PackedVector3Array()
+	_tail(first,start_d,forward,tail,behind,first_lane)
+	var result := {}
+	var last := {}
+	for i in range(legs.size()):
+		var points := PackedVector3Array()
+		if i == 0:
+			for j in range(behind.size()-1,-1,-1): points.append(behind[j])
+		var spans: Array[Dictionary] = []
+		for run in legs[i]:
+			var begin := maxi(0,points.size()-1)
+			_sample(run.piece,run.from_d,run.to_d,points,run.lane)
+			spans.append({piece = run.piece, lane = run.lane, from_d = run.from_d, to_d = run.to_d, begin = begin, end = points.size()-1})
+		var cum := PackedFloat32Array()
+		var running := 0.0
+		for j in range(points.size()):
+			if j > 0: running += points[j-1].distance_to(points[j])
+			cum.append(running)
+		var start_offset: float = cum[behind.size()-1] if i == 0 and behind.size() > 0 else 0.0
+		var leg := {points = points, cum = cum, total = running, start = start_offset, spans = spans}
+		if i == 0: result = leg
+		else: last.then = leg
+		last = leg
+	return result
+## Distance a train runs along a line and every leg after it.
+static func travel(track: Dictionary) -> float:
+	var total := 0.0
+	var leg := track
+	while not leg.is_empty():
+		total += leg.total-leg.start
+		leg = leg.get("then",{})
+	return total
 ## Which piece and lane a point `s` along a line is on: {piece, lane, distance}, or {}.
 static func locate(track: Dictionary, s: float) -> Dictionary:
 	var spans: Array = track.get("spans",[])
@@ -398,8 +468,7 @@ func line_to_depot(from_piece: Node3D, from_d: float, depot: Node3D, team: Strin
 		if route.is_empty(): continue
 		var track := line(route,from_d,stop.distance,tail)
 		if track.is_empty(): continue
-		var travel: float = track.total-track.start
-		if best.is_empty() or travel < best.total-best.start: best = track
+		if best.is_empty() or travel(track) < travel(best): best = track
 	return best
 ## Where a new train stands: in the Depot's loading area, on the line through `on_piece` when one was chosen
 ## (docs/RAIL_PLANNING.md) and it still reaches the Depot, else on any line that does.
@@ -554,13 +623,14 @@ func _process(delta: float) -> void:
 	preview.get_node("Status").text = route_status()
 ## The cursor label while connecting buildings.
 func route_status() -> String:
-	if not is_instance_valid(route_from): return "RAIL · click a Depot, mine or build site"
-	if not is_instance_valid(route_to): return "FROM %s · click the building to connect" % target_name(route_from).to_upper()
+	if not is_instance_valid(route_from): return "RAIL · click a Depot, mine, build site or track"
+	if not is_instance_valid(route_to): return "FROM %s · click a building or track to connect" % target_name(route_from).to_upper()
 	if pending.is_empty(): return "NO OPEN PATH · click another building"
 	var hud = game.get_node("Interface")
 	var blocker := plan_blocker(hud.global_payer if hud.global_pinned else null)
 	return ("NO PATH THROUGH HERE · " if route_blocked else "")+"%d PIECE%s · %d IRON · %s" % [pending.size(),"" if pending.size() == 1 else "S",plan_cost(),"CLICK LAYS IT" if blocker.is_empty() else "NOT ENOUGH IRON"]
-func target_name(node: Node3D) -> String:
+func target_name(node) -> String:
+	if node is RailAnchor: return "the track"
 	if node.is_in_group("construction_plans"): return "%s site" % node.spec.title
 	if node.is_in_group("mines"): return "Mine"
 	return String(node.name)
@@ -672,6 +742,9 @@ func clear_plan() -> void:
 	for entry in pending:
 		if is_instance_valid(entry.ghost): entry.ghost.queue_free()
 	pending.clear()
+	for piece in _hidden:
+		if is_instance_valid(piece): piece.get_node("Visuals").visible = true
+	_hidden.clear()
 ## Drops the plan and both picked buildings.
 func drop_route() -> void:
 	clear_plan()
@@ -739,43 +812,174 @@ func target_at(point: Vector3, team := "player") -> Node3D:
 		var gap := Vector2(point.x-target.global_position.x,point.z-target.global_position.z).length()
 		if gap <= target_reach(target) and gap < best_gap: best = target; best_gap = gap
 	return best
-## Picks a building to connect. The first pick starts a route; the second suggests the path between them and
-## plans it. A pick after that starts again. Returns what to tell the player.
-func pick_target(target: Node3D) -> String:
-	if target == null: return "Click a Depot, mine or build site to connect."
+## What a click at `point` picks while connecting: friendly track under it (a RailAnchor), else the target whose
+## ring holds it, else null.
+func pick_at(point: Vector3, team := "player"):
+	var hit := nearest_piece(point,probe("straight").half_width()+0.8)
+	if not hit.is_empty() and friendly_piece(hit.piece,team): return RailAnchor.new(hit.piece,point)
+	return target_at(point,team)
+## Picks a building or track to connect. The first pick starts a route; the second suggests the path between them
+## and plans it. A pick after that starts again. Returns what to tell the player.
+func pick_target(target) -> String:
+	if target == null: return "Click a Depot, mine, build site or track to connect."
 	if not is_instance_valid(route_from) or is_instance_valid(route_to):
 		drop_route()
+		if target is RailAnchor and join_candidates(target).is_empty(): return "New track can't join this track here: it needs a free end or three straights in a row."
 		route_from = target
-		return "Connecting from %s: click the building to connect it to." % target_name(target)
-	if target == route_from: return "Click a different building to connect %s to." % target_name(target)
+		return "Connecting from %s: click the building or track to connect it to." % target_name(target)
+	if target == route_from or (target is RailAnchor and route_from is RailAnchor and target.global_position.distance_to(route_from.global_position) < 10.0):
+		return "Click a different building or track to connect %s to." % target_name(route_from)
+	if target is RailAnchor and join_candidates(target).is_empty(): return "New track can't join this track here: it needs a free end or three straights in a row."
 	route_to = target
 	route_via = null
 	if suggest_route(route_from,route_to) == 0:
-		return "No open path from %s to %s. Click another building, or Backspace to choose again." % [target_name(route_from),target_name(target)]
+		return "No open path from %s to %s. Click another building or track, or Backspace to choose again." % [target_name(route_from),target_name(target)]
 	var hud = game.get_node_or_null("Interface")
 	var blocker := plan_blocker(hud.global_payer if hud != null and hud.global_pinned else null)
 	return "Suggested track: %d piece%s, %d iron. It follows the cursor; %s" % [pending.size(),"" if pending.size() == 1 else "s",plan_cost(),"click to lay it." if blocker.is_empty() else blocker]
 ## Replaces the plan with the shortest open path of straights and curves from `from` to `to`, touching both
 ## rings, and through `via` when one is given. Returns the number of pieces, 0 when there is no open path. With
 ## no path through `via`, the plan is left as it was.
-func suggest_route(from: Node3D, to: Node3D, via = null) -> int:
+func suggest_route(from, to, via = null) -> int:
 	if _router == null: _router = preload("res://scripts/rails/rail_router.gd").new(self)
 	var width: float = probe("straight").half_width()
-	var path: Array[Dictionary] = _router.find(from,to,target_reach(from)+width,target_reach(to)+width,via)
-	if path.is_empty() and via != null: return 0
+	if not from is RailAnchor and not to is RailAnchor:
+		var path: Array[Dictionary] = _router.find(from,to,target_reach(from)+width,target_reach(to)+width,via)
+		if path.is_empty() and via != null: return 0
+		_set_plan(path)
+		return path.size()
+	# Joining track: the path leaves from one of the joins on the first line and arrives at one on the second.
+	var starts: Array = _router.ring_starts(from.global_position,target_reach(from)+width) if not from is RailAnchor else []
+	var from_joins: Array[Dictionary] = []
+	if from is RailAnchor: from_joins = join_candidates(from)
+	for i in range(from_joins.size()):
+		var at = _router.lattice_point(from_joins[i].position)
+		if at != null: starts.append([at,_router.heading_of(from_joins[i].out),i])
+	var goal := {centre = to.global_position, reach = target_reach(to)+width}
+	var to_joins: Array[Dictionary] = []
+	if to is RailAnchor: to_joins = join_candidates(to)
+	if to is RailAnchor:
+		var states := {}
+		var radius := 0.0
+		for j in range(to_joins.size()):
+			var at = _router.lattice_point(to_joins[j].position)
+			if at == null: continue
+			states[_router.state_key(at,_router.heading_of(-to_joins[j].out))] = j
+			radius = maxf(radius,Vector2(to_joins[j].position.x-to.global_position.x,to_joins[j].position.z-to.global_position.z).length())
+		goal = {centre = to.global_position, reach = radius, states = states}
+	if starts.is_empty() or (to is RailAnchor and goal.states.is_empty()):
+		if via == null: _set_plan([])
+		return 0
+	var found: Dictionary = _router.route(starts,goal,via)
+	var joins: Array[Dictionary] = []
+	if not found.is_empty():
+		if from is RailAnchor: joins.append(from_joins[found.start])
+		if to is RailAnchor: joins.append(to_joins[found.goal])
+	if found.is_empty() or not _joins_fit(joins,found.path):
+		if via == null: _set_plan([])
+		return 0
+	var path: Array[Dictionary] = []
+	if from is RailAnchor and joins[0].has("kind"): path.append(joins[0])
+	path.append_array(found.path)
+	if to is RailAnchor and joins[joins.size()-1].has("kind"): path.append(joins[joins.size()-1])
+	_set_plan(path)
+	return path.size()
+## Replaces the plan with `path`: pieces {kind, transform}, and forks that also name the straights they replace.
+## Those straights are hidden while the fork's ghost stands in for them.
+func _set_plan(path: Array) -> void:
 	clear_plan()
 	for piece in path:
-		pending.append({kind = piece.kind, transform = piece.transform, cells = cells_for(piece.kind,piece.transform), ghost = _plan_ghost(piece.kind,piece.transform)})
+		var entry := {kind = piece.kind, transform = piece.transform, cells = cells_for(piece.kind,piece.transform), ghost = _plan_ghost(piece.kind,piece.transform)}
+		if piece.has("replaces"):
+			entry.replaces = piece.replaces
+			for old in piece.replaces:
+				old.get_node("Visuals").visible = false
+				_hidden.append(old)
+		pending.append(entry)
 	_tint_plan()
-	return path.size()
+## Whether the joins fit with each other and the new track: two forks may not replace the same straights or
+## overlap, and the new track may not cross a fork's branch.
+func _joins_fit(joins: Array[Dictionary], path: Array) -> bool:
+	var used := {}
+	var replaced := {}
+	for join in joins:
+		if not join.has("kind"): continue
+		for old in join.replaces:
+			if replaced.has(old): return false
+			replaced[old] = true
+		for cell in join.cells:
+			if used.has(cell): return false
+			used[cell] = true
+	for piece in path:
+		for cell in cells_for(piece.kind,piece.transform):
+			if used.has(cell): return false
+	return true
+## Where new track can join the line under `anchor` (docs/RAIL_PLANNING.md), within JOIN_WINDOW of the click:
+## {position, out} for where the new track leaves, the way it leaves. A free end of the line joins as it is. A
+## fork can stand in for three straights in a row: its entry and straight exit keep the line as it ran, and the
+## new track leaves by its branch; such a join also has {kind, transform, cells, replaces}.
+func join_candidates(anchor: RailAnchor) -> Array[Dictionary]:
+	if anchor.revision == revision: return anchor.candidates
+	anchor.revision = revision
+	anchor.candidates = []
+	if not is_instance_valid(anchor.piece) or not pieces.has(anchor.piece): return anchor.candidates
+	var line_pieces: Array = lines()[anchor.piece.get_instance_id()].pieces
+	var click := Vector2(anchor.global_position.x,anchor.global_position.z)
+	var near := func(at: Vector3) -> bool: return Vector2(at.x,at.z).distance_to(click) <= JOIN_WINDOW
+	for piece in line_pieces:
+		if not is_instance_valid(piece): continue
+		var piece_ends: Array[Dictionary] = piece.ends()
+		for index in range(piece_ends.size()):
+			if near.call(piece_ends[index].position) and connection(piece,index).is_empty():
+				anchor.candidates.append({position = piece_ends[index].position, out = piece_ends[index].out})
+		if piece.kind != "straight": continue
+		for start_end in range(2):
+			var run := _straight_run(piece,start_end,3)
+			if run.is_empty(): continue
+			var entry: Vector3 = piece_ends[start_end].position
+			var direction: Vector3 = -piece_ends[start_end].out
+			if not near.call(entry+direction*7.2): continue
+			for kind in ["fork_left","fork_right"]:
+				var xf := transform_for(kind,entry,direction,0)
+				var far: Array[Dictionary] = run[run.size()-1].ends()
+				var straight_exit := _world_end(kind,xf,1)
+				var meets := false
+				for end in far: if end.position.distance_to(straight_exit.position) <= JOIN_EPSILON: meets = true
+				if not meets: continue
+				var cells := cells_for(kind,xf)
+				if not ground_clear(cells,run): continue
+				var branch := _world_end(kind,xf,2)
+				anchor.candidates.append({position = branch.position, out = branch.out, kind = kind, transform = xf, cells = cells, replaces = run})
+	return anchor.candidates
+## `count` straights in a row from `piece`'s end `start_end` on through the line, or [] when the line turns,
+## forks or stops first.
+func _straight_run(piece: Node3D, start_end: int, count: int) -> Array:
+	var run: Array = [piece]
+	var current := piece
+	var leave := 1-start_end
+	while run.size() < count:
+		var link := connection(current,leave)
+		if link.is_empty() or link.piece.kind != "straight": return []
+		current = link.piece
+		leave = 1-link.end
+		run.append(current)
+	return run
+## The plan's iron. A fork pays only for what it adds to the straights it replaces.
 func plan_cost() -> int:
 	var total := 0
-	for entry in pending: total += cost(entry.kind)
-	return total
+	for entry in pending:
+		total += cost(entry.kind)
+		for old in entry.get("replaces",[]): total -= cost(old.kind)
+	return maxi(total,0)
 ## Laid pieces whose line the plan joins.
 func joined_pieces() -> Array[Node3D]:
 	var result: Array[Node3D] = []
 	for i in range(pending.size()):
+		# A fork joins the line of the straights it replaces.
+		for old in pending[i].get("replaces",[]):
+			if not is_instance_valid(old) or not lines().has(old.get_instance_id()): continue
+			for piece in lines()[old.get_instance_id()].pieces:
+				if is_instance_valid(piece) and not result.has(piece): result.append(piece)
 		for index in range(probe(pending[i].kind).end_count()):
 			var meets := _meets_anything(_pending_end(pending[i],index),i)
 			if not meets.has("piece"): continue
@@ -785,7 +989,9 @@ func joined_pieces() -> Array[Node3D]:
 ## The radius of a target's ring. Track connects once its edge touches the ring: its centre line within the
 ## radius plus half the track's width. A Depot's ring is where trains are built, load and unload, so a train can
 ## be built on any track that connects to it; other targets take half their footprint plus the connect reach.
-func target_reach(node: Node3D) -> float:
+func target_reach(node) -> float:
+	# A click on track: over it the suggested track goes back to its shortest.
+	if node is RailAnchor: return 4.0
 	if node.is_in_group("depots") and node.get("rules") != null: return depot_reach(node)
 	var size := Vector2i(2,2)
 	var depots = game.get_node_or_null("DepotNetwork")
@@ -870,7 +1076,9 @@ func plan_payer(pinned = null) -> Node3D:
 func plan_blocker(pinned = null) -> String:
 	if pending.is_empty(): return "Plan some track first."
 	var targets := plan_targets()
-	if targets.size() < 2: return "Planned track must connect two targets (Depots, mines or build sites); it connects %d." % targets.size()
+	# Track from one line to another needs no target of its own.
+	var links_track: bool = route_from is RailAnchor and route_to is RailAnchor
+	if targets.size() < 2 and not links_track: return "Planned track must connect two targets (Depots, mines or build sites); it connects %d." % targets.size()
 	if plan_payer(pinned) == null: return "No Depot has the %d iron for this track." % plan_cost()
 	return ""
 ## Lays every planned piece at once, charging one Depot. Returns the pieces laid.
@@ -888,6 +1096,13 @@ func commit_plan(pinned = null) -> Array[Node3D]:
 	for entry in plan:
 		var piece = scene_for(entry.kind).instantiate()
 		piece.assigned_depot = payer
+		var replaces: Array = entry.get("replaces",[]).filter(func(old): return is_instance_valid(old) and pieces.has(old))
+		if not replaces.is_empty():
+			# Trains hear of the change once, when the fork is in.
+			piece.assigned_depot = replaces[0].assigned_depot if is_instance_valid(replaces[0].assigned_depot) else payer
+			for old in replaces:
+				unregister(old,true)
+				old.queue_free()
 		piece.transform = entry.transform
 		parent.add_child(piece,true)
 		if is_instance_valid(piece) and not piece.is_queued_for_deletion(): laid.append(piece)

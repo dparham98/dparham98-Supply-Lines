@@ -179,7 +179,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if point != null:
 			var rails = $RailNetwork
 			if is_instance_valid(rails.route_to) and not rails.pending.is_empty(): lay_route()
-			else: notify(rails.pick_target(rails.target_at(point)))
+			else: notify(rails.pick_target(rails.pick_at(point)))
 		get_viewport().set_input_as_handled()
 		return
 	if (placing_depot or placing_generator or not placing_structure.is_empty()) and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:

@@ -187,6 +187,11 @@ func _walk(delta: float) -> void:
 	var hit: Dictionary = rail_network.locate(_line,_s)
 	if not hit.is_empty(): piece = hit.piece; along = hit.distance; lane = hit.lane
 	if _s >= _goal-0.001:
+		# A line that reverses at a fork goes on with its next leg, the train backing into the other lane.
+		var then: Dictionary = _line.get("then",{})
+		if not then.is_empty() and then.spans.all(func(span): return is_instance_valid(span.piece) and rail_network.pieces.has(span.piece)):
+			_follow(then)
+			return
 		_rest_line = _line
 		_line = {}
 		_route.clear()
