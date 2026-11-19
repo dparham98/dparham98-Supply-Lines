@@ -164,7 +164,7 @@ func run() -> void:
 			if network.can_place_size(candidate,train,Vector2i(5,5)): building_point = candidate
 	if not check(building_point != Vector3.ZERO and network.construct_production(building_point,&"barracks"),"Train could not fund production building construction"): return
 	var building = get_nodes_in_group("production_buildings")[-1]; building.set_process(false)
-	if not check(building.assigned_depot == null and not building.request_unit(&"infantry") and train.energy == 100 and train.iron == 45,"Mobile construction silently assigned operating funds"): return
+	if not check(building.assigned_depot == null and not building.request_unit(&"infantry") and train.carried_energy == 100 and train.iron == 45,"Mobile construction silently assigned operating funds"): return
 	var nearest_depot: Node3D
 	for candidate in get_nodes_in_group("depots"):
 		if SupplySource.covers(candidate,building.global_position,"player"): nearest_depot = candidate
@@ -185,7 +185,7 @@ func run() -> void:
 	nearest_depot = null
 	for candidate in get_nodes_in_group("depots"):
 		if SupplySource.covers(candidate,generator.global_position,"player") and (nearest_depot == null or candidate.global_position.distance_to(generator.global_position) < nearest_depot.global_position.distance_to(generator.global_position)): nearest_depot = candidate
-	if not check(train.energy == 0 and train.iron == 25 and nearest_depot != null and generator.assigned_depot == nearest_depot and generator.source_valid(),"A train-funded Generator should take the covering Depot"): return
+	if not check(train.carried_energy == 0 and train.iron == 25 and nearest_depot != null and generator.assigned_depot == nearest_depot and generator.source_valid(),"A train-funded Generator should take the covering Depot"): return
 	nearest_depot.stockpile.deposit(&"wood",1)
 	if not check(generator.active(),"Assigned Generator did not recognize local wood"): return
 	# Loss of a latched mobile source pauses Infantry rather than using neighboring Depot money.
