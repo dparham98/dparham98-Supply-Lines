@@ -44,6 +44,18 @@ Phase 4 of the approved HUD plan, on branch `feature/hud-layout` from main `5762
   - The tabs moved into the header row, and the check is back to its old failure point.
 - Needs a human playtest.
 
-## Bronze frame
+## Painted panel
 
-`HudFrame` in `scenes/ui/skirmish_hud.tscn` draws the bronze and red border over the bottom panel, which is now 272 px tall with 30 px side padding and 20 px bottom padding to clear it. The original art is `Blender/UI/hud_frame_source.webp`; `assets/ui/hud_frame.png` is that art at 22% (440 x 147). Two `NinePatchRect` nodes split it down the middle and stretch only plain rail sections, so the crest, bottom ornament and corners keep their shape at any width. The frame ignores the mouse.
+The bottom HUD is drawn by one painted panel, `assets/ui/hud_panel.png` (1100 x 349). It replaced the earlier bronze border (`Blender/UI/hud_frame_source.webp`, kept for reference).
+
+- **Source:** `Blender/UI/hud_panel_source.webp` (2000 x 634, transparent outside and in its windows).
+- **Build:** `Blender/UI/make_hud_panel.gd` fills the windows with the HUD's dark interior colour, keeps the outside transparent and scales the art to 55%. Re-run it after changing the source:
+  `Godot_v4.7.2-stable_win64_console.exe --headless --path . --script res://Blender/UI/make_hud_panel.gd`
+- **Drawing:** `HudFrame` holds two `NinePatchRect` nodes, one per half of the window. Each half stretches only one plain strip (texture x 330–351 on the left, 811–819 on the right), so the crest, the corners and every window keep their shape, and the crest stays centred at any width. `HudFrame` draws behind `Bottom` and ignores the mouse.
+- **Fitting the controls:** `Bottom` is 296 px tall with no background of its own. Its margins (77 px at the sides, 12 at the top, 55 at the bottom) and the column widths put each part in its painted window:
+  - the header message and buttons on the header band, either side of the crest;
+  - the minimap (154 px) in the left window;
+  - selection info and the stats column in the middle window; the info column takes half of any extra width;
+  - the portrait window is left empty (`Ornament`, with its filler off);
+  - the command tiles (41 px, 5 px apart) on the painted 4 x 3 grid.
+- **Stretching:** `scripts/ui/hud_stretch_gap.gd` spacers take half the width beyond 1100 px, matching the right half's stretch strip, so the header buttons and the command grid stay on their painted places.

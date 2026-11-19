@@ -44,13 +44,14 @@ const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 
 	"PrintTruck": 0, "PrintCargo": 1, "PrintTrain": 2,
 	"PrintInfantry": 0, "ProduceScout": 1, "ProduceGrenadier": 2, "ProduceTank": 3, "ProduceMotorcycle": 4, "ProduceDrone": 5, "ProduceUbermech": 6,
 	"ToggleGenerator": 0, "FocusAssigned": 1}
-const TILE := 46
+## A command tile, sized to the cells painted on the HUD panel (assets/ui/hud_panel.png).
+const TILE := 41
 const TRIP_LABELS := {"once": "once", "all": "all available", "repeat": "repeat"}
 ## One icon per stat row (assets/ui/icons).
 const STAT_ICONS := {"Speed": "speed", "Range": "focus", "Damage": "damage", "Vision": "scout", "Vs buildings": "depot", "Splash": "splash",
 	"Cost": "cost", "Deploys": "deploy", "Output": "generator", "Burning": "refuel", "Cycle": "cycle", "Mode": "mode",
 	"Energy": "generator", "Iron": "mine", "Queue": "queue", "Fuel left": "cargo", "Energy ceiling": "generator", "Coal kept": "refuel"}
-const TILE_GAP := 4
+const TILE_GAP := 5
 @onready var state_label: Label = $Bottom/Body/Row/Info/Head/Text/State
 const RESOURCE_KINDS := [&"energy",&"iron",&"wood",&"coal"]
 var _icons := {}

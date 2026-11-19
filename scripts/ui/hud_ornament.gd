@@ -4,11 +4,13 @@ extends Control
 @export var line_color := Color(0.451,0.42,0.349,1)
 @export var accent_color := Color(0.58,0.49,0.396,0.55)
 @export var hatch_spacing := 14.0
+## Off where the HUD panel art paints its own frame here (docs/HUD_LAYOUT.md).
+@export var show_filler := true
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	resized.connect(queue_redraw)
 func _draw() -> void:
-	if size.x < 24 or size.y < 24: return
+	if not show_filler or size.x < 24 or size.y < 24: return
 	var rect := Rect2(Vector2(2,2),size-Vector2(4,4))
 	draw_rect(rect,Color(0.05,0.055,0.047,0.6))
 	var hatch := Color(line_color,0.35)
