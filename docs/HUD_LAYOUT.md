@@ -51,11 +51,13 @@ The bottom HUD is drawn by one painted panel, `assets/ui/hud_panel.png` (1100 x 
 - **Source:** `Blender/UI/hud_panel_source.webp` (2000 x 634, transparent outside and in its windows).
 - **Build:** `Blender/UI/make_hud_panel.gd` fills the windows with the HUD's dark interior colour, keeps the outside transparent and scales the art to 55%. Re-run it after changing the source:
   `Godot_v4.7.2-stable_win64_console.exe --headless --path . --script res://Blender/UI/make_hud_panel.gd`
-- **Drawing:** `HudFrame` holds two `NinePatchRect` nodes, one per half of the window. Each half stretches only one plain strip (texture x 330–351 on the left, 811–819 on the right), so the crest, the corners and every window keep their shape, and the crest stays centred at any width. `HudFrame` draws behind `Bottom` and ignores the mouse.
-- **Fitting the controls:** `Bottom` is 296 px tall with no background of its own. Its margins (77 px at the sides, 12 at the top, 55 at the bottom) and the column widths put each part in its painted window:
+- **Drawing:** `HudFrame/Panel` is one `NinePatchRect` across the window's width. It draws behind `Bottom` and ignores the mouse.
+- **Stretching:** only one strip of the art stretches: texture x 335–350, inside the middle window left of the crest, where every column is the same (straight rails and plain dark interior), so it widens with no smearing. Every other part keeps its painted size, and the extra width all goes to the middle window.
+  - The crest therefore stays over its painted place, not at the screen's centre: at 1100 px it is centred, at 1920 px it sits about 410 px right of centre.
+  - An earlier fit stretched a 14 px strip of the metal bay between the portrait and the command grid as well, to keep the crest centred. That smeared the bay into streaks. No column right of the crest is clean (the wing tips and the red plate cross them all), so a centred crest would need art with a plain strip there.
+- **Fitting the controls:** `Bottom` is 296 px tall with no background of its own. Its margins (77 px at the sides, 12 at the top, 55 at the bottom; the info column has no line spacing so a truck's Load page fits the 177 px window) and the column widths put each part in its painted window:
   - the header message and buttons on the header band, either side of the crest;
   - the minimap (154 px) in the left window;
-  - selection info and the stats column in the middle window; the info column takes half of any extra width;
+  - selection info and the stats column in the middle window; the info column takes all extra width;
   - the portrait window is left empty (`Ornament`, with its filler off);
   - the command tiles (41 px, 5 px apart) on the painted 4 x 3 grid.
-- **Stretching:** `scripts/ui/hud_stretch_gap.gd` spacers take half the width beyond 1100 px, matching the right half's stretch strip, so the header buttons and the command grid stay on their painted places.

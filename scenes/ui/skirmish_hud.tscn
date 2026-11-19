@@ -6,7 +6,6 @@
 [ext_resource type="Theme" path="res://assets/ui/supply_lines_theme.tres" id="ui_theme"]
 [ext_resource type="Script" path="res://scripts/ui/hud_ornament.gd" id="ornament_script"]
 [ext_resource type="Texture2D" path="res://assets/ui/hud_panel.png" id="hud_panel"]
-[ext_resource type="Script" path="res://scripts/ui/hud_stretch_gap.gd" id="stretch_gap"]
 [ext_resource type="Script" path="res://scripts/ui/map_overlay.gd" id="overlay_script"]
 [ext_resource type="PackedScene" path="res://scenes/ui/crate_pips.tscn" id="crate_pips"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/mine.svg" id="icon_mine"]
@@ -429,31 +428,19 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-[node name="Left" type="NinePatchRect" parent="HudFrame"]
+[node name="Panel" type="NinePatchRect" parent="HudFrame"]
 layout_mode = 1
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_top = -349.0
-grow_vertical = 0
-mouse_filter = 2
-texture = ExtResource("hud_panel")
-region_rect = Rect2(0,0,550,349)
-patch_margin_left = 333
-patch_margin_right = 201
-[node name="Right" type="NinePatchRect" parent="HudFrame"]
-layout_mode = 1
-anchor_left = 0.5
+anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_top = -349.0
+grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 2
 texture = ExtResource("hud_panel")
-region_rect = Rect2(550,0,550,349)
-patch_margin_left = 261
-patch_margin_right = 281
+patch_margin_left = 335
+patch_margin_right = 750
 [node name="Bottom" type="PanelContainer" parent="."]
 theme = ExtResource("ui_theme")
 anchors_preset = 12
@@ -482,7 +469,7 @@ mouse_filter = 2
 color = Color(0.183,0.069,0.063,1)
 [node name="Body" type="VBoxContainer" parent="Bottom"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 [node name="Header" type="HBoxContainer" parent="Bottom/Body"]
 custom_minimum_size = Vector2(0,44)
 layout_mode = 2
@@ -497,10 +484,9 @@ size_flags_horizontal = 3
 text = "SUPPLY LINES · Select a unit or building"
 clip_text = true
 [node name="CrestGap" type="Control" parent="Bottom/Body/Header"]
+custom_minimum_size = Vector2(181,0)
 layout_mode = 2
 mouse_filter = 2
-script = ExtResource("stretch_gap")
-base_width = 181.0
 [node name="GlobalBuild" type="Button" parent="Bottom/Body/Header"]
 shortcut = SubResource("shortcut_command_global_build")
 custom_minimum_size = Vector2(84,26)
@@ -555,6 +541,7 @@ stretch_mode = 0
 custom_minimum_size = Vector2(140,0)
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_constants/separation = 0
 [node name="Head" type="HBoxContainer" parent="Bottom/Body/Row/Info"]
 layout_mode = 2
 theme_override_constants/separation = 8
@@ -2736,15 +2723,15 @@ size_flags_horizontal = 0
 mouse_filter = 2
 script = ExtResource("ornament_script")
 show_filler = false
-[node name="StretchGap" type="Control" parent="Bottom/Body/Row"]
-layout_mode = 2
-mouse_filter = 2
-script = ExtResource("stretch_gap")
 [node name="Commands" type="VBoxContainer" parent="Bottom/Body/Row"]
 layout_mode = 2
-custom_minimum_size = Vector2(187,0)
-alignment = 1
+custom_minimum_size = Vector2(212,0)
+theme_override_constants/separation = 0
 theme_override_constants/separation = 6
+[node name="GridTop" type="Control" parent="Bottom/Body/Row/Commands"]
+custom_minimum_size = Vector2(0,22)
+layout_mode = 2
+mouse_filter = 2
 [node name="Title" type="Label" parent="Bottom/Body/Row/Commands"]
 layout_mode = 2
 text = "COMMAND CARD"
