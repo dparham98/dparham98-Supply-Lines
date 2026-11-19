@@ -7,6 +7,9 @@ extends Resource
 ## Fell (docs/FELL.md): after the lane to the clicked spot, Infantry also clear the Forest cells within this
 ## many cells of it. 0 fells only the lane.
 @export_range(0,32) var fell_radius_cells := 1
+## Autocast Fell (docs/FELL.md): an idle Infantry with autocast on fells the Forest within this many cells of
+## where it was left.
+@export_range(0,32) var autocast_fell_radius_cells := 4
 @export_range(1,10000) var iron_per_tile := 250
 ## Iron under each cell of a mine site (docs/MINE_SITES.md). A site is 4 x 3 cells, so it holds twelve times this:
 ## 7,500, as much as one of the balanced map's ore fields.

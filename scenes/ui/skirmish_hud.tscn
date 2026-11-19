@@ -2894,7 +2894,7 @@ theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="Fell" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
-tooltip_text = "Click a forest. Infantry cut down the trees there and round it, and keep no wood."
+tooltip_text = "Click a forest. Infantry cut down the trees there and round it, and keep no wood.\nRight-click: autocast. Idle Infantry fell the trees round where they are left."
 shortcut = SubResource("shortcut_command_fell")
 layout_mode = 0
 custom_minimum_size = Vector2(46,46)
@@ -2917,6 +2917,23 @@ horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
+[node name="Auto" type="Label" parent="Bottom/Body/Row/Commands/Main/Fell"]
+visible = false
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 3.0
+offset_top = -15.0
+offset_right = 43.0
+offset_bottom = -2.0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.55,0.9,0.5,1)
+theme_override_colors/font_outline_color = Color(0,0,0,1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "AUTO"
 [node name="Return" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
 tooltip_text = "Deliver carried resources to the selected supply source."

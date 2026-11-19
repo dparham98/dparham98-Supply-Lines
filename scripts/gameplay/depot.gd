@@ -42,7 +42,10 @@ var coal: int:
 	set(value): stockpile.set_amount(&"coal",value)
 var capture_team := ""
 var capture_progress := 0.0
+const Rally = preload("res://scripts/production/rally.gd")
 var pending: Array[String] = []
+## Where new units go (docs/RALLY_POINTS.md): right-click with this building selected; Shift adds stops.
+var rally_points: Array[Dictionary] = []
 ## The chosen line for each queued train, in queue order: a piece of it, or null for any line.
 var train_lines: Array = []
 ## Enabled for newly constructed/deployed Depots, not prebuilt map fixtures.
@@ -153,6 +156,7 @@ func _process(delta: float) -> void:
 		if "start_fuelled" in unit: unit.start_fuelled = FuelRules.full_tanks_for(game)
 		unit.position = train_stop.position if not train_stop.is_empty() else ground.tile_to_world(spawn)
 		game.get_node("Entities/Units").add_child(unit,true)
+		Rally.send(self,unit)
 		queue -= 1
 		progress = 0
 		if kind == "infantry": game.units_printed += 1
@@ -207,6 +211,7 @@ func _complete_truck() -> void:
 	game.get_node("Entities/Units").add_child(unit,true)
 	unit.global_position = where
 	unit.get_node("Visuals").rotation.y = $Visuals.rotation.y
+	Rally.send(self,unit)
 	game.notify("truck ready at %s." % name)
 func can_cancel() -> bool:
 	return team == "player" and queue > 0 and not pending.is_empty() and not cancelling
@@ -335,6 +340,7 @@ func try_construction_infantry() -> bool:
 	unit.team = team
 	unit.position = ground.tile_to_world(spawn)
 	game.get_node("Entities/Units").add_child(unit,true)
+	Rally.send(self,unit)
 	construction_infantry_pending = false
 	construction_infantry_spawned = true
 	game.notify("Construction infantry ready at %s." % name)

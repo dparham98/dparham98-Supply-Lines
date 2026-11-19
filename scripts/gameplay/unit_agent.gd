@@ -152,6 +152,40 @@ func command_gather(node: Node3D) -> void:
 ## fell_radius_cells of it; or, given `area`, every Forest cell in that box. No wood is kept, and the worker keeps
 ## any load it already carries.
 var _fell_origin := Vector2i(-1,-1)
+## Autocast: while idle with no orders, fell the Forest within autocast_fell_radius_cells of where it was left,
+## one cell at a time, nearest first. The player switches it with a right-click on the Fell card.
+var fell_autocast := false
+## The cell it was left at, round which it fells; a new order moves it.
+var _auto_home := Vector2i(-1,-1)
+var _auto_wait := 0.0
+func set_fell_autocast(on: bool) -> void:
+	fell_autocast = on and can_gather and not is_cargo_vehicle and not is_depot_truck
+	_auto_home = Vector2i(-1,-1)
+	_auto_wait = 0.0
+## Looks for Forest round its spot about once a second (ten after a tree it could not reach). Each pick is a
+## Fell of that one cell, so the lane to it stays inside the circle and nothing round it is cut.
+func _auto_fell(delta: float) -> void:
+	_auto_wait -= delta
+	if _auto_wait > 0: return
+	_auto_wait = 1.0
+	var here = ground.get_tile_at_position(global_position)
+	if here == null: return
+	if _auto_home.x < 0: _auto_home = here
+	var reach: int = ground.harvesting_rules.autocast_fell_radius_cells
+	var best := Vector2i(-1,-1)
+	var best_distance := INF
+	for z in range(_auto_home.y-reach,_auto_home.y+reach+1):
+		for x in range(_auto_home.x-reach,_auto_home.x+reach+1):
+			var cell := Vector2i(x,z)
+			if _auto_home.distance_squared_to(cell) > reach*reach or ground.forest_amount(cell) <= 0: continue
+			var d := Vector2(cell-here).length_squared()
+			if d < best_distance: best_distance = d; best = cell
+	if best.x < 0: return
+	command_fell(best,Rect2i(best,Vector2i.ONE))
+	if order != "fell": return
+	state = "Auto-felling"
+	# Straight on to the next cell once this one is down.
+	_auto_wait = 0.0
 var _fell_area := Rect2i()
 ## True once a worker could not walk to the lane's first tree: it then cuts every tree on the line.
 var _fell_whole := false
@@ -352,10 +386,14 @@ func _order_process(delta: float) -> void:
 		"capture": _capture_order()
 		"construct": _construct(delta)
 		_:
+			var unreachable := state == "Trees unreachable"
 			state = "Idle"
 			# Hold ground and defend even when deselected; working units keep working.
 			var enemy = _nearest_opponent()
 			if enemy: _shoot(enemy)
+			elif fell_autocast and order_queue.is_empty() and not out_of_fuel:
+				if unreachable: _auto_wait = 10.0
+				_auto_fell(delta)
 	_update_display()
 # Queue an order behind the current one, or start it now when idle.
 func queue_order(entry: Dictionary) -> void:
@@ -365,6 +403,8 @@ func queue_order(entry: Dictionary) -> void:
 	if order == "idle" and order_queue.is_empty() and not out_of_fuel: run_order(entry)
 	else: order_queue.append(entry)
 func run_order(entry: Dictionary) -> void:
+	# An order moves the spot autocast Fell works round to wherever the unit is next left.
+	_auto_home = Vector2i(-1,-1)
 	match entry.kind:
 		"move": command_move(entry.point)
 		"attack": command_attack(entry.target,entry.get("forced",false))
