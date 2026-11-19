@@ -14,6 +14,55 @@ roughness = 0.35
 [sub_resource type="StandardMaterial3D" id="flash_hot"]
 shading_mode = 0
 albedo_color = Color(1,0.96,0.72,1)
+[sub_resource type="StandardMaterial3D" id="load_iron"]
+albedo_color = Color(0.74,0.76,0.8,1)
+metallic = 0.7
+roughness = 0.35
+[sub_resource type="StandardMaterial3D" id="load_wood"]
+albedo_color = Color(0.5,0.33,0.18,1)
+roughness = 0.9
+[sub_resource type="StandardMaterial3D" id="load_wood_end"]
+albedo_color = Color(0.86,0.7,0.46,1)
+roughness = 0.85
+[sub_resource type="StandardMaterial3D" id="load_sack"]
+albedo_color = Color(0.5,0.43,0.31,1)
+roughness = 1.0
+[sub_resource type="StandardMaterial3D" id="load_coal"]
+albedo_color = Color(0.06,0.06,0.07,1)
+roughness = 0.5
+metallic = 0.25
+[sub_resource type="StandardMaterial3D" id="load_strap"]
+albedo_color = Color(0.2,0.15,0.1,1)
+roughness = 0.8
+[sub_resource type="BoxMesh" id="ingot_mesh"]
+material = SubResource("load_iron")
+size = Vector3(0.36,0.09,0.15)
+[sub_resource type="CylinderMesh" id="log_mesh"]
+material = SubResource("load_wood")
+top_radius = 0.07
+bottom_radius = 0.075
+height = 0.48
+radial_segments = 10
+rings = 1
+[sub_resource type="CylinderMesh" id="log_end_mesh"]
+material = SubResource("load_wood_end")
+top_radius = 0.062
+bottom_radius = 0.062
+height = 0.49
+radial_segments = 10
+rings = 1
+[sub_resource type="BoxMesh" id="sack_mesh"]
+material = SubResource("load_sack")
+size = Vector3(0.36,0.32,0.19)
+[sub_resource type="SphereMesh" id="lump_mesh"]
+material = SubResource("load_coal")
+radius = 0.07
+height = 0.11
+radial_segments = 8
+rings = 4
+[sub_resource type="BoxMesh" id="strap_mesh"]
+material = SubResource("load_strap")
+size = Vector3(0.4,0.04,0.22)
 [node name="InfantryModel" type="Node3D"]
 script = ExtResource("animator")
 player_path = NodePath("Rig/AnimationPlayer")
@@ -43,4 +92,67 @@ cast_shadow = 0
 material_override = SubResource("saw_steel")
 [node name="chainsaw_teeth_rig" parent="Rig/infantry_rig2/Skeleton3D/chainsaw" index="0"]
 material_override = SubResource("teeth_material")
+[node name="BackLoad" type="BoneAttachment3D" parent="Rig/infantry_rig2/Skeleton3D"]
+bone_name = "chest"
+bone_idx = 3
+[node name="Iron" type="Node3D" parent="Rig/infantry_rig2/Skeleton3D/BackLoad"]
+visible = false
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12, -0.37)
+[node name="Ingot1" type="MeshInstance3D" parent="Rig/infantry_rig2/Skeleton3D/BackLoad/Iron"]
+transform = Transform3D(0.9992, -0.04, 0, 0.04, 0.9992, 0, 0, 0, 1, 0, -0.1, 0)
+mesh = SubResource("ingot_mesh")
+[node name="Ingot2" type="MeshInstance3D" parent="Rig/infantry_rig2/Skeleton3D/BackLoad/Iron"]
+transform = Transform3D(0.9982, 0.06, 0, -0.06, 0.9982, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("ingot_mesh")
+[node name="Ingot3" type="MeshInstance3D" parent="Rig/infantry_rig2/Skeleton3D/BackLoad/Iron"]
+transform = Transform3D(0.9992, -0.04, 0, 0.04, 0.9992, 0, 0, 0, 1, 0, 0.1, 0)
+mesh = SubResource("ingot_mesh")
+[node name="Strap" type="MeshInstance3D" parent="Rig/infantry_rig2/Skeleton3D/BackLoad/Iron"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("strap_mesh")
+[node name="Wood" type="Node3D" parent="Rig/infantry_rig2/Skeleton3D/BackLoad"]
+visible = false
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12, -0.37)
+[node name="Log1" type="MeshInstance3D" parent="Rig/infantry_rig2/Skeleton3D/BackLoad/Wood"]
+transform = Transform3D(0, 1, 0, -1, 0, 0, 0, 0, 1, -0.02, -0.09, 0)
+mesh = SubResource("log_mesh")
+[node name="Ends1" type="MeshInstance3D" parent="Rig/infantry_rig2/Skeleton3D/BackLoad/Wood"]
+transform = Transform3D(0, 1, 0, -1, 0, 0, 0, 0, 1, -0.02, -0.09, 0)
+mesh = SubResource("log_end_mesh")
+[node name="Log2" type="MeshInstance3D" parent="Rig/infantry_rig2/Skeleton3D/BackLoad/Wood"]
+transform = Transform3D(0, 1, 0, -1, 0, 0, 0, 0, 1, 0.035, 0.05, 0)
+mesh = SubResource("log_mesh")
+[node name="Ends2" type="MeshInstance3D" parent="Rig/infantry_rig2/Skeleton3D/BackLoad/Wood"]
+transform = Transform3D(0, 1, 0, -1, 0, 0, 0, 0, 1, 0.035, 0.05, 0)
+mesh = SubResource("log_end_mesh")
+[node name="Log3" type="MeshInstance3D" parent="Rig/infantry_rig2/Skeleton3D/BackLoad/Wood"]
+transform = Transform3D(0, 1, 0, -1, 0, 0, 0, 0, 1, -0.02, 0.19, 0)
+mesh = SubResource("log_mesh")
+[node name="Ends3" type="MeshInstance3D" parent="Rig/infantry_rig2/Skeleton3D/BackLoad/Wood"]
+transform = Transform3D(0, 1, 0, -1, 0, 0, 0, 0, 1, -0.02, 0.19, 0)
+mesh = SubResource("log_end_mesh")
+[node name="Strap" type="MeshInstance3D" parent="Rig/infantry_rig2/Skeleton3D/BackLoad/Wood"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+mesh = SubResource("strap_mesh")
+[node name="Coal" type="Node3D" parent="Rig/infantry_rig2/Skeleton3D/BackLoad"]
+visible = false
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12, -0.37)
+[node name="Sack" type="MeshInstance3D" parent="Rig/infantry_rig2/Skeleton3D/BackLoad/Coal"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("sack_mesh")
+[node name="Lump1" type="MeshInstance3D" parent="Rig/infantry_rig2/Skeleton3D/BackLoad/Coal"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 0.18, 0)
+mesh = SubResource("lump_mesh")
+[node name="Lump2" type="MeshInstance3D" parent="Rig/infantry_rig2/Skeleton3D/BackLoad/Coal"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.02, 0.18, 0.03)
+mesh = SubResource("lump_mesh")
+[node name="Lump3" type="MeshInstance3D" parent="Rig/infantry_rig2/Skeleton3D/BackLoad/Coal"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.11, 0.18, -0.02)
+mesh = SubResource("lump_mesh")
+[node name="Lump4" type="MeshInstance3D" parent="Rig/infantry_rig2/Skeleton3D/BackLoad/Coal"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.03, 0.18, -0.04)
+mesh = SubResource("lump_mesh")
+[node name="Strap" type="MeshInstance3D" parent="Rig/infantry_rig2/Skeleton3D/BackLoad/Coal"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("strap_mesh")
 [editable path="Rig"]

@@ -257,6 +257,7 @@ func _fell(delta: float) -> void:
 func command_attack(node: Node3D, forced := false) -> void:
 	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or not CombatResolver.can_attack(self,node,forced): return
 	attack_forced = forced
+	if carrying() and is_instance_valid(game): game.notify("Infantry carrying cargo can't fire: drop it (X) first.")
 	_stop_route()
 	order = "attack"
 	order_target = node
@@ -349,7 +350,8 @@ func _order_process(delta: float) -> void:
 		_update_display()
 		return
 	if order == "attack_move":
-		var foe := _nearest_opponent()
+		# A worker with its hands full keeps walking rather than stopping for a fight it cannot join.
+		var foe: Node3D = _nearest_opponent() if not carrying() else null
 		if is_instance_valid(foe):
 			_stop_route()
 			state = "Attack-moving · engaging"
@@ -819,6 +821,7 @@ func _attack_order() -> void:
 		state = "Idle"
 		return
 	if in_attack_range(order_target):
+		if carrying(): state = "Carrying cargo · drop it (X) to fire"; return
 		state = "Firing"
 		_shoot(order_target)
 	elif global_position.distance_to(order_target.global_position) < min_attack_range:
@@ -856,8 +859,12 @@ func _face(point: Vector3) -> void:
 func _turret() -> Node3D:
 	var model := $Visuals.get_node_or_null("Model")
 	return model if model != null and model.has_method("aim_at") else null
+## A worker carrying cargo has its hands full and cannot fire (docs/INFANTRY_LOAD.md); it drops the load (X) to
+## fight.
+func carrying() -> bool:
+	return can_gather and not is_cargo_vehicle and not is_depot_truck and cargo > 0
 func _shoot(target: Node3D) -> void:
-	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or not _may_hit(target) or not in_attack_range(target): return
+	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or carrying() or not _may_hit(target) or not in_attack_range(target): return
 	# A turret tracks the target between shots; a unit without one turns its whole body as it fires.
 	var turret := _turret()
 	if turret: turret.aim_at(target.global_position)
@@ -943,6 +950,20 @@ func _update_display() -> void:
 	$Status.text = ("DEPOT TRUCK" if is_depot_truck else (unit_stats.display_name.to_upper() if unit_stats != null else ("INFANTRY" if team == "player" else "HOSTILE")))+"  %d/%d" % [health,max_health]
 	$Cargo.visible = cargo > 0
 	$Cargo.text = "%d %s" % [cargo,str(cargo_kind)]
+	_show_back_load()
+## The load on a worker's back (docs/INFANTRY_LOAD.md): the model's BackLoad holds one hidden load per kind
+## (Iron, Wood, Coal); the one it carries shows while it carries anything.
+var _back_load: Node3D
+var _back_shown := ""
+func _show_back_load() -> void:
+	if not is_instance_valid(_back_load):
+		_back_load = $Visuals.find_child("BackLoad",true,false)
+		_back_shown = "?"
+	if _back_load == null: return
+	var kind := str(cargo_kind).capitalize() if cargo > 0 else ""
+	if kind == _back_shown: return
+	_back_shown = kind
+	for child in _back_load.get_children(): child.visible = str(child.name) == kind
 
 ## Call before spawning/ready. Resources are never mutated by runtime health or cooldowns.
 func apply_unit_stats() -> void:
