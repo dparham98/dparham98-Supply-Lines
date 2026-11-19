@@ -27,7 +27,14 @@ func place(unit: Node3D, point: Vector3) -> void:
 	unit.grid_position = game.ground.nearest_actor_cell(game.ground.get_tile_at_position(point),unit.mobility_layer(),unit._owner_key())
 	unit.global_position = game.ground.tile_to_world(unit.grid_position)
 	unit._claim(unit.grid_position)
+## Held so the edited fuel rules stay loaded for the whole test.
+var _unpowered: Array[FuelRules] = []
 func run() -> void:
+	# Fuel and stock checks here run with Depot power off; truck_fuel_test.gd checks it (docs/FUEL_BATCH.md).
+	for id in ["drone","motorcycle","tank","train","truck","ubermech"]:
+		var rules: FuelRules = load("res://assets/economy/fuel_%s.tres" % id)
+		rules.depot_energy_per_metre = 0
+		_unpowered.append(rules)
 	# A mechanics check on a map laid out for the old 35 m Depot range (docs/DEPOT_RANGE.md).
 	var old_range: DepotRules = load("res://assets/economy/depot_rules.tres")
 	old_range.construction_radius = 35.0
@@ -99,11 +106,11 @@ func run() -> void:
 	tank.set_fuel_source(null)
 	step(tank,1)
 	if not check(truck.coal+tank.fuel == 52 and truck.coal < 40,"Unpinned refuel did not use the remaining source"): return
-	# Deployed truck coal stays separate from its own tank: it never refuels itself, and
-	# construction cannot spend tank fuel.
+	# A deployed truck never refuels itself; with its coal gone, energy it pays burns its tank
+	# (docs/FUEL_BATCH.md, 2026-11-19).
 	truck.fuel = 5; truck.stockpile.withdraw(&"coal",truck.coal)
 	step(truck,1)
-	if not check(is_equal_approx(truck.fuel,5) and not truck.spend_local(1,0) and is_equal_approx(truck.fuel,5),"Truck refuelled from itself or spent its tank"): return
+	if not check(is_equal_approx(truck.fuel,5) and truck.spend_local(1,0) and is_equal_approx(truck.fuel,4),"Truck refuelled from itself, or its tank did not pay for energy"): return
 	# Stranded recovery: a deployed truck refuels a vehicle without it moving.
 	var far: Vector3 = depot.global_position+Vector3(60,0,0)
 	place(tank,far); tank.fuel = 0; tank.out_of_fuel = true; tank.order = "idle"

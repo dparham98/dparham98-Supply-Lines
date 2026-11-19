@@ -8,6 +8,8 @@ const RESOURCE_COLORS := {&"energy": Color(0.818,0.771,0.652), &"iron": Color(0.
 const AMBER := Color(0.941,0.698,0.29)
 ## The dashed path through a selected unit's queued orders.
 const QUEUE_COLOR := Color(1,0.82,0.25,0.9)
+const RALLY_COLOR := Color(0.55,0.9,0.5,0.95)
+const Rally = preload("res://scripts/production/rally.gd")
 const RED := Color(0.89,0.35,0.31)
 const TRACK := Color(0.055,0.09,0.114,0.85)
 const STORAGE_WARNING := 0.9
@@ -75,7 +77,7 @@ func hover_target(screen: Vector2) -> Node3D:
 		if cell != null and game.ground.get_terrain(cell) == 6: return game.ground.coal_source(cell)
 	return best
 func is_selected(node: Node) -> bool:
-	return node.get("is_selected") == true or node == game.selected_building
+	return node.get("is_selected") == true or node == game.selected_building or game.selected_buildings.has(node)
 func team_color(node: Node) -> Color:
 	return TEAM_COLORS.get(str(node.get("team")),TEAM_COLORS["neutral"])
 # What to draw for one actor; tests read this instead of pixels.
@@ -106,6 +108,8 @@ func status_for(node: Node3D) -> Dictionary:
 	if stockpile is ResourceStockpile and (node.is_in_group("depots") or node.get("deployed") == true) and stockpile.capacity > 0 and stockpile.total() >= stockpile.capacity*STORAGE_WARNING:
 		entry.icons.append(["depot",AMBER])
 	if game.recently_attacked(node): entry.icons.append(["attack",RED])
+	# An enemy unit shows its health only: not what it carries or its fuel (docs/SELECTION_INSPECT.md).
+	if node.is_in_group("units") and node.get("team") != "player": return entry
 	if stockpile is ResourceStockpile and (node.is_in_group("depots") or node.get("is_cargo_vehicle") == true) and (node == hovered or is_selected(node) or show_all()):
 		entry.storage = {stockpile = stockpile}
 	if node.get("can_gather") == true and node.get("cargo") != null and node.cargo > 0:
@@ -141,6 +145,11 @@ func queue_lines() -> Array[Array]:
 		points.append_array(unit.waypoint_points())
 		if points.size() >= 2: lines.append(points)
 	return lines
+## Your selected building's rally path (docs/RALLY_POINTS.md).
+func rally_path() -> Array:
+	var building = game.selected_building
+	if not is_instance_valid(building) or building.get("team") != "player" or not "rally_points" in building or building.rally_points.is_empty(): return []
+	return Rally.path(building)
 func _on_delivered(target: Node3D, kind: StringName, amount: int) -> void:
 	popups.append({node = target, text = "+%d %s" % [amount,str(kind)], color = RESOURCE_COLORS.get(kind,Color.WHITE), time = Time.get_ticks_msec()/1000.0})
 # One ping per order: a group order emits once per unit, so repeats at the same spot are merged.
@@ -200,6 +209,16 @@ func _draw() -> void:
 		for i in range(path.size()-1):
 			if camera.is_position_behind(path[i]) or camera.is_position_behind(path[i+1]): continue
 			draw_dashed_line(camera.unproject_position(path[i]),camera.unproject_position(path[i+1]),QUEUE_COLOR,2,8)
+	var rally := rally_path()
+	for i in range(rally.size()-1):
+		if camera.is_position_behind(rally[i]) or camera.is_position_behind(rally[i+1]): continue
+		draw_dashed_line(camera.unproject_position(rally[i]),camera.unproject_position(rally[i+1]),RALLY_COLOR,2,8)
+	for i in range(1,rally.size()):
+		if camera.is_position_behind(rally[i]): continue
+		var foot := camera.unproject_position(rally[i])
+		draw_ring(foot,Vector2(7,3.5),RALLY_COLOR,2)
+		draw_line(foot,foot+Vector2(0,-24),RALLY_COLOR,2)
+		draw_colored_polygon(PackedVector2Array([foot+Vector2(0,-24),foot+Vector2(13,-19),foot+Vector2(0,-14)]),RALLY_COLOR)
 	for line in route_lines():
 		if camera.is_position_behind(line[0]) or camera.is_position_behind(line[1]): continue
 		var a := camera.unproject_position(line[0])

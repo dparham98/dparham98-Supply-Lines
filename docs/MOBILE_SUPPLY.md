@@ -46,3 +46,5 @@ Implemented economy stage 3. User-confirmed rules: both Cargo Trucks and trains 
 Validation details are in MOBILE_SUPPLY_VALIDATION.md; MOBILE_SUPPLY_CHANGED.txt lists exact project files. No live physical input testing was performed.
 
 Later update: wood/coal generator burning is now implemented; see GENERATOR_BATCH.md. Earlier descriptions of free generator output or wood having no energy use are historical and superseded. Water/vehicle operating fuel and coal extraction remain pending.
+
+Later update (2026-11-19): a deployed Cargo vehicle pays energy by burning its coal, coal crates and then its tank at the Generator's rate, and refuels vehicles in its range from the same coal; energy can no longer be crated. Build sites in its range still need their iron set down on the footprint first (Unload onto the site). See FUEL_BATCH.md.

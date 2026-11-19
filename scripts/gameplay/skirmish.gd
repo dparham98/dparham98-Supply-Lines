@@ -31,11 +31,31 @@ var ore: int:
 		if is_instance_valid(depot): depot.iron = value
 var global_plan_kind: StringName = &""
 ## The selected building shows its team marker (docs/TEAM_MARKERS.md).
+const Rally = preload("res://scripts/production/rally.gd")
+## The selected building, or an enemy unit being inspected (docs/SELECTION_INSPECT.md). Your buildings of one type
+## can be selected together: selected_buildings holds them all, selected_building is the first.
+var selected_buildings: Array[Node3D] = []
 var selected_building: Node3D:
 	set(value):
-		_show_team_marker(selected_building,false)
+		for node in _marked(): _show_team_marker(node,false)
 		selected_building = value
-		_show_team_marker(value,true)
+		if not selected_buildings.has(value):
+			selected_buildings.clear()
+			if is_instance_valid(value) and value.is_in_group("selectable_buildings") and value.get("team") == "player": selected_buildings.append(value)
+		for node in _marked(): _show_team_marker(node,true)
+func _marked() -> Array[Node3D]:
+	var nodes: Array[Node3D] = selected_buildings.filter(func(node): return is_instance_valid(node))
+	if is_instance_valid(selected_building) and not nodes.has(selected_building): nodes.append(selected_building)
+	return nodes
+## Selects your buildings of one type together; the first is the one the card shows.
+func select_buildings(nodes: Array[Node3D]) -> void:
+	for node in _marked(): _show_team_marker(node,false)
+	selected_buildings = nodes.duplicate()
+	selected_building = nodes[0] if not nodes.is_empty() else null
+## The selected buildings still standing.
+func building_selection() -> Array[Node3D]:
+	var nodes: Array[Node3D] = selected_buildings.filter(func(node): return is_instance_valid(node) and node.is_inside_tree())
+	return nodes
 var pending_unit_command := ""
 ## Track laying (docs/RAIL_PLANNING.md). Leaving it, however it is left, drops any track still only planned.
 var placing_rail := false:
@@ -74,6 +94,7 @@ func cancel_armed() -> void:
 	placing_generator = false
 	placing_structure = &""
 	pending_unit_command = ""
+	fell_dragging = false
 	$DepotNetwork.clear_builder()
 func notify(text: String) -> void:
 	message = text
@@ -179,7 +200,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if point != null:
 			var rails = $RailNetwork
 			if is_instance_valid(rails.route_to) and not rails.pending.is_empty(): lay_route()
-			else: notify(rails.pick_target(rails.target_at(point)))
+			else: notify(rails.pick_target(rails.pick_at(point)))
 		get_viewport().set_input_as_handled()
 		return
 	if (placing_depot or placing_generator or not placing_structure.is_empty()) and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
@@ -192,6 +213,20 @@ func _unhandled_input(event: InputEvent) -> void:
 				placing_depot = false
 				placing_generator = false
 				placing_structure = &""
+		get_viewport().set_input_as_handled()
+		return
+	# Fell also takes a box: drag across the trees to fell (docs/FELL.md).
+	if pending_unit_command == "fell" and fell_dragging and event is InputEventMouseMotion:
+		fell_drag_to = event.position
+	if pending_unit_command == "fell" and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			fell_dragging = true
+			fell_drag_from = event.position
+			fell_drag_to = event.position
+		elif fell_dragging:
+			fell_dragging = false
+			if fell_drag_from.distance_to(event.position) < FELL_DRAG: issue_card_order(fell_drag_from,event.shift_pressed)
+			else: order_fell_box(fell_drag_from,event.position,event.shift_pressed)
 		get_viewport().set_input_as_handled()
 		return
 	if not pending_unit_command.is_empty() and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
@@ -259,6 +294,7 @@ func ground_at(screen):
 	var camera := get_viewport().get_camera_3d()
 	return Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(screen),camera.project_ray_normal(screen))
 const SelectionBounds = preload("res://scripts/units/selection_bounds.gd")
+const FellLane = preload("res://scripts/terrain/fell_lane.gd")
 ## How near `node` is to the pointer, or INF when it is missed. From the minimap it is the ground distance
 ## from the point to the node's model bounds, so a large building is picked anywhere on its footprint.
 func pick_distance(node: Node3D, camera: Camera3D, screen) -> float:
@@ -290,10 +326,43 @@ func give_order(unit: Node3D, entry: Dictionary, queued: bool) -> void:
 	else:
 		unit.order_queue.clear()
 		unit.run_order(entry)
+## Your selected building that takes a rally point, when no units are selected (docs/RALLY_POINTS.md).
+func rally_building() -> Node3D:
+	if not is_instance_valid(selected_building) or selected_building.get("team") != "player" or not "rally_points" in selected_building: return null
+	for unit in get_tree().get_nodes_in_group("units"):
+		if unit.team == "player" and unit.is_selected: return null
+	return selected_building
+## Right-click on the ground or the minimap sets the rally point; on a resource or forest the workers gather
+## there; on the building itself it is cleared. Shift adds a stop.
+func set_rally(screen, queued := false) -> void:
+	var building := rally_building()
+	# Every selected building of the type takes the same rally (docs/SELECTION_INSPECT.md).
+	var rallied: Array[Node3D] = building_selection().filter(func(node): return node.get("team") == "player" and "rally_points" in node)
+	if not rallied.has(building): rallied.append(building)
+	var clicked = pick_target(screen,"selectable_buildings",50) if not screen is MapPick else null
+	if clicked != null and rallied.has(clicked):
+		for node in rallied: node.rally_points.clear()
+		notify("Rally point cleared: new units stay by %s." % ("their buildings" if rallied.size() > 1 else building.name)); return
+	var point = ground_at(screen)
+	var cell = ground.get_tile_at_position(point) if point != null else null
+	if cell == null: notify("Right-click on the map to set a rally point."); return
+	var target: Node3D = pick_target(screen,"resources",48)
+	if target == null and ground.get_terrain(cell) == 3: target = ground.forest_source(cell)
+	for node in rallied: Rally.add(node,point,target,queued)
+	order_given.emit("move",point,target,queued)
+	notify("Rally %s: new units %s." % ["stop added" if queued else "point set","gather here (workers) or go here" if target != null else "go here"])
+func _coal_plan_at(cell: Vector2i) -> Node3D:
+	var field: Dictionary = ground.coal_field_at(cell)
+	if field.is_empty(): return null
+	for plan in get_tree().get_nodes_in_group("construction_plans"):
+		if not is_instance_valid(plan) or plan.finished or plan.kind != &"coal_mine": continue
+		if field.get("cells",[]).has(plan.start): return plan
+	return null
 func issue_order(screen, queued := false) -> void:
 	# From the minimap a click lands near markers rather than on them, so the orders that only make sense
 	# when aimed at a model are left out (docs/MINIMAP_ORDERS.md).
 	var from_map: bool = screen is MapPick
+	if rally_building() != null: set_rally(screen,queued); return
 	var enemy := pick_target(screen,"enemies")
 	var resource := pick_target(screen,"resources",48)
 	var dropoff := pick_target(screen,"depots",50)
@@ -304,6 +373,10 @@ func issue_order(screen, queued := false) -> void:
 	if is_instance_valid(plan) and (plan.finished or plan.kind == &"rail"): plan = null
 	var crate := pick_crate(screen)
 	var point = ground_at(screen)
+	if plan == null and point != null:
+		var coal_cell = ground.get_tile_at_position(point)
+		if coal_cell != null and ground.get_terrain(coal_cell) == 6 and ground.harvesting_rules.coal_needs_mine:
+			plan = _coal_plan_at(coal_cell)
 	var selected := 0
 	var forest_ordered := false
 	var coal_ordered: Node3D
@@ -356,6 +429,53 @@ func show_shot(start: Vector3, end: Vector3, team: String, projectile: PackedSce
 	shot.configure(start,end,team)
 	return shot
 
+## A Fell box being dragged, in screen pixels (docs/FELL.md). Shorter drags are clicks.
+const FELL_DRAG := 6.0
+var fell_dragging := false
+var fell_drag_from := Vector2.ZERO
+var fell_drag_to := Vector2.ZERO
+## Fell across the cells under a dragged screen box: the grid box round the four corners on the ground.
+func order_fell_box(from: Vector2, to: Vector2, queued := false) -> void:
+	var camera := get_viewport().get_camera_3d()
+	var low := Vector2i(ground.grid_size)
+	var high := Vector2i(-1,-1)
+	for corner in [from,Vector2(to.x,from.y),to,Vector2(from.x,to.y)]:
+		var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(corner),camera.project_ray_normal(corner))
+		if point == null: continue
+		var cell: Vector2i = ground.clamped_tile_at(point)
+		low = Vector2i(mini(low.x,cell.x),mini(low.y,cell.y))
+		high = Vector2i(maxi(high.x,cell.x),maxi(high.y,cell.y))
+	if high.x < 0: return
+	var area := Rect2i(low,high-low+Vector2i.ONE)
+	var middle: Vector2i = area.position+area.size/2
+	order_fell(middle,area,ground.tile_to_world(middle),queued)
+## Whether `unit` has a tree to fell for this order: in the box; or on its line to `cell`, or round `cell`.
+func _fell_has_trees(unit: Node3D, cell: Vector2i, area: Rect2i) -> bool:
+	var reach: int = ground.harvesting_rules.fell_radius_cells
+	var box := area if area.has_area() else Rect2i(cell-Vector2i.ONE*reach,Vector2i.ONE*(reach*2+1))
+	for z in range(box.position.y,box.end.y):
+		for x in range(box.position.x,box.end.x):
+			var at := Vector2i(x,z)
+			if ground.forest_amount(at) > 0 and (area.has_area() or cell.distance_squared_to(at) <= reach*reach): return true
+	if area.has_area(): return false
+	var here = ground.get_tile_at_position(unit.global_position)
+	return here != null and not FellLane.lane(ground,here,cell).is_empty()
+## Fell to `cell`, or across `area`, for the selected workers (docs/FELL.md).
+func order_fell(cell: Vector2i, area: Rect2i, point: Vector3, queued := false) -> void:
+	var workers: Array[Node3D] = []
+	var trees := false
+	for unit in get_tree().get_nodes_in_group("units"):
+		if unit.team != "player" or not unit.is_selected or not unit.can_gather or unit.is_depot_truck or unit.is_cargo_vehicle: continue
+		workers.append(unit)
+		# A queued order starts from wherever the queue leaves the worker, so it is not checked.
+		trees = trees or queued or _fell_has_trees(unit,cell,area)
+	if workers.is_empty(): return
+	if not trees:
+		alert("No trees to fell in that box." if area.has_area() else "Nothing to fell: the way there is already open.",point)
+		return
+	for unit in workers: give_order(unit,{kind = "fell", cell = cell, area = area, point = point},queued)
+	notify("Fell %s. %s" % ["queued" if queued else "ordered","Shift-click adds more; Esc stops." if queued else "The wood is left where it falls."])
+	if not queued: pending_unit_command = ""
 func issue_card_order(screen, queued := false) -> void:
 	var from_map: bool = screen is MapPick
 	var target: Node3D
@@ -396,13 +516,18 @@ func issue_card_order(screen, queued := false) -> void:
 					if target == null: notify("Build a Mine on this coal seam before gathering coal."); return
 				else: target = ground.coal_source(cell) if ground.get_terrain(cell) == 6 else ground.forest_source(cell)
 	elif pending_unit_command == "fell":
-		# Fell takes a Forest cell (docs/FELL.md).
+		# Fell takes any spot: the trees on a roughly straight line to it are felled (docs/FELL.md).
 		var point = ground_at(screen)
-		var cell = ground.get_tile_at_position(point) if point != null else null
-		if cell == null or ground.forest_amount(cell) <= 0: notify("Click a forest to fell."); return
-		target = ground.forest_source(cell)
+		if point != null and ground.get_tile_at_position(point) != null: order_fell(ground.get_tile_at_position(point),Rect2i(),point,queued)
+		return
 	elif pending_unit_command == "repair": target = pick_target(screen,"selectable_buildings",50)
 	elif pending_unit_command == "capture": target = pick_target(screen,"capturable_buildings",50)
+	elif pending_unit_command == "derail":
+		# Derail takes a piece of track, anyone's (docs/DERAILER.md).
+		var on = ground_at(screen)
+		var picked = $RailNetwork.pick_at(on) if on != null else null
+		if not picked is RailAnchor: notify("Click a piece of rail to spike."); return
+		target = picked.piece
 	elif pending_unit_command in ["load","unload"]:
 		# Crate stops: a crate, a friendly Depot, or a deployed Cargo vehicle under the pointer.
 		target = pick_crate(screen)
@@ -460,6 +585,7 @@ func issue_card_order(screen, queued := false) -> void:
 		if pending_unit_command == "move":
 			if point != null: give_order(unit,{kind = "move", point = point},queued)
 		elif pending_unit_command == "attack" and target.get("team") == unit.team: give_order(unit,{kind = "attack", target = target, forced = true},queued)
+		elif pending_unit_command == "derail" and not unit.has_ability(&"derail"): continue
 		else: give_order(unit,{kind = pending_unit_command, target = target},queued)
 	# Shift keeps the command armed so several targets can be queued.
 	notify(pending_unit_command.capitalize()+(" order queued. Shift-click adds more; Esc stops." if queued else " order issued."))

@@ -61,3 +61,4 @@ The bottom HUD is drawn by one painted panel, `assets/ui/hud_panel.png` (1100 x 
   - selection info and the stats column in the middle window; the info column takes all extra width;
   - the portrait window is left empty (`Ornament`, with its filler off);
   - the command tiles (41 px, 5 px apart) on the painted 4 x 3 grid.
+  - the build page's nine tiles (with the Coal Mine) fill three rows of that grid. Who pays for new plans ("Pays: auto (nearest)", a pinned payer, or a worksite's "Delivers exact materials") moved from a label over the tiles to the info column, beside the plan count.

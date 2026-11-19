@@ -19,6 +19,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_attack.png" id="card_attack"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_gather.png" id="card_gather"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_fell.png" id="card_fell"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_derail.png" id="card_derail"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_deliver.png" id="card_deliver"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_drop.png" id="card_drop"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_repair.png" id="card_repair"]
@@ -48,6 +49,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_barracks.png" id="card_build_barracks"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_factory.png" id="card_build_factory"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_mine.png" id="card_build_mine"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_coal_mine.png" id="card_build_coal_mine"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_rail.png" id="card_build_rail"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_pin_payer.png" id="card_pin_payer"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_back.png" id="card_build_back"]
@@ -259,6 +261,10 @@ events = [SubResource("key_build_tank_factory")]
 action = &"build_mine"
 [sub_resource type="Shortcut" id="shortcut_build_mine"]
 events = [SubResource("key_build_mine")]
+[sub_resource type="InputEventAction" id="key_build_coal_mine"]
+action = &"build_coal_mine"
+[sub_resource type="Shortcut" id="shortcut_build_coal_mine"]
+events = [SubResource("key_build_coal_mine")]
 [sub_resource type="InputEventAction" id="key_build_rail"]
 action = &"build_rail"
 [sub_resource type="Shortcut" id="shortcut_build_rail"]
@@ -318,6 +324,10 @@ events = [SubResource("key_command_gather")]
 action = &"command_fell"
 [sub_resource type="Shortcut" id="shortcut_command_fell"]
 events = [SubResource("key_command_fell")]
+[sub_resource type="InputEventAction" id="key_command_derail"]
+action = &"command_derail"
+[sub_resource type="Shortcut" id="shortcut_command_derail"]
+events = [SubResource("key_command_derail")]
 [sub_resource type="InputEventAction" id="key_command_move"]
 action = &"command_move"
 [sub_resource type="Shortcut" id="shortcut_command_move"]
@@ -2948,7 +2958,7 @@ theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="Fell" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
-tooltip_text = "Click a forest. Infantry cut down the trees there and round it, and keep no wood."
+tooltip_text = "Click a forest. Infantry cut down the trees there and round it, and keep no wood.\nRight-click: autocast. Idle Infantry fell the trees round where they are left."
 shortcut = SubResource("shortcut_command_fell")
 layout_mode = 0
 custom_minimum_size = Vector2(41,41)
@@ -2971,6 +2981,48 @@ horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
+[node name="Derail" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+tooltip_text = "Click a piece of rail. The Derailer drives a spike into it; the next train onto it derails, and the track there is wrecked."
+shortcut = SubResource("shortcut_command_derail")
+layout_mode = 0
+custom_minimum_size = Vector2(41,41)
+text = ""
+icon = ExtResource("card_derail")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Derail"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="Auto" type="Label" parent="Bottom/Body/Row/Commands/Main/Fell"]
+visible = false
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 3.0
+offset_top = -15.0
+offset_right = 38.0
+offset_bottom = -2.0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.55,0.9,0.5,1)
+theme_override_colors/font_outline_color = Color(0,0,0,1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "AUTO"
 [node name="Return" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
 tooltip_text = "Deliver carried resources to the selected supply source."
@@ -3708,6 +3760,7 @@ theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="Energy" type="Button" parent="Bottom/Body/Row/Commands/Pick/LoadTiles"]
+visible = false
 theme_type_variation = &"CommandCard"
 shortcut = SubResource("shortcut_resource_energy")
 layout_mode = 2
@@ -3835,14 +3888,6 @@ layout_mode = 2
 size_flags_horizontal = 8
 visible = false
 theme_override_constants/separation = 5
-[node name="Bank" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu"]
-custom_minimum_size = Vector2(179,41)
-vertical_alignment = 1
-layout_mode = 2
-autowrap_mode = 0
-text = "LOCAL CONSTRUCTION RESOURCES"
-theme_override_font_sizes/font_size = 12
-clip_text = true
 [node name="Actions" type="GridContainer" parent="Bottom/Body/Row/Commands/BuildMenu"]
 layout_mode = 2
 columns = 4
@@ -3954,6 +3999,30 @@ icon = ExtResource("card_build_mine")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/Mine"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -34.0
+offset_top = 1.0
+offset_right = -4.0
+offset_bottom = 15.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="CoalMine" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_build_coal_mine")
+layout_mode = 2
+text = ""
+custom_minimum_size = Vector2(41,41)
+icon = ExtResource("card_build_coal_mine")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/CoalMine"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0

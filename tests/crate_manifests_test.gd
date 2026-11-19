@@ -34,7 +34,14 @@ func stock(energy: int, iron: int, wood: int, coal: int) -> void:
 	var depot = game.depot
 	for kind in ResourceStockpile.KINDS: depot.stockpile.set_amount(kind,0)
 	depot.energy = energy; depot.iron = iron; depot.wood = wood; depot.coal = coal
+## Held so the edited fuel rules stay loaded for the whole test.
+var _unpowered: Array[FuelRules] = []
 func run() -> void:
+	# Fuel and stock checks here run with Depot power off; truck_fuel_test.gd checks it (docs/FUEL_BATCH.md).
+	for id in ["drone","motorcycle","tank","train","truck","ubermech"]:
+		var rules: FuelRules = load("res://assets/economy/fuel_%s.tres" % id)
+		rules.depot_energy_per_metre = 0
+		_unpowered.append(rules)
 	root.size = Vector2i(1280,900)
 	game = load("res://scenes/maps/resource_skirmish.tscn").instantiate()
 	root.add_child(game); await process_frame

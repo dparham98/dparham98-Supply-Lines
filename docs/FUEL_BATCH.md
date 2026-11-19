@@ -65,3 +65,14 @@ An **Auto-refuel** button toggles refuelling for every selected fuel-using vehic
 - A HUD source picker and a desired-reserve control.
 - Round-trip checks for road vehicles.
 - Death or salvage of tank fuel (death drops never include fuel, unchanged).
+
+## Depot power, truck fuel and crates (2026-11-19)
+
+Asked for after the playtest of 2026-11-19. These rules replace the earlier ones where they differ.
+
+- **Depot power.** Inside a friendly Depot's range a vehicle moves on that Depot's energy, `FuelRules.depot_energy_per_metre` (0.2 E a metre), instead of its tank. A truck crossing a whole range spends about 10 E. A Depot with no energy powers nothing, and the vehicle goes back to its tank without stopping. An empty tank still moves on Depot power. The fuel line says "running on <Depot> power". Draining a base this way is intended: energy is rationed between building and moving. Trains keep their own track power.
+- **Deployed Cargo vehicles pay energy with coal**, at the Generator's coal rate (`assets/economy/generator_rules.tres`, 30 E a coal): loose energy first, then their loose coal, then coal crates aboard, then their own fuel tank, which they may empty (`CargoVehicle.pay_energy`, `take_coal`). Energy left from a coal is kept for the next payment. Their energy on hand counts that coal.
+- **Deployed Cargo vehicles refuel others** from the same coal, in the same order, down to an empty tank.
+- **Coal crates on the ground refuel** a stopped friendly vehicle within 4 m (`UnitAgent.CRATE_REFUEL_RANGE`), so a truck can set down its own fuel.
+- **Energy cannot be crated** (`ResourceStockpile.CRATED`). The Energy tile is gone from the Load and Make crates pages.
+- Check: `tests/truck_fuel_test.gd`.
