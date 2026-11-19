@@ -4,8 +4,11 @@ Asked for in the playtest of 2026-11-18.
 
 ## Enemy units and buildings
 
-- **A click on an enemy unit inspects it.** The bottom panel shows its type, team, health, state, fuel and stats,
-  and its team marker shows under it. Your units are deselected.
+- **A click on an enemy unit inspects it.** The bottom panel shows its type, team, health and stats (the stat grid
+  and abilities line), and its team marker shows under it. Your units are deselected. Upgrades will join them later.
+- **Hidden on enemy units** (playtest of 2026-11-19): what they are doing, their order queue, fuel, cargo, a cargo
+  truck's crates and route, and the nearest Depot. The marks over enemy units also leave out carried resources, fuel
+  warnings and a cargo truck's storage; they show health only.
 - **Enemy buildings** were already shown this way: health, team, storage and production state.
 - **Read only:** the command card stays empty and the title reads "ENEMY UNIT · INSPECT". Right-click with nothing
   of yours selected gives no order; select your own units and right-click the enemy to attack it.

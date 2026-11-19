@@ -452,7 +452,8 @@ func fuel_note(node: Node) -> String:
 	var status := "OUT OF FUEL · " if node.out_of_fuel else ("LOW FUEL · " if node.fuel_low() else "")
 	var lines: PackedStringArray = node.fuel_summary().split("\n")
 	return status+(lines[1] if lines.size() > 1 else "")
-func update_unit_sections(node: Node3D) -> void:
+## `inspect` is an enemy unit: its stats and abilities only, not what it carries or where it is going.
+func update_unit_sections(node: Node3D, inspect := false) -> void:
 	var pairs := [["Speed","%.1f" % node.move_speed]]
 	if node.vision > 0: pairs.append(["Vision","%.1f" % node.vision])
 	var abilities: Array[String] = []
@@ -487,7 +488,7 @@ func update_unit_sections(node: Node3D) -> void:
 	var line = context.get_node("Abilities")
 	line.text = " · ".join(abilities)
 	line.visible = not abilities.is_empty()
-	if node.is_cargo_vehicle:
+	if node.is_cargo_vehicle and not inspect:
 		show_storage("Cargo · %d/%d crates" % [node.crates.size(),node.crate_slots()],node.stockpile)
 		# Crate pips replace the loose-cargo legend unless the vehicle also carries loose cargo.
 		var aboard = info.get_node("Storage/Aboard")
@@ -745,6 +746,13 @@ func update_contents() -> void:
 			show_fuel_tile("BurnCoal","Burn coal","coal",node.fuel_preference)
 			show_fuel_tile("BurnEither","Burn either (wood first)","either",node.fuel_preference)
 		if is_instance_valid(node.assigned_depot): show_button("FocusAssigned","Focus Depot")
+	elif node.team != "player":
+		# An enemy unit shows only its health and stats: no state, orders, fuel or cargo (docs/SELECTION_INSPECT.md).
+		state_label.text = team_label(node)
+		info.get_node("Details").text = ""
+		update_unit_sections(node,true)
+		commands.get_node("Title").text = "%s UNIT · INSPECT" % team_label(node).to_upper()
+		hint_text = "Enemy units show their health and stats here and never take your orders. Right-click with your own units to attack it."
 	else:
 		var nearest = nearest_depot(node)
 		state_label.text = "%s · %s%s" % [team_label(node),node.state," · %d queued" % node.order_queue.size() if not node.order_queue.is_empty() else ""]
@@ -758,10 +766,6 @@ func update_contents() -> void:
 		info.get_node("Details").text = "\n".join(notes)
 		update_bars(node)
 		update_unit_sections(node)
-		if node.team != "player":
-			commands.get_node("Title").text = "%s UNIT · INSPECT" % team_label(node).to_upper()
-			hint_text = "Enemy units show their stats here and never take your orders. Right-click with your own units to attack it."
-			return
 		commands.get_node("Title").text = "UNIT · ORDERS"
 		show_button("Move","Move")
 		show_button("Stop","Stop")

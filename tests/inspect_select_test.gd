@@ -79,6 +79,16 @@ func run() -> void:
 	if not check(not enemy.is_selected and hud.desired_buttons.is_empty(),"An enemy unit takes no orders: %s" % [hud.desired_buttons]): return
 	if not check("INSPECT" in hud.commands.get_node("Title").text and hud.info.get_node("HealthText").text == "Health %d / %d" % [enemy.health,enemy.max_health],"The card should show the enemy's stats: %s" % hud.commands.get_node("Title").text): return
 	if not check(hud.name_label.text == hud.object_name(enemy) and game.rally_building() == null,"The name shows the enemy unit's type: %s" % hud.name_label.text): return
+	# Health and stats only: nothing about its fuel, cargo or what it is doing.
+	enemy.fuel = 0.0
+	enemy.out_of_fuel = true
+	hud._process(0)
+	var shown_bars: Array = hud.bars.get_children().filter(func(bar): return bar.visible)
+	if not check(shown_bars.is_empty() and hud.info.get_node("Details").text.is_empty() and not hud.info.get_node("Storage").visible,"An enemy unit should not show fuel or cargo: bars %s, details '%s'" % [shown_bars.map(func(bar): return str(bar.name)),hud.info.get_node("Details").text]): return
+	if not check(hud.state_label.text == hud.team_label(enemy) and hud.context.get_node("Stats").visible,"An enemy unit shows its team and stats, not its state: '%s'" % hud.state_label.text): return
+	var mark: Dictionary = game.get_node("Interface/MapOverlay").status_for(enemy)
+	if not check(mark.icons.is_empty() and mark.carry.is_empty() and mark.storage.is_empty(),"The marks over an enemy unit should not show fuel or cargo: %s" % [mark.icons]): return
+	enemy.out_of_fuel = false
 	# Right-click with nothing of yours selected gives no order and sets no rally.
 	game.issue_order(camera.unproject_position(depot.global_position+Vector3(10,0,10)))
 	if not check(enemy.order_queue.is_empty(),"Right-click must not order an enemy unit"): return

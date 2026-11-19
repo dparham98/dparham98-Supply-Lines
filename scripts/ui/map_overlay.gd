@@ -108,6 +108,8 @@ func status_for(node: Node3D) -> Dictionary:
 	if stockpile is ResourceStockpile and (node.is_in_group("depots") or node.get("deployed") == true) and stockpile.capacity > 0 and stockpile.total() >= stockpile.capacity*STORAGE_WARNING:
 		entry.icons.append(["depot",AMBER])
 	if game.recently_attacked(node): entry.icons.append(["attack",RED])
+	# An enemy unit shows its health only: not what it carries or its fuel (docs/SELECTION_INSPECT.md).
+	if node.is_in_group("units") and node.get("team") != "player": return entry
 	if stockpile is ResourceStockpile and (node.is_in_group("depots") or node.get("is_cargo_vehicle") == true) and (node == hovered or is_selected(node) or show_all()):
 		entry.storage = {stockpile = stockpile}
 	if node.get("can_gather") == true and node.get("cargo") != null and node.cargo > 0:
