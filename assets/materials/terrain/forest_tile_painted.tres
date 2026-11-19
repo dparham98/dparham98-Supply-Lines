@@ -1,7 +1,9 @@
-[gd_resource type="StandardMaterial3D" format=3]
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
+
+[ext_resource type="Shader" path="res://assets/shaders/forest_tile.gdshader" id="1"]
 
 [resource]
-vertex_color_use_as_albedo = true
-vertex_color_is_srgb = true
-albedo_color = Color(0.9, 0.93, 0.9, 1)
-roughness = 0.94
+shader = ExtResource("1")
+shader_parameter/albedo = Color(0.9, 0.93, 0.9, 1)
+shader_parameter/vertex_color_is_srgb = true
+shader_parameter/roughness = 0.94

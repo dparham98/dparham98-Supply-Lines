@@ -61,8 +61,11 @@ func _ready() -> void:
 	# State texture belongs to this match, never to the shared saved material/map.
 	if material_override is ShaderMaterial:
 		material_override = material_override.duplicate()
-		_clearing_mask = Image.create(grid_size.x,grid_size.y,false,Image.FORMAT_R8)
+		# Red: cleared cells. Green: coal seams and the cells beside them, where the trees thin their leaves.
+		_clearing_mask = Image.create(grid_size.x,grid_size.y,false,Image.FORMAT_RG8)
 		_clearing_mask.fill(Color.BLACK)
+		for field in coal_fields:
+			for cell in field.cells: _mark_seam_near(cell)
 		_clearing_texture = ImageTexture.create_from_image(_clearing_mask)
 		material_override.set_shader_parameter("cleared_cells",_clearing_texture)
 	print("Terrain grid ready: ", tiles.size(), " cells")
@@ -242,7 +245,7 @@ func _open_cell(pos: Vector2i) -> void:
 	tile.buildable = true
 	_sync_navigation(pos)
 	if _clearing_mask != null:
-		_clearing_mask.set_pixel(pos.x,pos.y,Color.WHITE)
+		_clearing_mask.set_pixel(pos.x,pos.y,Color(1.0,_clearing_mask.get_pixel(pos.x,pos.y).g,0.0))
 		_mask_dirty = true
 ## Hides the ore rocks on `footprint` and `margin` cells around it until uncover_ore(key). Covers may overlap.
 func cover_ore(key: String, footprint: Array, margin := 1) -> void:
@@ -335,6 +338,31 @@ func _find_coal_fields() -> void:
 			field.center /= field.cells.size()
 			coal_fields.append(field)
 		at = terrain_cells.find(Terrain.COAL,at+1)
+## How strongly the trees thin their leaves over a coal cell, and over the cells around it, in the clearing
+## mask's green channel. The leaves stay thick a cell further out.
+const SEAM_THIN := 1.0
+const SEAM_EDGE_THIN := 0.55
+func _seam_thin_at(cell: Vector2i) -> float:
+	var thin := 0.0
+	for dz in range(-1,2):
+		for dx in range(-1,2):
+			var other := cell+Vector2i(dx,dz)
+			if coal_amount(other) > 0: thin = maxf(thin,SEAM_THIN if other == cell else SEAM_EDGE_THIN)
+	return thin
+func _set_seam_thin(cell: Vector2i) -> void:
+	if not is_tile_in_bounds(cell): return
+	var pixel := _clearing_mask.get_pixel(cell.x,cell.y)
+	pixel.g = _seam_thin_at(cell)
+	_clearing_mask.set_pixel(cell.x,cell.y,pixel)
+func _mark_seam_near(cell: Vector2i) -> void:
+	for dz in range(-1,2):
+		for dx in range(-1,2):
+			_set_seam_thin(cell+Vector2i(dx,dz))
+## A dug-out cell no longer thins the leaves around it, unless coal is left beside them.
+func _unmark_seam_near(cell: Vector2i) -> void:
+	if _clearing_mask == null: return
+	_mark_seam_near(cell)
+	_mask_dirty = true
 func coal_amount(cell: Vector2i) -> int:
 	if get_terrain(cell) != Terrain.COAL: return 0
 	return coal_reserves.get(cell,harvesting_rules.coal_per_tile)
@@ -345,6 +373,7 @@ func harvest_coal(cell: Vector2i, requested: int) -> int:
 	if coal_reserves[cell] == 0:
 		cleared_coal[cell] = true
 		_open_cell(cell)
+		_unmark_seam_near(cell)
 		coal_depleted.emit(cell)
 	return taken
 ## Coal taken through a mine on the seam (docs/COAL_MINES.md): from anywhere in the field the cell belongs to, and

@@ -23,6 +23,15 @@ uniform vec3 stony_tint = vec3(0.2, 0.22, 0.38);
 uniform vec3 mine_site_stain = vec3(0.36, 0.14, 0.07);
 // Coal cells (category 6): how dark the seam is drawn.
 uniform vec3 coal_shade = vec3(0.1, 0.1, 0.125);
+// Spoil round a seam: pale grey ash and broken stone on the ground beside it, about this many metres wide, so the
+// seam stands out from dark forest floor. Strength 0 leaves the ground as it is.
+uniform vec3 spoil_color = vec3(0.3, 0.29, 0.27);
+uniform float spoil_metres = 1.3;
+uniform float spoil_strength = 0.8;
+// Glints on the coal: bright faces this many to a metre, the share of them that catch the light, and how bright.
+uniform float glint_density = 4.5;
+uniform float glint_share = 0.07;
+uniform float glint_strength = 1.0;
 // Distance from the desert and grass border, from scripts/tools/build_ground_blend_map.gd: 0.5 is the border.
 uniform sampler2D ground_blend : filter_linear, repeat_disable;
 // The same image's green channel is the distance from the shoreline: 0.5 is the shore, above it is water.
@@ -166,6 +175,21 @@ void fragment() {
   normal_map.xy = 0.5 + bent * min(1.0, 0.42 / max(length(bent), 0.001));
   color *= 1.0 + (height - 0.5) * 0.12 * relief;
   color = mix(vec3(dot(color, vec3(0.2126, 0.7152, 0.0722))), color, ground_saturation) * ground_value;
+  // Spoil beside a coal seam: how much of a ring around this point is coal, near and a little further out.
+  if (spoil_strength > 0.0) {
+   float reach = spoil_metres * (0.7 + 0.6 * value_noise(metres * 1.3 + vec2(23.0, 5.0)));
+   float near = 0.0;
+   for (int i = 0; i < 8; i++) {
+    vec2 toward = vec2(cos(float(i) * 0.7854), sin(float(i) * 0.7854)) / MAP_METRES;
+    near += (round(texture(category_map, UV + toward * reach * 0.5).r * 255.0) == 6.0 ? 1.0 : 0.0);
+    near += (round(texture(category_map, UV + toward * reach).r * 255.0) == 6.0 ? 0.5 : 0.0);
+   }
+   float spoil = smoothstep(0.0, 2.5, near) * spoil_strength;
+   // Ash and stone in crumbs, with a few black flecks of coal thrown out with it.
+   vec3 crumbs = spoil_color * mix(0.62, 1.18, value_noise(metres * 5.3)) * mix(1.0, 0.25, step(0.78, value_noise(metres * 9.7 + vec2(3.0, 8.0))));
+   color = mix(color, crumbs, spoil);
+   normal_map = mix(normal_map, vec3(0.5, 0.5, 1.0), spoil * 0.6);
+  }
  } else if (terrain == 4.0 || terrain == 7.0) {
   // The mountain foot in darkened desert tiles. A mine site is the same stone, stained with rust.
   ground_set(tile_uv, 4.0, color, mountain_surface_mean, terrain == 4.0 ? surface_tint : 0.0, 0.0, color, normal_map);
@@ -179,6 +203,17 @@ void fragment() {
   float facets = value_noise(metres * 3.1);
   color = vec3(dot(seam, vec3(0.3, 0.5, 0.2))) * coal_shade * mix(0.55, 1.5, facets) * vec3(0.92, 0.96, 1.08);
   ROUGHNESS = mix(0.7, 0.28, smoothstep(0.55, 0.8, facets));
+  // Glints: a few small faces of the coal turned to the light, each its own way, so they flash as the view moves.
+  vec2 grain = metres * glint_density;
+  ivec2 face = ivec2(floor(grain));
+  if (hash(face) > 1.0 - glint_share) {
+   float spot = (1.0 - smoothstep(0.1, 0.32, length(fract(grain) - 0.5))) * glint_strength;
+   vec2 tilt = vec2(hash(face + ivec2(7, 3)), hash(face + ivec2(11, 5))) - 0.5;
+   normal_map = mix(normal_map, vec3(0.5 + tilt * 0.8, 1.0), spot);
+   color = mix(color, vec3(0.2, 0.21, 0.24), spot * 0.7);
+   ROUGHNESS = mix(ROUGHNESS, 0.05, spot);
+   SPECULAR = mix(0.5, 1.0, spot);
+  }
  }
  if (terrain == 1.0 || (land && shore > -bank_metres - 0.5)) {
   // The bank: ground turns to wet sand towards the water, darkest at the waterline.

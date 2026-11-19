@@ -1,7 +1,10 @@
-[gd_resource type="StandardMaterial3D" load_steps=2 format=3]
-[ext_resource type="Texture2D" path="res://assets/textures/terrain/forest_atlas.png" id="1"]
+[gd_resource type="ShaderMaterial" load_steps=3 format=3]
+
+[ext_resource type="Shader" path="res://assets/shaders/forest_tile.gdshader" id="1"]
+[ext_resource type="Texture2D" path="res://assets/textures/terrain/forest_atlas.png" id="2"]
+
 [resource]
-vertex_color_use_as_albedo = true
-albedo_texture = ExtResource("1")
-albedo_color = Color(0.8, 0.86, 0.84, 1)
-roughness = 0.94
+shader = ExtResource("1")
+shader_parameter/albedo = Color(0.8, 0.86, 0.84, 1)
+shader_parameter/albedo_texture = ExtResource("2")
+shader_parameter/roughness = 0.94

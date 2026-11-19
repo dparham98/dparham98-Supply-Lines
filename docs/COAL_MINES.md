@@ -2,6 +2,8 @@
 
 Coal lies in the ground and is taken through a mine built on its seam. The mine is the old pithead of [IRON_MINE_MODEL.md](IRON_MINE_MODEL.md): the same building, scene and script as an Iron Mine on an ore field. Agreed on 2026-11-16. Before this, Infantry dug coal straight out of a cell and each emptied cell became open ground.
 
+How a seam shows through the trees is in [COAL_LOOK.md](COAL_LOOK.md).
+
 No coal seam has a mine at the start of a game. Iron is different: on Two Lakes every mine site starts with its mine ([TWO_LAKES_MAP.md](TWO_LAKES_MAP.md)).
 
 ## Rules

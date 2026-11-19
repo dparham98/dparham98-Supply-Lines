@@ -19,10 +19,11 @@ func _ready() -> void:
 		coal_state = ForestStateVisuals.new()
 		coal_state.bind($Ground,$Landmarks/CoalDeposits,1)
 		$Ground.coal_depleted.connect(coal_state.clear_cell)
-	# Trees get the same mask, so they can be cut away in front of a cleared cell. One copy of each material.
-	var forest := get_node_or_null("Landmarks/Landscape/Forest")
-	if forest != null and $Ground.material_override is ShaderMaterial:
-		var copies := {}
+	# Trees get the same mask, so they can be cut away in front of a cleared cell (the sculpted landscape's) and thin
+	# their leaves over coal (both kinds). One copy of each material.
+	var copies := {}
+	for forest in [get_node_or_null("Landmarks/Landscape/Forest"),get_node_or_null("Landmarks/Forests")]:
+		if forest == null or not $Ground.material_override is ShaderMaterial: continue
 		for batch in forest.get_children():
 			if not batch is MultiMeshInstance3D or not batch.material_override is ShaderMaterial: continue
 			if not copies.has(batch.material_override):
