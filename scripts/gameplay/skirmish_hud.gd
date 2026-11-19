@@ -99,7 +99,9 @@ func _ready() -> void:
 		if not hotkey_text(header).is_empty(): header.text += " · "+hotkey_text(header)
 		header.shortcut_in_tooltip = false
 	card.get_node("ToggleGenerator").pressed.connect(func():
-		if is_instance_valid(shown) and shown.is_in_group("energy_generators"): shown.enabled = not shown.enabled)
+		if is_instance_valid(shown) and shown.is_in_group("energy_generators"):
+			var on: bool = not shown.enabled
+			for node in same_buildings(): node.enabled = on)
 	card.get_node("DeployCargo").pressed.connect(func():
 		var vehicle = selected_cargo()
 		if vehicle:
@@ -126,11 +128,13 @@ func _ready() -> void:
 	depot_panel.get_node("Body/CoalSlider").value_changed.connect(func(value: float):
 		if is_instance_valid(panel_depot): panel_depot.set_coal_reserve(value))
 	production_panel.get_node("Body/PowerSlider").value_changed.connect(func(value: float):
-		if is_instance_valid(panel_building): panel_building.set_power(value))
+		if is_instance_valid(panel_building):
+			for node in same_buildings(): node.set_power(value))
 	card.get_node("Worksite").pressed.connect(open_worksite)
 	for pair in [["BurnWood","wood"],["BurnCoal","coal"],["BurnEither","either"]]:
 		card.get_node(pair[0]).pressed.connect(func():
-			if is_instance_valid(shown) and shown.is_in_group("energy_generators"): shown.set_fuel_preference(pair[1]))
+			if is_instance_valid(shown) and shown.is_in_group("energy_generators"):
+				for node in same_buildings(): node.set_fuel_preference(pair[1]))
 	card.get_node("DropMaterials").pressed.connect(func():
 		for unit in selected_units():
 			if unit.can_gather and unit.cargo > 0:
@@ -151,15 +155,15 @@ func _ready() -> void:
 			card.get_node("Fell").accept_event())
 	card.get_node("Return").pressed.connect(return_units)
 	card.get_node("PrintInfantry").pressed.connect(func():
-		if is_instance_valid(shown) and shown.is_in_group("production_buildings"): shown.request_unit(&"infantry"))
+		if is_instance_valid(shown) and shown.is_in_group("production_buildings"): least_busy().request_unit(&"infantry"))
 	card.get_node("PrintTruck").pressed.connect(func():
-		if network.owned_selected() and not network.selected.request_truck(): game.notify("Depot lacks local funds or queue space."))
+		if network.owned_selected() and not least_busy().request_truck(): game.notify("Depot lacks local funds or queue space."))
 	card.get_node("PrintTrain").pressed.connect(queue_train)
 	card.get_node("PrintCargo").pressed.connect(func():
-		if network.owned_selected() and not network.selected.request_cargo(): game.notify("Depot lacks local funds or queue space."))
+		if network.owned_selected() and not least_busy().request_cargo(): game.notify("Depot lacks local funds or queue space."))
 	for id in ["scout","grenadier","tank","motorcycle","drone","ubermech"]:
 		card.get_node("Produce"+id.capitalize()).pressed.connect(func():
-			if is_instance_valid(shown) and shown.is_in_group("production_buildings"): shown.request_unit(StringName(id)))
+			if is_instance_valid(shown) and shown.is_in_group("production_buildings"): least_busy().request_unit(StringName(id)))
 	for pair in [["Depot",&"depot"],["Generator",&"generator"],["Barracks",&"barracks"],["TankFactory",&"tank_factory"],["Mine",&"iron_mine"],["CoalMine",&"coal_mine"],["Rail",&"rail"]]:
 		build_menu.get_node("Actions/"+pair[0]).pressed.connect(begin_global_placement.bind(pair[1]))
 	build_menu.get_node("Actions/Pin").pressed.connect(toggle_pin)
@@ -183,7 +187,29 @@ func selected_units() -> Array[Node3D]:
 func selected_object() -> Node3D:
 	var units := selected_units()
 	if not units.is_empty(): return units[0]
-	return game.selected_building if is_instance_valid(game.selected_building) and (game.selected_building.is_in_group("selectable_buildings") or game.selected_building.is_in_group("construction_plans")) else null
+	var node = game.selected_building
+	if not is_instance_valid(node) or not node.is_inside_tree(): return null
+	# An enemy unit is shown read-only (docs/SELECTION_INSPECT.md).
+	if node.is_in_group("units"): return node if node.team != "player" and node.health > 0 else null
+	return node if node.is_in_group("selectable_buildings") or node.is_in_group("construction_plans") else null
+## Your selected buildings of the shown building's type (docs/SELECTION_INSPECT.md), the shown one first.
+func same_buildings() -> Array[Node3D]:
+	var nodes: Array[Node3D] = []
+	if not is_instance_valid(shown): return nodes
+	nodes.append(shown)
+	if shown.get("team") != "player": return nodes
+	for node in game.building_selection():
+		if node != shown and node.get("team") == "player" and node.scene_file_path == shown.scene_file_path: nodes.append(node)
+	return nodes
+## Of those, the one whose production queue is shortest (the shown one on a tie): orders from the card go there,
+## so several buildings share the work. Only buildings that can pay from a friendly Depot count.
+func least_busy() -> Node3D:
+	var best: Node3D = shown
+	for node in same_buildings():
+		if node.has_method("source_friendly") and not node.source_friendly(): continue
+		if best.has_method("source_friendly") and not best.source_friendly(): best = node; continue
+		if node.queue < best.queue: best = node
+	return best
 func selected_cargo() -> Node3D:
 	var node = selected_object()
 	return node if is_instance_valid(node) and node.is_in_group("units") and node.is_cargo_vehicle else null
@@ -219,7 +245,13 @@ func _process(_delta: float) -> void:
 	if units.size() > 1 and not global_build_open:
 		commands.get_node("Title").text = "%d FRIENDLY UNITS SELECTED" % units.size()
 		hint_text = "Right-click moves the group. Commands apply where each unit supports them; the card and stats show the outlined unit. Click a portrait to select only that unit, Shift-click to remove it. Ctrl-click keeps only that type, Ctrl+Shift-click removes that type."
-	update_portraits(units)
+	var group: Array[Node3D] = []
+	if units.is_empty() and not global_build_open: group = same_buildings()
+	if group.size() > 1:
+		commands.get_node("Title").text = "%d %s SELECTED" % [group.size(),object_name(group[0]).to_upper()]
+		hint_text = "Production goes to the selected building with the shortest queue. Power, rally points and generator settings apply to all of them. Click a portrait to keep only that building, Shift-click to remove it. Double-click a building selects your others of its type on screen; Shift-click adds or removes one."
+		update_portraits(group)
+	else: update_portraits(units)
 	# Apply final visibility once. Hiding a pressed button cancels its GUI gesture.
 	for button in card.get_children():
 		if button is Button: button.visible = desired_buttons.has(str(button.name))
@@ -420,7 +452,8 @@ func fuel_note(node: Node) -> String:
 	var status := "OUT OF FUEL · " if node.out_of_fuel else ("LOW FUEL · " if node.fuel_low() else "")
 	var lines: PackedStringArray = node.fuel_summary().split("\n")
 	return status+(lines[1] if lines.size() > 1 else "")
-func update_unit_sections(node: Node3D) -> void:
+## `inspect` is an enemy unit: its stats and abilities only, not what it carries or where it is going.
+func update_unit_sections(node: Node3D, inspect := false) -> void:
 	var pairs := [["Speed","%.1f" % node.move_speed]]
 	if node.vision > 0: pairs.append(["Vision","%.1f" % node.vision])
 	var abilities: Array[String] = []
@@ -455,7 +488,7 @@ func update_unit_sections(node: Node3D) -> void:
 	var line = context.get_node("Abilities")
 	line.text = " · ".join(abilities)
 	line.visible = not abilities.is_empty()
-	if node.is_cargo_vehicle:
+	if node.is_cargo_vehicle and not inspect:
 		show_storage("Cargo · %d/%d crates" % [node.crates.size(),node.crate_slots()],node.stockpile)
 		# Crate pips replace the loose-cargo legend unless the vehicle also carries loose cargo.
 		var aboard = info.get_node("Storage/Aboard")
@@ -515,7 +548,7 @@ func update_portraits(units: Array[Node3D]) -> void:
 		var number := str(unit.health)
 		if button.get_node("HealthText").text != number: button.get_node("HealthText").text = number
 		button.get_node("Primary").visible = unit == units[0]
-		var tip := "%s · Health %d / %d · %s\nClick: only this unit · Shift: remove it · Ctrl: only this type · Ctrl+Shift: remove this type" % [object_name(unit),unit.health,unit.max_health,unit.state]
+		var tip := "%s · Health %d / %d · %s\nClick: only this unit · Shift: remove it · Ctrl: only this type · Ctrl+Shift: remove this type" % [object_name(unit),unit.health,unit.max_health,unit.state] if unit.is_in_group("units") else "%s · Health %d / %d\nClick: only this building · Shift: remove it" % [object_name(unit),unit.health,unit.max_health]
 		if button.tooltip_text != tip: button.tooltip_text = tip
 ## Click keeps only that unit selected; Shift-click drops it. With Ctrl the same goes for its whole type.
 func pick_portrait(index: int) -> void:
@@ -523,6 +556,12 @@ func pick_portrait(index: int) -> void:
 	var picked: Node3D = portrait_units[index]
 	var by_type := Input.is_key_pressed(KEY_CTRL)
 	var remove := Input.is_key_pressed(KEY_SHIFT)
+	if not picked.is_in_group("units"):
+		var kept: Array[Node3D] = same_buildings()
+		if remove: kept.erase(picked)
+		else: kept = [picked]
+		get_node("/root/SelectionManager").selection_changed(kept[0] if not kept.is_empty() else null,kept)
+		return
 	for unit in selected_units():
 		var hit: bool = unit.scene_file_path == picked.scene_file_path if by_type else unit == picked
 		unit.set_selected(not hit if remove else hit)
@@ -648,7 +687,10 @@ func update_contents() -> void:
 		hint_text = "Left-click selects. Drag selects units. Right-click gives orders. B opens the build page."
 		return
 	var units := selected_units()
+	var group: Array[Node3D] = []
+	if units.is_empty(): group = same_buildings()
 	name_label.text = object_name(node) if units.size() <= 1 else "%d units selected" % units.size()
+	if group.size() > 1: name_label.text = "%d × %s" % [group.size(),object_name(node)]
 	info.get_node("Health").max_value = node.max_health
 	info.get_node("Health").value = node.health
 	info.get_node("HealthText").text = "Health %d / %d" % [node.health,node.max_health]
@@ -704,6 +746,13 @@ func update_contents() -> void:
 			show_fuel_tile("BurnCoal","Burn coal","coal",node.fuel_preference)
 			show_fuel_tile("BurnEither","Burn either (wood first)","either",node.fuel_preference)
 		if is_instance_valid(node.assigned_depot): show_button("FocusAssigned","Focus Depot")
+	elif node.team != "player":
+		# An enemy unit shows only its health and stats: no state, orders, fuel or cargo (docs/SELECTION_INSPECT.md).
+		state_label.text = team_label(node)
+		info.get_node("Details").text = ""
+		update_unit_sections(node,true)
+		commands.get_node("Title").text = "%s UNIT · INSPECT" % team_label(node).to_upper()
+		hint_text = "Enemy units show their health and stats here and never take your orders. Right-click with your own units to attack it."
 	else:
 		var nearest = nearest_depot(node)
 		state_label.text = "%s · %s%s" % [team_label(node),node.state," · %d queued" % node.order_queue.size() if not node.order_queue.is_empty() else ""]
@@ -715,9 +764,9 @@ func update_contents() -> void:
 			var sources := SupplySource.candidates(get_tree(),node.global_position,node.team)
 			if not sources.is_empty(): notes.append("Pays from and delivers to %s (nearest)" % sources[0].name)
 		info.get_node("Details").text = "\n".join(notes)
-		commands.get_node("Title").text = "UNIT · ORDERS"
 		update_bars(node)
 		update_unit_sections(node)
+		commands.get_node("Title").text = "UNIT · ORDERS"
 		show_button("Move","Move")
 		show_button("Stop","Stop")
 		if node.fuel_active():
