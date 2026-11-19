@@ -1,0 +1,62 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://review.gd" id="review"]
+[ext_resource type="PackedScene" path="res://bastion/tank_model.tscn" id="new"]
+[ext_resource type="PackedScene" path="res://scenes/models/tank_model.tscn" id="old"]
+[ext_resource type="PackedScene" path="res://scenes/maps/lighting.tscn" id="lighting"]
+[ext_resource type="Material" path="res://grass_stage.tres" id="grass"]
+
+[sub_resource type="StandardMaterial3D" id="floor_finish"]
+albedo_color = Color(0.52, 0.505, 0.47, 1)
+roughness = 0.94
+[sub_resource type="PlaneMesh" id="floor"]
+size = Vector2(500, 500)
+material = SubResource("floor_finish")
+
+[node name="BastionReview" type="Node3D"]
+script = ExtResource("review")
+[node name="GameLighting" parent="." instance=ExtResource("lighting")]
+[node name="Fill" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-38,-143,0)
+light_color = Color(0.97,0.96,0.94,1)
+light_energy = 0.83
+light_specular = 0.42
+shadow_enabled = true
+shadow_normal_bias = 0.12
+shadow_bias = 0.015
+shadow_blur = 1.1
+directional_shadow_max_distance = 65.0
+[node name="Backdrop" type="MeshInstance3D" parent="."]
+position = Vector3(0,-0.004,0)
+cast_shadow = 0
+mesh = SubResource("floor")
+[node name="Terrain" type="MeshInstance3D" parent="."]
+visible = false
+position = Vector3(0,-0.012,0)
+cast_shadow = 0
+mesh = SubResource("floor")
+material_override = ExtResource("grass")
+[node name="Red" parent="." instance=ExtResource("new")]
+[node name="Blue" parent="." instance=ExtResource("new")]
+position = Vector3(-6,0,2)
+visible = false
+[node name="Accepted" parent="." instance=ExtResource("old")]
+position = Vector3(6,0,-2)
+visible = false
+[node name="Camera" type="Camera3D" parent="."]
+projection = 1
+size = 5.9
+near = 0.1
+far = 3000
+current = true
+position = Vector3(-9,7,-13)
+rotation_degrees = Vector3(-21,-145,0)
+[node name="Help" type="CanvasLayer" parent="."]
+[node name="Legend" type="Label" parent="Help"]
+offset_left = 25
+offset_top = 20
+theme_override_colors/font_color = Color(0.97,0.97,0.94,1)
+theme_override_colors/font_shadow_color = Color(0.04,0.05,0.05,0.95)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 19
