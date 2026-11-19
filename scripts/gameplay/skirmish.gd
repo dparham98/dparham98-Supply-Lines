@@ -306,6 +306,16 @@ func pick_distance(node: Node3D, camera: Camera3D, screen) -> float:
 		var nearest := at.clamp(Vector2(box.position.x,box.position.z),Vector2(box.end.x,box.end.z))
 		d = minf(d,nearest.distance_to(at))
 	return d if d <= screen.radius else INF
+## A damaged vehicle of yours under the pointer, for Infantry to repair (docs/VEHICLE_REPAIR.md).
+func pick_vehicle_to_repair(screen) -> Node3D:
+	var camera := get_viewport().get_camera_3d()
+	var closest: Node3D
+	var distance := INF
+	for node in get_tree().get_nodes_in_group("units"):
+		if node.get("team") != "player" or node.health >= node.max_health or not EngineeringWork.is_vehicle(node): continue
+		var d: float = pick_distance(node,camera,screen)
+		if d < distance: distance = d; closest = node
+	return closest
 ## A friendly unit or building under the pointer, for forced fire with the Attack command.
 func pick_friendly(screen: Vector2) -> Node3D:
 	var camera := get_viewport().get_camera_3d()
@@ -372,6 +382,7 @@ func issue_order(screen, queued := false) -> void:
 	var plan := pick_target(screen,"construction_plans",50)
 	if is_instance_valid(plan) and (plan.finished or plan.kind == &"rail"): plan = null
 	var crate := pick_crate(screen)
+	var vehicle := pick_vehicle_to_repair(screen)
 	var point = ground_at(screen)
 	if plan == null and point != null:
 		var coal_cell = ground.get_tile_at_position(point)
@@ -389,6 +400,8 @@ func issue_order(screen, queued := false) -> void:
 		elif plan and unit.can_construct and not unit.is_cargo_vehicle and not unit.is_depot_truck: give_order(unit,{kind = "construct", target = plan},queued)
 		elif crate and unit.is_cargo_vehicle and not unit.is_in_group("rail_trains"): give_order(unit,{kind = "load", target = crate, point = crate.global_position},queued)
 		elif crate and unit.can_gather and unit.cargo > 0 and crate.accepts(unit.cargo_kind): give_order(unit,{kind = "return", target = crate},queued)
+		# A damaged vehicle of yours: workers repair it, unless they are bringing cargo to it.
+		elif vehicle and vehicle != unit and unit.can_repair and not (unit.cargo > 0 and vehicle == dropoff): give_order(unit,{kind = "repair", target = vehicle},queued)
 		elif point != null and ground.get_tile_at_position(point) != null and ground.get_terrain(ground.get_tile_at_position(point)) == 3 and unit.can_gather:
 			give_order(unit,{kind = "gather", target = ground.forest_source(ground.get_tile_at_position(point))},queued)
 			forest_ordered = true
@@ -520,7 +533,9 @@ func issue_card_order(screen, queued := false) -> void:
 		var point = ground_at(screen)
 		if point != null and ground.get_tile_at_position(point) != null: order_fell(ground.get_tile_at_position(point),Rect2i(),point,queued)
 		return
-	elif pending_unit_command == "repair": target = pick_target(screen,"selectable_buildings",50)
+	elif pending_unit_command == "repair":
+		target = pick_vehicle_to_repair(screen)
+		if target == null: target = pick_target(screen,"selectable_buildings",50)
 	elif pending_unit_command == "capture": target = pick_target(screen,"capturable_buildings",50)
 	elif pending_unit_command == "derail":
 		# Derail takes a piece of track, anyone's (docs/DERAILER.md).
