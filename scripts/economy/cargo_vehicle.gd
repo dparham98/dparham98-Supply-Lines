@@ -6,9 +6,10 @@ var supply_transition := ""
 var supply_timer := 0.0
 var storage_capacity: int:
 	get: return stockpile.capacity
-# Loose stock, spendable when deployed as a supply source.
+# Loose stock, spendable when deployed as a supply source. Energy also counts the coal the vehicle can burn
+# for it, as a Generator does (pay_energy, docs/MOBILE_SUPPLY.md).
 var energy: int:
-	get: return stockpile.amount(&"energy")
+	get: return stockpile.amount(&"energy")+energy_credit+coal_on_hand()*BURN.coal_output
 var iron: int:
 	get: return stockpile.amount(&"iron")
 var wood: int:
@@ -25,7 +26,42 @@ func supplies_available() -> bool:
 	if is_in_group("rail_trains") and not on_friendly_track(): return false
 	return deployed and supply_transition.is_empty() and health > 0 and not _dead and (not route_active or route_paused) and _route.is_empty() and _moving_to.x < 0
 func spend_local(energy_cost: int, iron_cost: int) -> bool:
-	return supplies_available() and stockpile.spend({&"energy":energy_cost,&"iron":iron_cost})
+	if not supplies_available() or energy < energy_cost or stockpile.amount(&"iron") < iron_cost: return false
+	stockpile.withdraw(&"iron",iron_cost)
+	pay_energy(energy_cost)
+	return true
+## A deployed Cargo vehicle pays energy by burning coal at the Generator's coal rate
+## (assets/economy/generator_rules.tres): loose energy first, then energy left from the last coal burnt, then
+## more coal (take_coal). The caller has checked `energy` covers it.
+const BURN: GeneratorRules = preload("res://assets/economy/generator_rules.tres")
+var energy_credit := 0
+func pay_energy(amount: int) -> void:
+	var due := amount-stockpile.withdraw(&"energy",mini(amount,stockpile.amount(&"energy")))
+	while due > 0:
+		if energy_credit <= 0:
+			if not take_coal(): return
+			energy_credit += BURN.coal_output
+		var used := mini(due,energy_credit)
+		energy_credit -= used
+		due -= used
+## Coal it can burn or hand to another vehicle's tank: loose coal, coal crates aboard, then its own fuel tank,
+## which it may empty.
+func coal_on_hand() -> int:
+	return stockpile.amount(&"coal")+crate_units(&"coal")+(floori(fuel) if fuel_rules != null else 0)
+## Takes one coal, in the order coal_on_hand lists; false when there is none.
+func take_coal() -> bool:
+	if stockpile.withdraw(&"coal",1) == 1: return true
+	for crate in crates:
+		if crate.kind != &"coal" or crate.amount <= 0: continue
+		crate.amount -= 1
+		if crate.amount <= 0:
+			crates.erase(crate)
+			_sync_reserved()
+		return true
+	if fuel_rules != null and fuel >= 1:
+		fuel -= 1
+		return true
+	return false
 func deploy_supplies() -> bool:
 	if _dead or health <= 0 or deployed or not supply_transition.is_empty(): return false
 	if is_in_group("rail_trains") and not on_friendly_track(): return false
@@ -183,13 +219,13 @@ func manifest_total() -> int:
 	for kind in manifest: total += manifest[kind]
 	return total
 func manifest_add(kind: StringName) -> bool:
-	if manifest_total() >= crate_slots(): return false
+	if not ResourceStockpile.CRATED.has(kind) or manifest_total() >= crate_slots(): return false
 	manifest[kind] = manifest.get(kind,0)+1
 	return true
 ## Gives every free slot to this resource; false when there are none.
 func manifest_fill(kind: StringName) -> bool:
 	var free := crate_slots()-manifest_total()
-	if free <= 0: return false
+	if free <= 0 or not ResourceStockpile.CRATED.has(kind): return false
 	manifest[kind] = manifest.get(kind,0)+free
 	return true
 func manifest_text() -> String:

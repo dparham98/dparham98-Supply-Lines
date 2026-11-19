@@ -7,6 +7,9 @@ extends Resource
 @export var consumes_fuel := true
 @export_range(0,10,0.01) var coal_per_movement_unit := 0.10
 @export_range(0,100,0.5) var refuel_coal_per_second := 5.0
+## Energy a vehicle takes from a friendly Depot per metre moved inside its range, instead of fuel
+## (docs/FUEL_BATCH.md). 0 leaves it on its tank everywhere.
+@export_range(0,10,0.01) var depot_energy_per_metre := 0.2
 @export_range(0,1,0.01) var low_fuel_fraction := 0.25
 ## Fallback for a vehicle made with no skirmish root (a scene run on its own): start with a full tank.
 static var testing_full_tanks := true
