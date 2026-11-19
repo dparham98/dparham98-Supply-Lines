@@ -87,6 +87,7 @@ The rebuild and refresh controls use Godot's supported [Inspector tool buttons](
 
 Combat values, moving fire and splash: [combat batch](docs/COMBAT_BATCH.md).
 
+Tank: the [Bastion](docs/BASTION_TANK.md), with a 10–30 m main gun and a roof gun for anything within 10 m.
 Scout/Tank/Drone terrain abilities and editor exercise: [terrain abilities](docs/TERRAIN_ABILITIES.md).
 
 Sculpted mountains: [mountains](docs/MOUNTAINS.md).

@@ -21,7 +21,14 @@ func spawn(path: String, offset: Vector3) -> Node3D:
 	return unit
 func screen(point: Vector3) -> Vector2:
 	return game.get_viewport().get_camera_3d().unproject_position(point)
+## Held so the edited fuel rules stay loaded for the whole test.
+var _unpowered: Array[FuelRules] = []
 func run() -> void:
+	# Fuel and stock checks here run with Depot power off; truck_fuel_test.gd checks it (docs/FUEL_BATCH.md).
+	for id in ["drone","motorcycle","tank","train","truck","ubermech"]:
+		var rules: FuelRules = load("res://assets/economy/fuel_%s.tres" % id)
+		rules.depot_energy_per_metre = 0
+		_unpowered.append(rules)
 	root.size = Vector2i(1280,900)
 	# A mechanics check on a map laid out for the old 35 m Depot range (docs/DEPOT_RANGE.md).
 	var old_range: DepotRules = load("res://assets/economy/depot_rules.tres")

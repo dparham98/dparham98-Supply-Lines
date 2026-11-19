@@ -75,14 +75,15 @@ func run() -> void:
 	grenadier._cooldown = 0
 	fire(grenadier,target)
 	if not check(mine.health == mine_hp-40,"Neutral mine received damage"): return
-	var shooter = actor("tank","player",origin)
+	# Ten metres back, so the enemy Tank and the near target are past its minimum range (docs/BASTION_TANK.md).
+	var shooter = actor("tank","player",origin+Vector3(-10,0,0))
 	fire(shooter,tank)
 	if not check(tank.health == 20 and shooter._cooldown == 3,"Tank heavy attack/cadence incorrect"): return
 	shooter._cooldown = 0
 	outside.global_position = origin+Vector3(0,0,shooter.attack_range+1)
 	fire(shooter,outside)
 	if not check(outside.health == 55,"Out-of-range shot accepted"): return
-	outside.global_position = origin+Vector3(-4,0,0)
+	outside.global_position = origin+Vector3(-24,0,0)
 	fire(shooter,outside)
 	if not check(outside.health == 43 and shooter._cooldown == 1,"Tank base attack incorrect"): return
 	shooter.command_attack(friend)
@@ -97,7 +98,7 @@ func run() -> void:
 		mover._route.assign([goal])
 		mover.order = "move"
 		mover.get_node("Visuals").rotation.y = PI  # already facing the goal, so it moves at once
-		var victim = actor("tank","enemy",origin+Vector3(4,0,0))
+		var victim = actor("tank","enemy",origin+Vector3(14 if id == "tank" else 4,0,0))
 		var before: int = victim.health
 		# A turret already on the victim, so the Tank can fire at once; its shell lands before the check.
 		var turret = mover._turret()

@@ -44,6 +44,8 @@ var _attack_enabled := true
 ## How fast the body turns while travelling, in degrees a second (docs/PATHING.md). Unit stats set it.
 @export var turn_rate := 360.0
 @export var attack_range := 12.0
+## The main weapon cannot fire nearer than this (UnitStats.min_attack_range).
+@export var min_attack_range := 0.0
 @export var attack_damage := 16
 @export var shot_interval := 0.7
 ## What a shot looks like in flight; empty uses the map's plain tracer.
@@ -146,11 +148,12 @@ func command_gather(node: Node3D) -> void:
 	state = "To "+str(node.resource_kind)
 	if cargo > 0 and cargo_kind != node.resource_kind: _head_home()
 	_work_timer = 0
-## Fell (docs/FELL.md): cut down the trees at a Forest cell and the ones round it, keeping no wood. The worker
-## keeps any load it already carries.
+## Fell (docs/FELL.md): cut a roughly straight lane of trees to a clicked cell, then the Forest within
+## fell_radius_cells of it; or, given `area`, every Forest cell in that box. No wood is kept, and the worker keeps
+## any load it already carries.
 var _fell_origin := Vector2i(-1,-1)
-## Autocast: while idle with no orders, fell the Forest within fell_radius_cells of where it was left. The
-## player switches it with a right-click on the Fell card.
+## Autocast: while idle with no orders, fell the Forest within autocast_fell_radius_cells of where it was left,
+## one cell at a time, nearest first. The player switches it with a right-click on the Fell card.
 var fell_autocast := false
 ## The cell it was left at, round which it fells; a new order moves it.
 var _auto_home := Vector2i(-1,-1)
@@ -159,54 +162,89 @@ func set_fell_autocast(on: bool) -> void:
 	fell_autocast = on and can_gather and not is_cargo_vehicle and not is_depot_truck
 	_auto_home = Vector2i(-1,-1)
 	_auto_wait = 0.0
-## Looks for Forest round its spot about once a second (ten after a tree it could not reach).
+## Looks for Forest round its spot about once a second (ten after a tree it could not reach). Each pick is a
+## Fell of that one cell, so the lane to it stays inside the circle and nothing round it is cut.
 func _auto_fell(delta: float) -> void:
 	_auto_wait -= delta
 	if _auto_wait > 0: return
 	_auto_wait = 1.0
-	if _auto_home.x < 0:
-		var here = ground.get_tile_at_position(global_position)
-		if here == null: return
-		_auto_home = here
-	_fell_origin = _auto_home
-	var tree := _next_fell()
-	if tree == null: return
-	command_fell(tree)
-	_fell_origin = _auto_home
+	var here = ground.get_tile_at_position(global_position)
+	if here == null: return
+	if _auto_home.x < 0: _auto_home = here
+	var reach: int = ground.harvesting_rules.autocast_fell_radius_cells
+	var best := Vector2i(-1,-1)
+	var best_distance := INF
+	for z in range(_auto_home.y-reach,_auto_home.y+reach+1):
+		for x in range(_auto_home.x-reach,_auto_home.x+reach+1):
+			var cell := Vector2i(x,z)
+			if _auto_home.distance_squared_to(cell) > reach*reach or ground.forest_amount(cell) <= 0: continue
+			var d := Vector2(cell-here).length_squared()
+			if d < best_distance: best_distance = d; best = cell
+	if best.x < 0: return
+	command_fell(best,Rect2i(best,Vector2i.ONE))
+	if order != "fell": return
 	state = "Auto-felling"
-func command_fell(node: Node3D) -> void:
-	if not can_gather or is_depot_truck or is_cargo_vehicle or not is_instance_valid(node) or not node.get("cell") is Vector2i: return
+	# Straight on to the next cell once this one is down.
+	_auto_wait = 0.0
+var _fell_area := Rect2i()
+## True once a worker could not walk to the lane's first tree: it then cuts every tree on the line.
+var _fell_whole := false
+var _fell_goal := Vector2i(-1,-1)
+## Cells given up on: no way to them even through the trees.
+var _fell_skip := {}
+func command_fell(cell: Vector2i, area := Rect2i()) -> void:
+	if not can_gather or is_depot_truck or is_cargo_vehicle or not ground.is_tile_in_bounds(cell): return
 	_stop_route()
 	order = "fell"
-	source = node
-	order_target = node
 	_dig_source = null
-	_fell_origin = node.cell
+	_fell_origin = cell
+	_fell_area = area
+	_fell_whole = false
+	_fell_skip = {}
+	source = _next_fell()
+	order_target = source
 	state = "To fell"
 	_work_timer = 0
-## The next Forest cell to fell: the nearest to the worker within fell_radius_cells of the clicked cell, or null.
-func _next_fell() -> Node3D:
+	if source == null: order = "idle"; state = "Felled"
+## What is left to fell from where the worker stands: the lane to the clicked cell, then the patch round it; or
+## the nearest Forest cell left in the box.
+func _fell_target(here: Vector2i) -> Vector2i:
+	if not _fell_area.has_area() and not _fell_skip.has(_fell_origin):
+		if ground.forest_amount(_fell_origin) > 0 or not FellLane.lane(ground,here,_fell_origin,Rect2i(),_fell_whole).is_empty(): return _fell_origin
 	var reach: int = ground.harvesting_rules.fell_radius_cells
-	var best: Node3D
+	var box := _fell_area if _fell_area.has_area() else Rect2i(_fell_origin-Vector2i.ONE*reach,Vector2i.ONE*(reach*2+1))
+	var best := Vector2i(-1,-1)
 	var best_distance := INF
-	for z in range(_fell_origin.y-reach,_fell_origin.y+reach+1):
-		for x in range(_fell_origin.x-reach,_fell_origin.x+reach+1):
+	for z in range(box.position.y,box.end.y):
+		for x in range(box.position.x,box.end.x):
 			var cell := Vector2i(x,z)
-			if _fell_origin.distance_squared_to(cell) > reach*reach or ground.forest_amount(cell) <= 0: continue
-			var d := global_position.distance_squared_to(ground.tile_to_world(cell))
-			if d < best_distance: best_distance = d; best = ground.forest_source(cell)
+			if _fell_skip.has(cell) or ground.forest_amount(cell) <= 0: continue
+			if not _fell_area.has_area() and _fell_origin.distance_squared_to(cell) > reach*reach: continue
+			var d := Vector2(cell-here).length_squared()
+			if d < best_distance: best_distance = d; best = cell
 	return best
+func _next_fell() -> Node3D:
+	var here = ground.get_tile_at_position(global_position)
+	if here == null: return null
+	_fell_goal = _fell_target(here)
+	if _fell_goal.x < 0: return null
+	# A tree already in reach needs no lane.
+	if ground.forest_amount(_fell_goal) > 0 and global_position.distance_to(ground.tile_to_world(_fell_goal)) <= interaction_range: return ground.forest_source(_fell_goal)
+	var lane := FellLane.lane(ground,here,_fell_goal,Rect2i(),_fell_whole)
+	return ground.forest_source(lane[0] if not lane.is_empty() else _fell_goal)
 func _fell(delta: float) -> void:
 	if not is_instance_valid(source) or source.remaining <= 0:
 		source = _next_fell()
 		order_target = source
-		if source == null: order = "idle"; state = "Felled"; return
+		if source == null: order = "idle"; state = "Trees unreachable" if not _fell_skip.is_empty() else "Felled"; return
 	if global_position.distance_to(source.global_position) > interaction_range:
 		if _retry <= 0:
 			state = "To fell"
 			if not _route_to_interaction(source,interaction_range):
-				# A tree with no way to it is skipped for now: the next one may open the way.
-				state = "Trees unreachable"; order = "idle"
+				# No walk to the lane's first tree: cut every tree on the line, and give the cell up if that fails too.
+				if _fell_whole: _fell_skip[_fell_goal] = true
+				_fell_whole = not _fell_whole
+				source = null
 		return
 	state = "Felling"
 	_face(source.global_position)
@@ -318,7 +356,7 @@ func _order_process(delta: float) -> void:
 			_update_display()
 			return
 	if not _route.is_empty() or _moving_to.x >= 0:
-		if is_instance_valid(order_target) and ((order == "attack" and global_position.distance_to(order_target.global_position) <= attack_range) or (order == "repair" and global_position.distance_to(order_target.global_position) <= engineering_rules.repair_range)):
+		if is_instance_valid(order_target) and ((order == "attack" and in_attack_range(order_target)) or (order == "repair" and global_position.distance_to(order_target.global_position) <= engineering_rules.repair_range)):
 			_stop_route()
 		else:
 			_walk(delta)
@@ -371,7 +409,7 @@ func run_order(entry: Dictionary) -> void:
 		"move": command_move(entry.point)
 		"attack": command_attack(entry.target,entry.get("forced",false))
 		"gather": command_gather(entry.target)
-		"fell": command_fell(entry.target)
+		"fell": command_fell(entry.cell,entry.get("area",Rect2i()))
 		"return": command_return(entry.get("target"))
 		"repair": command_repair(entry.target)
 		"capture": command_capture(entry.target)
@@ -386,7 +424,7 @@ func _start_next_order() -> void:
 	# Skip entries whose target is gone or that the unit refuses, such as an unreachable attack.
 	while order == "idle" and not order_queue.is_empty():
 		var entry: Dictionary = order_queue.pop_front()
-		if entry.kind in ["attack","gather","fell","repair","capture","construct","fetch","load","unload"] and not is_instance_valid(entry.get("target")) and not (entry.kind in ["load","unload"] and entry.get("point") != null): continue
+		if entry.kind in ["attack","gather","repair","capture","construct","fetch","load","unload"] and not is_instance_valid(entry.get("target")) and not (entry.kind in ["load","unload"] and entry.get("point") != null): continue
 		run_order(entry)
 func order_point(entry: Dictionary) -> Variant:
 	if entry.kind in ["move","attack_move","deploy"]: return entry.point
@@ -431,14 +469,54 @@ func _route_to_standing(target: Node3D, radius: float, keep_off := Rect2i()) -> 
 	path.remove_at(0)
 	_route = path
 	return true
-## To the nearest cell touching a build site's footprint; failing that, anywhere in the old reach of its centre.
+## Set while trees stand between the builder and a site it has no way to touch: it fells them instead of
+## working from the old reach of the site's centre (docs/BUILDER_TOUCH.md, docs/COAL_MINES.md).
+var _site_blocked := false
+## To the nearest cell touching a build site's footprint; failing that, it fells the trees on a roughly straight
+## line to the site (docs/COAL_MINES.md); failing that, anywhere in the old reach of its centre.
 func _route_to_site(keep_off: Rect2i) -> bool:
 	_retry = 0.5
 	var path: Array[Vector2i] = Approach.touch_path(self,keep_off)
-	if path.is_empty(): return _route_to_standing(order_target,_construct_reach(),keep_off)
+	_site_blocked = false
+	if path.is_empty():
+		source = _lane_tree(keep_off)
+		if source != null:
+			_site_blocked = true
+			_retry = 0
+			state = "Felling a way to the build site"
+			return true
+		return _route_to_standing(order_target,_construct_reach(),keep_off)
 	path.remove_at(0)
 	_route = path
 	return true
+## The first tree to fell on a roughly straight line from here to `rect` (docs/FELL.md), or null.
+func _lane_tree(rect: Rect2i) -> Node3D:
+	var here = ground.get_tile_at_position(global_position)
+	if here == null: return null
+	var to: Vector2i = rect.position+rect.size/2
+	var lane := FellLane.lane(ground,here,to,rect)
+	return null if lane.is_empty() else ground.forest_source(lane[0])
+## Walks to the tree in `source` and fells it, leaving the wood where it falls; any load stays aboard. `source`
+## is null once the tree is down, or when there is no way to it.
+func _clear_tree(delta: float, doing: String) -> void:
+	if global_position.distance_to(source.global_position) > interaction_range:
+		_work_timer = 0
+		if _retry <= 0:
+			state = doing
+			if not _route_to_interaction(source,interaction_range):
+				source = null
+				_retry = 3.0
+		return
+	if not _route.is_empty() or _moving_to.x >= 0: _stop_route()
+	state = doing
+	_face(source.global_position)
+	_work_timer += delta
+	if _work_timer < harvest_interval: return
+	_work_timer = 0
+	source.extract(harvest_amount,team)
+	if source.remaining <= 0:
+		source = null
+		_retry = 0
 ## Toward the nearest open cell to the target; the order stops the walk once the target is in range.
 func _route_toward(target: Node3D) -> bool:
 	var center = ground.get_tile_at_position(target.global_position)
@@ -457,6 +535,7 @@ func _route_near(target: Node3D, radius: float) -> bool:
 	_retry = 1
 	return false
 const CoalApproach := preload("res://scripts/terrain/coal_approach.gd")
+const FellLane := preload("res://scripts/terrain/fell_lane.gd")
 const Approach := preload("res://scripts/units/interaction_approach.gd")
 ## Route cells looked ahead for a straight run, and half the width of the lane a run must keep clear.
 const AIM_LOOKAHEAD := 32
@@ -471,11 +550,13 @@ func _walk(delta: float) -> void:
 	var point: Vector3 = ground.tile_to_world(_moving_to)
 	var step := move_speed*delta*_turn_speed(_turn_toward(point,delta))
 	if fuel_active():
-		if out_of_fuel or fuel <= 0:
-			_mark_out_of_fuel()
-			state = "Out of fuel · order paused"
-			return
-		if fuel_rules.coal_per_movement_unit > 0: step = minf(step,fuel/fuel_rules.coal_per_movement_unit)
+		powered_by = _depot_power()
+		if powered_by == null:
+			if out_of_fuel or fuel <= 0:
+				_mark_out_of_fuel()
+				state = "Out of fuel · order paused"
+				return
+			if fuel_rules.coal_per_movement_unit > 0: step = minf(step,fuel/fuel_rules.coal_per_movement_unit)
 	var before := global_position
 	var next := global_position.move_toward(point,step)
 	var cell = ground.get_tile_at_position(next)
@@ -492,7 +573,7 @@ func _walk(delta: float) -> void:
 		grid_position = cell
 	global_position = next
 	if cell != null and cell != ground.get_tile_at_position(before): _aim_ahead()
-	if fuel_active(): burn_fuel(before.distance_to(global_position))
+	if fuel_active(): _pay_for_move(before.distance_to(global_position))
 	if unit_stats != null and unit_stats.mobility != null and unit_stats.mobility.clears_forest:
 		var entered = ground.get_tile_at_position(global_position)
 		if entered != null: ground.clear_forest(entered)
@@ -589,6 +670,14 @@ func _head_home() -> void:
 	order = "return"
 	if not return_explicit: return_depot = null
 func _gather(delta: float) -> void:
+	# A tree in the way of a coal mine: felled where it stands, then back to the mine.
+	if is_instance_valid(_dig_source) and _dig_source.is_in_group("mines") and is_instance_valid(source) and source.remaining > 0:
+		var mine := _dig_source
+		_clear_tree(delta,"Felling a way to the coal")
+		if not is_instance_valid(source):
+			source = mine
+			order_target = mine
+		return
 	_source_left()
 	if not is_instance_valid(source) or source.remaining <= 0:
 		if cargo > 0: _head_home()
@@ -615,12 +704,29 @@ func _gather(delta: float) -> void:
 		cargo += source.extract(mini(harvest_amount,carry_capacity-cargo),team)
 		# A cell that runs out hands the worker on to the next one (coal, wood) before it walks home part-loaded.
 		if cargo >= carry_capacity or not _source_left(): _head_home()
-## Coal that no open path leads to (docs/BALANCED_MAP.md): the worker fells the tree in its way and then goes
-## back to the coal. One tree at a time, so the way is worked out again as the forest changes. False when
-## there is nothing to cut: the coal is not behind forest, or no way through exists.
+## Coal that no open path leads to (docs/BALANCED_MAP.md, docs/COAL_MINES.md): the worker fells the tree in its
+## way and then goes back to the coal. One tree at a time, so the way is worked out again as the forest changes.
+## False when there is nothing to cut: the coal is not behind forest, or no way through exists.
 func _cut_way_in() -> bool:
 	# While felling, the source is a tree; the way is still worked out to the coal behind it.
 	var goal: Node3D = _dig_source if is_instance_valid(_dig_source) else source
+	# A coal mine: the trees on a roughly straight line to its footprint.
+	if is_instance_valid(goal) and goal.is_in_group("mines") and goal.get("on_coal") == true and not goal.cells.is_empty():
+		var low: Vector2i = goal.cells[0]
+		var high: Vector2i = goal.cells[0]
+		for cell in goal.cells:
+			low = Vector2i(mini(low.x,cell.x),mini(low.y,cell.y))
+			high = Vector2i(maxi(high.x,cell.x),maxi(high.y,cell.y))
+		var tree := _lane_tree(Rect2i(low,high-low+Vector2i.ONE))
+		if tree == null:
+			_retry = 3.0
+			return false
+		source = tree
+		order_target = tree
+		_dig_source = goal
+		_retry = 0
+		state = "Felling a way to the coal"
+		return true
 	if not is_instance_valid(goal) or not goal.has_method("field_remaining"): return false
 	var here = ground.get_tile_at_position(global_position)
 	if here == null: return false
@@ -709,9 +815,17 @@ func _attack_order() -> void:
 		order = "idle"
 		state = "Idle"
 		return
-	if global_position.distance_to(order_target.global_position) <= attack_range:
+	if in_attack_range(order_target):
 		state = "Firing"
 		_shoot(order_target)
+	elif global_position.distance_to(order_target.global_position) < min_attack_range:
+		# Too close for the main gun: back off until the target is at its minimum range.
+		if _retry <= 0:
+			state = "Backing off · too close for main gun"
+			var away := global_position-order_target.global_position
+			away.y = 0.0
+			if away.length_squared() < 0.01: away = global_transform.basis.z
+			if not _route_to_point(order_target.global_position+away.normalized()*(min_attack_range+2.0)): state = "Too close for main gun"
 	elif _retry <= 0:
 		state = "Pursuing"
 		if not _route_toward(order_target): state = "Target unreachable"
@@ -720,13 +834,17 @@ func _forced_on(target: Node3D) -> bool:
 	return attack_forced and order == "attack" and target == order_target
 func _may_hit(target: Node3D) -> bool:
 	return CombatResolver.can_attack(self,target,_forced_on(target))
+## Between the main weapon's minimum range and its range.
+func in_attack_range(target: Node3D) -> bool:
+	var d := global_position.distance_to(target.global_position)
+	return d <= attack_range and d >= min_attack_range
 func _nearest_opponent() -> Node3D:
 	var closest: Node3D
 	var distance := attack_range
 	for unit in get_tree().get_nodes_in_group("units"):
 		if not CombatResolver.can_hit(self,unit): continue
 		var d := global_position.distance_to(unit.global_position)
-		if d < distance: closest = unit; distance = d
+		if d < distance and d >= min_attack_range: closest = unit; distance = d
 	return closest
 func _face(point: Vector3) -> void:
 	var offset := point-global_position
@@ -736,7 +854,7 @@ func _turret() -> Node3D:
 	var model := $Visuals.get_node_or_null("Model")
 	return model if model != null and model.has_method("aim_at") else null
 func _shoot(target: Node3D) -> void:
-	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or not _may_hit(target) or global_position.distance_to(target.global_position) > attack_range: return
+	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or not _may_hit(target) or not in_attack_range(target): return
 	# A turret tracks the target between shots; a unit without one turns its whole body as it fires.
 	var turret := _turret()
 	if turret: turret.aim_at(target.global_position)
@@ -838,6 +956,7 @@ func apply_unit_stats() -> void:
 	iron_cost = unit_stats.iron_cost
 	abilities = unit_stats.abilities.duplicate()
 	if unit_stats.attack_range >= 0: attack_range = unit_stats.attack_range
+	min_attack_range = unit_stats.min_attack_range
 	if unit_stats.has_resolved_attack():
 		attack_damage = unit_stats.damage
 		shot_interval = unit_stats.attack_interval
@@ -885,6 +1004,7 @@ func command_construct(plan: Node3D) -> void:
 	if not can_construct or is_depot_truck or is_cargo_vehicle or not is_instance_valid(plan) or not plan.is_in_group("construction_plans") or plan.finished or plan.kind == &"rail": return
 	_stop_route()
 	source = null
+	_site_blocked = false
 	order = "construct"
 	order_target = plan
 	_work_timer = 0
@@ -893,7 +1013,12 @@ func _construct_reach() -> float:
 	return order_target.dropoff_range+2.0
 func _construct(delta: float) -> void:
 	if not is_instance_valid(order_target) or not order_target.is_in_group("construction_plans") or order_target.finished:
+		source = null
 		order = "idle"; state = "Construction complete" if is_instance_valid(order_target) and order_target.finished else "Build site lost"; return
+	# A tree in the way of the site (_route_to_site).
+	if is_instance_valid(source) and source.remaining > 0:
+		_clear_tree(delta,"Felling a way to the build site")
+		return
 	# Builders stand within reach but off the footprint: one standing on it keeps the site from being clear.
 	var keep_off: Rect2i = order_target.footprint()
 	var here = ground.get_tile_at_position(global_position)
@@ -901,7 +1026,7 @@ func _construct(delta: float) -> void:
 	# A builder starts as soon as it touches the footprint, from whichever side it comes (docs/BUILDER_TOUCH.md).
 	# One that cannot reach the edge works from anywhere in the old reach, at the end of its walk.
 	var touching: bool = not on_site and Approach.distance_to_rect(ground,global_position,keep_off) <= Approach.TOUCH
-	var in_reach: bool = touching or (_route.is_empty() and _moving_to.x < 0 and global_position.distance_to(order_target.global_position) <= _construct_reach())
+	var in_reach: bool = touching or (not _site_blocked and _route.is_empty() and _moving_to.x < 0 and global_position.distance_to(order_target.global_position) <= _construct_reach())
 	if on_site or not in_reach:
 		_work_timer = 0
 		if _retry <= 0:
@@ -947,6 +1072,22 @@ func selection_point() -> Vector3:
 ## Vehicle fuel (economy stage 5). Tank fuel is separate from transferable stockpile coal.
 func fuel_active() -> bool:
 	return fuel_rules != null and fuel_rules.consumes_fuel and is_instance_valid(game) and game.get("vehicle_fuel_required") == true
+## Depot power (docs/FUEL_BATCH.md): inside a friendly Depot's range a vehicle moves on that Depot's energy,
+## fuel_rules.depot_energy_per_metre, instead of its tank. A Depot with no energy left powers nothing.
+var powered_by: Node3D
+var _depot_power_owed := 0.0
+func _depot_power() -> Node3D:
+	if fuel_rules.depot_energy_per_metre <= 0: return null
+	for depot in get_tree().get_nodes_in_group("depots"):
+		if depot.energy > 0 and SupplySource.covers(depot,global_position,team): return depot
+	return null
+func _pay_for_move(distance: float) -> void:
+	if not is_instance_valid(powered_by):
+		burn_fuel(distance)
+		return
+	_depot_power_owed += distance*fuel_rules.depot_energy_per_metre
+	var whole := floori(_depot_power_owed)
+	if whole > 0: _depot_power_owed -= powered_by.stockpile.withdraw(&"energy",whole)
 func burn_fuel(distance: float) -> void:
 	fuel -= distance*fuel_rules.coal_per_movement_unit
 	if fuel <= 0.0001: fuel = 0; _mark_out_of_fuel()
@@ -959,8 +1100,20 @@ func fuel_target() -> float:
 	return fuel_rules.reserve_capacity*desired_fuel_fraction
 func is_stopped() -> bool:
 	return out_of_fuel or (_route.is_empty() and _moving_to.x < 0)
+## How near a stopped vehicle must be to a coal crate on the ground to refuel from it.
+const CRATE_REFUEL_RANGE := 4.0
+## Fuel sources (docs/FUEL_BATCH.md): a covering Depot's coal; a deployed Cargo vehicle's coal, its coal crates
+## and then its own tank (take_coal); or a friendly coal crate on the ground beside the vehicle.
 func can_refuel_from(node) -> bool:
-	return node != self and SupplySource.covers(node,global_position,team) and node.stockpile.amount(&"coal") > 0
+	if not is_instance_valid(node) or node == self: return false
+	if node.is_in_group("supply_crates"):
+		return node.team == team and node.resource_kind == &"coal" and node.amount > 0 and node.global_position.distance_to(global_position) <= CRATE_REFUEL_RANGE
+	if not SupplySource.covers(node,global_position,team): return false
+	return (node.coal_on_hand() if node.has_method("coal_on_hand") else node.stockpile.amount(&"coal")) > 0
+func _draw_fuel(node) -> bool:
+	if node.is_in_group("supply_crates"): return node.extract(1,team) == 1
+	if node.has_method("take_coal"): return node.take_coal()
+	return node.stockpile.withdraw(&"coal",1) == 1
 func set_fuel_source(node: Node3D) -> void:
 	fuel_source = node
 	fuel_source_explicit = is_instance_valid(node)
@@ -969,17 +1122,18 @@ func choose_fuel_source() -> Node3D:
 	# Nearest covering source with coal, ties by instance id as in SupplySource.candidates.
 	var best: Node3D
 	var best_distance := INF
-	for group in ["depots","mobile_supplies"]:
+	for group in ["depots","mobile_supplies","supply_crates"]:
 		for candidate in get_tree().get_nodes_in_group(group):
-			if candidate == self or candidate.stockpile.amount(&"coal") <= 0: continue
 			var d: float = candidate.global_position.distance_squared_to(global_position)
 			if d > best_distance or (is_equal_approx(d,best_distance) and candidate.get_instance_id() > best.get_instance_id()): continue
-			if SupplySource.covers(candidate,global_position,team): best = candidate; best_distance = d
+			if can_refuel_from(candidate): best = candidate; best_distance = d
 	return best
 ## Whole coal units move from exactly one source into the tank; fractional rate time is banked.
 func fuel_tick(delta: float) -> void:
 	refuel_from = null
 	if not fuel_active(): return
+	# Depot power moves a vehicle whose tank is empty.
+	if out_of_fuel and _depot_power() != null: out_of_fuel = false
 	if not auto_refuel or not is_stopped() or fuel_target()-fuel < 1:
 		_refuel_credit = 0
 		if out_of_fuel and fuel > 0 and (not auto_refuel or fuel_target()-fuel < 1): out_of_fuel = false
@@ -992,7 +1146,7 @@ func fuel_tick(delta: float) -> void:
 	refuel_from = from
 	_refuel_credit += fuel_rules.refuel_coal_per_second*delta
 	while _refuel_credit >= 1 and fuel_target()-fuel >= 1:
-		if from.stockpile.withdraw(&"coal",1) != 1: break
+		if not _draw_fuel(from): break
 		fuel += 1
 		_refuel_credit -= 1
 	if fuel_target()-fuel < 1:
@@ -1003,6 +1157,7 @@ func fuel_summary() -> String:
 	if fuel_rules == null: return ""
 	if not fuel_active(): return "Fuel reserve %.0f / %.0f · not required here" % [fuel,fuel_rules.reserve_capacity]
 	var text := "Fuel %.1f / %.0f coal" % [fuel,fuel_rules.reserve_capacity]
+	if is_instance_valid(powered_by) and _depot_power() == powered_by: text += " · running on %s power" % powered_by.name
 	if out_of_fuel: text += " · OUT OF FUEL"
 	elif fuel_low(): text += " · LOW FUEL"
 	var from := "nearest in range"

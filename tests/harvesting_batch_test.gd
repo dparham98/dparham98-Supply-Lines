@@ -5,6 +5,9 @@ func check(value: bool, message: String) -> bool:
 	if value: return true
 	push_error(message); quit(1); return false
 func run() -> void:
+	# Payment checks here use the old 75 E / 25 I mine price; the 0 E / 25 I price is checked in coal_mine_test.gd.
+	var mine_price: EngineeringRules = load("res://assets/economy/engineering_rules.tres")
+	mine_price.mine_energy_cost = 75
 	# A mechanics check on a map laid out for the old 35 m Depot range (docs/DEPOT_RANGE.md).
 	var old_range: DepotRules = load("res://assets/economy/depot_rules.tres")
 	old_range.construction_radius = 35.0

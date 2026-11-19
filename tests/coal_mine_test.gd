@@ -16,6 +16,7 @@ func run() -> void:
 	var rules = network.engineering_rules
 	var depot = game.get_node("Entities/Buildings/Depot")
 	if not check(ground.harvesting_rules.coal_needs_mine,"Coal should need a mine by default"): return
+	if not check(rules.mine_energy_cost == 0 and rules.mine_iron_cost == 25,"Mines should cost 0 E / 25 I: %d E / %d I" % [rules.mine_energy_cost,rules.mine_iron_cost]): return
 	# The starter seam beside the West start. No mine stands on any seam at the start.
 	var seam := {}
 	for field in ground.coal_fields:
@@ -45,25 +46,44 @@ func run() -> void:
 	if not check(mine.extract(30,"player") == 30 and mine.extract(30,"enemy") == 30 and mine.reserves() == whole-60,"The coal mine is not shared or loses coal"): return
 	for cell in seam.cells:
 		if not check(ground.get_terrain(cell) == ground.Terrain.COAL and not ground.cleared_coal.has(cell),"Mining opened the ground at %s" % cell): return
-	# A worker sent to the mine brings coal home, once the trees round the seam are felled.
-	var middle: Vector2i = ground.get_tile_at_position(seam.center)
-	for dz in range(-12,13):
-		for dx in range(-12,13): ground.clear_forest(middle+Vector2i(dx,dz))
+	# A worker sent to the mine behind uncut trees fells a lane to it and brings coal home.
 	var worker = game.get_node("Entities/Units/Infantry")
 	var before: int = depot.coal
+	var felled_before: int = ground.cleared_forest.size()
 	worker.command_gather(mine)
 	for i in range(60*240):
 		worker._process(1.0/60)
 		mine._process(1.0/60)
 		if depot.coal > before: break
-	if not check(depot.coal > before and worker.cargo_kind == &"coal","The worker brought no coal from the mine (state '%s')" % worker.state): return
+	if not check(depot.coal > before and worker.cargo_kind == &"coal" and ground.cleared_forest.size() > felled_before,"The worker did not cut its way to the coal mine and bring coal (state '%s')" % worker.state): return
 	# Emptied, the mine is worked out and the seam is still ground nobody walks on.
 	mine.extract(mine.reserves()+10,"player")
 	if not check(mine.reserves() == 0 and mine.extract(5,"player") == 0 and ground.get_terrain(seam.cells[0]) == ground.Terrain.COAL,"An emptied seam should stay as it is"): return
-	# By hand: the old rule still works when it is switched back on.
+	# A mine plan on an enclosed seam outside every Depot range builds for 0 E / 25 I while the worker cuts its way in.
 	var other := {}
 	for field in ground.coal_fields:
 		if field != seam and (other.is_empty() or field.center.distance_to(depot.global_position) < other.center.distance_to(depot.global_position)): other = field
+	var other_start := Vector2i(-1,-1)
+	for cell in other.cells:
+		if ground.ore_footprint_valid(cell,size): other_start = cell; break
+	if not check(other_start.x >= 0,"No mine spot on the lake coal seam"): return
+	var other_centre: Vector3 = ground.tile_to_world(other_start+size/2)
+	# Coal takes the Coal Mine (C on the build page); the Iron Mine tile refuses a seam.
+	if not check(network.queue_plan(other_centre,&"iron_mine") == null,"An Iron Mine plan should not go on a coal seam"): return
+	var plan = network.queue_plan(other_centre,&"coal_mine")
+	if not check(plan != null and plan.spec.title == "Coal Mine","A Coal Mine plan on an enclosed coal seam outside Depot range was refused"): return
+	depot.energy = 0
+	plan.receive(&"iron",15)
+	worker.command_move(worker.global_position)
+	worker.cargo = 10
+	worker.cargo_kind = &"iron"
+	worker.command_construct(plan)
+	for i in range(60*300):
+		worker._process(1.0/60)
+		plan._process(1.0/60)
+		if ground.coal_mine_at(other.cells[0]) != null: break
+	if not check(ground.coal_mine_at(other.cells[0]) != null and game.get_node("Interface").object_name(ground.coal_mine_at(other.cells[0])) == "Coal Mine" and worker.cargo == 0 and depot.energy == 0,"The 0 E / 25 I coal mine plan did not build behind trees (state '%s')" % worker.state): return
+	# By hand: the old rule still works when it is switched back on.
 	ground.harvesting_rules.coal_needs_mine = false
 	if not check(ground.harvest_coal(other.cells[0],10) == 10,"Digging by hand should still work with the rule off"): return
 	ground.harvesting_rules.coal_needs_mine = true
