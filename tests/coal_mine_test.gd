@@ -17,19 +17,19 @@ func run() -> void:
 	var depot = game.get_node("Entities/Buildings/Depot")
 	if not check(ground.harvesting_rules.coal_needs_mine,"Coal should need a mine by default"): return
 	if not check(rules.mine_energy_cost == 0 and rules.mine_iron_cost == 25,"Mines should cost 0 E / 25 I: %d E / %d I" % [rules.mine_energy_cost,rules.mine_iron_cost]): return
-	# The starter seam beside the West start. No mine stands on any seam at the start.
+	# The seam nearest the West start, in its lake woods. No mine stands on any seam at the start.
 	var seam := {}
 	for field in ground.coal_fields:
 		if not check(ground.coal_mine_at(field.cells[0]) == null,"A coal seam starts with a mine on it"): return
 		if seam.is_empty() or field.center.distance_to(depot.global_position) < seam.center.distance_to(depot.global_position): seam = field
 	var whole: int = ground.coal_field_remaining(seam)
-	if not check(whole == seam.cells.size()*ground.harvesting_rules.coal_per_tile and whole >= 500,"The starter seam holds %d coal" % whole): return
+	if not check(whole == seam.cells.size()*ground.harvesting_rules.coal_per_tile and whole >= 500,"The nearest seam holds %d coal" % whole): return
 	# A 2 x 2 block of the seam for the mine.
 	var size: Vector2i = rules.mine_footprint
 	var start := Vector2i(-1,-1)
 	for cell in seam.cells:
 		if ground.ore_footprint_valid(cell,size): start = cell; break
-	if not check(start.x >= 0,"No place for a mine on the starter seam"): return
+	if not check(start.x >= 0,"No place for a mine on the nearest seam"): return
 	if not check(not ground.ore_footprint_valid(start-Vector2i(3,0),size),"A mine fits half off the seam"): return
 	if not check(not ground.is_footprint_valid(start,size),"An ordinary building fits on coal"): return
 	var centre: Vector3 = ground.tile_to_world(start+size/2)
@@ -46,8 +46,7 @@ func run() -> void:
 	if not check(mine.extract(30,"player") == 30 and mine.extract(30,"enemy") == 30 and mine.reserves() == whole-60,"The coal mine is not shared or loses coal"): return
 	for cell in seam.cells:
 		if not check(ground.get_terrain(cell) == ground.Terrain.COAL and not ground.cleared_coal.has(cell),"Mining opened the ground at %s" % cell): return
-	# A worker sent to the starter mine brings coal home. Its seam is screened by two trees, but a mine is worked from
-	# a few metres away, so on Two Lakes it is reached from open ground (docs/TWO_LAKES_MAP.md).
+	# A worker sent to the mine brings coal home.
 	var worker = game.get_node("Entities/Units/Infantry")
 	var before: int = depot.coal
 	worker.command_gather(mine)
@@ -55,7 +54,7 @@ func run() -> void:
 		worker._process(1.0/60)
 		mine._process(1.0/60)
 		if depot.coal > before: break
-	if not check(depot.coal > before and worker.cargo_kind == &"coal","The worker did not bring coal from the starter mine (state '%s')" % worker.state): return
+	if not check(depot.coal > before and worker.cargo_kind == &"coal","The worker did not bring coal from the mine (state '%s')" % worker.state): return
 	# Emptied, the mine is worked out and the seam is still ground nobody walks on.
 	mine.extract(mine.reserves()+10,"player")
 	if not check(mine.reserves() == 0 and mine.extract(5,"player") == 0 and ground.get_terrain(seam.cells[0]) == ground.Terrain.COAL,"An emptied seam should stay as it is"): return
