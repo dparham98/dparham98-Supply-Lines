@@ -45,6 +45,9 @@ func run() -> void:
 	# Every site has its mine from the start, and no coal lumps stand on the seams.
 	if not check(built == 20,"Every mine site should start with its mine: %d of 20" % built): return
 	if not check(not game.get_node("Terrain").has_node("Landmarks/CoalDeposits"),"Coal should lie in the ground, with no lumps on it"): return
+	# The forest tiles read the match's clearing mask, so their leaves thin over coal (docs/COAL_LOOK.md).
+	var batch: MultiMeshInstance3D = game.get_node("Terrain/Landmarks/Forests").get_child(0)
+	if not check(batch.material_override is ShaderMaterial and batch.material_override.get_shader_parameter("cleared_cells") == ground.material_override.get_shader_parameter("cleared_cells"),"The forest tiles do not read the clearing mask"): return
 	for name in ["IronMine","IronMineB"]:
 		var mine = game.get_node("Entities/Buildings/"+name)
 		if not check(is_instance_valid(mine) and mine.cells.size() == 12 and mine.get_node("Visuals/Model").player.has_animation(&"Work"),"%s is not a portal mine on its site" % name): return

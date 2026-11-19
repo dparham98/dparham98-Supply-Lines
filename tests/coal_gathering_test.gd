@@ -81,6 +81,8 @@ func run() -> void:
 	var terrain: Node3D = game.get_node("Terrain")
 	# Coal lies in the ground: no lumps stand on it, and the ground shader draws the seam.
 	if not check(terrain.coal_state == null and not terrain.has_node("Landmarks/CoalDeposits"), "Coal should have no lumps standing on it"): return
+	# The clearing mask's green channel marks the seam and the cells beside it, where trees thin their leaves.
+	if not check(ground._clearing_mask.get_pixel(nearest.x, nearest.y).g > 0.9 and ground._clearing_mask.get_pixel(depot_cell.x, depot_cell.y).g == 0.0, "The coal mask should mark the seam and nothing far from it"): return
 	var source = ground.coal_source(nearest)
 	worker.command_gather(source)
 	var goal: int = rules.coal_per_tile+10
@@ -88,6 +90,7 @@ func run() -> void:
 	if not check(depot.coal == goal, "Infantry delivered %d coal, expected %d (state '%s')" % [depot.coal, goal, worker.state]): return
 	if not check(ground.get_terrain(nearest) == 0 and ground.can_traverse(nearest) and ground.is_tile_valid(nearest) and ground.cleared_coal.has(nearest) and ground.coal_source(nearest) == null, "A dug-out coal cell should become open ground"): return
 	if not check(ground._clearing_mask.get_pixel(nearest.x, nearest.y).r > 0.5, "The dug-out cell is not drawn as bare ground"): return
+	if not check(ground._clearing_mask.get_pixel(nearest.x, nearest.y).g < 0.6, "The dug-out cell should only be marked as beside the seam"): return
 	if not check(worker.source != source and is_instance_valid(worker.source) and field.cells.has(worker.source.cell) and worker.order in ["gather", "return"], "Infantry did not move on to the next cell of the field"): return
 	if not check(ground.coal_field_remaining(field)+depot.coal+worker.cargo == 990, "Coal was created or lost: %d in the field, %d delivered, %d carried" % [ground.coal_field_remaining(field), depot.coal, worker.cargo]): return
 
