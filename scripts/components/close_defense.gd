@@ -17,6 +17,8 @@ const SCAN_INTERVAL := 0.12
 @onready var _actor: Node3D = get_parent()
 var _pivot: Node3D
 var _muzzle: Node3D
+## The flash at the roof gun's muzzle (AuxMuzzleFx in scenes/models/tank_model.tscn).
+var _flash: Node
 var _target: Node3D
 var _scan_left := 0.0
 var _reload_left := 0.0
@@ -29,6 +31,8 @@ func _ready() -> void:
 	_pivot = model.find_child("Aux_Turret", true, false) as Node3D
 	if _pivot != null:
 		_muzzle = _pivot.find_child("Aux_Muzzle", true, false) as Node3D
+	if _muzzle != null:
+		_flash = _muzzle.get_node_or_null("AuxMuzzleFx")
 	if _muzzle == null:
 		push_error("The Bastion close-defense component needs Aux_Turret and its Aux_Muzzle marker.")
 		set_process(false)
@@ -83,6 +87,8 @@ func _process(delta: float) -> void:
 	_reload_left = shot_interval
 	var victim := _target
 	var origin := _muzzle.global_position
+	if _flash != null:
+		_flash.play()
 	var bullet: Node3D = _actor.game.show_shot(origin, end, _actor.team, BULLET)
 	bullet.arm(_actor, victim, damage)
 	fired.emit(victim, origin, end)
