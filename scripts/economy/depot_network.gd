@@ -241,11 +241,23 @@ func construct_generator(point: Vector3) -> bool:
 	game.get_node("Entities/Buildings").add_child(generator,true)
 	game.notify("Generator built from %s. Choose a covering Depot in its HUD to operate." % selected.name)
 	return true
+## What the HUD's guide shows while placing (docs/PLACEMENT_GUIDE.md): a title, the line about the spot under the
+## cursor, and its state: "ok" (green), "short" (yellow) or "blocked" (red).
+var placement_title := ""
+var placement_text := ""
+var placement_state := ""
+func _set_placement(title: String, text: String, buildable: bool, affordable: bool) -> void:
+	placement_title = title
+	placement_text = text
+	placement_state = "blocked" if not buildable else ("ok" if affordable else "short")
+## Whether a building, plan or Depot deploy is being placed.
+func placement_active() -> bool:
+	return not game.global_plan_kind.is_empty() or game.placing_depot or game.placing_generator or not game.placing_structure.is_empty() or deploying_truck() != null
 func _process(_delta: float) -> void:
 	var ghost = game.get_node_or_null("ConstructionPreview")
 	if ghost == null: return
 	var truck := deploying_truck()
-	ghost.visible = not game.global_plan_kind.is_empty() or game.placing_depot or game.placing_generator or not game.placing_structure.is_empty() or truck != null
+	ghost.visible = placement_active()
 	show_territories(ghost.visible)
 	if not ghost.visible: return
 	var camera := game.get_viewport().get_camera_3d()
@@ -305,7 +317,7 @@ func update_deploy_preview(point: Vector3, truck: Node3D) -> bool:
 	preview_material.albedo_color = placement_colour(valid,true)
 	var reason := ""
 	if not valid: reason = " · " + (spacing_reason() if not depot_spacing_ok(point,truck.team,truck) else "needs empty buildable land")
-	ghost.get_node("Status").text = "%s · Depot%s" % ["DEPLOY" if valid else "BLOCKED",reason]
+	_set_placement("DEPLOY THE DEPOT","%s · Depot%s" % ["DEPLOY" if valid else "BLOCKED",reason],valid,true)
 	return valid
 func update_preview(point: Vector3, generator: bool) -> bool:
 	var ghost = game.get_node("ConstructionPreview")
@@ -343,7 +355,10 @@ func update_preview(point: Vector3, generator: bool) -> bool:
 		ghost.get_node("Footprint").material_override = preview_material
 	preview_material.albedo_color = placement_colour(buildable,affordable)
 	var stock := stock_line(area_stock([selected]),str(selected.name)) if owned_selected() else "No Depot selected"
-	ghost.get_node("Status").text = "%s · payer %s · %d E / %d I\n%s" % [placement_word(buildable,affordable),selected.name if owned_selected() else "none",energy_cost,iron_cost,stock]
+	var title := "Generator" if generator else "Depot"
+	if game.placing_structure == &"iron_mine": title = "Iron Mine"
+	elif not game.placing_structure.is_empty(): title = str(game.placing_structure).capitalize()
+	_set_placement("PLACE "+title.to_upper(),"%s · payer %s · %d E / %d I\n%s" % [placement_word(buildable,affordable),selected.name if owned_selected() else "none",energy_cost,iron_cost,stock],buildable,affordable)
 	return buildable and affordable
 
 func clear_builder() -> void:
@@ -545,7 +560,7 @@ func update_global_preview(point: Vector3) -> bool:
 	elif valid and not energy_ok: site_line += " · no %s in range has %d E" % ["pinned payer" if pinned != null else "stockpile",spec.energy]
 	elif valid and not iron_ok: site_line += " · %d iron short in range" % (spec.iron-on_site.get(&"iron",0)-stock[&"iron"])
 	var area := stock_line(stock) if not sources.is_empty() else "No Depot range here"
-	ghost.get_node("Status").text = "%s · %s · %d E / %d I%s\n%s" % [placement_word(valid,affordable),spec.title,spec.energy,spec.iron,site_line,area]
+	_set_placement("PLAN "+str(spec.title).to_upper(),"%s · %s · %d E / %d I%s\n%s" % [placement_word(valid,affordable),spec.title,spec.energy,spec.iron,site_line,area],valid,affordable)
 	return valid
 ## Piles and crates inside a footprint that still hold something (docs/SITE_CONSTRUCTION.md).
 func stores_inside(rect: Rect2i) -> Array[Node3D]:

@@ -193,6 +193,36 @@ corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
+[sub_resource type="StyleBoxFlat" id="guide_card"]
+content_margin_left = 16.0
+content_margin_top = 10.0
+content_margin_right = 16.0
+content_margin_bottom = 10.0
+bg_color = Color(0.05,0.055,0.047,0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.93,0.75,0.33,1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+[sub_resource type="StyleBoxFlat" id="guide_step"]
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+bg_color = Color(0.13,0.12,0.1,1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.93,0.75,0.33,1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
 [sub_resource type="StyleBoxFlat" id="slot_empty"]
 bg_color = Color(0.116,0.113,0.096,1)
 border_width_left = 1
@@ -2675,6 +2705,124 @@ autowrap_mode = 2
 text = ""
 theme_override_colors/font_color = Color(0.72,0.69,0.59,1)
 theme_override_font_sizes/font_size = 12
+[node name="Guide" type="PanelContainer" parent="Bottom/Body/Row"]
+visible = false
+custom_minimum_size = Vector2(560,0)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("guide_card")
+[node name="Body" type="VBoxContainer" parent="Bottom/Body/Row/Guide"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 7
+[node name="Title" type="Label" parent="Bottom/Body/Row/Guide/Body"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.95,0.75,0.33,1)
+theme_override_font_sizes/font_size = 20
+text = "LAY RAIL"
+[node name="Steps" type="HBoxContainer" parent="Bottom/Body/Row/Guide/Body"]
+layout_mode = 2
+mouse_filter = 2
+alignment = 1
+theme_override_constants/separation = 8
+[node name="Step1" type="PanelContainer" parent="Bottom/Body/Row/Guide/Body/Steps"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("guide_step")
+[node name="Row" type="HBoxContainer" parent="Bottom/Body/Row/Guide/Body/Steps/Step1"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 7
+[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Guide/Body/Steps/Step1/Row"]
+visible = false
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+[node name="Number" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps/Step1/Row"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95,0.75,0.33,1)
+theme_override_font_sizes/font_size = 16
+text = "1"
+[node name="Text" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps/Step1/Row"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 14
+text = ""
+[node name="Arrow1" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.93,0.75,0.33,1)
+theme_override_font_sizes/font_size = 16
+text = "›"
+[node name="Step2" type="PanelContainer" parent="Bottom/Body/Row/Guide/Body/Steps"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("guide_step")
+[node name="Row" type="HBoxContainer" parent="Bottom/Body/Row/Guide/Body/Steps/Step2"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 7
+[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Guide/Body/Steps/Step2/Row"]
+visible = false
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+[node name="Number" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps/Step2/Row"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95,0.75,0.33,1)
+theme_override_font_sizes/font_size = 16
+text = "2"
+[node name="Text" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps/Step2/Row"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 14
+text = ""
+[node name="Arrow2" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.93,0.75,0.33,1)
+theme_override_font_sizes/font_size = 16
+text = "›"
+[node name="Step3" type="PanelContainer" parent="Bottom/Body/Row/Guide/Body/Steps"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("guide_step")
+[node name="Row" type="HBoxContainer" parent="Bottom/Body/Row/Guide/Body/Steps/Step3"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 7
+[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Guide/Body/Steps/Step3/Row"]
+visible = false
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+[node name="Number" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps/Step3/Row"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95,0.75,0.33,1)
+theme_override_font_sizes/font_size = 16
+text = "3"
+[node name="Text" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps/Step3/Row"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 14
+text = ""
+[node name="Status" type="Label" parent="Bottom/Body/Row/Guide/Body"]
+layout_mode = 2
+horizontal_alignment = 1
+autowrap_mode = 3
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 15
+text = ""
+[node name="Keys" type="Label" parent="Bottom/Body/Row/Guide/Body"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.72,0.69,0.59,1)
+theme_override_font_sizes/font_size = 12
+text = ""
 [node name="Ornament" type="Control" parent="Bottom/Body/Row"]
 layout_mode = 2
 size_flags_horizontal = 3

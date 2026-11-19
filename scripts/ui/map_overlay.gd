@@ -82,7 +82,7 @@ func team_color(node: Node) -> Color:
 	return TEAM_COLORS.get(str(node.get("team")),TEAM_COLORS["neutral"])
 # What to draw for one actor; tests read this instead of pixels.
 func status_for(node: Node3D) -> Dictionary:
-	var entry := {node = node, health = -1.0, health_text = "", progress = -1.0, icons = [], capture = -1.0, carry = {}, storage = {}, crate = {}, pips = []}
+	var entry := {node = node, health = -1.0, health_text = "", progress = -1.0, icons = [], capture = -1.0, carry = {}, storage = {}, crate = {}, pips = [], readout = {}}
 	# Crates on the map always show their fill; vehicles show one pip per crate slot.
 	if node.is_in_group("supply_crates"):
 		entry.crate = {color = RESOURCE_COLORS.get(node.resource_kind,CRATE_COLOR), ratio = float(node.amount)/node.CAPACITY}
@@ -112,17 +112,41 @@ func status_for(node: Node3D) -> Dictionary:
 	if node.is_in_group("units") and node.get("team") != "player": return entry
 	if stockpile is ResourceStockpile and (node.is_in_group("depots") or node.get("is_cargo_vehicle") == true) and (node == hovered or is_selected(node) or show_all()):
 		entry.storage = {stockpile = stockpile}
+	# Your Depots always show what they hold above them (docs/DEPOT_STOCK_PLATE.md).
+	if stockpile is ResourceStockpile and node.is_in_group("depots") and node.get("team") == "player":
+		entry.readout = {stockpile = stockpile}
 	if node.get("can_gather") == true and node.get("cargo") != null and node.cargo > 0:
 		entry.carry = {color = RESOURCE_COLORS.get(node.cargo_kind,Color.WHITE), ratio = float(node.cargo)/maxi(1,node.carry_capacity)}
 	if node.get("out_of_fuel") == true: entry.icons.append(["refuel",RED])
 	elif node.has_method("fuel_low") and node.fuel_low(): entry.icons.append(["refuel",AMBER])
 	return entry
+const READOUT_KINDS: Array[StringName] = [&"energy",&"iron",&"wood",&"coal"]
+const READOUT_LETTERS := {&"energy": "E", &"iron": "I", &"wood": "W", &"coal": "C"}
+## A Depot's stock as one line above it: a swatch and amount per resource, on a dark plate.
+func draw_readout(stockpile: ResourceStockpile, centre: Vector2, font: Font) -> void:
+	var size := 13
+	var parts: Array = []
+	var width := 0.0
+	for kind in READOUT_KINDS:
+		var text := "%s %d" % [READOUT_LETTERS[kind],stockpile.amount(kind)]
+		var w := font.get_string_size(text,HORIZONTAL_ALIGNMENT_LEFT,-1,size).x
+		parts.append([kind,text,w])
+		width += 12+w
+	width += 8*(parts.size()-1)+12
+	var plate := Rect2(centre.x-width/2,centre.y-18,width,20)
+	draw_rect(plate,Color(0.05,0.055,0.047,0.9))
+	draw_rect(plate,Color(0.7,0.58,0.38,0.9),false,1)
+	var x := plate.position.x+6
+	for part in parts:
+		draw_rect(Rect2(x,plate.position.y+6,8,8),RESOURCE_COLORS[part[0]])
+		draw_string(font,Vector2(x+12,plate.position.y+15),part[1],HORIZONTAL_ALIGNMENT_LEFT,-1,size,Color(0.96,0.94,0.83))
+		x += 12+part[2]+8
 func entries() -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	for group in ["units","selectable_buildings","supply_crates"]:
 		for node in get_tree().get_nodes_in_group(group):
 			var entry := status_for(node)
-			if entry.health >= 0 or entry.progress >= 0 or not entry.icons.is_empty() or entry.capture >= 0 or not entry.carry.is_empty() or not entry.storage.is_empty() or not entry.crate.is_empty() or not entry.pips.is_empty(): out.append(entry)
+			if entry.health >= 0 or entry.progress >= 0 or not entry.icons.is_empty() or entry.capture >= 0 or not entry.carry.is_empty() or not entry.storage.is_empty() or not entry.crate.is_empty() or not entry.pips.is_empty() or not entry.readout.is_empty(): out.append(entry)
 	return out
 # Route lines for selected friendly vehicles on a supply route.
 func route_lines() -> Array[Array]:
@@ -240,6 +264,7 @@ func _draw() -> void:
 			if not entry.health_text.is_empty(): draw_string_outline(font,Vector2(x+bar_width+4,y+6),entry.health_text,HORIZONTAL_ALIGNMENT_LEFT,-1,11,3,Color(0.08,0.06,0.05))
 			if not entry.health_text.is_empty(): draw_string(font,Vector2(x+bar_width+4,y+6),entry.health_text,HORIZONTAL_ALIGNMENT_LEFT,-1,11,Color(0.96,0.94,0.83))
 			if show_all(): draw_string(font,Vector2(x,y-4),hud_name(node),HORIZONTAL_ALIGNMENT_LEFT,-1,11,Color(0.9,0.93,0.94))
+		if not entry.readout.is_empty(): draw_readout(entry.readout.stockpile,Vector2(top.x,y-(18 if entry.health >= 0 and show_all() else 8)),font)
 		if not entry.storage.is_empty():
 			draw_storage(entry.storage.stockpile,Rect2(x,y+(10 if entry.progress >= 0 else 6),bar_width,4))
 		if entry.progress >= 0:
