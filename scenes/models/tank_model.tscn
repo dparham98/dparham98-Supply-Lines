@@ -47,4 +47,7 @@ material_override = SubResource("links")
 material_override = SubResource("links")
 [node name="MuzzleFx" parent="Tank/Tank_Root/Tank_Hull/Tank_Turret/Barrel_Mount" instance=ExtResource("muzzle_fx")]
 transform = Transform3D(1,0,0,0,1,0,0,0,1,0,0,5.65)
+[node name="AuxMuzzleFx" parent="Tank/Tank_Root/Tank_Hull/Tank_Turret/Turret_Hatch/Aux_Turret/Aux_Muzzle" instance=ExtResource("muzzle_fx")]
+transform = Transform3D(0.45,0,0,0,0.45,0,0,0,0.45,0,0,0)
+light_energy = 3.0
 [editable path="Tank"]

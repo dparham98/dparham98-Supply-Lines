@@ -44,6 +44,8 @@ var _attack_enabled := true
 ## How fast the body turns while travelling, in degrees a second (docs/PATHING.md). Unit stats set it.
 @export var turn_rate := 360.0
 @export var attack_range := 12.0
+## The main weapon cannot fire nearer than this (UnitStats.min_attack_range).
+@export var min_attack_range := 0.0
 @export var attack_damage := 16
 @export var shot_interval := 0.7
 ## What a shot looks like in flight; empty uses the map's plain tracer.
@@ -293,7 +295,7 @@ func _order_process(delta: float) -> void:
 			_update_display()
 			return
 	if not _route.is_empty() or _moving_to.x >= 0:
-		if is_instance_valid(order_target) and ((order == "attack" and global_position.distance_to(order_target.global_position) <= attack_range) or (order == "repair" and global_position.distance_to(order_target.global_position) <= engineering_rules.repair_range)):
+		if is_instance_valid(order_target) and ((order == "attack" and in_attack_range(order_target)) or (order == "repair" and global_position.distance_to(order_target.global_position) <= engineering_rules.repair_range)):
 			_stop_route()
 		else:
 			_walk(delta)
@@ -678,9 +680,17 @@ func _attack_order() -> void:
 		order = "idle"
 		state = "Idle"
 		return
-	if global_position.distance_to(order_target.global_position) <= attack_range:
+	if in_attack_range(order_target):
 		state = "Firing"
 		_shoot(order_target)
+	elif global_position.distance_to(order_target.global_position) < min_attack_range:
+		# Too close for the main gun: back off until the target is at its minimum range.
+		if _retry <= 0:
+			state = "Backing off · too close for main gun"
+			var away := global_position-order_target.global_position
+			away.y = 0.0
+			if away.length_squared() < 0.01: away = global_transform.basis.z
+			if not _route_to_point(order_target.global_position+away.normalized()*(min_attack_range+2.0)): state = "Too close for main gun"
 	elif _retry <= 0:
 		state = "Pursuing"
 		if not _route_toward(order_target): state = "Target unreachable"
@@ -689,13 +699,17 @@ func _forced_on(target: Node3D) -> bool:
 	return attack_forced and order == "attack" and target == order_target
 func _may_hit(target: Node3D) -> bool:
 	return CombatResolver.can_attack(self,target,_forced_on(target))
+## Between the main weapon's minimum range and its range.
+func in_attack_range(target: Node3D) -> bool:
+	var d := global_position.distance_to(target.global_position)
+	return d <= attack_range and d >= min_attack_range
 func _nearest_opponent() -> Node3D:
 	var closest: Node3D
 	var distance := attack_range
 	for unit in get_tree().get_nodes_in_group("units"):
 		if not CombatResolver.can_hit(self,unit): continue
 		var d := global_position.distance_to(unit.global_position)
-		if d < distance: closest = unit; distance = d
+		if d < distance and d >= min_attack_range: closest = unit; distance = d
 	return closest
 func _face(point: Vector3) -> void:
 	var offset := point-global_position
@@ -705,7 +719,7 @@ func _turret() -> Node3D:
 	var model := $Visuals.get_node_or_null("Model")
 	return model if model != null and model.has_method("aim_at") else null
 func _shoot(target: Node3D) -> void:
-	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or not _may_hit(target) or global_position.distance_to(target.global_position) > attack_range: return
+	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or not _may_hit(target) or not in_attack_range(target): return
 	# A turret tracks the target between shots; a unit without one turns its whole body as it fires.
 	var turret := _turret()
 	if turret: turret.aim_at(target.global_position)
@@ -807,6 +821,7 @@ func apply_unit_stats() -> void:
 	iron_cost = unit_stats.iron_cost
 	abilities = unit_stats.abilities.duplicate()
 	if unit_stats.attack_range >= 0: attack_range = unit_stats.attack_range
+	min_attack_range = unit_stats.min_attack_range
 	if unit_stats.has_resolved_attack():
 		attack_damage = unit_stats.damage
 		shot_interval = unit_stats.attack_interval

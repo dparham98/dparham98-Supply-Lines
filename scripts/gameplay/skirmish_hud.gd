@@ -418,7 +418,7 @@ func update_unit_sections(node: Node3D) -> void:
 	if node.is_cargo_vehicle or node.is_depot_truck:
 		abilities.append("Non-combat vehicle")
 	elif node._attack_enabled:
-		pairs.insert(1,["Range","%.1f" % node.attack_range])
+		pairs.insert(1,["Range","%.0f–%.0f" % [node.min_attack_range,node.attack_range] if node.min_attack_range > 0 else "%.1f" % node.attack_range])
 		pairs.insert(2,["Damage","%d / %.1fs" % [node.attack_damage,node.shot_interval]])
 		if node.unit_stats != null:
 			var stats: UnitStats = node.unit_stats
@@ -427,6 +427,10 @@ func update_unit_sections(node: Node3D) -> void:
 				pairs.append(["Splash","%.1f" % stats.splash_radius])
 			if stats.fire_while_moving: abilities.append("Fires while moving")
 			if not stats.has_resolved_attack(): abilities.append("Fallback attack stats")
+		var roof: Node = node.get_node_or_null("CloseDefense")
+		if roof != null:
+			# The stat grid is full on a Tank, so the roof gun goes on the abilities line.
+			abilities.insert(0,"Roof gun %d / %.2fs at units within %.0f" % [roof.damage,roof.shot_interval,roof.attack_range])
 	else: abilities.append("Attack unavailable · unresolved stats")
 	if node.mobility_layer() == MobilityRules.Layer.AIR: abilities.append("Flies on a separate air layer")
 	elif node.unit_stats != null and node.unit_stats.mobility != null and node.unit_stats.mobility.clears_forest: abilities.append("Clears forest")

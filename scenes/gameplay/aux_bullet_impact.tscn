@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/gameplay/tank_shell_impact.tscn" id="impact"]
+
+[sub_resource type="StandardMaterial3D" id="spark_hot"]
+shading_mode = 0
+albedo_color = Color(1,0.55,0.12,1)
+
+[node name="AuxBulletImpact" instance=ExtResource("impact")]
+transform = Transform3D(0.55,0,0,0,0.55,0,0,0,0.55,0,0,0)
+light_energy = 2.0
+
+[node name="Impact_Flash" parent="Model" index="0"]
+material_override = SubResource("spark_hot")
