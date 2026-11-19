@@ -2,11 +2,13 @@
 
 The playtest of 2026-11-17 asked for a way to clear trees with Infantry without carrying the wood home.
 
-- **The command:** Fell (F) on the Infantry card, and on any unit that can gather. Click a Forest cell—even deep inside a forest—or an enclosed Coal seam, on the map or the minimap.
-- **What the workers do:** when the target lies behind standing trees, they cut the shortest minimum-tree lane from open ground in to that cell (or to touch a 2 x 2 mine spot on a clicked Coal seam), then clear any remaining Forest cells within `fell_radius_cells` (1) of the destination, nearest first. The wood is left where it falls: they carry nothing and never walk to a Depot. They stop with the state "Felled" when the lane and patch are clear.
-- **Trees they cannot reach:** the worker stops with "Trees unreachable".
+- **The command:** Fell (F) on the Infantry card, and on any unit that can gather. Click a spot, or drag a box, on the map; the minimap takes a click.
+- **A click:** the workers fell a roughly straight lane to the spot: the unbroken trees on the grid line from the worker to it, between the spot and the open ground on the worker's side. A spot on a coal seam, a lake or open ground walled in by trees gets the lane up to its edge. Then they clear the Forest cells within `fell_radius_cells` (1) of the spot, nearest first.
+- **A box:** the workers fell every Forest cell in the box, nearest first. A cell with no walk to it gets a lane of its own.
+- **No path search:** the lane is the grid line, not the fewest trees, so it is cheap to work out again after each tree. A worker that cannot walk to the lane's first tree cuts every tree on the line instead; if that fails too, the cell is given up and the worker stops with "Trees unreachable" at the end.
+- **The wood** is left where it falls: they carry nothing, keep any load they already have, and never walk to a Depot. They stop with the state "Felled".
 - **Queueing:** Shift queues Fell like the other orders.
-- **Not a Forest:** a click elsewhere says "Click a forest to fell." and keeps the command waiting.
+- **Nothing to fell:** a click with no trees on the line or round the spot says "Nothing to fell: the way there is already open."; an empty box says "No trees to fell in that box." Both keep the command waiting.
 
 ## Provisional
 
@@ -15,5 +17,5 @@ The playtest of 2026-11-17 asked for a way to clear trees with Infantry without 
 
 ## Code and checks
 
-- `command_fell`, `_next_fell` and `_fell` in `scripts/gameplay/unit_agent.gd`; `fell_radius_cells` in `scripts/economy/harvesting_rules.gd`; the "fell" branch of `issue_card_order` in `scripts/gameplay/skirmish.gd`.
-- `tests/fell_test.gd` (headless): the patch is cleared, no wood is kept, the worker never walks home, and the card, the F key and the click on a Forest work.
+- The lane: `scripts/terrain/fell_lane.gd`. `command_fell`, `_fell_target`, `_next_fell` and `_fell` in `scripts/gameplay/unit_agent.gd`; `fell_radius_cells` in `scripts/economy/harvesting_rules.gd`; `order_fell`, `order_fell_box` and the Fell drag in `scripts/gameplay/skirmish.gd`.
+- `tests/fell_test.gd` (headless): the patch is cleared, no wood is kept, the worker never walks home, a deep cell and a seam get lanes, a box is cleared, the messages, and the card and the F key.

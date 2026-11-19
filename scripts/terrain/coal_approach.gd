@@ -10,7 +10,7 @@ const FELL := 100000
 const UNSEEN := 2147483647
 ## Border cells tried, nearest first, for a worker that starts outside the searched ground. Each is a
 ## whole-map path search, so only a few: a worker that finds none looks again later (_cut_way_in).
-const ENTRY_TRIES := 8
+const ENTRY_TRIES := 3
 const OPEN := 1
 const FOREST := 2
 const CLOSED := 3
@@ -32,95 +32,11 @@ static func way(ground: Node3D, from: Vector2i, cell: Vector2i, reach: float, la
 		high = Vector2i(maxi(high.x,other.x),maxi(high.y,other.y))
 	var grow := Vector2i.ONE*(span+MARGIN)
 	var box := Rect2i(low-grow,high-low+Vector2i.ONE+grow*2).intersection(Rect2i(Vector2i.ZERO,ground.grid_size))
-	var goals: Array[Vector2i] = []
-	for coal in live:
-		for z in range(coal.y-span,coal.y+span+1):
-			for x in range(coal.x-span,coal.x+span+1):
-				var at := Vector2i(x,z)
-				if box.has_point(at) and Vector2(at-coal).length() <= reach+0.0001: goals.append(at)
-	var result := _search(ground,from,box,goals,layer,owner)
-	if result.is_empty(): return {}
-	var stand: Vector2i = result.stand
-	var dig := Vector2i(-1,-1)
-	for other in live:
-		var d := Vector2(stand-other).length()
-		if d > reach+0.0001: continue
-		if other == cell:
-			dig = other
-			break
-		if dig.x < 0 or d < Vector2(stand-dig).length(): dig = other
-	return {} if dig.x < 0 else {"coal": dig, "fell": result.fell}
-
-## The minimum-tree lane from `from` to touch `rect` (or step onto `rect` when `touch` is false).
-static func way_to_rect(ground: Node3D, from: Vector2i, rect: Rect2i, layer: int, owner: String, touch := true) -> Dictionary:
-	var goals: Array[Vector2i] = []
-	if touch:
-		for z in range(rect.position.y-1,rect.end.y+1):
-			for x in range(rect.position.x-1,rect.end.x+1):
-				var at := Vector2i(x,z)
-				if not rect.has_point(at) and ground.is_tile_in_bounds(at): goals.append(at)
-	else:
-		for z in range(rect.position.y,rect.end.y):
-			for x in range(rect.position.x,rect.end.x):
-				var at := Vector2i(x,z)
-				if ground.is_tile_in_bounds(at): goals.append(at)
-	var box := _box_around(ground,from,rect.position,rect.size,MARGIN+2)
-	return _search(ground,from,box,goals,layer,owner)
-
-## Fallback minimum-tree lane to any cell within `reach` of `rect`'s centre, used when no touching cell is usable.
-static func way_to_reach(ground: Node3D, from: Vector2i, rect: Rect2i, reach: float, layer: int, owner: String) -> Dictionary:
-	var centre: Vector3 = ground.tile_to_world(rect.position)+Vector3(rect.size.x*0.5-0.5,0,rect.size.y*0.5-0.5)
-	var mid: Vector2i = rect.position+rect.size/2
-	var span := ceili(reach)+maxi(rect.size.x,rect.size.y)
-	var goals: Array[Vector2i] = []
-	for z in range(mid.y-span,mid.y+span+1):
-		for x in range(mid.x-span,mid.x+span+1):
-			var at := Vector2i(x,z)
-			if ground.is_tile_in_bounds(at) and not rect.has_point(at) and ground.tile_to_world(at).distance_to(centre) <= reach+0.0001:
-				goals.append(at)
-	var box := _box_around(ground,from,rect.position,rect.size,span+MARGIN)
-	return _search(ground,from,box,goals,layer,owner)
-
-## The minimum-tree lane from `from` to touch any valid 2 x 2 mine spot on the coal field `cell` belongs to.
-static func way_to_seam(ground: Node3D, from: Vector2i, cell: Vector2i, layer: int, owner: String) -> Dictionary:
-	var cells: Array = ground.coal_field_at(cell).get("cells",[])
-	if cells.is_empty(): return {}
-	var live := {}
-	for other in cells:
-		if ground.coal_amount(other) > 0: live[other] = true
-	if live.is_empty(): return {}
-	var goals: Array[Vector2i] = []
-	var seen := {}
-	var low := Vector2i(ground.grid_size)
-	var high := Vector2i.ZERO
-	for spot in cells:
-		if not (live.has(spot) and live.has(spot+Vector2i(1,0)) and live.has(spot+Vector2i(0,1)) and live.has(spot+Vector2i(1,1))): continue
-		for dz in range(-1,3):
-			for dx in range(-1,3):
-				var at: Vector2i = spot+Vector2i(dx,dz)
-				if live.has(at) or seen.has(at) or not ground.is_tile_in_bounds(at): continue
-				seen[at] = true
-				goals.append(at)
-				low = Vector2i(mini(low.x,at.x),mini(low.y,at.y))
-				high = Vector2i(maxi(high.x,at.x),maxi(high.y,at.y))
-	if goals.is_empty(): return {}
-	var box := _box_around(ground,from,low,high-low+Vector2i.ONE,MARGIN+2)
-	return _search(ground,from,box,goals,layer,owner)
-
-static func _box_around(ground: Node3D, from: Vector2i, pos: Vector2i, size: Vector2i, pad: int) -> Rect2i:
-	var grow := Vector2i.ONE*pad
-	var box := Rect2i(pos-grow,size+grow*2)
-	if Vector2(from-pos).length() <= 64.0:
-		box = box.merge(Rect2i(from-Vector2i(2,2),Vector2i(5,5)))
-	return box.intersection(Rect2i(Vector2i.ZERO,ground.grid_size))
-
-static func _search(ground: Node3D, from: Vector2i, box: Rect2i, goals: Array[Vector2i], layer: int, owner: String) -> Dictionary:
-	if goals.is_empty() or not box.has_area(): return {}
 	var width := box.size.x
 	var count := box.size.x*box.size.y
 	var kind := PackedByteArray()
 	kind.resize(count)
-	# dist: what it costs to get from a cell to a goal cell. toward: the next cell on that way.
+	# dist: what it costs to get from a cell to within reach of coal. toward: the next cell on that way.
 	var dist := PackedInt32Array()
 	dist.resize(count)
 	dist.fill(UNSEEN)
@@ -129,13 +45,16 @@ static func _search(ground: Node3D, from: Vector2i, box: Rect2i, goals: Array[Ve
 	toward.fill(-1)
 	# A binary heap of cost*count+index, smallest first.
 	var heap := PackedInt64Array()
-	for at in goals:
-		if not box.has_point(at): continue
-		var i := (at.y-box.position.y)*width+(at.x-box.position.x)
-		if dist[i] == 0 or _kind(ground,kind,i,at,layer,owner) == CLOSED: continue
-		dist[i] = 0
-		heap.append(i)
-	if heap.is_empty(): return {}
+	# The standing cells: every cell within reach of coal that is left. A Forest one must itself be felled.
+	for coal in live:
+		for z in range(coal.y-span,coal.y+span+1):
+			for x in range(coal.x-span,coal.x+span+1):
+				var at := Vector2i(x,z)
+				if not box.has_point(at) or Vector2(at-coal).length() > reach+0.0001: continue
+				var i := (z-box.position.y)*width+(x-box.position.x)
+				if dist[i] == 0 or _kind(ground,kind,i,at,layer,owner) == CLOSED: continue
+				dist[i] = 0
+				heap.append(i)
 	# A sorted array is already a heap.
 	heap.sort()
 	while not heap.is_empty():
@@ -216,12 +135,20 @@ static func _search(ground: Node3D, from: Vector2i, box: Rect2i, goals: Array[Ve
 	if start < 0: return {}
 	var fell: Array[Vector2i] = []
 	var node := start
-	if kind[node] == FOREST: fell.append(box.position+Vector2i(node%width,node/width))
 	while toward[node] >= 0:
 		node = toward[node]
 		if kind[node] == FOREST: fell.append(box.position+Vector2i(node%width,node/width))
+	# `node` is now the standing cell. Dig the coal asked for if it is in reach from there, else the nearest.
 	var stand := box.position+Vector2i(node%width,node/width)
-	return {"stand": stand, "fell": fell}
+	var dig := Vector2i(-1,-1)
+	for other in live:
+		var d := Vector2(stand-other).length()
+		if d > reach+0.0001: continue
+		if other == cell:
+			dig = other
+			break
+		if dig.x < 0 or d < Vector2(stand-dig).length(): dig = other
+	return {} if dig.x < 0 else {"coal": dig, "fell": fell}
 
 ## Whether a cell is open to this unit, Forest it would have to fell, or closed. Worked out once a cell.
 static func _kind(ground: Node3D, kind: PackedByteArray, i: int, at: Vector2i, layer: int, owner: String) -> int:

@@ -4,8 +4,8 @@ extends Resource
 ## How far, in cells, a worker looks for the next Forest cell when the one it is cutting runs out
 ## (docs/FOREST_HAND_ON.md). 0 stops it when the cell runs out, as before.
 @export_range(0,64) var forest_search_cells := 10
-## Fell (docs/FELL.md): after the lane reaches the clicked Forest cell, Infantry also clear Forest cells
-## within this many cells of it. 0 fells only the lane to the clicked cell.
+## Fell (docs/FELL.md): after the lane to the clicked spot, Infantry also clear the Forest cells within this
+## many cells of it. 0 fells only the lane.
 @export_range(0,32) var fell_radius_cells := 1
 @export_range(1,10000) var iron_per_tile := 250
 ## Iron under each cell of a mine site (docs/MINE_SITES.md). A site is 4 x 3 cells, so it holds twelve times this:

@@ -202,6 +202,10 @@ func _process(_delta: float) -> void:
 	var manager = get_node("/root/SelectionManager")
 	$SelectionBox.visible = manager.selecting and manager.drag_distance >= 6.0
 	var rect := Rect2(manager.start_pos,manager.end_pos-manager.start_pos).abs()
+	# A Fell box (docs/FELL.md) shows in the same outline.
+	if game.fell_dragging and game.fell_drag_from.distance_to(game.fell_drag_to) >= game.FELL_DRAG:
+		$SelectionBox.visible = true
+		rect = Rect2(game.fell_drag_from,game.fell_drag_to-game.fell_drag_from).abs()
 	$SelectionBox.position = rect.position
 	$SelectionBox.size = rect.size
 	desired_buttons.clear()

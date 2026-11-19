@@ -34,18 +34,18 @@ The goal of a game is to take the middle and entrench there, and so out-produce 
 | From each start | Distance | Trees to fell first |
 | --- | --- | --- |
 | Home mine | 16 m | 0 |
-| Starter coal (500) | 19 m | 2 |
-| Lake coal (1,000) | 44 to 62 m | 5 to 6 |
+| Starter coal (500) | 28 to 29 m | 3 |
+| Lake coal (1,000) | 44 to 55 m | 9 to 10 |
 | Its lake's water | | 7 to 10 |
 | Expansion mine | 83 to 87 m | 0 |
 
-These are measured from where each start's Depot stands (on West and East, 8 m north of the layout's `start` point after the playtest of 2026-11-17), and trees to a coal seam are counted until a builder can touch a 2 x 2 mine footprint on it. The starter seams (500 coal) lie inside each starting Depot's 26.25 m service range behind a two-tree screen, and the lake seams (1,000 coal) lie 5 to 6 trees inside their woods.
+These are measured from the layout's start points. In the playable scene, the West and East starts (their Depot, `Sites` marker and units) stand 8 m further north, after the playtest of 2026-11-17 asked for the start to be a little closer to its mine. The walk to the home mine's yard is about 8 m, and the Depot's centre is 19 m from the mine's instead of 27 m. Everything else is about 8 m further. The other four starts' markers are where the layout puts them.
 
-- **Into the Crossing from the West start:** the mouth is 114 m away (0:57 on foot, 0:38 by truck). Trees to fell before reaching the gate mine 22, the coal inside the mouth 23, the Crag's mines 27, the mother seam 45, and right through to the other side 54.
+- **Into the Crossing from the West start:** the mouth is 114 m away (0:57 on foot, 0:38 by truck). Trees to fell before reaching the gate mine 22, the coal inside the mouth 21, the Crag's mines 27, the mother seam 42, and right through to the other side 54.
 - **From a corner start** the mouth is about 193 m (1:36).
-- **The pass mines** are about 150 m from the nearest start on their own side and 163 m from the other side's, with nothing to fell. The coal between them is 7 trees in from the yard (measured to a 2 x 2 mine footprint).
+- **The pass mines** are about 150 m from the nearest start on their own side and 163 m from the other side's, with nothing to fell. The coal between them is 4 trees in from the yard.
 - **Totals:** 20 mine sites (6 home, 6 expansion, 4 pass, 2 gate, 2 Crag), each holding 7,500 iron; 17 coal fields holding 23,100 (starter 3,000, lake 6,000, pass 4,200, mouth 4,000, mother seam 5,900); 11 places for a dam.
-- **Ground:** grass 39%, forest 20%, desert 16%, mountain 16%, water 9%.
+- **Ground:** grass 38%, forest 21%, desert 16%, mountain 16%, water 9%.
 
 ## Files
 

@@ -12,7 +12,7 @@ No coal seam has a mine at the start of a game. Iron is different: on Two Lakes 
 - **Shared.** Like every mine, any side's Infantry can gather from it and repair it.
 - **The ground stays.** Mining does not dig cells out. A seam stays ground that nothing walks or builds on, also when it is empty; the mine then shows its worked-out state.
 - **Gathering.** Right-click the mine, or right-click any cell of its seam. A right-click on a seam with an unfinished Mine plan orders selected trucks to fetch iron and Infantry to construct it; on a seam with no mine or plan it says "Build a Mine on this coal seam before gathering coal."
-- **Trees.** Seams lie inside forest. Workers ordered to construct a mine plan or gather from a built coal mine behind uncut trees automatically fell the shortest lane of trees in their way (leaving the wood where it falls and keeping any carried iron), or the player can open a lane first with Fell (`docs/FELL.md`).
+- **Trees.** Seams lie inside forest. Workers ordered to construct a mine plan or gather from a built coal mine behind uncut trees with no other way there fell the trees on a roughly straight line to its footprint (`FellLane`, docs/FELL.md), leaving the wood where it falls and keeping any carried iron. A builder that can stand within its old reach of the site works from there instead, or the player can open a lane first with Fell (`docs/FELL.md`).
 
 ## The old rule
 

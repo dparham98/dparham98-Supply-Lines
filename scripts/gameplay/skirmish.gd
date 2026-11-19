@@ -74,6 +74,7 @@ func cancel_armed() -> void:
 	placing_generator = false
 	placing_structure = &""
 	pending_unit_command = ""
+	fell_dragging = false
 	$DepotNetwork.clear_builder()
 func notify(text: String) -> void:
 	message = text
@@ -194,6 +195,20 @@ func _unhandled_input(event: InputEvent) -> void:
 				placing_structure = &""
 		get_viewport().set_input_as_handled()
 		return
+	# Fell also takes a box: drag across the trees to fell (docs/FELL.md).
+	if pending_unit_command == "fell" and fell_dragging and event is InputEventMouseMotion:
+		fell_drag_to = event.position
+	if pending_unit_command == "fell" and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			fell_dragging = true
+			fell_drag_from = event.position
+			fell_drag_to = event.position
+		elif fell_dragging:
+			fell_dragging = false
+			if fell_drag_from.distance_to(event.position) < FELL_DRAG: issue_card_order(fell_drag_from,event.shift_pressed)
+			else: order_fell_box(fell_drag_from,event.position,event.shift_pressed)
+		get_viewport().set_input_as_handled()
+		return
 	if not pending_unit_command.is_empty() and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		issue_card_order(event.position,event.shift_pressed)
 		get_viewport().set_input_as_handled()
@@ -259,6 +274,7 @@ func ground_at(screen):
 	var camera := get_viewport().get_camera_3d()
 	return Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(screen),camera.project_ray_normal(screen))
 const SelectionBounds = preload("res://scripts/units/selection_bounds.gd")
+const FellLane = preload("res://scripts/terrain/fell_lane.gd")
 ## How near `node` is to the pointer, or INF when it is missed. From the minimap it is the ground distance
 ## from the point to the node's model bounds, so a large building is picked anywhere on its footprint.
 func pick_distance(node: Node3D, camera: Camera3D, screen) -> float:
@@ -367,6 +383,53 @@ func show_shot(start: Vector3, end: Vector3, team: String, projectile: PackedSce
 	shot.configure(start,end,team)
 	return shot
 
+## A Fell box being dragged, in screen pixels (docs/FELL.md). Shorter drags are clicks.
+const FELL_DRAG := 6.0
+var fell_dragging := false
+var fell_drag_from := Vector2.ZERO
+var fell_drag_to := Vector2.ZERO
+## Fell across the cells under a dragged screen box: the grid box round the four corners on the ground.
+func order_fell_box(from: Vector2, to: Vector2, queued := false) -> void:
+	var camera := get_viewport().get_camera_3d()
+	var low := Vector2i(ground.grid_size)
+	var high := Vector2i(-1,-1)
+	for corner in [from,Vector2(to.x,from.y),to,Vector2(from.x,to.y)]:
+		var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(corner),camera.project_ray_normal(corner))
+		if point == null: continue
+		var cell: Vector2i = ground.clamped_tile_at(point)
+		low = Vector2i(mini(low.x,cell.x),mini(low.y,cell.y))
+		high = Vector2i(maxi(high.x,cell.x),maxi(high.y,cell.y))
+	if high.x < 0: return
+	var area := Rect2i(low,high-low+Vector2i.ONE)
+	var middle: Vector2i = area.position+area.size/2
+	order_fell(middle,area,ground.tile_to_world(middle),queued)
+## Whether `unit` has a tree to fell for this order: in the box; or on its line to `cell`, or round `cell`.
+func _fell_has_trees(unit: Node3D, cell: Vector2i, area: Rect2i) -> bool:
+	var reach: int = ground.harvesting_rules.fell_radius_cells
+	var box := area if area.has_area() else Rect2i(cell-Vector2i.ONE*reach,Vector2i.ONE*(reach*2+1))
+	for z in range(box.position.y,box.end.y):
+		for x in range(box.position.x,box.end.x):
+			var at := Vector2i(x,z)
+			if ground.forest_amount(at) > 0 and (area.has_area() or cell.distance_squared_to(at) <= reach*reach): return true
+	if area.has_area(): return false
+	var here = ground.get_tile_at_position(unit.global_position)
+	return here != null and not FellLane.lane(ground,here,cell).is_empty()
+## Fell to `cell`, or across `area`, for the selected workers (docs/FELL.md).
+func order_fell(cell: Vector2i, area: Rect2i, point: Vector3, queued := false) -> void:
+	var workers: Array[Node3D] = []
+	var trees := false
+	for unit in get_tree().get_nodes_in_group("units"):
+		if unit.team != "player" or not unit.is_selected or not unit.can_gather or unit.is_depot_truck or unit.is_cargo_vehicle: continue
+		workers.append(unit)
+		# A queued order starts from wherever the queue leaves the worker, so it is not checked.
+		trees = trees or queued or _fell_has_trees(unit,cell,area)
+	if workers.is_empty(): return
+	if not trees:
+		notify("No trees to fell in that box." if area.has_area() else "Nothing to fell: the way there is already open.")
+		return
+	for unit in workers: give_order(unit,{kind = "fell", cell = cell, area = area, point = point},queued)
+	notify("Fell %s. %s" % ["queued" if queued else "ordered","Shift-click adds more; Esc stops." if queued else "The wood is left where it falls."])
+	if not queued: pending_unit_command = ""
 func issue_card_order(screen, queued := false) -> void:
 	var from_map: bool = screen is MapPick
 	var target: Node3D
@@ -407,28 +470,10 @@ func issue_card_order(screen, queued := false) -> void:
 					if target == null: notify("Build a Mine on this coal seam before gathering coal."); return
 				else: target = ground.coal_source(cell) if ground.get_terrain(cell) == 6 else ground.forest_source(cell)
 	elif pending_unit_command == "fell":
-		# Fell takes a Forest cell, or an enclosed Coal cell (docs/FELL.md).
+		# Fell takes any spot: the trees on a roughly straight line to it are felled (docs/FELL.md).
 		var point = ground_at(screen)
-		var cell = ground.get_tile_at_position(point) if point != null else null
-		if cell != null and ground.get_terrain(cell) == 6:
-			var coal_approach := preload("res://scripts/terrain/coal_approach.gd")
-			var from_cell = null
-			for unit in get_tree().get_nodes_in_group("units"):
-				if unit.team == "player" and unit.is_selected and unit.can_gather:
-					from_cell = ground.get_tile_at_position(unit.global_position)
-					if from_cell != null:
-						var way: Dictionary = coal_approach.way_to_seam(ground,from_cell,cell,unit.mobility_layer(),unit._owner_key())
-						var fell: Array = way.get("fell",[])
-						if not fell.is_empty(): cell = fell.back(); break
-			if from_cell == null and is_instance_valid(depot):
-				var depot_cell = ground.get_tile_at_position(depot.global_position)
-				var fallback: Vector2i = ground.nearest_actor_cell(depot_cell,MobilityRules.Layer.GROUND) if depot_cell != null else Vector2i(-1,-1)
-				if fallback.x >= 0:
-					var way: Dictionary = coal_approach.way_to_seam(ground,fallback,cell,MobilityRules.Layer.GROUND,"")
-					var fell: Array = way.get("fell",[])
-					if not fell.is_empty(): cell = fell.back()
-		if cell == null or ground.forest_amount(cell) <= 0: notify("Click a forest to fell."); return
-		target = ground.forest_source(cell)
+		if point != null and ground.get_tile_at_position(point) != null: order_fell(ground.get_tile_at_position(point),Rect2i(),point,queued)
+		return
 	elif pending_unit_command == "repair": target = pick_target(screen,"selectable_buildings",50)
 	elif pending_unit_command == "capture": target = pick_target(screen,"capturable_buildings",50)
 	elif pending_unit_command in ["load","unload"]:
