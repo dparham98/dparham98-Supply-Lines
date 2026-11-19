@@ -13,6 +13,9 @@ func near(unit: Node3D, target: Node3D, offset: Vector3) -> void:
 	unit.grid_position = game.ground.get_tile_at_position(unit.global_position)
 	unit._claim(unit.grid_position)
 func run() -> void:
+	# Payment checks here use the old 75 E / 25 I mine price; the 0 E / 25 I price is checked in coal_mine_test.gd.
+	var mine_price: EngineeringRules = load("res://assets/economy/engineering_rules.tres")
+	mine_price.mine_energy_cost = 75
 	# A mechanics check on a map laid out for the old 35 m Depot range (docs/DEPOT_RANGE.md); trucks keep half of it.
 	var old_range: DepotRules = load("res://assets/economy/depot_rules.tres")
 	old_range.construction_radius = 35.0
@@ -164,7 +167,7 @@ func run() -> void:
 			if network.can_place_size(candidate,train,Vector2i(5,5)): building_point = candidate
 	if not check(building_point != Vector3.ZERO and network.construct_production(building_point,&"barracks"),"Train could not fund production building construction"): return
 	var building = get_nodes_in_group("production_buildings")[-1]; building.set_process(false)
-	if not check(building.assigned_depot == null and not building.request_unit(&"infantry") and train.energy == 100 and train.iron == 45,"Mobile construction silently assigned operating funds"): return
+	if not check(building.assigned_depot == null and not building.request_unit(&"infantry") and train.carried_energy == 100 and train.iron == 45,"Mobile construction silently assigned operating funds"): return
 	var nearest_depot: Node3D
 	for candidate in get_nodes_in_group("depots"):
 		if SupplySource.covers(candidate,building.global_position,"player"): nearest_depot = candidate
@@ -172,7 +175,7 @@ func run() -> void:
 	nearest_depot.energy = 100; nearest_depot.iron = 20
 	if not check(building.source_friendly() and building.request_unit(&"infantry"),"Assigned Depot could not pay for Infantry"): return
 	if not check(not building.assign_source(depot),"Production reassignment allowed a nonempty queue"): return
-	building._process(building.stats.print_seconds+0.1)
+	building._process(building.base_seconds()+0.1)
 	if not check(building.queue == 0,"Explicitly assigned mobile-built Barracks did not produce Infantry"): return
 	var generator_point := Vector3.ZERO
 	for x in range(-12,13,3):
@@ -185,7 +188,7 @@ func run() -> void:
 	nearest_depot = null
 	for candidate in get_nodes_in_group("depots"):
 		if SupplySource.covers(candidate,generator.global_position,"player") and (nearest_depot == null or candidate.global_position.distance_to(generator.global_position) < nearest_depot.global_position.distance_to(generator.global_position)): nearest_depot = candidate
-	if not check(train.energy == 0 and train.iron == 25 and nearest_depot != null and generator.assigned_depot == nearest_depot and generator.source_valid(),"A train-funded Generator should take the covering Depot"): return
+	if not check(train.carried_energy == 0 and train.iron == 25 and nearest_depot != null and generator.assigned_depot == nearest_depot and generator.source_valid(),"A train-funded Generator should take the covering Depot"): return
 	nearest_depot.stockpile.deposit(&"wood",1)
 	if not check(generator.active(),"Assigned Generator did not recognize local wood"): return
 	# Loss of a latched mobile source pauses Infantry rather than using neighboring Depot money.

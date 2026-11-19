@@ -70,29 +70,29 @@ func run() -> void:
 	far_plan.queue_free()
 	await process_frame
 	network.update_global_preview(outside)
-	var status: String = game.get_node("ConstructionPreview/Status").text
+	var status: String = network.placement_text
 	if not check(status.contains("no Depot range covers it"),"The preview should warn outside every range: "+status): return
 	network.update_global_preview(inside)
-	status = game.get_node("ConstructionPreview/Status").text
+	status = network.placement_text
 	if not check(not status.contains("no Depot range"),"The preview should not warn inside a range: "+status): return
 	# Colours: green where it can be built and paid for, yellow where the stock in range can't pay, red where it
 	# can't be built. The label lists the stock in range.
 	var colour := func() -> Color: return network.preview_material.albedo_color
 	network.update_global_preview(inside)
-	status = game.get_node("ConstructionPreview/Status").text
+	status = network.placement_text
 	var area: Dictionary = network.area_stock(network.covering_sources(network.footprint_start(inside,network.plan_spec(&"barracks").size),network.plan_spec(&"barracks").size))
 	if not check(colour.call() == network.PLACE_OK and status.begins_with("BUILD") and status.contains("\nIn range: %d E · %d I · %d W · %d C" % [area[&"energy"],area[&"iron"],area[&"wood"],area[&"coal"]]) and area[&"energy"] >= depot.energy,"A buildable, affordable site should be green and list the stock in range: "+status.replace("\n"," | ")): return
 	var saved_energy: int = depot.energy
 	depot.energy = 0
 	network.update_global_preview(inside)
-	status = game.get_node("ConstructionPreview/Status").text
+	status = network.placement_text
 	if not check(colour.call() == network.PLACE_SHORT and status.begins_with("CAN'T AFFORD") and status.contains("In range: 0 E"),"A buildable site the stock in range can't pay for should be yellow: "+status): return
 	depot.energy = saved_energy
 	network.update_global_preview(outside)
-	status = game.get_node("ConstructionPreview/Status").text
+	status = network.placement_text
 	if not check(colour.call() == network.PLACE_SHORT and status.contains("No Depot range here"),"A buildable site out of every range should be yellow: "+status): return
 	network.update_global_preview(depot.global_position)
-	status = game.get_node("ConstructionPreview/Status").text
+	status = network.placement_text
 	if not check(colour.call() == network.PLACE_BLOCKED and status.begins_with("BLOCKED"),"A site on the Depot should be red: "+status): return
 	game.global_plan_kind = &""
 	print("PLAN_COVERAGE_TEST_PASSED")

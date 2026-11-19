@@ -24,10 +24,3 @@ mesh = SubResource("mesh")
 visible = false
 cast_shadow = 0
 mesh = SubResource("range_mesh")
-[node name="Status" type="Label3D" parent="."]
-position = Vector3(0,2,0)
-billboard = 1
-font_size = 30
-pixel_size = 0.03
-no_depth_test = true
-text = "PLACEMENT"

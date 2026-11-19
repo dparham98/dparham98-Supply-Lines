@@ -241,11 +241,23 @@ func construct_generator(point: Vector3) -> bool:
 	game.get_node("Entities/Buildings").add_child(generator,true)
 	game.notify("Generator built from %s. Choose a covering Depot in its HUD to operate." % selected.name)
 	return true
+## What the HUD's guide shows while placing (docs/PLACEMENT_GUIDE.md): a title, the line about the spot under the
+## cursor, and its state: "ok" (green), "short" (yellow) or "blocked" (red).
+var placement_title := ""
+var placement_text := ""
+var placement_state := ""
+func _set_placement(title: String, text: String, buildable: bool, affordable: bool) -> void:
+	placement_title = title
+	placement_text = text
+	placement_state = "blocked" if not buildable else ("ok" if affordable else "short")
+## Whether a building, plan or Depot deploy is being placed.
+func placement_active() -> bool:
+	return not game.global_plan_kind.is_empty() or game.placing_depot or game.placing_generator or not game.placing_structure.is_empty() or deploying_truck() != null
 func _process(_delta: float) -> void:
 	var ghost = game.get_node_or_null("ConstructionPreview")
 	if ghost == null: return
 	var truck := deploying_truck()
-	ghost.visible = not game.global_plan_kind.is_empty() or game.placing_depot or game.placing_generator or not game.placing_structure.is_empty() or truck != null
+	ghost.visible = placement_active()
 	show_territories(ghost.visible)
 	if not ghost.visible: return
 	var camera := game.get_viewport().get_camera_3d()
@@ -305,7 +317,7 @@ func update_deploy_preview(point: Vector3, truck: Node3D) -> bool:
 	preview_material.albedo_color = placement_colour(valid,true)
 	var reason := ""
 	if not valid: reason = " · " + (spacing_reason() if not depot_spacing_ok(point,truck.team,truck) else "needs empty buildable land")
-	ghost.get_node("Status").text = "%s · Depot%s" % ["DEPLOY" if valid else "BLOCKED",reason]
+	_set_placement("DEPLOY THE DEPOT","%s · Depot%s" % ["DEPLOY" if valid else "BLOCKED",reason],valid,true)
 	return valid
 func update_preview(point: Vector3, generator: bool) -> bool:
 	var ghost = game.get_node("ConstructionPreview")
@@ -343,7 +355,10 @@ func update_preview(point: Vector3, generator: bool) -> bool:
 		ghost.get_node("Footprint").material_override = preview_material
 	preview_material.albedo_color = placement_colour(buildable,affordable)
 	var stock := stock_line(area_stock([selected]),str(selected.name)) if owned_selected() else "No Depot selected"
-	ghost.get_node("Status").text = "%s · payer %s · %d E / %d I\n%s" % [placement_word(buildable,affordable),selected.name if owned_selected() else "none",energy_cost,iron_cost,stock]
+	var title := "Generator" if generator else "Depot"
+	if game.placing_structure == &"iron_mine": title = "Iron Mine"
+	elif not game.placing_structure.is_empty(): title = str(game.placing_structure).capitalize()
+	_set_placement("PLACE "+title.to_upper(),"%s · payer %s · %d E / %d I\n%s" % [placement_word(buildable,affordable),selected.name if owned_selected() else "none",energy_cost,iron_cost,stock],buildable,affordable)
 	return buildable and affordable
 
 func clear_builder() -> void:
@@ -409,6 +424,7 @@ func plan_spec(kind: StringName) -> Dictionary:
 		preview.free()
 		return {"title":"Depot","size":size,"energy":depot_rules().depot_energy_cost,"iron":depot_rules().depot_iron_cost,"scene":depot_scene}
 	if kind == &"generator": return {"title":"Generator","size":supply_rules.generator_footprint,"energy":supply_rules.generator_energy_cost,"iron":supply_rules.generator_iron_cost,"scene":generator_scene,"model":_model_scene(generator_scene)}
+	if kind == &"coal_mine": return {"title":"Coal Mine","size":engineering_rules.mine_footprint,"energy":engineering_rules.mine_energy_cost,"iron":engineering_rules.mine_iron_cost,"scene":mine_scene,"model":_model_scene(mine_scene)}
 	if kind == &"iron_mine": return {"title":"Iron Mine","size":engineering_rules.mine_footprint,"energy":engineering_rules.mine_energy_cost,"iron":engineering_rules.mine_iron_cost,"scene":mine_scene,"model":_model_scene(mine_scene)}
 	if kind == &"rail":
 		# Maglev pieces are laid directly by RailNetwork.place, not queued as plans.
@@ -432,9 +448,14 @@ func _model_scene(scene: PackedScene) -> PackedScene:
 		_model_scenes[scene] = visuals.model_scene if visuals != null and "model_scene" in visuals else null
 		preview.free()
 	return _model_scenes[scene]
+## Plan kinds that build a mine: an Iron Mine on a mine site or ore field, a Coal Mine on a coal seam.
+static func is_mine_kind(kind: StringName) -> bool:
+	return kind == &"iron_mine" or kind == &"coal_mine"
 ## A Depot plan also needs the strip it will keep clear to be free (strip_clear).
 func plan_terrain_valid(start: Vector2i, size: Vector2i, kind: StringName, ignore: Node = null) -> bool:
-	if kind == &"iron_mine": return game.ground.ore_footprint_valid(start,size)
+	if is_mine_kind(kind):
+		var on_coal: bool = game.ground.is_tile_in_bounds(start) and game.ground.get_terrain(start) == game.ground.Terrain.COAL
+		return game.ground.ore_footprint_valid(start,size) and on_coal == (kind == &"coal_mine")
 	if not game.ground.is_footprint_valid(start,size): return false
 	return kind != &"depot" or strip_clear(game.ground.tile_to_world(start+size/2),0.0,ignore)
 ## Whether a footprint overlaps another unfinished plan, or the strip a planned Depot will keep clear.
@@ -452,7 +473,7 @@ func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_paye
 	if spec.is_empty(): return null
 	if kind == &"rail": game.notify("Maglev track is laid piece by piece from the Build page, not planned."); return null
 	var start := footprint_start(point,spec.size)
-	if kind == &"iron_mine":
+	if is_mine_kind(kind):
 		# A mine planned on a mine site takes the whole site.
 		var spot := mine_spot(point)
 		spec = spec.duplicate()
@@ -460,7 +481,7 @@ func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_paye
 		spec.scene = mine_scene_for(spot); spec.model = _model_scene(spec.scene)
 	if not plan_terrain_valid(start,spec.size,kind) or plan_overlaps(start,spec.size):
 		var strip := strip_notice(point,spec.size,kind)
-		game.notify(strip if not strip.is_empty() else "Plan needs valid empty terrain and cannot overlap another plan. Mines require iron deposits.")
+		game.notify(strip if not strip.is_empty() else "A Coal Mine needs a coal seam under it with no mine yet, and cannot overlap another plan." if kind == &"coal_mine" else "Plan needs valid empty terrain and cannot overlap another plan. Iron Mines need a mine site or iron deposit.")
 		return null
 	if kind == &"depot" and not depot_spacing_ok(point):
 		game.notify(spacing_notice(point))
@@ -477,7 +498,7 @@ func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_paye
 func plan_source_valid(plan: Node3D, source) -> bool:
 	if not SupplySource.available(source,"player"): return false
 	if source.energy < plan.spec.energy or source.iron < plan.spec.iron: return false
-	return can_place_mine(plan.global_position,source) if plan.kind == &"iron_mine" else can_place_size(plan.global_position,source,plan.spec.size)
+	return can_place_mine(plan.global_position,source) if is_mine_kind(plan.kind) else can_place_size(plan.global_position,source,plan.spec.size)
 func plan_payer(plan: Node3D) -> Node3D:
 	if plan.pinned: return plan.payer if plan_source_valid(plan,plan.payer) else null
 	# Auto is explicitly selected in the global menu: nearest eligible Depot, stable tie order.
@@ -493,7 +514,7 @@ func complete_plan(plan: Node3D, payer: Node3D) -> Node3D:
 		building.initial_energy = 0; building.initial_iron = 0
 		building.grant_construction_infantry = true
 	elif plan.kind == &"generator": building.rules = supply_rules; building.assigned_depot = payer if payer.is_in_group("depots") else null
-	elif plan.kind == &"iron_mine": building.rules = engineering_rules
+	elif is_mine_kind(plan.kind): building.rules = engineering_rules
 	else: building.assigned_depot = payer if payer.is_in_group("depots") else null
 	if not payer.spend_local(plan.spec.energy,plan.spec.iron): building.free(); return null
 	building.position = plan.global_position
@@ -504,7 +525,7 @@ func update_global_preview(point: Vector3) -> bool:
 	var spec := plan_spec(game.global_plan_kind)
 	var ghost = game.get_node("ConstructionPreview")
 	var start := footprint_start(point,spec.size)
-	if game.global_plan_kind == &"iron_mine":
+	if is_mine_kind(game.global_plan_kind):
 		var spot := mine_spot(point)
 		spec = spec.duplicate()
 		spec.size = spot.size; start = spot.position
@@ -539,7 +560,7 @@ func update_global_preview(point: Vector3) -> bool:
 	elif valid and not energy_ok: site_line += " · no %s in range has %d E" % ["pinned payer" if pinned != null else "stockpile",spec.energy]
 	elif valid and not iron_ok: site_line += " · %d iron short in range" % (spec.iron-on_site.get(&"iron",0)-stock[&"iron"])
 	var area := stock_line(stock) if not sources.is_empty() else "No Depot range here"
-	ghost.get_node("Status").text = "%s · %s · %d E / %d I%s\n%s" % [placement_word(valid,affordable),spec.title,spec.energy,spec.iron,site_line,area]
+	_set_placement("PLAN "+str(spec.title).to_upper(),"%s · %s · %d E / %d I%s\n%s" % [placement_word(valid,affordable),spec.title,spec.energy,spec.iron,site_line,area],valid,affordable)
 	return valid
 ## Piles and crates inside a footprint that still hold something (docs/SITE_CONSTRUCTION.md).
 func stores_inside(rect: Rect2i) -> Array[Node3D]:
@@ -577,7 +598,7 @@ func finish_plan(plan: Node3D) -> Node3D:
 		building.initial_energy = 0; building.initial_iron = 0
 		building.grant_construction_infantry = true
 	elif plan.kind == &"generator": building.rules = supply_rules; building.assigned_depot = payer
-	elif plan.kind == &"iron_mine": building.rules = engineering_rules
+	elif is_mine_kind(plan.kind): building.rules = engineering_rules
 	else: building.assigned_depot = payer
 	building.position = plan.global_position
 	if plan.kind == &"rail": game.add_child(building,true)

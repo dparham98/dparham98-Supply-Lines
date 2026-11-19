@@ -2,6 +2,8 @@
 
 These panels come from the playtest of main at 8ee9b55 (2026-11-15). They replace the Depot card's Energy ceiling (E) and Coal kept (Q) tiles.
 
+Under them, a selected Barracks or Tank Factory of yours shows its Production speed panel (docs/PRODUCTION_POWER.md).
+
 ## When they show
 
 Both panels show for one of your Depots, the Depot in context (`context_depot` in `skirmish_hud.gd`), while you have selected:

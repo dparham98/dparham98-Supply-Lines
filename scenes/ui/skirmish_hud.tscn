@@ -19,6 +19,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_attack.png" id="card_attack"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_gather.png" id="card_gather"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_fell.png" id="card_fell"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_derail.png" id="card_derail"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_deliver.png" id="card_deliver"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_drop.png" id="card_drop"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_repair.png" id="card_repair"]
@@ -48,6 +49,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_barracks.png" id="card_build_barracks"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_factory.png" id="card_build_factory"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_mine.png" id="card_build_mine"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_coal_mine.png" id="card_build_coal_mine"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_rail.png" id="card_build_rail"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_pin_payer.png" id="card_pin_payer"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_back.png" id="card_build_back"]
@@ -191,6 +193,36 @@ corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
+[sub_resource type="StyleBoxFlat" id="guide_card"]
+content_margin_left = 16.0
+content_margin_top = 10.0
+content_margin_right = 16.0
+content_margin_bottom = 10.0
+bg_color = Color(0.05,0.055,0.047,0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.93,0.75,0.33,1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+[sub_resource type="StyleBoxFlat" id="guide_step"]
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+bg_color = Color(0.13,0.12,0.1,1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.93,0.75,0.33,1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
 [sub_resource type="StyleBoxFlat" id="slot_empty"]
 bg_color = Color(0.116,0.113,0.096,1)
 border_width_left = 1
@@ -253,6 +285,10 @@ events = [SubResource("key_build_tank_factory")]
 action = &"build_mine"
 [sub_resource type="Shortcut" id="shortcut_build_mine"]
 events = [SubResource("key_build_mine")]
+[sub_resource type="InputEventAction" id="key_build_coal_mine"]
+action = &"build_coal_mine"
+[sub_resource type="Shortcut" id="shortcut_build_coal_mine"]
+events = [SubResource("key_build_coal_mine")]
 [sub_resource type="InputEventAction" id="key_build_rail"]
 action = &"build_rail"
 [sub_resource type="Shortcut" id="shortcut_build_rail"]
@@ -312,6 +348,10 @@ events = [SubResource("key_command_gather")]
 action = &"command_fell"
 [sub_resource type="Shortcut" id="shortcut_command_fell"]
 events = [SubResource("key_command_fell")]
+[sub_resource type="InputEventAction" id="key_command_derail"]
+action = &"command_derail"
+[sub_resource type="Shortcut" id="shortcut_command_derail"]
+events = [SubResource("key_command_derail")]
 [sub_resource type="InputEventAction" id="key_command_move"]
 action = &"command_move"
 [sub_resource type="Shortcut" id="shortcut_command_move"]
@@ -2665,6 +2705,124 @@ autowrap_mode = 2
 text = ""
 theme_override_colors/font_color = Color(0.72,0.69,0.59,1)
 theme_override_font_sizes/font_size = 12
+[node name="Guide" type="PanelContainer" parent="Bottom/Body/Row"]
+visible = false
+custom_minimum_size = Vector2(560,0)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("guide_card")
+[node name="Body" type="VBoxContainer" parent="Bottom/Body/Row/Guide"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 7
+[node name="Title" type="Label" parent="Bottom/Body/Row/Guide/Body"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.95,0.75,0.33,1)
+theme_override_font_sizes/font_size = 20
+text = "LAY RAIL"
+[node name="Steps" type="HBoxContainer" parent="Bottom/Body/Row/Guide/Body"]
+layout_mode = 2
+mouse_filter = 2
+alignment = 1
+theme_override_constants/separation = 8
+[node name="Step1" type="PanelContainer" parent="Bottom/Body/Row/Guide/Body/Steps"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("guide_step")
+[node name="Row" type="HBoxContainer" parent="Bottom/Body/Row/Guide/Body/Steps/Step1"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 7
+[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Guide/Body/Steps/Step1/Row"]
+visible = false
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+[node name="Number" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps/Step1/Row"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95,0.75,0.33,1)
+theme_override_font_sizes/font_size = 16
+text = "1"
+[node name="Text" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps/Step1/Row"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 14
+text = ""
+[node name="Arrow1" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.93,0.75,0.33,1)
+theme_override_font_sizes/font_size = 16
+text = "›"
+[node name="Step2" type="PanelContainer" parent="Bottom/Body/Row/Guide/Body/Steps"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("guide_step")
+[node name="Row" type="HBoxContainer" parent="Bottom/Body/Row/Guide/Body/Steps/Step2"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 7
+[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Guide/Body/Steps/Step2/Row"]
+visible = false
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+[node name="Number" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps/Step2/Row"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95,0.75,0.33,1)
+theme_override_font_sizes/font_size = 16
+text = "2"
+[node name="Text" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps/Step2/Row"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 14
+text = ""
+[node name="Arrow2" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.93,0.75,0.33,1)
+theme_override_font_sizes/font_size = 16
+text = "›"
+[node name="Step3" type="PanelContainer" parent="Bottom/Body/Row/Guide/Body/Steps"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("guide_step")
+[node name="Row" type="HBoxContainer" parent="Bottom/Body/Row/Guide/Body/Steps/Step3"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 7
+[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Guide/Body/Steps/Step3/Row"]
+visible = false
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+[node name="Number" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps/Step3/Row"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95,0.75,0.33,1)
+theme_override_font_sizes/font_size = 16
+text = "3"
+[node name="Text" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps/Step3/Row"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 14
+text = ""
+[node name="Status" type="Label" parent="Bottom/Body/Row/Guide/Body"]
+layout_mode = 2
+horizontal_alignment = 1
+autowrap_mode = 3
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 15
+text = ""
+[node name="Keys" type="Label" parent="Bottom/Body/Row/Guide/Body"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.72,0.69,0.59,1)
+theme_override_font_sizes/font_size = 12
+text = ""
 [node name="Ornament" type="Control" parent="Bottom/Body/Row"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -2904,7 +3062,7 @@ theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="Fell" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
-tooltip_text = "Click a forest. Infantry cut down the trees there and round it, and keep no wood."
+tooltip_text = "Click a forest. Infantry cut down the trees there and round it, and keep no wood.\nRight-click: autocast. Idle Infantry fell the trees round where they are left."
 shortcut = SubResource("shortcut_command_fell")
 layout_mode = 0
 custom_minimum_size = Vector2(46,46)
@@ -2927,6 +3085,48 @@ horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
+[node name="Derail" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+tooltip_text = "Click a piece of rail. The Derailer drives a spike into it; the next train onto it derails, and the track there is wrecked."
+shortcut = SubResource("shortcut_command_derail")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_derail")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Derail"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="Auto" type="Label" parent="Bottom/Body/Row/Commands/Main/Fell"]
+visible = false
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 3.0
+offset_top = -15.0
+offset_right = 43.0
+offset_bottom = -2.0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.55,0.9,0.5,1)
+theme_override_colors/font_outline_color = Color(0,0,0,1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "AUTO"
 [node name="Return" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
 tooltip_text = "Deliver carried resources to the selected supply source."
@@ -3663,6 +3863,7 @@ theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="Energy" type="Button" parent="Bottom/Body/Row/Commands/Pick/LoadTiles"]
+visible = false
 theme_type_variation = &"CommandCard"
 shortcut = SubResource("shortcut_resource_energy")
 layout_mode = 2
@@ -3918,6 +4119,30 @@ horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
+[node name="CoalMine" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_build_coal_mine")
+layout_mode = 2
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("card_build_coal_mine")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/CoalMine"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -34.0
+offset_top = 1.0
+offset_right = -4.0
+offset_bottom = 15.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="Rail" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
 theme_type_variation = &"CommandCard"
 shortcut = SubResource("shortcut_build_rail")
@@ -4130,6 +4355,50 @@ focus_mode = 0
 max_value = 300.0
 step = 10.0
 tooltip_text = "Generators never burn this Depot's coal below this, so vehicles can refuel."
+[node name="ProductionPanel" type="PanelContainer" parent="."]
+visible = false
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 300.0
+offset_bottom = 12.0
+theme = ExtResource("ui_theme")
+theme_override_styles/panel = SubResource("hover_card")
+[node name="Body" type="VBoxContainer" parent="ProductionPanel"]
+layout_mode = 2
+theme_override_constants/separation = 3
+[node name="Title" type="Label" parent="ProductionPanel/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95,0.7,0.3,1)
+theme_override_font_sizes/font_size = 12
+text = ""
+[node name="Power" type="HBoxContainer" parent="ProductionPanel/Body"]
+layout_mode = 2
+tooltip_text = "How much energy this building puts into each unit. More prints faster: at 2x a unit costs twice its energy and takes half the time."
+[node name="Label" type="Label" parent="ProductionPanel/Body/Power"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72,0.69,0.59,1)
+theme_override_font_sizes/font_size = 12
+size_flags_horizontal = 3
+text = "Production power"
+[node name="Value" type="Label" parent="ProductionPanel/Body/Power"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 12
+text = ""
+[node name="PowerSlider" type="HSlider" parent="ProductionPanel/Body"]
+layout_mode = 2
+focus_mode = 0
+min_value = 1.0
+max_value = 4.0
+step = 0.5
+value = 1.0
+tooltip_text = "1x is each unit's base energy cost and slowest print. The extra energy is drawn from the assigned Depot while a unit prints; without it the unit prints at 1x."
+[node name="Note" type="Label" parent="ProductionPanel/Body"]
+layout_mode = 2
+autowrap_mode = 3
+theme_override_colors/font_color = Color(0.72,0.69,0.59,1)
+theme_override_font_sizes/font_size = 11
+text = ""
 [node name="StoragePanel" type="PanelContainer" parent="."]
 visible = false
 anchors_preset = 1

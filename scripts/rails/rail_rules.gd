@@ -3,6 +3,11 @@ extends SupplyRules
 ## Approved prototype rail costs. Inherited cargo fields configure the Train.
 @export_range(0,10000) var rail_energy_cost := 0
 @export_range(0,10000) var rail_iron_cost := 2
+## Derailing (docs/DERAILER.md, provisional): seconds a Derailer works to spike a piece of track, seconds before
+## it can spike again, and the share of its health a train loses when it derails.
+@export_range(0,60,0.1) var derail_seconds := 3.0
+@export_range(0,600,1) var derail_cooldown := 30.0
+@export_range(0,1,0.01) var derail_damage := 0.6
 ## Energy a train draws from a connected Depot per metre travelled.
 @export_range(0,10,0.01) var train_energy_per_metre := 0.15
 ## Planned track (docs/RAIL_PLANNING.md) connects to a mine or build site when its edge comes within this far

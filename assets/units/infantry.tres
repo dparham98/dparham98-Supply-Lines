@@ -8,6 +8,7 @@ unit_id = &"infantry"
 display_name = "Infantry"
 energy_cost = 100
 iron_cost = 20
+build_seconds = 10.0
 max_health = 55
 movement_speed = 4.0
 attack_range = 15.0

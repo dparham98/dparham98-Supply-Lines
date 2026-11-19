@@ -8,6 +8,7 @@ unit_id = &"ubermech"
 display_name = "Ubermech"
 energy_cost = 250
 iron_cost = 60
+build_seconds = 40.0
 max_health = 120
 movement_speed = 4.0
 attack_range = 20.0

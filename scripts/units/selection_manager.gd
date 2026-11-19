@@ -47,9 +47,10 @@ func pick_object(pos: Vector2) -> Node3D:
 	if camera == null: return null
 	var closest: Node3D
 	var distance := INF
+	# Enemy units can be clicked too, to read their stats (docs/SELECTION_INSPECT.md); they never take orders.
 	for group in ["units","selectable_buildings","construction_plans"]:
 		for actor in get_tree().get_nodes_in_group(group):
-			if group == "units" and actor.team != "player": continue
+			if group == "units" and actor.team != "player" and not actor.is_visible_in_tree(): continue
 			var d: float = Bounds.hit_distance(actor,camera,pos)
 			if d < distance: distance = d; closest = actor
 	return closest
@@ -72,7 +73,9 @@ func start_selection(pos: Vector2) -> void:
 	start_pos = pos
 	end_pos = pos
 # Shift adds: a point toggles one unit and a box adds its units. Double-click selects every
-# visible friendly unit of the same type.
+# visible friendly unit of the same type. With buildings (docs/SELECTION_INSPECT.md) double-click selects your
+# visible buildings of the type, and Shift-click adds or removes one of the type already selected. A click on an
+# enemy unit inspects it.
 func end_selection(pos: Vector2, _unit: Node3D = null, additive := false) -> void:
 	if not selecting: return
 	selecting = false
@@ -84,11 +87,30 @@ func end_selection(pos: Vector2, _unit: Node3D = null, additive := false) -> voi
 	if camera == null: return
 	var point_selection := maxf(drag_distance,start_pos.distance_to(end_pos)) < 6.0
 	var closest: Node3D = pick_object(pos) if point_selection else null
-	var closest_unit := closest != null and closest.is_in_group("units")
+	var closest_unit: bool = closest != null and closest.is_in_group("units") and closest.team == "player"
+	var screen := get_viewport().get_visible_rect()
+	var game = get_tree().get_first_node_in_group("skirmish")
+	var own_building: bool = closest != null and closest.is_in_group("selectable_buildings") and closest.get("team") == "player"
+	if own_building and point_selection and game and (same_type or additive):
+		var picked: Array[Node3D] = []
+		if same_type:
+			for node in get_tree().get_nodes_in_group("selectable_buildings"):
+				if node.get("team") == "player" and node.scene_file_path == closest.scene_file_path and not camera.is_position_behind(node.global_position) and screen.intersects(Bounds.screen_rect(node,camera)):
+					picked.append(node)
+			picked.erase(closest); picked.push_front(closest)
+		else:
+			picked = game.building_selection()
+			var same_kind := not picked.is_empty() and picked[0].scene_file_path == closest.scene_file_path and selected_unit_count() == 0
+			if not same_kind: picked = [closest]
+			elif picked.has(closest): picked.erase(closest)
+			else: picked.append(closest)
+		for unit in get_tree().get_nodes_in_group("units"):
+			if unit.team == "player": unit.set_selected(false)
+		selection_changed(picked[0] if not picked.is_empty() else null,picked)
+		return
 	if additive and point_selection and not closest_unit:
 		if closest == null: return
 		additive = false
-	var screen := get_viewport().get_visible_rect()
 	for unit in get_tree().get_nodes_in_group("units"):
 		if unit.team != "player": continue
 		if same_type and point_selection and closest_unit:
@@ -99,14 +121,17 @@ func end_selection(pos: Vector2, _unit: Node3D = null, additive := false) -> voi
 			if rect.intersects(Bounds.screen_rect(unit,camera)): unit.set_selected(true)
 		else: unit.set_selected(unit == closest if point_selection else rect.intersects(Bounds.screen_rect(unit,camera)))
 	selection_changed(closest)
+func selected_unit_count() -> int:
+	return get_tree().get_nodes_in_group("units").filter(func(unit): return unit.team == "player" and unit.is_selected).size()
 func save_group(index: int) -> void:
 	var members: Array[Node3D] = []
 	for unit in get_tree().get_nodes_in_group("units"):
 		if unit.team == "player" and unit.is_selected: members.append(unit)
 	# With no units selected, a selected friendly building becomes the group.
 	var game = get_tree().get_first_node_in_group("skirmish")
-	if members.is_empty() and game and is_instance_valid(game.selected_building) and game.selected_building.get("team") == "player":
-		members.append(game.selected_building)
+	if members.is_empty() and game:
+		for building in game.building_selection():
+			if building.get("team") == "player": members.append(building)
 	groups[index] = members
 func recall_group(index: int) -> void:
 	var members: Array = groups.get(index,[]).filter(func(unit): return is_instance_valid(unit) and unit.is_inside_tree() and unit.team == "player")
@@ -116,7 +141,10 @@ func recall_group(index: int) -> void:
 	var building: Node3D = members[0] if not members[0].is_in_group("units") else null
 	for unit in get_tree().get_nodes_in_group("units"):
 		if unit.team == "player": unit.set_selected(members.has(unit))
-	selection_changed(building)
+	var buildings: Array[Node3D] = []
+	for member in members:
+		if not member.is_in_group("units"): buildings.append(member)
+	selection_changed(building,buildings)
 	# Pressing the same group again quickly centres the camera on it.
 	var now := Time.get_ticks_msec()/1000.0
 	var game = get_tree().get_first_node_in_group("skirmish")
@@ -125,12 +153,14 @@ func recall_group(index: int) -> void:
 		else: game.get_node("CameraRig").focus_selection()
 	_last_group = index
 	_last_group_time = now
-func selection_changed(closest: Node3D) -> void:
+func selection_changed(closest: Node3D, buildings: Array[Node3D] = []) -> void:
 	var game = get_tree().get_first_node_in_group("skirmish")
 	if game and game.has_node("DepotNetwork"):
 		game.hud.close_build()
 		game.pending_unit_command = ""
 		game.get_node("DepotNetwork").clear_builder()
-		var building = closest if closest != null and (closest.is_in_group("selectable_buildings") or closest.is_in_group("construction_plans")) else null
+		var enemy_unit: bool = closest != null and closest.is_in_group("units") and closest.team != "player"
+		var building = closest if closest != null and (closest.is_in_group("selectable_buildings") or closest.is_in_group("construction_plans") or enemy_unit) else null
 		game.get_node("DepotNetwork").select_depot(building if building != null and building.is_in_group("depots") else null)
-		game.selected_building = building
+		if buildings.size() > 1: game.select_buildings(buildings)
+		else: game.selected_building = building

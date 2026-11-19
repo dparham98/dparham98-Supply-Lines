@@ -54,7 +54,7 @@ static func spawn(tree: SceneTree, cell: Vector2i, kind: StringName, amount: int
 	return crate
 ## Sets one full crate of `kind` from the node's loose stock onto a free tile beside it.
 static func pack(node: Node3D, kind: StringName) -> Node3D:
-	if node.stockpile.amount(kind) < ResourceStockpile.CRATE: return null
+	if not ResourceStockpile.CRATED.has(kind) or node.stockpile.amount(kind) < ResourceStockpile.CRATE: return null
 	return _place(node,kind,ResourceStockpile.CRATE)
 ## An empty crate beside the node, for workers to fill.
 static func pack_empty(node: Node3D) -> Node3D:

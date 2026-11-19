@@ -38,10 +38,10 @@ func _ready() -> void:
 	_add_site_fence()
 	_add_site_model()
 	# A mine site clears the ore rocks on its footprint so the pithead can be seen going up.
-	if kind == &"iron_mine" and network.game.ground.has_method("cover_ore"): network.game.ground.cover_ore(_ore_key(),_footprint_cells())
+	if (kind == &"iron_mine" or kind == &"coal_mine") and network.game.ground.has_method("cover_ore"): network.game.ground.cover_ore(_ore_key(),_footprint_cells())
 	refresh_label()
 func _exit_tree() -> void:
-	if kind == &"iron_mine" and is_instance_valid(network) and is_instance_valid(network.game.ground) and network.game.ground.has_method("uncover_ore"): network.game.ground.uncover_ore(_ore_key())
+	if (kind == &"iron_mine" or kind == &"coal_mine") and is_instance_valid(network) and is_instance_valid(network.game.ground) and network.game.ground.has_method("uncover_ore"): network.game.ground.uncover_ore(_ore_key())
 func _ore_key() -> String:
 	return "mine_plan_%s" % get_instance_id()
 func _footprint_cells() -> Array[Vector2i]:

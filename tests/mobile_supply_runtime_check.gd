@@ -68,6 +68,9 @@ func pin(node: Node3D) -> void:
 	await click(hud.build_menu.get_node("Actions/Pin"))
 	await click_at(game.get_viewport().get_camera_3d().unproject_position(node.selection_point() if node.has_method("selection_point") else node.global_position))
 func run() -> void:
+	# Payment checks here use the old 75 E / 25 I mine price; the 0 E / 25 I price is checked in coal_mine_test.gd.
+	var mine_price: EngineeringRules = load("res://assets/economy/engineering_rules.tres")
+	mine_price.mine_energy_cost = 75
 	root.size = Vector2i(1280,900)
 	game = load("res://scenes/maps/mobile_supply_exercise.tscn").instantiate()
 	root.add_child(game); await process_frame

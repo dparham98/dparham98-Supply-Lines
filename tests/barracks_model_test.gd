@@ -104,14 +104,13 @@ func run() -> void:
 	if not check(model.player.is_playing() and model.player.assigned_animation == &"Idle","A Barracks with nothing queued should idle"): return
 	# Production: Print follows the queue, the figure forms, then the door opens as the unit leaves.
 	if not check(building.request_unit(&"infantry"),"Infantry not queued"): return
-	var print_seconds: float = building.stats.print_seconds
 	var units_before := get_nodes_in_group("units").size()
-	building._process(print_seconds*0.5)
+	building._process(building.base_seconds()*0.5)
 	if not check(model.player.assigned_animation == &"Print" and not model.player.is_playing(),"Print should be posed by production progress"): return
 	if not check(figure.scale.y > 0.2 and figure.scale.y < 0.95 and door.scale.y > 0.99,"Half printed: figure forming behind a closed door (figure %.2f door %.2f)" % [figure.scale.y,door.scale.y]): return
-	building._process(print_seconds*0.49)
+	building._process(building.base_seconds()*0.49)
 	if not check(door.scale.y < 0.2 and figure.scale.x > 0.5,"Nearly printed: the figure should wait at the open door"): return
-	building._process(print_seconds*0.02)
+	building._process(building.base_seconds()*0.02)
 	if not check(get_nodes_in_group("units").size() == units_before+1,"The unit was not produced"): return
 	if not check(model.closing() and model.player.is_playing() and figure.scale.x < 0.01,"The figure should be gone and the door closing"): return
 	model.player.advance(model.player.get_animation(&"Print").length)

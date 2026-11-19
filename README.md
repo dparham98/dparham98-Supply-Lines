@@ -4,7 +4,7 @@ Two Lakes, the six-start map, is the main scene: press **F5**. See [docs/TWO_LAK
 
 Latest engineering batch: [wood harvesting, capturable iron mines and local building repair](docs/ENGINEERING_BATCH.md). Open **scenes/maps/engineering_exercise.tscn** and press **F6** for a damaged-building test.
 
-Latest building/production batch: [Barracks, Tank Factory, original Depot cost and free construction infantry](docs/PRODUCTION_BATCH.md).
+Latest building/production batch: [Barracks, Tank Factory, original Depot cost and free construction infantry](docs/PRODUCTION_BATCH.md); production queues of five and the energy power setting are in [docs/PRODUCTION_POWER.md](docs/PRODUCTION_POWER.md); rally points in [docs/RALLY_POINTS.md](docs/RALLY_POINTS.md).
 
 Implementation priority: [explicit original design backlog](docs/EXPLICIT_DESIGN_BACKLOG.md). This separates confirmed requirements from tentative abilities and prototype decisions.
 
@@ -81,12 +81,13 @@ The baker uses static MeshInstance3D parts from the assigned scene and preserves
 - tests: terrain/navigation and saved-scene/asset-slot regression checks.
 - docs: implementation and maintenance notes.
 
-Camera.tscn at the root is a small compatibility entry that instances the main world; the project starts lakes_skirmish.tscn. SelectionManager is one autoload, with no duplicate scene copy. Unit selection supports point/box selection and a team-colour marker under each selected unit (docs/TEAM_MARKERS.md). Camera controls: arrows/edges pan, Shift faster, middle-drag grab terrain, wheel zoom toward cursor, Q/E rotate, Backspace HQ, Home selected units, O overview/return. Select the CameraRig root to tune the Inspector settings. See docs/CAMERA_RIG.md. Godot editor F means frame selection. In game, command card buttons have letter hotkeys (docs/HUD_HOTKEYS.md), and F10 opens the development-only playtest panel (docs/PLAYTEST_TOOLS.md).
+Camera.tscn at the root is a small compatibility entry that instances the main world; the project starts lakes_skirmish.tscn. SelectionManager is one autoload, with no duplicate scene copy. Unit selection supports point/box selection and a team-colour marker under each selected unit (docs/TEAM_MARKERS.md). Clicking an enemy unit shows its stats; double-click selects your buildings of one type together (docs/SELECTION_INSPECT.md). Camera controls: arrows/edges pan, Shift faster, middle-drag grab terrain, wheel zoom toward cursor, Q/E rotate, Backspace HQ, Home selected units, O overview/return. Select the CameraRig root to tune the Inspector settings. See docs/CAMERA_RIG.md. Godot editor F means frame selection. In game, command card buttons have letter hotkeys (docs/HUD_HOTKEYS.md), and F10 opens the development-only playtest panel (docs/PLAYTEST_TOOLS.md). The Tank Factory's Derailer (formerly the Motorcycle) spikes a piece of rail so the next train onto it derails (docs/DERAILER.md). While laying rail or placing a building, a guide in the bottom panel shows the steps or the placement colours (docs/PLACEMENT_GUIDE.md). Your Depots always show their stock above them (docs/DEPOT_STOCK_PLATE.md).
 
 The rebuild and refresh controls use Godot's supported [Inspector tool buttons](https://docs.godotengine.org/en/4.6/tutorials/scripting/gdscript/gdscript_exports.html#export-tool-button).
 
 Combat values, moving fire and splash: [combat batch](docs/COMBAT_BATCH.md).
 
+Tank: the [Bastion](docs/BASTION_TANK.md), with a 10–30 m main gun and a roof gun for anything within 10 m.
 Scout/Tank/Drone terrain abilities and editor exercise: [terrain abilities](docs/TERRAIN_ABILITIES.md).
 
 Sculpted mountains: [mountains](docs/MOUNTAINS.md).

@@ -6,10 +6,20 @@ var assigned_depot: Node3D
 var health := 1000
 var max_health: int:
 	get: return stats.max_health
+const Rally = preload("res://scripts/production/rally.gd")
 var pending: Array[PackedScene] = []
+## Where new units go (docs/RALLY_POINTS.md): right-click with this building selected; Shift adds stops.
+var rally_points: Array[Dictionary] = []
 var queue: int:
 	get: return pending.size()
+## Seconds of base-rate work done on the head unit, from 0 to its build_seconds.
 var progress := 0.0
+## Production power, 1 to stats.max_power (docs/PRODUCTION_POWER.md).
+var power := 1.0
+## Extra energy owed for power above 1, drawn from the Depot in whole units.
+var _energy_owed := 0.0
+## True while the Depot cannot pay for the extra power, so the unit prints at 1x.
+var power_starved := false
 ## True while a finished unit waits for a free exit cell (shown on the map).
 var exit_blocked := false
 var cells: Array[Vector2i] = []
@@ -39,6 +49,23 @@ func _source_changed() -> void:
 	# Preserve the existing Depot policy: paid queue cancellation without refund on source capture.
 	pending.clear()
 	progress = 0
+	_energy_owed = 0.0
+## Sets the production power, snapped to the step and kept between 1 and the most.
+func set_power(value: float) -> void:
+	power = clampf(snappedf(value,stats.power_step),1.0,stats.max_power)
+## Seconds the head unit (or `scene`) takes at base power.
+func base_seconds(scene: PackedScene = null) -> float:
+	if scene == null: scene = pending[0] if not pending.is_empty() else null
+	return unit_stats_for(scene).build_seconds if scene != null else 1.0
+## Seconds a unit takes at the power set now.
+func seconds_at_power(scene: PackedScene = null) -> float:
+	return base_seconds(scene)/power
+## How far the head unit is, 0 to 1.
+func fraction() -> float:
+	return clampf(progress/base_seconds(),0.0,1.0) if not pending.is_empty() else 0.0
+## Energy a unit costs in all at the power set now: its base cost times the power.
+func energy_at_power(scene: PackedScene) -> int:
+	return roundi(unit_stats_for(scene).energy_cost*power)
 ## Stats are read once per unit scene: instantiating a unit (and its model) every frame is costly.
 static var _stats_cache := {}
 func unit_stats_for(scene: PackedScene) -> UnitStats:
@@ -72,8 +99,22 @@ func _process(delta: float) -> void:
 		_show_model(&"show_idle")
 		$Status.text = "%s → %s" % [stats.display_name,assigned_depot.name]
 		return
-	progress = minf(stats.print_seconds,progress+delta)
 	var queued_stats := unit_stats_for(pending[0])
+	var build: float = queued_stats.build_seconds
+	# Power above 1 does that much more work a second and draws the extra energy as it goes: a whole unit
+	# at power p costs (p-1) times its base energy on top. With too little energy it prints at 1x.
+	# Only the work that is left is done and paid for, so a long frame does not overcharge the last one.
+	var work := minf(delta,build-progress)
+	power_starved = false
+	if power > 1.0 and progress < build:
+		var fast := minf(delta*power,build-progress)
+		var owed := _energy_owed+fast*(power-1.0)*queued_stats.energy_cost/build
+		var whole := floori(owed)
+		if whole == 0 or assigned_depot.spend_local(whole,0):
+			_energy_owed = owed-whole
+			work = fast
+		else: power_starved = true
+	progress = minf(build,progress+maxf(work,0.0))
 	var layer: int = queued_stats.mobility.layer if queued_stats.mobility != null else MobilityRules.Layer.GROUND
 	var flight_to = null
 	if layer == MobilityRules.Layer.AIR:
@@ -82,8 +123,8 @@ func _process(delta: float) -> void:
 		if air_cell.x < 0: air_cell = ground.get_tile_at_position(global_position)
 		flight_to = Transform3D(Basis(),ground.tile_to_world(air_cell)+_visuals_property(pending[0],&"position",Vector3.ZERO))
 	_show_model(&"show_unit",[unit_model_scene(pending[0]),flight_to])
-	_show_model(&"show_print",[progress/stats.print_seconds])
-	if progress >= stats.print_seconds:
+	_show_model(&"show_print",[progress/build])
+	if progress >= build:
 		var cell := _exit_cell(layer)
 		exit_blocked = cell.x < 0
 		if exit_blocked: $Status.text = stats.display_name+" · exit blocked, waiting"; return
@@ -93,11 +134,12 @@ func _process(delta: float) -> void:
 		if "start_fuelled" in unit: unit.start_fuelled = FuelRules.full_tanks_for(game)
 		unit.position = ground.tile_to_world(cell)
 		game.get_node("Entities/Units").add_child(unit,true)
+		Rally.send(self,unit)
 		if unit.unit_stats.unit_id == &"infantry": game.units_printed += 1
 		progress = 0
 		_show_model(&"unit_left")
 		game.notify("%s ready at %s." % [unit.unit_stats.display_name,name])
-	$Status.text = "%s · %d queued · %d%%" % [stats.display_name,queue,roundi(progress/stats.print_seconds*100)]
+	$Status.text = "%s · %d queued · %d%%" % [stats.display_name,queue,roundi(fraction()*100)]
 ## The model a unit scene wears (its Visuals slot's model_scene), read from the packed scene without building
 ## the unit, so a factory can show the unit being made.
 static func unit_model_scene(scene: PackedScene) -> PackedScene:

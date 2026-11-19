@@ -66,27 +66,26 @@ func run() -> void:
 	# Producing: each unit forms in its own shape under the weld seam while the crane brings plates; then the
 	# finished Tank drives out of the open door.
 	depot.energy = 9000; depot.iron = 9000
-	var print_seconds: float = building.stats.print_seconds
 	for id in ["motorcycle","drone"]:
 		building.request_unit(StringName(id))
-		building._process(print_seconds*0.45)
+		building._process(building.base_seconds()*0.45)
 		await shot(building.global_position,13,"tank_factory_producing_%s" % id)
 		if id == "drone":
 			# It flies out of the roof well, up to its flying height.
-			building._process(print_seconds*0.35)
+			building._process(building.base_seconds()*0.35)
 			await shot(building.global_position,22,"tank_factory_drone_rising")
-			building._process(print_seconds*0.15)
+			building._process(building.base_seconds()*0.15)
 			await shot(building.global_position,30,"tank_factory_drone_out")
 		building.pending.clear()
 		building.progress = 0
 		building._process(0.01)
 		await process_frame
 	building.request_unit(&"tank")
-	building._process(print_seconds*0.45)
+	building._process(building.base_seconds()*0.45)
 	await shot(building.global_position,13,"tank_factory_producing")
-	building._process(print_seconds*0.25)
+	building._process(building.base_seconds()*0.25)
 	await shot(building.global_position,13,"tank_factory_formed")
-	building._process(print_seconds*0.29)
+	building._process(building.base_seconds()*0.29)
 	await shot(building.global_position+Vector3(0,0,2.5),13,"tank_factory_door")
 	# The collapse, part way and as a wreck.
 	building.take_damage(building.max_health)

@@ -1,6 +1,7 @@
 [gd_scene format=3]
 [ext_resource type="Script" path="res://scripts/rails/track_piece.gd" id="piece"]
 [ext_resource type="PackedScene" path="res://assets/models/rails/maglev_track_straight.glb" id="model"]
+[ext_resource type="PackedScene" path="res://assets/models/projectiles/rail_spike.glb" id="spike"]
 [sub_resource type="StandardMaterial3D" id="owner_mat"]
 albedo_color = Color(0.3,0.9,1,1)
 emission_enabled = true
@@ -18,3 +19,8 @@ transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
 [node name="Owner" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-1.257,0.332,2.4)
 mesh = SubResource("owner_mesh")
+[node name="Spike" parent="Visuals" instance=ExtResource("spike")]
+visible = false
+transform = Transform3D(3.830,0.000,-3.214,-0.993,4.755,-1.184,3.057,1.545,3.643,0,0.4,0)
+[node name="rail_spike_trail" parent="Visuals/Spike/rail_spike"]
+visible = false
