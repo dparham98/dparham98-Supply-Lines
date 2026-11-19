@@ -13,6 +13,9 @@ func near(unit: Node3D, target: Node3D, offset: Vector3) -> void:
 	unit.grid_position = game.ground.get_tile_at_position(unit.global_position)
 	unit._claim(unit.grid_position)
 func run() -> void:
+	# Payment checks here use the old 75 E / 25 I mine price; the 0 E / 25 I price is checked in coal_mine_test.gd.
+	var mine_price: EngineeringRules = load("res://assets/economy/engineering_rules.tres")
+	mine_price.mine_energy_cost = 75
 	# A mechanics check on a map laid out for the old 35 m Depot range (docs/DEPOT_RANGE.md); trucks keep half of it.
 	var old_range: DepotRules = load("res://assets/economy/depot_rules.tres")
 	old_range.construction_radius = 35.0

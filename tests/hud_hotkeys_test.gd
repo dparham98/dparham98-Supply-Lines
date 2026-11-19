@@ -91,7 +91,7 @@ func run() -> void:
 		"Production building": [hud.card,["PrintInfantry","ProduceScout","ProduceGrenadier","ProduceTank","ProduceMotorcycle","ProduceDrone","ProduceUbermech"]],
 		"Generator": [hud.card,["ToggleGenerator","BurnWood","BurnCoal","BurnEither","FocusAssigned"]],
 		"Load page": [hud.pick,["LoadTiles/Iron","LoadTiles/Energy","LoadTiles/Wood","LoadTiles/Coal","LoadTiles/Clear","Cancel"]],
-		"Build page": [hud.build_menu,["Actions/Depot","Actions/Generator","Actions/Barracks","Actions/TankFactory","Actions/Mine","Actions/Rail","Actions/Pin","Actions/Back"]]}
+		"Build page": [hud.build_menu,["Actions/Depot","Actions/Generator","Actions/Barracks","Actions/TankFactory","Actions/Mine","Actions/CoalMine","Actions/Rail","Actions/Pin","Actions/Back"]]}
 	for title in sets:
 		var keys := []
 		for path in sets[title][1]: keys.append(hud.hotkey_text(sets[title][0].get_node(path)))

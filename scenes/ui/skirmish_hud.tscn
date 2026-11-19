@@ -48,6 +48,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_barracks.png" id="card_build_barracks"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_factory.png" id="card_build_factory"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_mine.png" id="card_build_mine"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_coal_mine.png" id="card_build_coal_mine"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_rail.png" id="card_build_rail"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_pin_payer.png" id="card_pin_payer"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_back.png" id="card_build_back"]
@@ -253,6 +254,10 @@ events = [SubResource("key_build_tank_factory")]
 action = &"build_mine"
 [sub_resource type="Shortcut" id="shortcut_build_mine"]
 events = [SubResource("key_build_mine")]
+[sub_resource type="InputEventAction" id="key_build_coal_mine"]
+action = &"build_coal_mine"
+[sub_resource type="Shortcut" id="shortcut_build_coal_mine"]
+events = [SubResource("key_build_coal_mine")]
 [sub_resource type="InputEventAction" id="key_build_rail"]
 action = &"build_rail"
 [sub_resource type="Shortcut" id="shortcut_build_rail"]
@@ -3890,6 +3895,30 @@ icon = ExtResource("card_build_mine")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/Mine"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -34.0
+offset_top = 1.0
+offset_right = -4.0
+offset_bottom = 15.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="CoalMine" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_build_coal_mine")
+layout_mode = 2
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("card_build_coal_mine")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/CoalMine"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
