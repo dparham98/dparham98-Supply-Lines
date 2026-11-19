@@ -1,8 +1,9 @@
 # Placement guide
 
-While you lay rail or place a building, a panel at the top centre of the screen says what to do next. Nothing
-follows the cursor. Asked for in the playtest of 2026-11-18: the reminder should be conspicuous and easy, with a
-diagram on the HUD where it helps. The labels that floated over the cursor before are gone.
+While you lay rail or place a building, a panel in the bottom HUD says what to do next. Nothing follows the cursor
+and nothing covers the map. Asked for in the playtest of 2026-11-18: the reminder should be conspicuous and easy,
+with a diagram on the HUD where it helps, and it must not sit over where you are placing. The labels that floated
+over the cursor are gone, and so is a first version of this panel at the top of the map.
 
 ## Laying rail
 
@@ -33,12 +34,22 @@ diagram on the HUD where it helps. The labels that floated over the cursor befor
 
 ## Where it sits
 
-- **Position:** top centre, 600 px wide, between the Depot panel (top left) and the storage panel (top right).
-- **Clicks:** it never takes clicks, so they reach the map beneath it.
+The guide takes the place of the info and context columns in the bottom panel, between the minimap and the command
+card. It is 560 px wide and gold-edged. The columns come back when you stop placing. The Build page's tiles stay on
+the command card beside it.
+
+## Depot stock while building
+
+While the Build page is open, or while you place a building, plan or track, each of your Depots shows what it holds
+on a plate above it: a swatch and amount for energy, iron, wood and coal (`E 200 · I 60 · W 40 · C 60`). You can
+see which Depot can pay without selecting it. Deployed Cargo trucks keep their usual storage bar.
 
 ## Code
 
-- **Scene:** the panel is `Guide` in `scenes/ui/skirmish_hud.tscn`, with styles `guide_card` and `guide_step`.
+- **Scene:** the panel is `Bottom/Body/Row/Guide` in `scenes/ui/skirmish_hud.tscn`, with styles `guide_card` and
+  `guide_step`.
+- **Depot stock:** `map_overlay.gd`'s `building_open()` and `draw_readout()`; `status_for()` adds a `readout` for
+  your Depots while building.
 - **HUD:** `skirmish_hud.update_guide()` fills it every frame from `RailNetwork.route_status()` and the rail picks,
   or from `DepotNetwork.placement_title`, `placement_text` and `placement_state`.
 - **Placement data:** the previews set those three in `_set_placement`. `DepotNetwork.placement_active()` says
@@ -49,9 +60,10 @@ diagram on the HUD where it helps. The labels that floated over the cursor befor
 
 - `tests/placement_guide_test.gd` (headless) covers:
   - no cursor labels left;
-  - the guide hidden when idle;
+  - the guide hidden when idle, and in the bottom panel in place of the info columns when shown;
+  - the Depot stock shown only while building;
   - the rail steps lighting in turn;
   - the placement key lighting the state under the cursor;
   - clicks passing through.
-- `tests/placement_guide_runtime_check.gd` (rendered) checks the guide sits at the top centre clear of the side
-  panels, and saves `guide_rail_start`, `guide_rail_lay` and `guide_place`.
+- `tests/placement_guide_runtime_check.gd` (rendered) checks the guide sits inside the bottom panel, off the map,
+  and saves `guide_rail_start`, `guide_rail_lay` and `guide_place`.

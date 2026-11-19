@@ -1,7 +1,7 @@
 extends SceneTree
 # Rendered check of the placement guide (docs/PLACEMENT_GUIDE.md): saves guide_rail_start, guide_rail_lay and
-# guide_place while laying rail and placing a Barracks, and checks the guide sits at the top centre, clear of the
-# Depot and storage panels.
+# guide_place while laying rail and placing a Barracks, and checks the guide sits in the bottom panel, off the map,
+# in place of the info columns. guide_place also shows the Depot's stock above it.
 const TestOutput = preload("res://tests/test_output.gd")
 var game: Node3D
 func _initialize() -> void: call_deferred("run")
@@ -21,16 +21,15 @@ func run() -> void:
 	rig.focus_position(game.depot.global_position,70)
 	for frame in range(300): rig.advance_camera(1.0/60)
 	var hud = game.get_node("Interface")
-	var guide: Control = hud.get_node("Guide")
+	var guide: Control = hud.get_node("Bottom/Body/Row/Guide")
 	var rails = game.get_node("RailNetwork")
 	var network = game.get_node("DepotNetwork")
 	game.placing_rail = true
 	await shot("guide_rail_start")
 	var box := guide.get_global_rect()
-	if not check(guide.visible and absf(box.get_center().x-640) < 2 and box.position.y < 20 and box.size.x <= 900,"The guide should sit at the top centre: %s" % box): return
-	for panel in ["DepotPanel","StoragePanel"]:
-		var other: Control = hud.get_node(panel)
-		if not check(not other.visible or not other.get_global_rect().intersects(box),"The guide should not cover the %s" % panel): return
+	var bottom: Rect2 = hud.get_node("Bottom").get_global_rect()
+	if not check(guide.visible and bottom.encloses(box),"The guide should sit inside the bottom panel, off the map: %s in %s" % [box,bottom]): return
+	if not check(not hud.info.visible and not hud.context.visible and box.end.x <= hud.get_node("Bottom/Body/Row/Commands").get_global_rect().position.x,"The guide takes the info columns' place, beside the command card"): return
 	rails.pick_target(game.depot)
 	var site: Node3D
 	for r in range(30,90,6):

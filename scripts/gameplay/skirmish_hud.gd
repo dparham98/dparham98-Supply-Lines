@@ -514,7 +514,7 @@ func pick_portrait(index: int) -> void:
 	for unit in selected_units():
 		var hit: bool = unit.scene_file_path == picked.scene_file_path if by_type else unit == picked
 		unit.set_selected(not hit if remove else hit)
-## The guide at the top of the screen while laying rail or placing a building (docs/PLACEMENT_GUIDE.md): the
+## The guide in the bottom panel while laying rail or placing a building (docs/PLACEMENT_GUIDE.md): the
 ## steps of track laying with the current one lit, or the placement colours with the one under the cursor lit; then
 ## the line about what is under the cursor, and the keys.
 const RAIL_STEPS := ["Click the start","Click the end","Shape it, click to lay"]
@@ -522,13 +522,16 @@ const PLACE_STEPS := ["Builds here","Short of stock","Can't go here"]
 const PLACE_COLOURS := [Color(0.2,1,0.4),Color(1,0.85,0.1),Color(1,0.15,0.1)]
 const PLACE_STATES := ["ok","short","blocked"]
 func update_guide() -> void:
-	var guide: Control = $Guide
+	var guide: Control = $Bottom/Body/Row/Guide
 	var rails = game.get_node_or_null("RailNetwork")
 	var depots = game.get_node_or_null("DepotNetwork")
 	var mode := ""
 	if game.placing_rail and rails != null: mode = "rail"
 	elif depots != null and depots.has_method("placement_active") and depots.placement_active(): mode = "place"
+	# In the bottom panel, in place of the info and context columns, so it never covers the map.
 	if guide.visible != not mode.is_empty(): guide.visible = not mode.is_empty()
+	if info.visible != mode.is_empty(): info.visible = mode.is_empty()
+	if context.visible != mode.is_empty(): context.visible = mode.is_empty()
 	if mode.is_empty(): return
 	var body := guide.get_node("Body")
 	var current := 0

@@ -2695,6 +2695,124 @@ autowrap_mode = 2
 text = ""
 theme_override_colors/font_color = Color(0.72,0.69,0.59,1)
 theme_override_font_sizes/font_size = 12
+[node name="Guide" type="PanelContainer" parent="Bottom/Body/Row"]
+visible = false
+custom_minimum_size = Vector2(560,0)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("guide_card")
+[node name="Body" type="VBoxContainer" parent="Bottom/Body/Row/Guide"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 7
+[node name="Title" type="Label" parent="Bottom/Body/Row/Guide/Body"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.95,0.75,0.33,1)
+theme_override_font_sizes/font_size = 20
+text = "LAY RAIL"
+[node name="Steps" type="HBoxContainer" parent="Bottom/Body/Row/Guide/Body"]
+layout_mode = 2
+mouse_filter = 2
+alignment = 1
+theme_override_constants/separation = 8
+[node name="Step1" type="PanelContainer" parent="Bottom/Body/Row/Guide/Body/Steps"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("guide_step")
+[node name="Row" type="HBoxContainer" parent="Bottom/Body/Row/Guide/Body/Steps/Step1"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 7
+[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Guide/Body/Steps/Step1/Row"]
+visible = false
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+[node name="Number" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps/Step1/Row"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95,0.75,0.33,1)
+theme_override_font_sizes/font_size = 16
+text = "1"
+[node name="Text" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps/Step1/Row"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 14
+text = ""
+[node name="Arrow1" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.93,0.75,0.33,1)
+theme_override_font_sizes/font_size = 16
+text = "›"
+[node name="Step2" type="PanelContainer" parent="Bottom/Body/Row/Guide/Body/Steps"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("guide_step")
+[node name="Row" type="HBoxContainer" parent="Bottom/Body/Row/Guide/Body/Steps/Step2"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 7
+[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Guide/Body/Steps/Step2/Row"]
+visible = false
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+[node name="Number" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps/Step2/Row"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95,0.75,0.33,1)
+theme_override_font_sizes/font_size = 16
+text = "2"
+[node name="Text" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps/Step2/Row"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 14
+text = ""
+[node name="Arrow2" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.93,0.75,0.33,1)
+theme_override_font_sizes/font_size = 16
+text = "›"
+[node name="Step3" type="PanelContainer" parent="Bottom/Body/Row/Guide/Body/Steps"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("guide_step")
+[node name="Row" type="HBoxContainer" parent="Bottom/Body/Row/Guide/Body/Steps/Step3"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 7
+[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Guide/Body/Steps/Step3/Row"]
+visible = false
+custom_minimum_size = Vector2(14,14)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+[node name="Number" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps/Step3/Row"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95,0.75,0.33,1)
+theme_override_font_sizes/font_size = 16
+text = "3"
+[node name="Text" type="Label" parent="Bottom/Body/Row/Guide/Body/Steps/Step3/Row"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 14
+text = ""
+[node name="Status" type="Label" parent="Bottom/Body/Row/Guide/Body"]
+layout_mode = 2
+horizontal_alignment = 1
+autowrap_mode = 3
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 15
+text = ""
+[node name="Keys" type="Label" parent="Bottom/Body/Row/Guide/Body"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.72,0.69,0.59,1)
+theme_override_font_sizes/font_size = 12
+text = ""
 [node name="Ornament" type="Control" parent="Bottom/Body/Row"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -4424,129 +4542,6 @@ step = 0.0
 show_percentage = false
 theme_override_styles/background = SubResource("bar_background")
 theme_override_styles/fill = SubResource("progress_fill")
-[node name="Guide" type="PanelContainer" parent="."]
-visible = false
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -300.0
-offset_top = 12.0
-offset_right = 300.0
-offset_bottom = 12.0
-grow_horizontal = 2
-mouse_filter = 2
-theme = ExtResource("ui_theme")
-theme_override_styles/panel = SubResource("guide_card")
-[node name="Body" type="VBoxContainer" parent="Guide"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 7
-[node name="Title" type="Label" parent="Guide/Body"]
-layout_mode = 2
-horizontal_alignment = 1
-theme_override_colors/font_color = Color(0.95,0.75,0.33,1)
-theme_override_font_sizes/font_size = 20
-text = "LAY RAIL"
-[node name="Steps" type="HBoxContainer" parent="Guide/Body"]
-layout_mode = 2
-mouse_filter = 2
-alignment = 1
-theme_override_constants/separation = 8
-[node name="Step1" type="PanelContainer" parent="Guide/Body/Steps"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_styles/panel = SubResource("guide_step")
-[node name="Row" type="HBoxContainer" parent="Guide/Body/Steps/Step1"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 7
-[node name="Swatch" type="ColorRect" parent="Guide/Body/Steps/Step1/Row"]
-visible = false
-custom_minimum_size = Vector2(14,14)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-[node name="Number" type="Label" parent="Guide/Body/Steps/Step1/Row"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.95,0.75,0.33,1)
-theme_override_font_sizes/font_size = 16
-text = "1"
-[node name="Text" type="Label" parent="Guide/Body/Steps/Step1/Row"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
-theme_override_font_sizes/font_size = 14
-text = ""
-[node name="Arrow1" type="Label" parent="Guide/Body/Steps"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.93,0.75,0.33,1)
-theme_override_font_sizes/font_size = 16
-text = "›"
-[node name="Step2" type="PanelContainer" parent="Guide/Body/Steps"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_styles/panel = SubResource("guide_step")
-[node name="Row" type="HBoxContainer" parent="Guide/Body/Steps/Step2"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 7
-[node name="Swatch" type="ColorRect" parent="Guide/Body/Steps/Step2/Row"]
-visible = false
-custom_minimum_size = Vector2(14,14)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-[node name="Number" type="Label" parent="Guide/Body/Steps/Step2/Row"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.95,0.75,0.33,1)
-theme_override_font_sizes/font_size = 16
-text = "2"
-[node name="Text" type="Label" parent="Guide/Body/Steps/Step2/Row"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
-theme_override_font_sizes/font_size = 14
-text = ""
-[node name="Arrow2" type="Label" parent="Guide/Body/Steps"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.93,0.75,0.33,1)
-theme_override_font_sizes/font_size = 16
-text = "›"
-[node name="Step3" type="PanelContainer" parent="Guide/Body/Steps"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_styles/panel = SubResource("guide_step")
-[node name="Row" type="HBoxContainer" parent="Guide/Body/Steps/Step3"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 7
-[node name="Swatch" type="ColorRect" parent="Guide/Body/Steps/Step3/Row"]
-visible = false
-custom_minimum_size = Vector2(14,14)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-[node name="Number" type="Label" parent="Guide/Body/Steps/Step3/Row"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.95,0.75,0.33,1)
-theme_override_font_sizes/font_size = 16
-text = "3"
-[node name="Text" type="Label" parent="Guide/Body/Steps/Step3/Row"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
-theme_override_font_sizes/font_size = 14
-text = ""
-[node name="Status" type="Label" parent="Guide/Body"]
-layout_mode = 2
-horizontal_alignment = 1
-autowrap_mode = 3
-theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
-theme_override_font_sizes/font_size = 15
-text = ""
-[node name="Keys" type="Label" parent="Guide/Body"]
-layout_mode = 2
-horizontal_alignment = 1
-theme_override_colors/font_color = Color(0.72,0.69,0.59,1)
-theme_override_font_sizes/font_size = 12
-text = ""
 [node name="Tip" type="PanelContainer" parent="."]
 visible = false
 offset_right = 160.0
