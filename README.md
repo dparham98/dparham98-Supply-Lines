@@ -4,7 +4,7 @@ Two Lakes, the six-start map, is the main scene: press **F5**. See [docs/TWO_LAK
 
 Latest engineering batch: [wood harvesting, capturable iron mines and local building repair](docs/ENGINEERING_BATCH.md). Open **scenes/maps/engineering_exercise.tscn** and press **F6** for a damaged-building test.
 
-Latest building/production batch: [Barracks, Tank Factory, original Depot cost and free construction infantry](docs/PRODUCTION_BATCH.md).
+Latest building/production batch: [Barracks, Tank Factory, original Depot cost and free construction infantry](docs/PRODUCTION_BATCH.md); production queues of five and the energy power setting are in [docs/PRODUCTION_POWER.md](docs/PRODUCTION_POWER.md).
 
 Implementation priority: [explicit original design backlog](docs/EXPLICIT_DESIGN_BACKLOG.md). This separates confirmed requirements from tentative abilities and prototype decisions.
 

@@ -90,7 +90,7 @@ func run() -> void:
 	await click(hud.card.get_node("PrintInfantry"))
 	if not check(barracks.queue == 3 and first.energy == 1480 and first.iron == 1850,"Barracks roster GUI costs mismatch"): return
 	if not check(not barracks.request_unit(&"tank") and barracks.queue == 3,"Barracks accepted invalid/over-cap production"): return
-	for i in range(3): barracks._process(3.1)
+	for i in range(3): barracks._process(12.1)
 	var ids: Array[StringName] = []
 	for unit in get_nodes_in_group("units"):
 		unit.set_process(false)
@@ -102,9 +102,9 @@ func run() -> void:
 	await click(hud.card.get_node("ProduceMotorcycle"))
 	await click(hud.card.get_node("ProduceDrone"))
 	if not check(factory.queue == 3,"Factory GUI roster queue failed"): return
-	for i in range(3): factory._process(3.1)
+	for i in range(3): factory._process(28.1)
 	await click(hud.card.get_node("ProduceUbermech"))
-	factory._process(3.1)
+	factory._process(40.1)
 	ids.clear()
 	for unit in get_nodes_in_group("units"):
 		unit.set_process(false)
@@ -121,7 +121,7 @@ func run() -> void:
 		for offset in [Vector2i(0,radius),Vector2i(radius,0),Vector2i(-radius,0),Vector2i(0,-radius)]:
 			var cell: Vector2i = center+offset
 			if game.ground.is_tile_valid(cell): blocked.append(cell); game.ground.set_tile_feature(cell,"occupied_by","production_test")
-	factory._process(4)
+	factory._process(28.1)
 	if not check(factory.queue == 1,"Blocked exit lost job"): return
 	for cell in blocked: game.ground.set_tile_feature(cell,"occupied_by",null)
 	factory._process(0.1)

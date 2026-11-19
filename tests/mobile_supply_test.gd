@@ -172,7 +172,7 @@ func run() -> void:
 	nearest_depot.energy = 100; nearest_depot.iron = 20
 	if not check(building.source_friendly() and building.request_unit(&"infantry"),"Assigned Depot could not pay for Infantry"): return
 	if not check(not building.assign_source(depot),"Production reassignment allowed a nonempty queue"): return
-	building._process(building.stats.print_seconds+0.1)
+	building._process(building.base_seconds()+0.1)
 	if not check(building.queue == 0,"Explicitly assigned mobile-built Barracks did not produce Infantry"): return
 	var generator_point := Vector3.ZERO
 	for x in range(-12,13,3):

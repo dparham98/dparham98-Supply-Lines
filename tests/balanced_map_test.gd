@@ -432,7 +432,7 @@ func _opening_estimate(from_a: Vector2i, mine_cell: Vector2, safe_a: Vector2i, c
 	# starting empty (this map's testing_full_tanks off) it also waits for a tank of coal dug at the safe expansion
 	# and brought home by the starter Cargo truck, which is already waiting there.
 	var built_in: float = ceilf(float(factory.iron_cost)/worker.harvest_amount)*worker.harvest_interval
-	var tank_fuelled := iron_ready+built_in+factory.print_seconds
+	var tank_fuelled := iron_ready+built_in+tank.build_seconds
 	var fuel: FuelRules = load("res://assets/economy/fuel_tank.tres")
 	var supply: SupplyRules = load("res://assets/economy/supply_rules.tres")
 	var coal_loads := ceili(fuel.reserve_capacity/worker.carry_capacity)
@@ -440,7 +440,7 @@ func _opening_estimate(from_a: Vector2i, mine_cell: Vector2, safe_a: Vector2i, c
 	var coal_home: float = coal_dug+supply.transfer_seconds*2.0+to_safe/supply.cargo_speed
 	var tank_empty := maxf(tank_fuelled, coal_home)+fuel.reserve_capacity/fuel.refuel_coal_per_second
 	print("  Iron for truck, factory and Tank  %s   (%d iron = %d loads by the first Infantry alone; the three cost %d of the starting %d energy)" % [_clock(iron_ready), iron_needed, loads, energy_needed, depot.rules.initial_energy])
-	print("  First Tank, vehicles start full   %s   (as shipped: factory built in over %.0f s, printed in %.0f s; target about 6:00)" % [_clock(tank_fuelled), built_in, factory.print_seconds])
+	print("  First Tank, vehicles start full   %s   (as shipped: factory built in over %.0f s, printed in %.0f s; target about 6:00)" % [_clock(tank_fuelled), built_in, tank.build_seconds])
 	print("  First Tank, vehicles start empty  %s   (%d coal dug by %s, trucked %.1f m home at %.1f m/s, then fuelled; target about 6:00)" % [_clock(tank_empty), int(fuel.reserve_capacity), _clock(coal_dug), to_safe, supply.cargo_speed])
 
 func _clock(seconds: float) -> String:

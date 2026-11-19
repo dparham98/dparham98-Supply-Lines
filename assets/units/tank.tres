@@ -10,6 +10,7 @@ unit_id = &"tank"
 display_name = "Tank"
 energy_cost = 150
 iron_cost = 35
+build_seconds = 28.0
 max_health = 150
 movement_speed = 6.0
 attack_range = 30.0
