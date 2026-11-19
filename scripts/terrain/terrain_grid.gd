@@ -78,6 +78,12 @@ func get_tile_at_position(world_pos: Vector3) -> Variant:
 	var pos := Vector2i(floori(local.x / tile_size + grid_size.x * 0.5), floori(local.z / tile_size + grid_size.y * 0.5))
 	return pos if is_tile_in_bounds(pos) else null
 
+## The cell under `world_pos`, or the nearest cell on the map when it lies off the edge.
+func clamped_tile_at(world_pos: Vector3) -> Vector2i:
+	var local := to_local(world_pos)
+	var pos := Vector2i(floori(local.x / tile_size + grid_size.x * 0.5), floori(local.z / tile_size + grid_size.y * 0.5))
+	return pos.clamp(Vector2i.ZERO, grid_size - Vector2i.ONE)
+
 func tile_to_world(pos: Vector2i, height := 0.0) -> Vector3:
 	return to_global(Vector3((pos.x + 0.5 - grid_size.x * 0.5) * tile_size, height, (pos.y + 0.5 - grid_size.y * 0.5) * tile_size))
 

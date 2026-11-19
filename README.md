@@ -4,7 +4,7 @@ Two Lakes, the six-start map, is the main scene: press **F5**. See [docs/TWO_LAK
 
 Latest engineering batch: [wood harvesting, capturable iron mines and local building repair](docs/ENGINEERING_BATCH.md). Open **scenes/maps/engineering_exercise.tscn** and press **F6** for a damaged-building test.
 
-Latest building/production batch: [Barracks, Tank Factory, original Depot cost and free construction infantry](docs/PRODUCTION_BATCH.md); production queues of five and the energy power setting are in [docs/PRODUCTION_POWER.md](docs/PRODUCTION_POWER.md).
+Latest building/production batch: [Barracks, Tank Factory, original Depot cost and free construction infantry](docs/PRODUCTION_BATCH.md); production queues of five and the energy power setting are in [docs/PRODUCTION_POWER.md](docs/PRODUCTION_POWER.md); rally points in [docs/RALLY_POINTS.md](docs/RALLY_POINTS.md).
 
 Implementation priority: [explicit original design backlog](docs/EXPLICIT_DESIGN_BACKLOG.md). This separates confirmed requirements from tentative abilities and prototype decisions.
 
@@ -87,6 +87,7 @@ The rebuild and refresh controls use Godot's supported [Inspector tool buttons](
 
 Combat values, moving fire and splash: [combat batch](docs/COMBAT_BATCH.md).
 
+Tank: the [Bastion](docs/BASTION_TANK.md), with a 10–30 m main gun and a roof gun for anything within 10 m.
 Scout/Tank/Drone terrain abilities and editor exercise: [terrain abilities](docs/TERRAIN_ABILITIES.md).
 
 Sculpted mountains: [mountains](docs/MOUNTAINS.md).

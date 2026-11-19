@@ -6,7 +6,10 @@ var assigned_depot: Node3D
 var health := 1000
 var max_health: int:
 	get: return stats.max_health
+const Rally = preload("res://scripts/production/rally.gd")
 var pending: Array[PackedScene] = []
+## Where new units go (docs/RALLY_POINTS.md): right-click with this building selected; Shift adds stops.
+var rally_points: Array[Dictionary] = []
 var queue: int:
 	get: return pending.size()
 ## Seconds of base-rate work done on the head unit, from 0 to its build_seconds.
@@ -131,6 +134,7 @@ func _process(delta: float) -> void:
 		if "start_fuelled" in unit: unit.start_fuelled = FuelRules.full_tanks_for(game)
 		unit.position = ground.tile_to_world(cell)
 		game.get_node("Entities/Units").add_child(unit,true)
+		Rally.send(self,unit)
 		if unit.unit_stats.unit_id == &"infantry": game.units_printed += 1
 		progress = 0
 		_show_model(&"unit_left")

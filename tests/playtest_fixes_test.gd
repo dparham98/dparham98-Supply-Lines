@@ -114,7 +114,8 @@ func run() -> void:
 	# 9. Attack on open ground is attack-move: stop to fire at foes in range, then carry on.
 	var tank = spawn("res://scenes/gameplay/tank.tscn",Vector3(14,0,14))
 	var hostile = game.get_node("Entities/Units/Hostile")
-	hostile.global_position = tank.global_position+Vector3(4,0,0)
+	# Past the main gun's 10 m minimum range (docs/BASTION_TANK.md).
+	hostile.global_position = tank.global_position+Vector3(14,0,0)
 	select(tank)
 	game.pending_unit_command = "attack"
 	var goal: Vector3 = tank.global_position+Vector3(10,0,-6)

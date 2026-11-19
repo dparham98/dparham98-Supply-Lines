@@ -19,7 +19,7 @@ func _ready() -> void:
 	refresh()
 func space() -> int: return CAPACITY-amount
 func accepts(kind: StringName) -> bool:
-	return amount < CAPACITY and ResourceStockpile.KINDS.has(kind) and (material_kind.is_empty() or kind == resource_kind)
+	return amount < CAPACITY and ResourceStockpile.CRATED.has(kind) and (material_kind.is_empty() or kind == resource_kind)
 ## Adds up to `requested` units of one resource; returns what fit.
 func receive(kind: StringName, requested: int) -> int:
 	if not accepts(kind) or requested <= 0: return 0

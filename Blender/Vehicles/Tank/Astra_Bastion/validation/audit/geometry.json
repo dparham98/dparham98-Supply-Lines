@@ -1,0 +1,343 @@
+{
+  "Blender": "4.5.3 LTS",
+  "accepted": {
+    "bytes": 3133792,
+    "node_count": 69,
+    "mesh_nodes": 68,
+    "unique_meshes": 68,
+    "unique_surfaces": 68,
+    "unique_triangles": 3200,
+    "images": 3,
+    "textures": 3,
+    "animations": 0,
+    "skins": 0,
+    "materials": [
+      "MAT_Tank_Baked"
+    ],
+    "sha256": "f262fb827ec6db1383aaff79218a2b4be04f5a738242dd5352bbc7a467260dc0",
+    "camera_light_count": 0,
+    "bounds_gltf_xyz": {
+      "min": [
+        -2.82,
+        0.0,
+        -4.37566
+      ],
+      "max": [
+        2.82,
+        5.0,
+        7.1
+      ],
+      "size": [
+        5.64,
+        5.0,
+        11.47566
+      ]
+    },
+    "bounds_world_after_wrapper_xyz": {
+      "min": [
+        -1.692,
+        0.0,
+        -4.26
+      ],
+      "max": [
+        1.692,
+        3.0,
+        2.6254
+      ],
+      "size": [
+        3.384,
+        3.0,
+        6.8854
+      ]
+    },
+    "lower_vehicle_bounds_gltf_xyz": {
+      "min": [
+        -2.82,
+        0.0,
+        -4.37566
+      ],
+      "max": [
+        2.82,
+        2.875,
+        5.25
+      ],
+      "size": [
+        5.64,
+        2.875,
+        9.62566
+      ]
+    },
+    "central_hull_lower_face_world_m": 0.33,
+    "pivot_locations_gltf_xyz": {
+      "Tank_Root": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "Tank_Hull": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "Tank_Turret": [
+        0.0,
+        2.16,
+        -0.5
+      ],
+      "Barrel_Mount": [
+        0.0,
+        2.62,
+        1.45
+      ],
+      "Tank_Barrel": [
+        0.0,
+        2.62,
+        1.45
+      ],
+      "Barrel_Muzzle_Brake": [
+        0.0,
+        2.62,
+        6.65
+      ]
+    },
+    "embedded_images": [
+      {
+        "name": "T_Tank_Emission",
+        "mime": "image/png",
+        "encoded_bytes": 73457,
+        "sha256": "699ec4be093f67e820b004aa831a8abab06ce6d0ae0bf824a8cc01cf5ba5e93c",
+        "pixels": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "name": "T_Tank_BaseColor",
+        "mime": "image/png",
+        "encoded_bytes": 2415593,
+        "sha256": "1cd1f92d130b619ae3ddfa7abf4e50679d8b4f8253d185d44631f8854ee936fc",
+        "pixels": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "name": "T_Tank_Metallic-T_Tank_Roughness",
+        "mime": "image/png",
+        "encoded_bytes": 379757,
+        "sha256": "46a33bd9fbe8321fcdfebe11419a045e546590aa3da6a8e9734131cb96706801",
+        "pixels": [
+          2048,
+          2048
+        ]
+      }
+    ]
+  },
+  "bastion": {
+    "bytes": 3288668,
+    "node_count": 44,
+    "mesh_nodes": 43,
+    "unique_meshes": 43,
+    "unique_surfaces": 117,
+    "unique_triangles": 6680,
+    "images": 3,
+    "textures": 3,
+    "animations": 0,
+    "skins": 0,
+    "materials": [
+      "Bastion | lower armor",
+      "Bastion | recessed steel",
+      "Bastion | barrel graphite",
+      "Bastion | rubber and gaskets",
+      "MAT_Tank_Baked",
+      "Bastion | graphite enamel",
+      "Bastion | iron edge",
+      "Bastion | warm headlamp glass",
+      "Bastion | cavity",
+      "team_color",
+      "Bastion | vermilion optical glass",
+      "Bastion | service steel"
+    ],
+    "sha256": "38f43fdfe9d072dd5ef12a294139fb2655bbfcefd4bf14f7d757e0643dba9382",
+    "camera_light_count": 0,
+    "bounds_gltf_xyz": {
+      "min": [
+        -2.79,
+        0.0,
+        -4.37566
+      ],
+      "max": [
+        2.79,
+        4.09,
+        7.1
+      ],
+      "size": [
+        5.58,
+        4.09,
+        11.47566
+      ]
+    },
+    "bounds_world_after_wrapper_xyz": {
+      "min": [
+        -1.674,
+        0.0,
+        -4.26
+      ],
+      "max": [
+        1.674,
+        2.454,
+        2.6254
+      ],
+      "size": [
+        3.348,
+        2.454,
+        6.8854
+      ]
+    },
+    "lower_vehicle_bounds_gltf_xyz": {
+      "min": [
+        -2.79,
+        0.0,
+        -4.37566
+      ],
+      "max": [
+        2.79,
+        2.17,
+        4.33527
+      ],
+      "size": [
+        5.58,
+        2.17,
+        8.71093
+      ]
+    },
+    "central_hull_lower_face_world_m": 0.318,
+    "pivot_locations_gltf_xyz": {
+      "Tank_Root": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "Tank_Hull": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "Tank_Turret": [
+        0.0,
+        2.16,
+        -0.5
+      ],
+      "Barrel_Mount": [
+        0.0,
+        2.62,
+        1.45
+      ],
+      "Tank_Barrel": [
+        0.0,
+        2.62,
+        1.45
+      ],
+      "Barrel_Muzzle_Brake": [
+        0.0,
+        2.62,
+        6.65
+      ]
+    },
+    "embedded_images": [
+      {
+        "name": "T_Tank_Emission",
+        "mime": "image/png",
+        "encoded_bytes": 73457,
+        "sha256": "699ec4be093f67e820b004aa831a8abab06ce6d0ae0bf824a8cc01cf5ba5e93c",
+        "pixels": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "name": "T_Tank_BaseColor",
+        "mime": "image/png",
+        "encoded_bytes": 2415593,
+        "sha256": "1cd1f92d130b619ae3ddfa7abf4e50679d8b4f8253d185d44631f8854ee936fc",
+        "pixels": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "name": "T_Tank_Metallic-T_Tank_Roughness",
+        "mime": "image/png",
+        "encoded_bytes": 379757,
+        "sha256": "46a33bd9fbe8321fcdfebe11419a045e546590aa3da6a8e9734131cb96706801",
+        "pixels": [
+          2048,
+          2048
+        ]
+      }
+    ]
+  },
+  "team_paint_meshes": [
+    "Skirt_L_Front",
+    "Skirt_L_Rear",
+    "Skirt_R_Front",
+    "Skirt_R_Rear",
+    "Turret_Hatch",
+    "Turret_shoulder_plates"
+  ],
+  "checks": {
+    "matching_named_transforms": 16,
+    "unchanged_gear_geometry": 10,
+    "identical_gear_positions_and_index_order": [
+      "Drive_Sprocket_L",
+      "Drive_Sprocket_R",
+      "Idler_Wheel_L",
+      "Idler_Wheel_R",
+      "Return_Rollers_L",
+      "Return_Rollers_R",
+      "Road_Wheels_L",
+      "Road_Wheels_R",
+      "Track_Links_L",
+      "Track_Links_R"
+    ],
+    "rest_muzzle_gltf_xyz": [
+      0.0,
+      2.62,
+      7.1000000000000005
+    ],
+    "rest_muzzle_delta_world_m": 0.0,
+    "clearance": {
+      "turret_positions": 720,
+      "yaw_step_degrees": 1,
+      "recoil_endpoints_authored_m": [
+        0,
+        0.55
+      ],
+      "rotating_vs_lower_mesh_intersections": 0,
+      "continuous_vertical_separation_lower_bound_world_m": {
+        "0.0": 0.0012,
+        "0.55": 0.0012
+      },
+      "barrel_above_hull_and_skirts_world_m": 0.0834,
+      "gun_to_turret_accessory_recoil_samples": 23,
+      "gun_to_turret_accessory_intersections": 0,
+      "gun_contact_exclusions": [
+        "Barrel_Mount socket",
+        "Tank_Turret core"
+      ]
+    },
+    "skirts": {
+      "phases_per_side": 17,
+      "tested_fixed_parts": [
+        "upper and lower skirts",
+        "lamp housing and saddle",
+        "hull casting"
+      ],
+      "both_lamp_housings_seated_in_front_shoulders": true,
+      "tread_intersections_by_side": {
+        "L": 0,
+        "R": 0
+      }
+    }
+  }
+}

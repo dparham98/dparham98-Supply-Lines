@@ -1,6 +1,8 @@
 class_name ResourceStockpile
 extends RefCounted
 const KINDS: Array[StringName] = [&"energy",&"iron",&"wood",&"coal"]
+## What crates can hold: everything but energy, which stays in the stockpile that made it.
+const CRATED: Array[StringName] = [&"iron",&"wood",&"coal"]
 var _capacity: int
 var capacity: int:
 	get: return _capacity
