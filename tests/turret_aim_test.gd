@@ -63,7 +63,8 @@ func run() -> void:
 	var foe = load("res://scenes/gameplay/hostile.tscn").instantiate()
 	game.get_node("Entities/Units").add_child(foe); foe.set_process(false)
 	for cell in foe._claimed.duplicate(): foe._release(cell)
-	foe.global_position = origin+Vector3(4,0,0)
+	# Beyond the main gun's 10 m minimum range (docs/BASTION_TANK.md).
+	foe.global_position = origin+Vector3(14,0,0)
 	await process_frame
 	var turret = tank._turret()
 	if not check(turret != null,"Tank agent does not see its turret"): return

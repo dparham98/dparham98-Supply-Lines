@@ -1,0 +1,69 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://range.gd" id="range"]
+[ext_resource type="Script" path="res://range_unit.gd" id="unit"]
+[ext_resource type="Script" path="res://bastion/close_defense.gd" id="defence"]
+[ext_resource type="PackedScene" path="res://bastion/bastion_model.tscn" id="tank"]
+[ext_resource type="PackedScene" path="res://scenes/models/infantry_model.tscn" id="infantry"]
+[ext_resource type="PackedScene" path="res://scenes/maps/lighting.tscn" id="light"]
+
+[sub_resource type="StandardMaterial3D" id="concrete"]
+albedo_color = Color(0.51, 0.505, 0.475, 1)
+roughness = 0.94
+[sub_resource type="PlaneMesh" id="pad"]
+size = Vector2(500,500)
+material = SubResource("concrete")
+
+[node name="Range" type="Node3D"]
+script = ExtResource("range")
+[node name="GameLighting" parent="." instance=ExtResource("light")]
+[node name="Fill" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-38,-143,0)
+light_color = Color(0.97,0.96,0.94,1)
+light_energy = 0.83
+light_specular = 0.42
+[node name="Deck" type="MeshInstance3D" parent="."]
+position = Vector3(0,-0.012,0)
+mesh = SubResource("pad")
+cast_shadow = 0
+[node name="Bastion" type="Node3D" parent="." groups=["units"]]
+script = ExtResource("unit")
+team = "enemy"
+[node name="Visuals" type="Node3D" parent="Bastion"]
+[node name="Model" parent="Bastion/Visuals" instance=ExtResource("tank")]
+[node name="CloseDefense" type="Node" parent="Bastion"]
+script = ExtResource("defence")
+[node name="NearUnit" type="Node3D" parent="." groups=["units"]]
+position = Vector3(-5.3,0,2)
+script = ExtResource("unit")
+[node name="Model" parent="NearUnit" instance=ExtResource("infantry")]
+rotation_degrees = Vector3(0,-75,0)
+[node name="FarUnit" type="Node3D" parent="." groups=["units"]]
+position = Vector3(1,0,-18)
+script = ExtResource("unit")
+[node name="Model" parent="FarUnit" instance=ExtResource("infantry")]
+rotation_degrees = Vector3(0,178,0)
+[node name="Camera" type="Camera3D" parent="."]
+current = true
+projection = 1
+size = 18
+[node name="HUD" type="CanvasLayer" parent="."]
+[node name="Status" type="Label" parent="HUD"]
+offset_left = 24.0
+offset_top = 20.0
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_colors/font_shadow_color = Color(0.05,0.05,0.05,1)
+theme_override_font_sizes/font_size = 20
+[node name="Keys" type="Label" parent="HUD"]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -46.0
+offset_bottom = -14.0
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_colors/font_shadow_color = Color(0.05,0.05,0.05,1)
+theme_override_font_sizes/font_size = 18
+text = "Click ground to move the near target     ·     Space: in/out of range     ·     Tab: inspect turret     ·     H: hide controls"
