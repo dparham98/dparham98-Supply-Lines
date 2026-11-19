@@ -3653,6 +3653,7 @@ theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="Energy" type="Button" parent="Bottom/Body/Row/Commands/Pick/LoadTiles"]
+visible = false
 theme_type_variation = &"CommandCard"
 shortcut = SubResource("shortcut_resource_energy")
 layout_mode = 2

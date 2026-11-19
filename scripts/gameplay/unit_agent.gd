@@ -510,11 +510,13 @@ func _walk(delta: float) -> void:
 	var point: Vector3 = ground.tile_to_world(_moving_to)
 	var step := move_speed*delta*_turn_speed(_turn_toward(point,delta))
 	if fuel_active():
-		if out_of_fuel or fuel <= 0:
-			_mark_out_of_fuel()
-			state = "Out of fuel · order paused"
-			return
-		if fuel_rules.coal_per_movement_unit > 0: step = minf(step,fuel/fuel_rules.coal_per_movement_unit)
+		powered_by = _depot_power()
+		if powered_by == null:
+			if out_of_fuel or fuel <= 0:
+				_mark_out_of_fuel()
+				state = "Out of fuel · order paused"
+				return
+			if fuel_rules.coal_per_movement_unit > 0: step = minf(step,fuel/fuel_rules.coal_per_movement_unit)
 	var before := global_position
 	var next := global_position.move_toward(point,step)
 	var cell = ground.get_tile_at_position(next)
@@ -531,7 +533,7 @@ func _walk(delta: float) -> void:
 		grid_position = cell
 	global_position = next
 	if cell != null and cell != ground.get_tile_at_position(before): _aim_ahead()
-	if fuel_active(): burn_fuel(before.distance_to(global_position))
+	if fuel_active(): _pay_for_move(before.distance_to(global_position))
 	if unit_stats != null and unit_stats.mobility != null and unit_stats.mobility.clears_forest:
 		var entered = ground.get_tile_at_position(global_position)
 		if entered != null: ground.clear_forest(entered)
@@ -1030,6 +1032,22 @@ func selection_point() -> Vector3:
 ## Vehicle fuel (economy stage 5). Tank fuel is separate from transferable stockpile coal.
 func fuel_active() -> bool:
 	return fuel_rules != null and fuel_rules.consumes_fuel and is_instance_valid(game) and game.get("vehicle_fuel_required") == true
+## Depot power (docs/FUEL_BATCH.md): inside a friendly Depot's range a vehicle moves on that Depot's energy,
+## fuel_rules.depot_energy_per_metre, instead of its tank. A Depot with no energy left powers nothing.
+var powered_by: Node3D
+var _depot_power_owed := 0.0
+func _depot_power() -> Node3D:
+	if fuel_rules.depot_energy_per_metre <= 0: return null
+	for depot in get_tree().get_nodes_in_group("depots"):
+		if depot.energy > 0 and SupplySource.covers(depot,global_position,team): return depot
+	return null
+func _pay_for_move(distance: float) -> void:
+	if not is_instance_valid(powered_by):
+		burn_fuel(distance)
+		return
+	_depot_power_owed += distance*fuel_rules.depot_energy_per_metre
+	var whole := floori(_depot_power_owed)
+	if whole > 0: _depot_power_owed -= powered_by.stockpile.withdraw(&"energy",whole)
 func burn_fuel(distance: float) -> void:
 	fuel -= distance*fuel_rules.coal_per_movement_unit
 	if fuel <= 0.0001: fuel = 0; _mark_out_of_fuel()
@@ -1042,8 +1060,20 @@ func fuel_target() -> float:
 	return fuel_rules.reserve_capacity*desired_fuel_fraction
 func is_stopped() -> bool:
 	return out_of_fuel or (_route.is_empty() and _moving_to.x < 0)
+## How near a stopped vehicle must be to a coal crate on the ground to refuel from it.
+const CRATE_REFUEL_RANGE := 4.0
+## Fuel sources (docs/FUEL_BATCH.md): a covering Depot's coal; a deployed Cargo vehicle's coal, its coal crates
+## and then its own tank (take_coal); or a friendly coal crate on the ground beside the vehicle.
 func can_refuel_from(node) -> bool:
-	return node != self and SupplySource.covers(node,global_position,team) and node.stockpile.amount(&"coal") > 0
+	if not is_instance_valid(node) or node == self: return false
+	if node.is_in_group("supply_crates"):
+		return node.team == team and node.resource_kind == &"coal" and node.amount > 0 and node.global_position.distance_to(global_position) <= CRATE_REFUEL_RANGE
+	if not SupplySource.covers(node,global_position,team): return false
+	return (node.coal_on_hand() if node.has_method("coal_on_hand") else node.stockpile.amount(&"coal")) > 0
+func _draw_fuel(node) -> bool:
+	if node.is_in_group("supply_crates"): return node.extract(1,team) == 1
+	if node.has_method("take_coal"): return node.take_coal()
+	return node.stockpile.withdraw(&"coal",1) == 1
 func set_fuel_source(node: Node3D) -> void:
 	fuel_source = node
 	fuel_source_explicit = is_instance_valid(node)
@@ -1052,17 +1082,18 @@ func choose_fuel_source() -> Node3D:
 	# Nearest covering source with coal, ties by instance id as in SupplySource.candidates.
 	var best: Node3D
 	var best_distance := INF
-	for group in ["depots","mobile_supplies"]:
+	for group in ["depots","mobile_supplies","supply_crates"]:
 		for candidate in get_tree().get_nodes_in_group(group):
-			if candidate == self or candidate.stockpile.amount(&"coal") <= 0: continue
 			var d: float = candidate.global_position.distance_squared_to(global_position)
 			if d > best_distance or (is_equal_approx(d,best_distance) and candidate.get_instance_id() > best.get_instance_id()): continue
-			if SupplySource.covers(candidate,global_position,team): best = candidate; best_distance = d
+			if can_refuel_from(candidate): best = candidate; best_distance = d
 	return best
 ## Whole coal units move from exactly one source into the tank; fractional rate time is banked.
 func fuel_tick(delta: float) -> void:
 	refuel_from = null
 	if not fuel_active(): return
+	# Depot power moves a vehicle whose tank is empty.
+	if out_of_fuel and _depot_power() != null: out_of_fuel = false
 	if not auto_refuel or not is_stopped() or fuel_target()-fuel < 1:
 		_refuel_credit = 0
 		if out_of_fuel and fuel > 0 and (not auto_refuel or fuel_target()-fuel < 1): out_of_fuel = false
@@ -1075,7 +1106,7 @@ func fuel_tick(delta: float) -> void:
 	refuel_from = from
 	_refuel_credit += fuel_rules.refuel_coal_per_second*delta
 	while _refuel_credit >= 1 and fuel_target()-fuel >= 1:
-		if from.stockpile.withdraw(&"coal",1) != 1: break
+		if not _draw_fuel(from): break
 		fuel += 1
 		_refuel_credit -= 1
 	if fuel_target()-fuel < 1:
@@ -1086,6 +1117,7 @@ func fuel_summary() -> String:
 	if fuel_rules == null: return ""
 	if not fuel_active(): return "Fuel reserve %.0f / %.0f · not required here" % [fuel,fuel_rules.reserve_capacity]
 	var text := "Fuel %.1f / %.0f coal" % [fuel,fuel_rules.reserve_capacity]
+	if is_instance_valid(powered_by) and _depot_power() == powered_by: text += " · running on %s power" % powered_by.name
 	if out_of_fuel: text += " · OUT OF FUEL"
 	elif fuel_low(): text += " · LOW FUEL"
 	var from := "nearest in range"
