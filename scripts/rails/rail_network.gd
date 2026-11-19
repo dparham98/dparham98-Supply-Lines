@@ -543,16 +543,10 @@ func _process(delta: float) -> void:
 	preview.visible = active
 	show_target_rings(active)
 	if not active: return
-	# Only the label follows the cursor; the path itself is drawn by the planned pieces.
-	for child in preview.get_children(): child.visible = child.name == "Status"
-	var camera := game.get_viewport().get_camera_3d()
-	var mouse := game.get_viewport().get_mouse_position()
-	var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(mouse),camera.project_ray_normal(mouse))
-	if point == null: preview.visible = false; return
-	preview.get_node("Status").global_position = point+Vector3.UP*2.0
+	# The planned pieces draw the path; what to do next is in the HUD's guide (docs/PLACEMENT_GUIDE.md).
+	for child in preview.get_children(): child.visible = false
 	if is_instance_valid(route_from) and is_instance_valid(route_to) and cursor != null: follow_cursor(cursor,delta)
-	preview.get_node("Status").text = route_status()
-## The cursor label while connecting buildings.
+## The guide's line while connecting buildings (docs/PLACEMENT_GUIDE.md).
 func route_status() -> String:
 	if not is_instance_valid(route_from): return "RAIL · click a Depot, mine or build site"
 	if not is_instance_valid(route_to): return "FROM %s · click the building to connect" % target_name(route_from).to_upper()

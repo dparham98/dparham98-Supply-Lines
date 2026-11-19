@@ -240,6 +240,7 @@ func _process(_delta: float) -> void:
 	update_tip()
 	update_depot_panels()
 	update_feed()
+	update_guide()
 ## The player's Depot whose panels show for the selected object: the Depot itself, the Depot a Generator or
 ## production building uses, or else the nearest of your Depots whose range covers the selected building,
 ## mine or plan. Units and other sides' buildings show none.
@@ -513,6 +514,46 @@ func pick_portrait(index: int) -> void:
 	for unit in selected_units():
 		var hit: bool = unit.scene_file_path == picked.scene_file_path if by_type else unit == picked
 		unit.set_selected(not hit if remove else hit)
+## The guide at the top of the screen while laying rail or placing a building (docs/PLACEMENT_GUIDE.md): the
+## steps of track laying with the current one lit, or the placement colours with the one under the cursor lit; then
+## the line about what is under the cursor, and the keys.
+const RAIL_STEPS := ["Click the start","Click the end","Shape it, click to lay"]
+const PLACE_STEPS := ["Builds here","Short of stock","Can't go here"]
+const PLACE_COLOURS := [Color(0.2,1,0.4),Color(1,0.85,0.1),Color(1,0.15,0.1)]
+const PLACE_STATES := ["ok","short","blocked"]
+func update_guide() -> void:
+	var guide: Control = $Guide
+	var rails = game.get_node_or_null("RailNetwork")
+	var depots = game.get_node_or_null("DepotNetwork")
+	var mode := ""
+	if game.placing_rail and rails != null: mode = "rail"
+	elif depots != null and depots.has_method("placement_active") and depots.placement_active(): mode = "place"
+	if guide.visible != not mode.is_empty(): guide.visible = not mode.is_empty()
+	if mode.is_empty(): return
+	var body := guide.get_node("Body")
+	var current := 0
+	if mode == "rail":
+		current = 0 if not is_instance_valid(rails.route_from) else (1 if not is_instance_valid(rails.route_to) else 2)
+		_set_text(body.get_node("Title"),"LAY RAIL")
+		_set_text(body.get_node("Status"),rails.route_status())
+		_set_text(body.get_node("Keys"),"Backspace takes back a pick  ·  Enter lays it  ·  Esc cancels")
+	else:
+		current = PLACE_STATES.find(depots.placement_state)
+		_set_text(body.get_node("Title"),depots.placement_title)
+		_set_text(body.get_node("Status"),depots.placement_text)
+		_set_text(body.get_node("Keys"),"Click to place  ·  Esc cancels")
+	for i in range(3):
+		var step: Control = body.get_node("Steps/Step%d" % (i+1))
+		step.get_node("Row/Number").visible = mode == "rail"
+		step.get_node("Row/Swatch").visible = mode == "place"
+		step.get_node("Row/Swatch").color = PLACE_COLOURS[i]
+		_set_text(step.get_node("Row/Text"),(RAIL_STEPS if mode == "rail" else PLACE_STEPS)[i])
+		# The current step is lit; steps done are green; the rest are dimmed.
+		var tone := Color.WHITE if i == current else (Color(0.62,0.95,0.6,0.85) if mode == "rail" and i < current else Color(1,1,1,0.35))
+		if step.modulate != tone: step.modulate = tone
+	for arrow in ["Arrow1","Arrow2"]: body.get_node("Steps/"+arrow).visible = mode == "rail"
+func _set_text(label: Label, text: String) -> void:
+	if label.text != text: label.text = text
 func update_feed() -> void:
 	var now := Time.get_ticks_msec()/1000.0
 	feed_points.clear()
