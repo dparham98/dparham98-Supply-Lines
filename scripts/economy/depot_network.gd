@@ -424,6 +424,7 @@ func plan_spec(kind: StringName) -> Dictionary:
 		preview.free()
 		return {"title":"Depot","size":size,"energy":depot_rules().depot_energy_cost,"iron":depot_rules().depot_iron_cost,"scene":depot_scene}
 	if kind == &"generator": return {"title":"Generator","size":supply_rules.generator_footprint,"energy":supply_rules.generator_energy_cost,"iron":supply_rules.generator_iron_cost,"scene":generator_scene,"model":_model_scene(generator_scene)}
+	if kind == &"coal_mine": return {"title":"Coal Mine","size":engineering_rules.mine_footprint,"energy":engineering_rules.mine_energy_cost,"iron":engineering_rules.mine_iron_cost,"scene":mine_scene,"model":_model_scene(mine_scene)}
 	if kind == &"iron_mine": return {"title":"Iron Mine","size":engineering_rules.mine_footprint,"energy":engineering_rules.mine_energy_cost,"iron":engineering_rules.mine_iron_cost,"scene":mine_scene,"model":_model_scene(mine_scene)}
 	if kind == &"rail":
 		# Maglev pieces are laid directly by RailNetwork.place, not queued as plans.
@@ -447,9 +448,14 @@ func _model_scene(scene: PackedScene) -> PackedScene:
 		_model_scenes[scene] = visuals.model_scene if visuals != null and "model_scene" in visuals else null
 		preview.free()
 	return _model_scenes[scene]
+## Plan kinds that build a mine: an Iron Mine on a mine site or ore field, a Coal Mine on a coal seam.
+static func is_mine_kind(kind: StringName) -> bool:
+	return kind == &"iron_mine" or kind == &"coal_mine"
 ## A Depot plan also needs the strip it will keep clear to be free (strip_clear).
 func plan_terrain_valid(start: Vector2i, size: Vector2i, kind: StringName, ignore: Node = null) -> bool:
-	if kind == &"iron_mine": return game.ground.ore_footprint_valid(start,size)
+	if is_mine_kind(kind):
+		var on_coal: bool = game.ground.is_tile_in_bounds(start) and game.ground.get_terrain(start) == game.ground.Terrain.COAL
+		return game.ground.ore_footprint_valid(start,size) and on_coal == (kind == &"coal_mine")
 	if not game.ground.is_footprint_valid(start,size): return false
 	return kind != &"depot" or strip_clear(game.ground.tile_to_world(start+size/2),0.0,ignore)
 ## Whether a footprint overlaps another unfinished plan, or the strip a planned Depot will keep clear.
@@ -467,7 +473,7 @@ func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_paye
 	if spec.is_empty(): return null
 	if kind == &"rail": game.notify("Maglev track is laid piece by piece from the Build page, not planned."); return null
 	var start := footprint_start(point,spec.size)
-	if kind == &"iron_mine":
+	if is_mine_kind(kind):
 		# A mine planned on a mine site takes the whole site.
 		var spot := mine_spot(point)
 		spec = spec.duplicate()
@@ -475,7 +481,7 @@ func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_paye
 		spec.scene = mine_scene_for(spot); spec.model = _model_scene(spec.scene)
 	if not plan_terrain_valid(start,spec.size,kind) or plan_overlaps(start,spec.size):
 		var strip := strip_notice(point,spec.size,kind)
-		game.notify(strip if not strip.is_empty() else "Plan needs valid empty terrain and cannot overlap another plan. Mines require iron deposits.")
+		game.notify(strip if not strip.is_empty() else "A Coal Mine needs a coal seam under it with no mine yet, and cannot overlap another plan." if kind == &"coal_mine" else "Plan needs valid empty terrain and cannot overlap another plan. Iron Mines need a mine site or iron deposit.")
 		return null
 	if kind == &"depot" and not depot_spacing_ok(point):
 		game.notify(spacing_notice(point))
@@ -492,7 +498,7 @@ func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_paye
 func plan_source_valid(plan: Node3D, source) -> bool:
 	if not SupplySource.available(source,"player"): return false
 	if source.energy < plan.spec.energy or source.iron < plan.spec.iron: return false
-	return can_place_mine(plan.global_position,source) if plan.kind == &"iron_mine" else can_place_size(plan.global_position,source,plan.spec.size)
+	return can_place_mine(plan.global_position,source) if is_mine_kind(plan.kind) else can_place_size(plan.global_position,source,plan.spec.size)
 func plan_payer(plan: Node3D) -> Node3D:
 	if plan.pinned: return plan.payer if plan_source_valid(plan,plan.payer) else null
 	# Auto is explicitly selected in the global menu: nearest eligible Depot, stable tie order.
@@ -508,7 +514,7 @@ func complete_plan(plan: Node3D, payer: Node3D) -> Node3D:
 		building.initial_energy = 0; building.initial_iron = 0
 		building.grant_construction_infantry = true
 	elif plan.kind == &"generator": building.rules = supply_rules; building.assigned_depot = payer if payer.is_in_group("depots") else null
-	elif plan.kind == &"iron_mine": building.rules = engineering_rules
+	elif is_mine_kind(plan.kind): building.rules = engineering_rules
 	else: building.assigned_depot = payer if payer.is_in_group("depots") else null
 	if not payer.spend_local(plan.spec.energy,plan.spec.iron): building.free(); return null
 	building.position = plan.global_position
@@ -519,7 +525,7 @@ func update_global_preview(point: Vector3) -> bool:
 	var spec := plan_spec(game.global_plan_kind)
 	var ghost = game.get_node("ConstructionPreview")
 	var start := footprint_start(point,spec.size)
-	if game.global_plan_kind == &"iron_mine":
+	if is_mine_kind(game.global_plan_kind):
 		var spot := mine_spot(point)
 		spec = spec.duplicate()
 		spec.size = spot.size; start = spot.position
@@ -592,7 +598,7 @@ func finish_plan(plan: Node3D) -> Node3D:
 		building.initial_energy = 0; building.initial_iron = 0
 		building.grant_construction_infantry = true
 	elif plan.kind == &"generator": building.rules = supply_rules; building.assigned_depot = payer
-	elif plan.kind == &"iron_mine": building.rules = engineering_rules
+	elif is_mine_kind(plan.kind): building.rules = engineering_rules
 	else: building.assigned_depot = payer
 	building.position = plan.global_position
 	if plan.kind == &"rail": game.add_child(building,true)

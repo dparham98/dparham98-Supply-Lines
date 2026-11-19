@@ -15,17 +15,19 @@ The current keys, as set on 2026-11-15. `scripts/tools/setup_command_actions.gd`
 
 | Card or page | Keys |
 | --- | --- |
-| Infantry and combat units | M Move · S Stop · A Attack · G Gather · F Fell (`docs/FELL.md`) · V Deliver · X Drop materials · R Repair · C Capture · T Auto-refuel (vehicles) |
+| Infantry and combat units | M Move · S Stop · A Attack · G Gather · F Fell (`docs/FELL.md`) · V Deliver · X Drop materials · R Repair · C Capture · E Derail (Derailer, `docs/DERAILER.md`) · T Auto-refuel (vehicles) |
 | Cargo truck / Train | M Move · S Stop · T Auto-refuel · D Deploy/Pack supplies · E Load · V Unload · C Trips · W Worksite (not Trains) |
 | Depot truck | M Move · S Stop · T Auto-refuel · D Deploy |
 | Depot | D Depot truck · V Cargo vehicle · T Train · C Make crates · X Cancel production (the Generator settings are sliders on the Depot panel, docs/DEPOT_PANELS.md) |
-| Production building | F Infantry · S Scout · G Grenadier · T Tank · C Motorcycle · D Drone · Q Übermech |
+| Production building | F Infantry · S Scout · G Grenadier · T Tank · C Derailer · D Drone · Q Übermech |
 | Generator | R Pause/Resume · W Burn wood · C Burn coal · E Burn either · F Focus Depot |
 | Construction plan | X Cancel plan |
 | Build page (B) and Worksite page | D Depot · G Generator · B Barracks · T Tank Factory · A Iron Mine · R Rail · P Pin payer (Build page only) · Esc Back |
 | Laying rail (`docs/RAIL_PLANNING.md`) | click two buildings to connect · the suggested track follows the cursor · click or Enter lays it · Backspace takes back the last pick · Esc stop |
 | Load page | A Iron · E Energy · W Wood · C Coal · X Clear · Esc Cancel. Shift fills free slots |
 | Make crates page | A Iron · E Energy · W Wood · C Coal · Esc Cancel. Shift makes five |
+
+Right-click the Fell card to switch autocast Fell (`docs/FELL.md`). With a building selected and no units, right-click sets its rally point (`docs/RALLY_POINTS.md`).
 
 Camera: arrows pan (Shift for fast), wheel zooms, **O** overview, **Space** focus HQ, **Home** focus selection, hold **Alt** to show every health bar. There is no rotate key. Space is read before the HUD, so a HUD button that still has focus after a click never takes it as a press. A focused text field or dropdown, or an open popup or dialog, keeps Space instead. **F10** opens the playtest tools.
 

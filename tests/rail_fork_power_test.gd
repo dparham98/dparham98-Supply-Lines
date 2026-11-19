@@ -66,7 +66,7 @@ func run() -> void:
 	var straight_on: Node3D = add_piece("straight",exit_xfs[0],source)
 	var branch: Node3D = add_piece("straight",exit_xfs[1],source)
 	if not check(rails.pieces.has(straight_on) and rails.pieces.has(branch),"Exit pieces did not register"): return
-	# Routes go entry to either exit, never exit to exit.
+	# Routes go entry to either exit; exit to exit only by reversing past the entry.
 	var to_branch: Array = rails.chain(train.piece,branch,"player",train.lane)
 	var to_straight: Array = rails.chain(train.piece,straight_on,"player",train.lane)
 	var lane_on := func(route: Array) -> int:
@@ -74,7 +74,12 @@ func run() -> void:
 			if entry.piece == fork: return entry.lane
 		return -1
 	if not check(lane_on.call(to_branch) == 1 and lane_on.call(to_straight) == 0,"Routes took the wrong fork lane"): return
-	if not check(not rails.reachable(straight_on,branch,"player") and not rails.reachable(branch,straight_on,"player"),"A train crossed from one fork exit to the other"): return
+	# From one exit to the other a train never cuts across: it runs out past the entry and reverses
+	# (docs/RAIL_PLANNING.md), or cannot go at all where there is no room to.
+	for pair in [[straight_on,branch],[branch,straight_on]]:
+		var across: Array = rails.chain(pair[0],pair[1],"player")
+		var room: bool = rails._room_past(fork) >= rails.REVERSE_ROOM-0.01
+		if not check(across.is_empty() != room and (across.is_empty() or across.any(func(step): return step.get("reverse",false))),"A train crossed from one fork exit to the other without reversing"): return
 	# A run onto the branch throws the switch, follows the arc and pays energy by the metre.
 	source.energy = 1000; destination.energy = 1000
 	var goal: Vector3 = branch.point_at(2.4)

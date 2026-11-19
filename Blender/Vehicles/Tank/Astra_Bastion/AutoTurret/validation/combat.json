@@ -1,0 +1,39 @@
+{
+  "asset_sha256": "6740fbc2847521efdf7669dc620c740c644196039519fd87a9f0829d01106a69",
+  "controller_sha256": "a2f231e2b0dcbe62dd2d31c70a04bc1eb847ed0730d9af460172782a470c455e",
+  "bullet_scene_sha256": "615da7bf0d75405950f39f27d2fd27783cd6fd5452d6a0903424bf906cb04875",
+  "bullet_script_sha256": "2e7a3858eef75add437a7cfa6f6d1b0e1d067ba45914c979861dda68128c5b40",
+  "map": "res://scenes/maps/resource_skirmish.tscn",
+  "actor": "res://bastion/bastion_tank.tscn",
+  "fixed_frames_per_second": 60,
+  "primary_regressions": {
+    "tank_fire_test": "TANK_FIRE_TEST_PASSED",
+    "tank_tracks_test": "TANK_TRACKS_TEST_PASSED",
+    "tank_death_test": "TANK_DEATH_TEST_PASSED"
+  },
+  "secondary_combat": {
+    "allied_and_neutral_damage": 0,
+    "confirmed_main_target_damage": 24,
+    "damage_at_launch": 0,
+    "dodged_projectile_missed": true,
+    "first_flight_world_m": 7.32,
+    "first_impact_frames_after_launch": 24,
+    "first_projectile_visual_diagonal_world_m": 0.371,
+    "freed_target_missed": true,
+    "full_span_tracers": 0,
+    "in_flight_friendly_spared": true,
+    "last_round_landed_after_launcher_died": true,
+    "main_shells_within_observation": 3,
+    "max_muzzle_origin_error_world_m": 0.0,
+    "max_physical_bullet_origin_error_world_m": 0.0,
+    "max_planar_aim_error_degrees": 1.37,
+    "minimum_interval_frames_at_60_hz": 22,
+    "resolved_bullets": 23,
+    "secondary_hits_during_main_reload": 4,
+    "separate_bearings_degrees": 89.29,
+    "shots_during_pause_or_after_death": 0,
+    "simultaneous_secondary_hits": 4,
+    "total_secondary_shots": 23
+  },
+  "engine": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org"
+}

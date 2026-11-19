@@ -1,0 +1,23 @@
+{
+  "engine": "Godot_v4.7.2-stable_win64_console.exe",
+  "fixture": "scenes/maps/resource_skirmish.tscn",
+  "tested_asset_sha256": "38f43fdfe9d072dd5ef12a294139fb2655bbfcefd4bf14f7d757e0643dba9382",
+  "suites": {
+    "turret_aim_test": "TURRET_AIM_TEST_PASSED",
+    "tank_tracks_test": "TANK_TRACKS_TEST_PASSED",
+    "tank_fire_test": "TANK_FIRE_TEST_PASSED",
+    "tank_death_test": "TANK_DEATH_TEST_PASSED",
+    "tank_model_runtime_check": "TANK_MODEL_RUNTIME_CHECK_PASSED",
+    "bastion_runtime": "BASTION_RUNTIME_PASSED"
+  },
+  "renderer": "Vulkan 1.4.341 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 5070 Ti",
+  "changed_pixels_on_track_roll": 8021,
+  "measurements": {
+    "left_track_travel_authored_m": 16.806,
+    "max_heading_change_degrees": 90.0,
+    "move_displacement_world_m": 7.0,
+    "occupied_cells_at_destination": 1,
+    "right_track_travel_authored_m": 6.528,
+    "team_painted_surfaces": 6
+  }
+}
