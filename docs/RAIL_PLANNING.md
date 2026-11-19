@@ -30,7 +30,64 @@ While track laying is armed, Enter and Backspace go to it before the Build page'
 ## Trains on a Depot with several lines
 
 When the Depot's Train tile is pressed and more than one separate line of track reaches the Depot's ring, the train is not queued at once. The tile waits for a click on one of those lines (Esc or a right-click cancels), then queues the train and prints it on that line. With one line, or none, it queues at once as before. If the chosen line no longer reaches the Depot by the time the train is ready, it is printed on any line that does. The chosen lines are kept beside the production queue (`Depot.train_lines`), so cancelling a train drops its line.
-- **Forks aren't suggested.** The suggested track doesn't join existing lines either: it runs beside them. Forks and joins are for a later change.
+- **Joining existing track:** see *Joining track* below. Track suggested between two buildings still runs beside other lines rather than joining them.
+
+## Joining track
+
+Asked for on 2026-11-18: build new track from existing track, with the existing line kept as it was.
+
+**Picking track.** While connecting, either pick can be laid track instead of a building: click on the track itself, within its width. A click beside it, inside a building's ring, still picks the building.
+
+**Where the new track joins.** It joins the clicked line within 30 m of the click (`JOIN_WINDOW`), in one of two ways:
+
+- **At a free end** of the line: the new track carries on from it.
+- **At a fork:** a fork (switch) takes the place of three straights in a row (14.4 m).
+  - Its entry and straight exit lie exactly where the straights were, so the line keeps running as it did, to the same places.
+  - The new track leaves by the fork's branch.
+  - Forks only go on straight runs, so a curve or an existing fork can't be split.
+
+**Choosing the join.** Every free end and every fork site in the window, each fork either way round and to either side, is a possible start (or finish). The search picks the one that gives the shortest track. So the fork slides along the line, flips and swaps sides as the cursor moves, with the line, the new destination and the cursor all fixed.
+
+**Picks.**
+
+- Track to a building: a branch or an extension.
+- A building to track: the same, joined at the far end.
+- Track to track: a link between lines, or between two points of one line at least 10 m apart. A link between lines needs no building of its own.
+
+**While planned:**
+
+- the fork's ghost shows in place of the hidden straights;
+- the plan costs only what the fork adds to them, plus the new pieces;
+- Esc or Backspace shows the straights again.
+
+**When laid:** the straights go and the fork goes in, keeping their owner. Trains hear of the change once, when the fork is in. A train standing on the old straights is moved onto the fork's straight lane in the same place.
+
+Track laid off the search lattice, for example authored by hand in a map, can't be joined. The click then says so.
+
+## Trains reverse at forks
+
+A fork's branch only leads one way along the line: a train off the branch comes out through the fork's entry. To go the other way, a train runs on past the entry until it is clear of the fork, stops, and backs into the other lane. It does the same coming the other way, from the straight exit onto the branch, so every part of a line can be reached whichever way its forks face.
+
+- **Clearance:** a train reverses only where there is at least 24 m (`REVERSE_ROOM`) of track straight on past the fork's entry, longer than any train.
+- **Routes:** the route search (`_search`) allows the reversal, and the chain marks it (`reverse`).
+- **Legs:** the line is built in legs. The first ends 24 m past the fork, and its `then` is the next leg, back into the other lane.
+- **Driving:** the train finishes one leg and starts the next, driving backwards as it does at the end of a trip (docs/MAGLEV_TRACKS.md). `RailNetwork.travel` measures a line over all its legs.
+
+## Ready for derailing
+
+Derailing is not in yet. These are the parts it can build on:
+
+- **Train position:** each train knows the piece, lane and distance it is on (`Train.piece`, `lane`, `along`). These are updated every frame from its line's spans (`RailNetwork.locate`). Each leg's `spans` list every piece and lane the train will cross, in order.
+- **Switches:** each fork has a switch (`route_lane`), set by the train's run as each leg starts (`set_route`). A reversal is its own leg, so a switch is never thrown under a train mid-leg by its own run.
+- **Curves:** every piece knows its geometry. A curve's radius is `curve_radius × world_scale` (12 m), so a speed limit per curve can be read from it.
+- **Hooks for later:**
+  - a switch thrown, or a piece removed, under a train (today the train stops and is put back on the nearest track);
+  - running into a fork from an exit while its switch is set to the other lane;
+  - speed on a curve;
+  - damaged track.
+
+  Each can be checked in `Train._walk`, which knows the span under the train each frame.
+- **Known gap:** two trains on one line set the same switches as their legs start, and nothing yet stops one from resetting a switch the other is crossing. That is where a switch-under-a-train derailment, or a block signal, would go.
 
 ### How the path is found
 
@@ -89,7 +146,12 @@ So a 100 m line costs 0.1 E/s idle and 0.3 E/s with two trains running. This is 
 
 ## Code
 
-- **Connecting:** `target_at`, `pick_target`, `suggest_route`, `drop_route` and `route_status` in `scripts/rails/rail_network.gd`. Following the cursor is `follow_cursor`, `near_plan` and `drag_route`; `skirmish.gd` sets `RailNetwork.cursor` from mouse motion and lays the track on a click (`lay_route`). The path search is `scripts/rails/rail_router.gd`.
+- **Connecting:** `target_at`, `pick_at`, `pick_target`, `suggest_route`, `drop_route` and `route_status` in `scripts/rails/rail_network.gd`.
+- **Joining track:**
+  - `RailAnchor` (`scripts/rails/rail_anchor.gd`);
+  - `join_candidates`, `_straight_run`, `_joins_fit` and `_set_plan` in `rail_network.gd`;
+  - `route`, `ring_starts` and `lattice_point` in `rail_router.gd`.
+- **Reversing:** `_room_past`, `_runs_past` and `travel` in `rail_network.gd`; `line` builds the legs, and `Train._walk` follows `then`. Following the cursor is `follow_cursor`, `near_plan` and `drag_route`; `skirmish.gd` sets `RailNetwork.cursor` from mouse motion and lays the track on a click (`lay_route`). The path search is `scripts/rails/rail_router.gd`.
 - **Trains' lines:** `depot_lines`, `depot_line_at` and `spawn_stop` in `rail_network.gd`; `queue_train` in `skirmish_hud.gd`; the `train_line` command in `skirmish.gd`; `Depot.request_train(line)`.
 - **The plan:** `pending`, `plan_targets`, `plan_payer`, `plan_blocker` and `commit_plan` in `rail_network.gd`. `plan_piece`, `plan_refusal` and `unplan_last` still plan single pieces for tests and tools; the player no longer uses them.
 - **Rings:** `show_target_rings` and `depot_reach`, with the saved ring scene `scenes/ui/rail_target_ring.tscn`.
@@ -114,4 +176,13 @@ So a 100 m line costs 0.1 E/s idle and 0.3 E/s with two trains running. This is 
   - leaving track laying drops the plan and the rings.
 - **`tests/rail_keys_test.gd`** picks two Depots by real clicks, and checks Backspace on each pick and Enter, with the Build page open.
 - **`tests/rail_runtime_check.gd`** (rendered) picks the Depot and a build site, shows the suggested track (`rail_plan`), moves the mouse so the track follows it (`rail_drag`), lays it with a left click and runs a train load at the larger ring.
+- **`tests/rail_join_test.gd`** (headless, balanced map) checks:
+  - a click on track picks it, and one off it picks the building;
+  - a branch to a site beside a line leaves from a fork in place of three straights, which are hidden while planned and shown again when the plan is dropped;
+  - the plan pays only what the fork adds, and keeps its fork as it follows the cursor;
+  - once laid, the fork replaces the straights and joins the line on all three ends, and the line, fork and branch are one line;
+  - the line still runs end to end, and trains can run both ways between the line and the branch;
+  - a train drives from the Depot to the end of the branch and back, reversing at the fork where it faces away;
+  - track beyond the line's free end carries on from it, on the same line.
+- **`tests/rail_join_runtime_check.gd`** (rendered) saves the planned fork and branch (`rail_join_plan`) and the laid one (`rail_join_laid`).
 - **`tests/train_line_test.gd`** queues trains at a Depot with one line, then two: it checks the click on a line, the refusal off the lines, and that each train is printed on its chosen line.
