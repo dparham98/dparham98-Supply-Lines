@@ -8,6 +8,7 @@ unit_id = &"motorcycle"
 display_name = "Motorcycle"
 energy_cost = 45
 iron_cost = 10
+build_seconds = 14.0
 max_health = 45
 movement_speed = 12.0
 attack_range = 12.0

@@ -98,7 +98,7 @@ func status_for(node: Node3D) -> Dictionary:
 		if node.queue > 0: entry.progress = node.progress/node.current_seconds()
 		if node.capture_progress > 0: entry.capture = node.capture_progress/node.rules.capture_seconds
 	elif node.is_in_group("production_buildings"):
-		if node.queue > 0: entry.progress = node.progress/node.stats.print_seconds
+		if node.queue > 0: entry.progress = node.fraction()
 		if node.exit_blocked: entry.icons.append(["cancel",AMBER])
 	if node.is_in_group("energy_generators") and not node.enabled: entry.icons.append(["pause",AMBER])
 	if node.is_in_group("mines") and node.remaining <= 0: entry.icons.append(["mine",TEAM_COLORS["neutral"]])

@@ -8,6 +8,7 @@ unit_id = &"grenadier"
 display_name = "Grenadier"
 energy_cost = 85
 iron_cost = 15
+build_seconds = 12.0
 max_health = 60
 movement_speed = 4.0
 attack_range = 18.0

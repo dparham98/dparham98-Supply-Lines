@@ -15,6 +15,9 @@ var portrait_units: Array[Node3D] = []
 @onready var depot_panel = $DepotPanel
 @onready var storage_panel = $StoragePanel
 var panel_depot: Node3D
+## Under the Depot panel: the selected production building's power (docs/PRODUCTION_POWER.md).
+@onready var production_panel = $ProductionPanel
+var panel_building: Node3D
 const FEED_TOP := 44.0
 const PANEL_GAP := 8.0
 @onready var name_label: Label = $Bottom/Body/Row/Info/Head/Text/Name
@@ -122,6 +125,8 @@ func _ready() -> void:
 		if is_instance_valid(panel_depot): panel_depot.set_energy_ceiling(value))
 	depot_panel.get_node("Body/CoalSlider").value_changed.connect(func(value: float):
 		if is_instance_valid(panel_depot): panel_depot.set_coal_reserve(value))
+	production_panel.get_node("Body/PowerSlider").value_changed.connect(func(value: float):
+		if is_instance_valid(panel_building): panel_building.set_power(value))
 	card.get_node("Worksite").pressed.connect(open_worksite)
 	for pair in [["BurnWood","wood"],["BurnCoal","coal"],["BurnEither","either"]]:
 		card.get_node(pair[0]).pressed.connect(func():
@@ -253,6 +258,7 @@ func context_depot(node: Node3D) -> Node3D:
 func update_depot_panels() -> void:
 	# The shown object may have been destroyed since update_contents last ran.
 	var depot := context_depot(shown if is_instance_valid(shown) else null)
+	update_production_panel(depot)
 	depot_panel.visible = depot != null
 	storage_panel.visible = depot != null
 	# The alert feed sits under the storage panel while it shows.
@@ -292,6 +298,30 @@ func update_depot_panels() -> void:
 	note_label.visible = not note.is_empty()
 	note_label.text = note
 	show_storage("%s storage" % depot.name,depot.stockpile,storage_panel.get_node("Storage"))
+## Your production building's power slider, under the Depot panel (docs/PRODUCTION_POWER.md).
+func update_production_panel(depot: Node3D) -> void:
+	var building: Node3D = shown if is_instance_valid(shown) and shown.is_in_group("production_buildings") and shown.team == "player" else null
+	production_panel.visible = building != null
+	panel_building = building
+	if building == null: return
+	# Under the Depot panel when it shows, which sizes itself a frame after its contents change.
+	var top: float = depot_panel.position.y+depot_panel.size.y+PANEL_GAP if depot != null else 12.0
+	if not is_equal_approx(production_panel.offset_top,top): production_panel.offset_top = top
+	var body = production_panel.get_node("Body")
+	body.get_node("Title").text = "%s · PRODUCTION SPEED" % building.stats.display_name.to_upper()
+	var slider: HSlider = body.get_node("PowerSlider")
+	slider.max_value = building.stats.max_power
+	slider.step = building.stats.power_step
+	if slider.value != building.power: slider.set_value_no_signal(building.power)
+	body.get_node("Power/Value").text = "%.1fx energy" % building.power
+	# What the power means for the unit printing now, or the building's first unit.
+	var scene: PackedScene = building.pending[0] if not building.pending.is_empty() else building.stats.unit_scenes[0]
+	var unit = building.unit_stats_for(scene)
+	var note := "%s: %s s for %s E (base %s s, %s E)" % [unit.display_name,_seconds(building.seconds_at_power(scene)),grouped(building.energy_at_power(scene)),_seconds(unit.build_seconds),grouped(unit.energy_cost)]
+	if building.power_starved: note += "\nThe Depot is short of energy: printing at 1x."
+	body.get_node("Note").text = note
+static func _seconds(value: float) -> String:
+	return ("%.1f" % value).trim_suffix(".0")
 # Fuel and cargo bars under health. Fuel turns amber when low and red when empty.
 func update_bars(node: Node3D) -> void:
 	if node.fuel_active():
@@ -638,7 +668,7 @@ func update_contents() -> void:
 		var payer = node.assigned_depot
 		state_label.text = "%s · %s" % [team_label(node),("pays from "+str(payer.name)) if node.source_friendly() else "assigned Depot unavailable"]
 		if node.queue > 0 and not node.pending.is_empty():
-			show_progress("Producing · "+node.unit_stats_for(node.pending[0]).display_name,"%d%%%s" % [roundi(node.progress/node.stats.print_seconds*100)," · %d more queued" % (node.queue-1) if node.queue > 1 else ""],node.progress/node.stats.print_seconds)
+			show_progress("Producing · "+node.unit_stats_for(node.pending[0]).display_name,"%d%%%s" % [roundi(node.fraction()*100)," · %d more queued" % (node.queue-1) if node.queue > 1 else ""],node.fraction())
 		if is_instance_valid(payer): set_stats([["Energy",grouped(payer.energy)],["Iron",grouped(payer.iron)],["Queue","%d / %d" % [node.queue,node.stats.queue_limit]]])
 		info.get_node("Details").text = "Production uses this building's assigned Depot only."
 		if node.source_friendly():

@@ -63,9 +63,9 @@ func run() -> void:
 	await shot(building.global_position+Vector3(0,0,1),12,"barracks_close")
 	# Printing: half way the figure is forming in the cradle; then it waits at the open door.
 	building.request_unit(&"infantry")
-	building._process(building.stats.print_seconds*0.5)
+	building._process(building.base_seconds()*0.5)
 	await shot(building.global_position,10,"barracks_printing")
-	building._process(building.stats.print_seconds*0.49)
+	building._process(building.base_seconds()*0.49)
 	await shot(building.global_position+Vector3(0,0,2),10,"barracks_door")
 	# The collapse, part way and as a wreck.
 	building.take_damage(building.max_health)

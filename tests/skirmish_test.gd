@@ -66,7 +66,7 @@ func run() -> void:
 	assert(barracks.request_unit(&"infantry"))
 	assert(game.ore == delivered-65)
 	assert(not barracks.request_unit(&"infantry"))
-	for i in range(240): step(1.0/60)
+	for i in range(660): step(1.0/60)
 	assert(game.units_printed == 1 and barracks.queue == 0)
 	var produced: Node3D
 	for unit in get_nodes_in_group("units"):
@@ -98,8 +98,8 @@ func run() -> void:
 	# Paid queues are capped, and a blocked exit must wait without losing payment.
 	game.ore = 100
 	game.depot.energy = 500
-	for i in range(3): assert(barracks.request_unit(&"infantry"))
-	assert(game.ore == 40 and not barracks.request_unit(&"infantry") and game.ore == 40)
+	for i in range(5): assert(barracks.request_unit(&"infantry"))
+	assert(game.ore == 0 and not barracks.request_unit(&"infantry") and game.ore == 0)
 	var blocked: Array[Vector2i] = []
 	var center = game.ground.get_tile_at_position(barracks.global_position)
 	for radius in range(5,16):
@@ -109,10 +109,10 @@ func run() -> void:
 				blocked.append(cell)
 				game.ground.set_tile_feature(cell,"occupied_by","test_exit_block")
 	barracks._process(10)
-	assert(barracks.queue == 3 and game.units_printed == 1)
+	assert(barracks.queue == 5 and game.units_printed == 1)
 	for cell in blocked: game.ground.set_tile_feature(cell,"occupied_by",null)
 	barracks._process(0.1)
-	assert(barracks.queue == 2 and game.units_printed == 2)
+	assert(barracks.queue == 4 and game.units_printed == 2)
 	# Finite deposits cannot pay out twice or below zero.
 	var prior: int = ore.remaining
 	assert(ore.extract(prior+100) == prior and ore.remaining == 0)
