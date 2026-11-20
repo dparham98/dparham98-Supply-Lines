@@ -152,7 +152,9 @@ func cells_for(kind: String, xf: Transform3D) -> Array[Vector2i]:
 	var inverse := xf.affine_inverse()
 	for lane in range(p.lane_count()):
 		var total: float = p.length(lane)
-		var steps := maxi(4,int(total/0.25))
+		# A sample about every tile: a covered cell's centre is within half_width (1.5) of the centre line, so
+		# within 2.5 cells of the nearest sample's tile, inside the span searched round it.
+		var steps := maxi(4,int(ceil(total/ground.tile_size)))
 		for i in range(steps+1):
 			var centre_point: Vector3 = xf*p.local_point(minf(total-0.001,total*i/steps),lane)
 			var centre = ground.get_tile_at_position(centre_point)
@@ -755,6 +757,8 @@ func drop_route() -> void:
 	route_blocked = false
 	_drag_tried = null
 	cursor = null
+	_follow_search = {}
+	if _router != null: _router.forget()
 ## Whether `point` is on or beside the suggested track, within `within` metres of its centre line.
 func near_plan(point: Vector3, within := 4.0) -> bool:
 	for entry in pending:
@@ -778,16 +782,23 @@ func drag_route(point: Vector3) -> bool:
 	route_via = flat
 	route_blocked = false
 	return true
-## Seconds until the cursor may move the suggested track again; longer after a slow search.
+## Seconds until the cursor may move the suggested track again.
 var _follow_left := 0.0
 ## The ground under the mouse while laying track, set by mouse motion (skirmish.gd), or null.
 var cursor = null
+## The search the cursor started, worked on a slice at a time over the next frames: {search, via}, or {}.
+var _follow_search := {}
+## Microseconds of searching a frame while the track follows the cursor.
+const FOLLOW_SLICE_USEC := 6000
 ## Once both buildings are picked, the suggested track follows the cursor (docs/RAIL_PLANNING.md): it is found
 ## again through the point under it, adding pieces as needed. Over either picked building's ring it is the
-## shortest track; over the track itself it keeps its shape. A search that takes long waits longer before the
-## next, so a long route does not hold the frame up.
+## shortest track; over the track itself it keeps its shape. The search runs a few milliseconds a frame, so a long
+## route does not hold the frame up; the track takes its new shape when it is done, and the cursor is read again.
 func follow_cursor(point: Vector3, delta: float) -> void:
 	_follow_left -= delta
+	if not _follow_search.is_empty():
+		_follow_step()
+		return
 	if _follow_left > 0.0: return
 	var flat := Vector3(point.x,0,point.z)
 	for end in [route_from,route_to]:
@@ -796,15 +807,26 @@ func follow_cursor(point: Vector3, delta: float) -> void:
 				route_via = null
 				route_blocked = false
 				_drag_tried = null
-				_timed_search(func(): suggest_route(route_from,route_to))
+				_follow_start(null)
 			return
 	if near_plan(flat,1.5): return
 	if _drag_tried != null and flat.distance_to(_drag_tried) < 1.2: return
-	_timed_search(func(): drag_route(flat))
-func _timed_search(search: Callable) -> void:
-	var started := Time.get_ticks_usec()
-	search.call()
-	_follow_left = maxf(0.05,(Time.get_ticks_usec()-started)/1000000.0*3.0)
+	_drag_tried = flat
+	_follow_start(flat)
+## Starts the cursor's search: the shortest track, or with `via` the track through it, as drag_route() would.
+func _follow_start(via) -> void:
+	_follow_search = {search = _route_search(route_from,route_to,via), via = via}
+	_follow_left = 0.05
+	_follow_step()
+func _follow_step() -> void:
+	var search: Dictionary = _follow_search.search
+	if search.has("job") and not _router.advance(search.job,FOLLOW_SLICE_USEC): return
+	var via = _follow_search.via
+	_follow_search = {}
+	var pieces := _route_found(search)
+	if via == null: return
+	route_blocked = pieces == 0
+	if pieces > 0: route_via = via
 ## The rail target whose ring holds `point`, the nearest centre first, or null.
 func target_at(point: Vector3, team := "player") -> Node3D:
 	var best: Node3D = null
@@ -842,13 +864,18 @@ func pick_target(target) -> String:
 ## rings, and through `via` when one is given. Returns the number of pieces, 0 when there is no open path. With
 ## no path through `via`, the plan is left as it was.
 func suggest_route(from, to, via = null) -> int:
+	_follow_search = {}
+	var search := _route_search(from,to,via)
+	if search.has("job"): _router.advance(search.job,-1)
+	return _route_found(search)
+## Sets up the search for suggest_route(): {job, via, ...} for the router to work on, or {result} when there is
+## nothing to search.
+func _route_search(from, to, via) -> Dictionary:
 	if _router == null: _router = preload("res://scripts/rails/rail_router.gd").new(self)
 	var width: float = probe("straight").half_width()
 	if not from is RailAnchor and not to is RailAnchor:
-		var path: Array[Dictionary] = _router.find(from,to,target_reach(from)+width,target_reach(to)+width,via)
-		if path.is_empty() and via != null: return 0
-		_set_plan(path)
-		return path.size()
+		var ring: Array = _router.ring_starts(from.global_position,target_reach(from)+width)
+		return {job = _router.begin(ring,{centre = to.global_position, reach = target_reach(to)+width},via), via = via, buildings = true}
 	# Joining track: the path leaves from one of the joins on the first line and arrives at one on the second.
 	var starts: Array = _router.ring_starts(from.global_position,target_reach(from)+width) if not from is RailAnchor else []
 	var from_joins: Array[Dictionary] = []
@@ -870,8 +897,23 @@ func suggest_route(from, to, via = null) -> int:
 		goal = {centre = to.global_position, reach = radius, states = states}
 	if starts.is_empty() or (to is RailAnchor and goal.states.is_empty()):
 		if via == null: _set_plan([])
-		return 0
-	var found: Dictionary = _router.route(starts,goal,via)
+		return {result = 0}
+	return {job = _router.begin(starts,goal,via), via = via, buildings = false, from = from, to = to, from_joins = from_joins, to_joins = to_joins}
+## Plans what a finished search found. Returns the number of pieces, 0 when there is no open path; with no path
+## through `via`, the plan is left as it was.
+func _route_found(search: Dictionary) -> int:
+	if search.has("result"): return search.result
+	var found: Dictionary = search.job.found
+	var via = search.via
+	if search.buildings:
+		var path: Array[Dictionary] = found.get("path",[] as Array[Dictionary])
+		if path.is_empty() and via != null: return 0
+		_set_plan(path)
+		return path.size()
+	var from = search.from
+	var to = search.to
+	var from_joins: Array[Dictionary] = search.from_joins
+	var to_joins: Array[Dictionary] = search.to_joins
 	var joins: Array[Dictionary] = []
 	if not found.is_empty():
 		if from is RailAnchor: joins.append(from_joins[found.start])
@@ -890,7 +932,7 @@ func suggest_route(from, to, via = null) -> int:
 func _set_plan(path: Array) -> void:
 	clear_plan()
 	for piece in path:
-		var entry := {kind = piece.kind, transform = piece.transform, cells = cells_for(piece.kind,piece.transform), ghost = _plan_ghost(piece.kind,piece.transform)}
+		var entry := {kind = piece.kind, transform = piece.transform, cells = piece.cells if piece.has("cells") else cells_for(piece.kind,piece.transform), ghost = _plan_ghost(piece.kind,piece.transform)}
 		if piece.has("replaces"):
 			entry.replaces = piece.replaces
 			for old in piece.replaces:
@@ -912,7 +954,7 @@ func _joins_fit(joins: Array[Dictionary], path: Array) -> bool:
 			if used.has(cell): return false
 			used[cell] = true
 	for piece in path:
-		for cell in cells_for(piece.kind,piece.transform):
+		for cell in (piece.cells if piece.has("cells") else cells_for(piece.kind,piece.transform)):
 			if used.has(cell): return false
 	return true
 ## Where new track can join the line under `anchor` (docs/RAIL_PLANNING.md), within JOIN_WINDOW of the click:
