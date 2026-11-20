@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/gameplay/unit_agent.gd" id="agent"]
 [ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
-[ext_resource type="PackedScene" path="res://scenes/models/ubermech_placeholder.tscn" id="model"]
+[ext_resource type="PackedScene" path="res://scenes/models/ubermech_model.tscn" id="model"]
 
 [ext_resource type="Resource" path="res://assets/units/ubermech.tres" id="stats"]
 
@@ -12,7 +12,7 @@
 
 [sub_resource type="PlaneMesh" id="team_marker_mesh"]
 material = ExtResource("team_marker")
-size = Vector2(2.0, 2.0)
+size = Vector2(5.3, 2.7)
 
 [node name="Ubermech" type="Node3D"]
 script = ExtResource("agent")
@@ -33,21 +33,21 @@ model_scene = ExtResource("model")
 position = Vector3(0, 0.06, 0)
 cast_shadow = 0
 mesh = SubResource("team_marker_mesh")
-instance_shader_parameters/half_size = Vector2(1.0, 1.0)
+instance_shader_parameters/half_size = Vector2(2.65, 1.35)
 metadata/not_selectable = true
 
 [node name="Status" type="Label3D" parent="."]
-position = Vector3(0,3.3,0)
+position = Vector3(0,5.55,0)
 billboard = 1
 no_depth_test = true
 font_size = 30
 pixel_size = 0.04
 outline_size = 6
 modulate = Color(0.65,0.95,1,1)
-text = "INFANTRY · 100/100"
+text = "UBERMECH · 120/120"
 
 [node name="Cargo" type="Label3D" parent="."]
-position = Vector3(0,4.0,0)
+position = Vector3(0,6.2,0)
 billboard = 1
 no_depth_test = true
 font_size = 27

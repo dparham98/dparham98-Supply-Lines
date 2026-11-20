@@ -1,0 +1,69 @@
+{
+  "checks": 73,
+  "failures": [],
+  "godot": "4.7.2-stable (official)",
+  "measurements": {
+    "authored_bounds_m": {
+      "marker_size": [
+        5.30000019073486,
+        2.70000004768372
+      ],
+      "max": [
+        2.60972118377686,
+        5.16400003433228,
+        0.843500018119812
+      ],
+      "min": [
+        -2.21309041976929,
+        -0.000000059873826785406,
+        -1.33299291133881
+      ]
+    },
+    "authored_mesh_nodes": 1,
+    "enemy_paint": {
+      "fixed": 12,
+      "painted": 1,
+      "red_emissive": 1
+    },
+    "factory_spawn_cell": [
+      50,
+      256
+    ],
+    "factory_yard_walk_m": 4.0,
+    "firing_direction_local": [
+      0.0000286743761535035,
+      0.0529328174889088,
+      -0.998598098754883
+    ],
+    "firing_muzzle_local": [
+      1.82972717285156,
+      2.56450366973877,
+      -2.42758750915527
+    ],
+    "player_paint": {
+      "fixed": 12,
+      "painted": 1,
+      "red_emissive": 1
+    },
+    "shot": {
+      "damage": 12,
+      "muzzle_error_m": 0.000000533120157797384
+    },
+    "walk": {
+      "Foot.L": {
+        "lift_m": 0.308222383260727,
+        "min_sole_m": -0.0072367787361145,
+        "planted_error_m": 0.0072367787361145,
+        "travel_m": 2.05278199911118
+      },
+      "Foot.R": {
+        "lift_m": 0.308222234249115,
+        "min_sole_m": -0.0072367787361145,
+        "planted_error_m": 0.0072367787361145,
+        "travel_m": 2.05278211832047
+      }
+    }
+  },
+  "model_sha256": "8e3d78829e1fa97875c21dca84255168e212af343a071940813684c2716e0da0",
+  "success": true
+}

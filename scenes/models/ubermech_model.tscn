@@ -1,0 +1,19 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/character_animator.gd" id="animator"]
+[ext_resource type="PackedScene" path="res://assets/models/units/ubermech.glb" id="mech"]
+
+[node name="UbermechModel" type="Node3D"]
+script = ExtResource("animator")
+player_path = NodePath("Rig/AnimationPlayer")
+idle_clip = &"Rest"
+run_clip = &"Walk"
+shoot_clip = &"Shoot"
+run_reference_speed = 3.1
+muzzle_bone = &"Muzzle"
+gun_rest_axis = Vector3(-0.332126, -0.501527, 0.798851)
+gun_sample_time = 0.1
+shot_lead_time = 0.1
+
+[node name="Rig" parent="." instance=ExtResource("mech")]
+transform = Transform3D(-1,0,0,0,1,0,0,0,-1,0,0,0)
