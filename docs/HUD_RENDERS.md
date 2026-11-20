@@ -20,6 +20,7 @@ Add ids after `--` to render only those, for example `-- tank depot`.
 - It lights and shoots the model in a world of its own, three-quarters from the front and 28° above:
   - `assets/ui/renders/<id>.png`: the whole model, 256 × 256, on a clear background.
   - `assets/ui/portraits/<id>.png`: a closer view, cut to what is drawn, on a clear background. A figure shows its upper half or so; a vehicle or building shows whole.
+    The Deforester's portrait is the exception: it is composed in Blender for the frame (`UNIT_PORTRAITS.md`), and the tool leaves it alone (`COMPOSED_PORTRAITS` in `skirmish_hud.gd`).
   - `assets/ui/command_cards/sl_produce_<id>.png` and `sl_build_<id>.png`: the render inside the card's own frame and ground.
 - Run it again whenever a model changes.
 
