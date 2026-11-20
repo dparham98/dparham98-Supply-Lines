@@ -11,6 +11,7 @@ extends SceneTree
 ##   assets/ui/command_cards/sl_<card>.png  the production and build tiles: the render inside the card's frame
 ## Pass ids after `--` to render only those.
 const TeamPaint = preload("res://scripts/components/team_paint.gd")
+const HUD = preload("res://scripts/gameplay/skirmish_hud.gd")
 ## id: [gameplay scene, production card or "", build card or "", yaw of the view in degrees, portrait framing].
 ## Portrait framing: the share of the model's height, from the top, the portrait shows (1 is the whole model).
 const ENTRIES := {
@@ -145,7 +146,8 @@ func render(id: String, entry: Array) -> void:
 	# Cut to what is drawn, so a long vehicle fills the frame's height as a figure does.
 	var used := portrait.get_used_rect().grow(6).intersection(Rect2i(Vector2i.ZERO,portrait.get_size()))
 	if used.size.x > 0 and used.size.y > 0: portrait = portrait.get_region(used)
-	portrait.save_png("res://assets/ui/portraits/%s.png" % id)
+	# A portrait composed for the frame by hand (the Deforester's, from Blender) is kept.
+	if not HUD.COMPOSED_PORTRAITS.has(id): portrait.save_png("res://assets/ui/portraits/%s.png" % id)
 	# Cards: the render inside the card's own frame.
 	for card in [entry[1],entry[2]]:
 		if not card.is_empty(): card_image("res://assets/ui/command_cards/sl_%s.png" % card,icon)

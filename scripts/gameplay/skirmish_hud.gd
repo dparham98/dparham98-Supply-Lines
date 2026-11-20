@@ -393,6 +393,9 @@ const DEPOT_PRODUCTS := {"infantry":"Deforester","truck":"Depot truck","cargo":"
 ## Rendered pictures of the units and buildings (docs/HUD_RENDERS.md), made by scripts/tools/render_hud_images.gd.
 const RENDER_PATH := "res://assets/ui/renders/%s.png"
 const PORTRAIT_PATH := "res://assets/ui/portraits/%s.png"
+## Portraits composed for the frame itself, which fill it and trim to fit (docs/UNIT_PORTRAITS.md); every other
+## portrait is a render, shown whole and centred (docs/HUD_RENDERS.md).
+const COMPOSED_PORTRAITS := ["infantry"]
 const GLYPH_TINT := Color(0.855,0.69,0.4)
 func set_icon(id: String) -> void:
 	var icon: TextureRect = info.get_node("Head/Icon")
@@ -417,8 +420,12 @@ static func glyph_name(id: String) -> String:
 func update_portrait(node) -> void:
 	var frame: TextureRect = $Bottom/Body/Row/Ornament/Portrait
 	var path := ""
-	if is_instance_valid(node) and (node.is_in_group("units") or node.is_in_group("selectable_buildings")): path = PORTRAIT_PATH % icon_name(node)
+	var id := ""
+	if is_instance_valid(node) and (node.is_in_group("units") or node.is_in_group("selectable_buildings")):
+		id = icon_name(node)
+		path = PORTRAIT_PATH % id
 	if path.is_empty() or not ResourceLoader.exists(path): frame.visible = false; return
+	frame.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED if COMPOSED_PORTRAITS.has(id) else TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	if not _icons.has(path): _icons[path] = load(path)
 	frame.texture = _icons[path]
 	frame.visible = true
