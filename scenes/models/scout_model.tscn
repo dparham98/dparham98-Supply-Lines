@@ -1,6 +1,6 @@
 [gd_scene format=3]
 [ext_resource type="Script" path="res://scripts/components/character_animator.gd" id="animator"]
-[ext_resource type="PackedScene" path="res://assets/models/units/scout.glb" id="rig"]
+[ext_resource type="PackedScene" path="res://assets/models/units/scout_cyborg.glb" id="rig"]
 [ext_resource type="PackedScene" path="res://scenes/models/scout_death_fx.tscn" id="death_fx"]
 [ext_resource type="Script" path="res://scripts/components/model_look.gd" id="look"]
 [sub_resource type="StandardMaterial3D" id="flash_hot"]
@@ -15,32 +15,37 @@ shoot_clip = &"shoot"
 run_reference_speed = 4.0
 muzzle_bone = &"flash"
 gun_bone = &"gun"
-gun_rest_axis = Vector3(0.332,-0.26,0.907)
-gun_sample_time = 0.33
-shot_lead_time = 0.375
+gun_rest_axis = Vector3(0.428,-0.255,0.867)
+gun_sample_time = 0.39
+shot_lead_time = 0.4375
 flash_bone = &"flash"
-flash_light_path = NodePath("Rig/Skater rig/Skeleton3D/gun/Muzzle light")
+flash_light_path = NodePath("Rig/ScoutCyborg_Rig/Skeleton3D/Gun/Muzzle light")
 flash_light_energy = 2.0
 death_clip = &"die"
 death_fx_scene = ExtResource("death_fx")
-metadata/team_materials = PackedStringArray("Scout red trim")
 [node name="Rig" parent="." instance=ExtResource("rig")]
 transform = Transform3D(-1,0,0,0,1,0,0,0,-1,0,0,0)
-[node name="Muzzle light" parent="Rig/Skater rig/Skeleton3D/gun" index="0"]
+[node name="Gun" type="BoneAttachment3D" parent="Rig/ScoutCyborg_Rig/Skeleton3D"]
+bone_name = "gun"
+[node name="Muzzle light" type="OmniLight3D" parent="Rig/ScoutCyborg_Rig/Skeleton3D/Gun"]
+transform = Transform3D(1,0,0,0,1,0,0,0,1,0.03,0.63,0.03)
 visible = false
+light_color = Color(1,0.75,0.4,1)
 omni_range = 3.0
 omni_attenuation = 1.0
-[node name="Muzzle flash" parent="Rig/Skater rig/Skeleton3D/flash" index="0"]
+[node name="Muzzle_Flash" parent="Rig/ScoutCyborg_Rig/Skeleton3D"]
 material_override = SubResource("flash_hot")
 cast_shadow = 0
-[node name="head_bare" parent="Rig/Skater rig/Skeleton3D/head" index="0"]
+[node name="Head_CyberJaw" parent="Rig/ScoutCyborg_Rig/Skeleton3D"]
 visible = false
-[node name="head_bare_goggles" parent="Rig/Skater rig/Skeleton3D/head" index="1"]
+[node name="Head_Face" parent="Rig/ScoutCyborg_Rig/Skeleton3D"]
 visible = false
-[node name="head_bare_hair" parent="Rig/Skater rig/Skeleton3D/head" index="2"]
+[node name="Head_Goggles" parent="Rig/ScoutCyborg_Rig/Skeleton3D"]
+visible = false
+[node name="Head_HairCap" parent="Rig/ScoutCyborg_Rig/Skeleton3D"]
 visible = false
 [node name="HeadLook" type="Node" parent="."]
 script = ExtResource("look")
-look_a = Array[NodePath]([NodePath("../Rig/Skater rig/Skeleton3D/head/head_helmet")])
-look_b = Array[NodePath]([NodePath("../Rig/Skater rig/Skeleton3D/head/head_bare"), NodePath("../Rig/Skater rig/Skeleton3D/head/head_bare_hair"), NodePath("../Rig/Skater rig/Skeleton3D/head/head_bare_goggles")])
+look_a = Array[NodePath]([NodePath("../Rig/ScoutCyborg_Rig/Skeleton3D/Head_Helmet")])
+look_b = Array[NodePath]([NodePath("../Rig/ScoutCyborg_Rig/Skeleton3D/Head_Face"), NodePath("../Rig/ScoutCyborg_Rig/Skeleton3D/Head_HairCap"), NodePath("../Rig/ScoutCyborg_Rig/Skeleton3D/Head_CyberJaw"), NodePath("../Rig/ScoutCyborg_Rig/Skeleton3D/Head_Goggles")])
 [editable path="Rig"]

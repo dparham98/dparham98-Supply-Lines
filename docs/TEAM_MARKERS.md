@@ -64,7 +64,7 @@ Some surfaces of the models are painted in the unit's side colour too. The paint
 | Cargo vehicle, Depot Truck, Train | `team_color` (truck cab, bed and lid; Depot Truck bulkhead and floors; train body) |
 | Motorcycle | `team_color` (faction fangs) and `moto_oxblood` (frame and rider's jacket) |
 | Drone | `team_color` (faction fang) and `Oxide red` (arms and ducts) |
-| Scout | `Scout red trim` (armour and skates) |
+| Scout | `team_color` (stripes on the armour, skates, goggles and gun) |
 | Grenadier | `Oxblood trim` |
 | Infantry, Tank, Ubermech, Hostile | None: there is no team surface to paint |
 
