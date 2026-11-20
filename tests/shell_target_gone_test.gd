@@ -1,7 +1,9 @@
 extends SceneTree
-# Headless: a tank shell in flight whose target dies, or whose shooter dies, still lands and goes away; it does not
-# hang in the air.
+# Headless: a tank shell in flight whose target dies flies on to the ground and bursts there, with splash for any
+# hostile beside the burst and none for friendlies (docs/TURRET_AIM.md); one whose shooter dies still lands and
+# goes. Neither hangs in the air.
 const Projectile = preload("res://scripts/gameplay/projectile.gd")
+const Burst = preload("res://scripts/components/burst_effect.gd")
 var game: Node3D
 func _initialize() -> void: call_deferred("run")
 func check(value: bool, message: String) -> bool:
@@ -53,12 +55,30 @@ func run() -> void:
 		var shell := fire(tank)
 		if not check(shell != null,"Tank did not fire (%s case)" % gone): return
 		shell._process(1.0/60)
+		var aim: Vector3 = shell.impact_point()
 		(foe if gone == "target" else tank).free()
+		var bystanders: Array = []
+		if gone == "target":
+			# It flies to where the target was, then sets off for the ground.
+			var guard := 0
+			while shell.impact_point() == aim and guard < 300:
+				shell._process(1.0/60); guard += 1
+			var ground: Vector3 = shell.impact_point()
+			if not check(absf(ground.y) < 0.05 and ground.x > aim.x+1.0,"The shell should head on to the ground past its target: %s from %s" % [ground,aim]): return
+			bystanders = [actor("hostile","enemy",Vector3(ground.x,0,ground.z+1.5)),actor("infantry","player",Vector3(ground.x,0,ground.z-1.5))]
+			for b in bystanders: b.set_meta("was",b.health)
 		var steps := fly(shell)
 		if not check(steps < 300,"Shell hung in the air after its %s died" % gone): return
+		var bursts := game.get_children().filter(func(n): return n.get_script() == Burst and not n.is_queued_for_deletion())
+		if not check(bursts.size() == 1,"One burst should show, got %d" % bursts.size()): return
+		if gone == "target":
+			if not check(absf(bursts[0].global_position.y) < 0.05,"The burst should be on the ground: %s" % bursts[0].global_position): return
+			if not check(bystanders[0].health < bystanders[0].get_meta("was"),"A hostile beside the burst should take splash"): return
+			if not check(bystanders[1].health == bystanders[1].get_meta("was"),"Splash should spare friendlies"): return
+		for b in bursts: b.free()
 		await process_frame
 		if not check(not is_instance_valid(shell),"Shell should be gone after its %s died" % gone): return
-		for node in [tank,foe]:
+		for node in bystanders+[tank,foe]:
 			if is_instance_valid(node): node.free()
 		await process_frame
 	print("SHELL_TARGET_GONE_TEST_PASSED"); quit()
