@@ -21,11 +21,12 @@ While track laying is armed, Enter and Backspace go to it before the Build page'
   - It needs open buildable land, clear of laid track and of buildings.
   - It doesn't need to be in any Depot's range.
   - When there is no open path, the game says so. Pick another building.
+  - **No search where none can succeed** (2026-11-19, after rail laying lagged): before searching, the open ground round each pick and the cursor point is flooded, up to 4000 cells (1200 for the cursor point). A flood that runs out first is a closed pocket, walled in by trees, water or buildings. When it does not hold the other end, no track can join them, and the game says so at once instead of searching. Track needs a chain of open cells, so this never turns down a path that exists. A Two Lakes mine walled in by its trees took 2 s to turn down before; now it is instant.
 - **Colour:**
   - The suggested track is green when a Depot can pay for it, and red when none has the iron.
   - Rings are amber, and green for the picked buildings and any the track touches.
 - **The cursor label** shows the next step, then the track's pieces and iron, and either "CLICK LAYS IT" or "NOT ENOUGH IRON".
-- **Following the cursor** (second playtest of 2026-11-17, which found press-and-drag unintuitive) pulls the track through one point, the one under the cursor. It is the shortest open track that passes within a lattice step (2.4 m) of that point. It is found again when the cursor has moved 1.2 m, and a search waits three times as long as the last one took (at least 0.05 s) before the next, so a long route does not hold the frame up. The cursor is read from mouse motion, so the track waits still while the mouse is over the HUD.
+- **Following the cursor** (second playtest of 2026-11-17, which found press-and-drag unintuitive) pulls the track through one point, the one under the cursor. It is the shortest open track that passes within a lattice step (2.4 m) of that point. It is found again when the cursor has moved 1.2 m. The search runs about 6 ms a frame (`FOLLOW_SLICE_USEC`), so a long route does not hold the frame up; the track takes its new shape when the search is done, and the cursor is read again. A search through a point gives up after 15000 states (`via_expansions`), keeping the last shape: on Two Lakes no open path through a point needed more than about 10500. The cursor is read from mouse motion, so the track waits still while the mouse is over the HUD.
 
 ## Trains on a Depot with several lines
 
