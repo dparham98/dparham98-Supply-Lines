@@ -2,6 +2,7 @@ extends SceneTree
 # Headless, on Two Lakes: the shortcuts that keep big battles quick (docs/COMBAT_BATCH.md, Targeting in big battles;
 # docs/PATHING.md, Lane checks) give the answers the slow ways gave. The unit grid finds every unit the whole
 # "units" group would, units pick the same nearest opponent, and the lane walk sees every cell a fine sampling does.
+# Units look round for targets on a timer, and actors keep their picking meshes.
 var game: Node3D
 func _initialize() -> void: call_deferred("run")
 func check(value: bool, message: String) -> bool:
@@ -102,5 +103,35 @@ func run() -> void:
 	if not check(mismatches <= 6,"The lane walk and the sampling disagreed on %d of 600 segments" % mismatches): return
 	for unit in units:
 		if is_instance_valid(unit): unit.free()
+	# Target scans (unit_agent _acquire): a unit with nothing in range looks again only every TARGET_SCAN_SECONDS,
+	# keeps what it found while that stays in range, and looks again at once when that target dies.
+	var spot: Vector3 = ground.tile_to_world(ground.find_nearest_open_tile(ground.get_tile_at_position(Vector3(-150,0,60))))
+	var shooter := spawn("infantry","player",spot)
+	await process_frame
+	if not check(shooter._acquire() == null,"Nothing in range: nothing found"): return
+	var near := spawn("hostile","enemy",spot+Vector3(4,0,0))
+	await process_frame
+	if not check(shooter._acquire() == null,"A new enemy should wait for the next scan"): return
+	shooter._scan_wait -= shooter.TARGET_SCAN_SECONDS
+	if not check(shooter._acquire() == near,"The next scan should find the enemy in range"): return
+	var nearer := spawn("hostile","enemy",spot+Vector3(2,0,0))
+	await process_frame
+	if not check(shooter._acquire() == near,"It keeps its target while that stays in range"): return
+	near.free()
+	if not check(shooter._acquire() == nearer,"With its target gone it looks again at once"): return
+	nearer.free()
+	# Picking meshes (selection_bounds.gd) are kept on the actor, and looked for again when Visuals changes.
+	var bounds = preload("res://scripts/units/selection_bounds.gd")
+	var before: int = bounds.meshes(shooter).size()
+	if not check(before > 0 and shooter.has_meta(&"_pick_meshes"),"The unit's meshes should be found and kept"): return
+	var extra := MeshInstance3D.new()
+	extra.mesh = BoxMesh.new()
+	shooter.get_node("Visuals").add_child(extra)
+	if not check(bounds.meshes(shooter).size() == before+1,"A mesh added under Visuals should be picked up at once"): return
+	extra.visible = false
+	if not check(bounds.meshes(shooter).size() == before,"A hidden mesh should not count"): return
+	extra.free()
+	if not check(bounds.meshes(shooter).size() == before,"A freed mesh should be dropped at once"): return
+	shooter.free()
 	print("BATTLE_LOOKUP_TEST_PASSED")
 	quit()

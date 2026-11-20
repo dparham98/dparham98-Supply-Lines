@@ -447,6 +447,16 @@ var _unit_grid := UnitGrid.new()
 ## Units standing within about `radius` of `point`, perhaps with a few just beyond and some freed (UnitGrid).
 func units_near(point: Vector3, radius: float) -> Array:
 	return _unit_grid.near(get_tree(),point,radius)
+## Whether an effect at `point` could be seen: on the screen, or within `margin` (a share of the screen's size) of
+## its edge. Death clips and shell bursts nobody can see are skipped: each is tens to hundreds of animated pieces,
+## and in a big battle most of them happened off screen. Without a window (the headless checks) all count as seen.
+func in_view(point: Vector3, margin := 0.2) -> bool:
+	if DisplayServer.get_name() == "headless": return true
+	var camera := get_viewport().get_camera_3d()
+	if camera == null: return true
+	if camera.is_position_behind(point): return false
+	var screen := get_viewport().get_visible_rect()
+	return screen.grow_individual(screen.size.x*margin,screen.size.y*margin,screen.size.x*margin,screen.size.y*margin).has_point(camera.unproject_position(point))
 ## A unit joined or left the "units" group.
 func units_changed() -> void:
 	_unit_grid.changed()

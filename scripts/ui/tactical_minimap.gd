@@ -8,7 +8,18 @@ const Overlay = preload("res://scripts/ui/map_overlay.gd")
 const EDGE := Color(0.05,0.055,0.047,0.9)
 const COAL_MARK := Color(0.93,0.9,0.82)
 const ALERT_PULSE_SECONDS := 6.0
+## The map is drawn again this often, in seconds, and whenever the camera moves. Every felled cell, track piece
+## and actor is drawn each time, which was a large part of a frame in a big battle.
+const REDRAW_SECONDS := 0.1
+var _drawn_at := -1.0
+var _drawn_camera := Transform3D()
 func _process(_delta: float) -> void:
+	var now := Time.get_ticks_msec()/1000.0
+	var camera := get_viewport().get_camera_3d()
+	var view: Transform3D = camera.global_transform if camera != null else Transform3D()
+	if now-_drawn_at < REDRAW_SECONDS and view == _drawn_camera: return
+	_drawn_at = now
+	_drawn_camera = view
 	queue_redraw()
 func world_to_map(point: Vector3) -> Vector2:
 	return (Vector2(point.x,point.z)-bounds.position)/bounds.size*size

@@ -15,7 +15,11 @@ Edit `assets/units/*.tres` in Godot's Inspector, then restart. UnitStats contain
 
 ## Targeting in big battles
 
-Every armed unit looks for the nearest opponent in range every frame (`unit_agent.gd` `_nearest_opponent`, and the Bastion roof gun's `close_defense.gd`). They used to ask every unit on the map, so the work grew with the square of the units: a battle of a few hundred ran at a few frames a second. They now ask the skirmish's `units_near`, which buckets the units into 16 m squares once a frame (`scripts/combat/unit_grid.gd`) and hands back those in the squares round the asker, with 2 m to spare for the bucket being a frame old. Distance is measured from where each unit stands now, as before, and what may be hit (`CombatResolver.can_hit`) is unchanged. A unit picks the same opponent it did. `tests/battle_lookup_test.gd` checks both: the buckets miss nobody the whole group would find, and 60 mixed units each pick the opponent the old way picks.
+Armed units look for the nearest opponent in range (`unit_agent.gd` `_nearest_opponent`, and the Bastion roof gun's `close_defense.gd`). They used to ask every unit on the map, every frame, so the work grew with the square of the units: a battle of a few hundred ran at a few frames a second.
+
+- **Near units only:** they now ask the skirmish's `units_near`. It buckets the units into 16 m squares (`scripts/combat/unit_grid.gd`), filled once a frame and again when a unit joins or leaves. It hands back the units in the squares round the asker, with 2 m to spare for the buckets being up to a frame old. Distance is measured from where each unit stands now, as before, and what may be hit (`CombatResolver.can_hit`) is unchanged.
+- **On a timer:** a unit with nothing in its sights looks round every 0.2 s (`TARGET_SCAN_SECONDS`), not every frame. It keeps shooting what it found while that stays in range and can be hit, and looks again at once when that target dies or leaves. So an enemy walking into range is noticed within 0.2 s, and a unit no longer switches to a nearer enemy in the middle of a fight.
+- **Checks:** `tests/battle_lookup_test.gd` checks that the buckets miss nobody the whole group would find, that 60 mixed units each pick the opponent the old way picks, and the timer rules above.
 
 ## Editor checks
 
