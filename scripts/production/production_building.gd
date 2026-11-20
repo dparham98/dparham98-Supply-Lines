@@ -44,7 +44,7 @@ func _ready() -> void:
 	add_to_group("selectable_buildings")
 	if is_instance_valid(assigned_depot): assigned_depot.ownership_changed.connect(_source_changed)
 func source_friendly() -> bool:
-	return team == "player" and is_instance_valid(assigned_depot) and assigned_depot.health > 0 and assigned_depot.team == team
+	return SupplySource.plays(team) and is_instance_valid(assigned_depot) and assigned_depot.health > 0 and assigned_depot.team == team
 func _source_changed() -> void:
 	# Preserve the existing Depot policy: paid queue cancellation without refund on source capture.
 	pending.clear()
@@ -76,16 +76,16 @@ func unit_stats_for(scene: PackedScene) -> UnitStats:
 		unit.free()
 	return _stats_cache[key]
 func request_unit(id: StringName) -> bool:
-	if not source_friendly(): game.notify("Assigned Depot is unavailable or no longer friendly."); return false
-	if queue >= stats.queue_limit: game.notify("Production queue is full."); return false
+	if not source_friendly(): game.notify("Assigned Depot is unavailable or no longer friendly.",team); return false
+	if queue >= stats.queue_limit: game.notify("Production queue is full.",team); return false
 	for scene in stats.unit_scenes:
 		var resource := unit_stats_for(scene)
 		if resource.unit_id != id: continue
-		if not assigned_depot.spend_local(resource.energy_cost,resource.iron_cost): game.notify("Assigned Depot lacks local production resources."); return false
+		if not assigned_depot.spend_local(resource.energy_cost,resource.iron_cost): game.notify("Assigned Depot lacks local production resources.",team); return false
 		pending.append(scene)
-		game.notify("%s queued at %s; paid by %s." % [resource.display_name,name,assigned_depot.name])
+		game.notify("%s queued at %s; paid by %s." % [resource.display_name,name,assigned_depot.name],team)
 		return true
-	game.notify("That unit is not produced by this building.")
+	game.notify("That unit is not produced by this building.",team)
 	return false
 func _process(delta: float) -> void:
 	if not source_friendly():
@@ -135,10 +135,10 @@ func _process(delta: float) -> void:
 		unit.position = ground.tile_to_world(cell)
 		game.get_node("Entities/Units").add_child(unit,true)
 		Rally.send(self,unit)
-		if unit.unit_stats.unit_id == &"infantry": game.units_printed += 1
+		if unit.unit_stats.unit_id == &"infantry" and team == "player": game.units_printed += 1
 		progress = 0
 		_show_model(&"unit_left")
-		game.notify("%s ready at %s." % [unit.unit_stats.display_name,name])
+		game.notify("%s ready at %s." % [unit.unit_stats.display_name,name],team)
 	$Status.text = "%s · %d queued · %d%%" % [stats.display_name,queue,roundi(fraction()*100)]
 ## The model a unit scene wears (its Visuals slot's model_scene), read from the packed scene without building
 ## the unit, so a factory can show the unit being made.

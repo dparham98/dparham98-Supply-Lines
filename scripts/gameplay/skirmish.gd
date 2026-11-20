@@ -96,7 +96,9 @@ func cancel_armed() -> void:
 	pending_unit_command = ""
 	fell_dragging = false
 	$DepotNetwork.clear_builder()
-func notify(text: String) -> void:
+## A message for the player; one about another side's doings (`team`, the enemy player's) is not shown.
+func notify(text: String, team := "player") -> void:
+	if team != "player": return
 	message = text
 # Positioned alerts for the HUD feed, newest first. A key repeats at most every ALERT_REPEAT_SECONDS.
 var alerts: Array[Dictionary] = []
@@ -130,7 +132,8 @@ func unit_died(unit: Node3D) -> void:
 	if unit.team == "enemy": enemies_killed += 1; notify("Hostile eliminated.")
 	elif unit.team == "player": alert("%s lost" % hud.object_name(unit),unit.global_position,"","lost")
 func _process(_delta: float) -> void:
-	if ore_delivered > 0 and units_printed > 0 and enemies_killed > 0: outcome = "VICTORY — gather, print, fight complete!"
+	# First Contact's goal; a map with an enemy player is won by beating it (docs/ENEMY_AI.md).
+	if enemy_player() == null and ore_delivered > 0 and units_printed > 0 and enemies_killed > 0: outcome = "VICTORY — gather, print, fight complete!"
 	var players := 0
 	for unit in get_tree().get_nodes_in_group("units"):
 		if unit.team == "player": players += 1
@@ -368,7 +371,7 @@ func _coal_plan_at(cell: Vector2i) -> Node3D:
 	var field: Dictionary = ground.coal_field_at(cell)
 	if field.is_empty(): return null
 	for plan in get_tree().get_nodes_in_group("construction_plans"):
-		if not is_instance_valid(plan) or plan.finished or plan.kind != &"coal_mine": continue
+		if not is_instance_valid(plan) or plan.finished or plan.kind != &"coal_mine" or plan.team != "player": continue
 		if field.get("cells",[]).has(plan.start): return plan
 	return null
 func issue_order(screen, queued := false) -> void:
@@ -449,6 +452,9 @@ func show_shot(start: Vector3, end: Vector3, team: String, projectile: PackedSce
 	if fog != null and team != fog.viewer and not fog.visible_to(fog.viewer,start) and not fog.visible_to(fog.viewer,end): shot.visible = false
 	return shot
 ## The map's fog of war (docs/FOG_OF_WAR.md), or null on a map without one.
+## The enemy player on this map (docs/ENEMY_AI.md), or null.
+func enemy_player() -> Node:
+	return get_node_or_null("EnemyPlayer")
 func fog_of_war() -> Node:
 	return get_tree().get_first_node_in_group("fog_of_war")
 

@@ -714,7 +714,7 @@ func update_contents() -> void:
 		refresh_global_menu()
 		info.get_node("Health").visible = false
 		name_label.text = "Construction plans"
-		info.get_node("HealthText").text = "%d pending" % get_tree().get_nodes_in_group("construction_plans").size()
+		info.get_node("HealthText").text = "%d pending" % get_tree().get_nodes_in_group("construction_plans").filter(func(p): return p.team == "player").size()
 		info.get_node("Details").text = "Place on valid terrain, or on a pile.\nDeliver iron to the footprint, then\norder Infantry to construct; a covering\nstockpile pays the energy as they build."
 		hint_text = "B opens this page; each tile's key places that plan. Pin (P) makes new plans pay only from one Depot or deployed Cargo truck you pick on the map or minimap."
 		return

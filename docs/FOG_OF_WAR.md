@@ -15,7 +15,7 @@ Asked for on 2026-11-19, together with an enemy AI player, which is to follow th
 - **The other side shows only in sight.** Enemy units, buildings, build sites, crates and track are hidden outside your sight, on the map and on the minimap. Nothing of theirs is remembered: a building you saw once disappears again when you no longer see it.
   - Hidden things can't be clicked or picked from the minimap.
   - Their shots are hidden too, unless they leave or land in your sight.
-- **What each side has seen** stays recorded (`explored_by`), for the enemy player to remember.
+- **What each side has seen** stays recorded (`explored_by`). The enemy player sees by these rules ([ENEMY_AI.md](ENEMY_AI.md)).
 - **Updates** run every 0.2 s on cells 2 m across.
 - **Combat is unchanged.** Units still fire at whatever is in range. Every unit sees further than it shoots, so nothing fires from out of sight.
 
@@ -49,6 +49,5 @@ Asked for on 2026-11-19, together with an enemy AI player, which is to follow th
 
 ## Not done yet
 
-- The enemy AI player, to these rules, is the next PR.
 - A smooth fade as units move; the edge moves in 2 m steps every 0.2 s.
 - Fog on the First Contact and test maps.

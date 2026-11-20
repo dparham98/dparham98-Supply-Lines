@@ -150,12 +150,12 @@ func spacing_notice(point: Vector3, team := "player", ignore: Node = null) -> St
 	return "" if depot_spacing_ok(point,team,ignore) else "A new Depot must stand %s." % spacing_reason()
 ## Whether a Depot plan still keeps its spacing; other plans always do.
 func plan_spacing_ok(plan: Node3D) -> bool:
-	return plan.kind != &"depot" or depot_spacing_ok(plan.global_position,"player",plan)
+	return plan.kind != &"depot" or depot_spacing_ok(plan.global_position,plan.team,plan)
 func can_place_size(point: Vector3, payer: Node3D, size: Vector2i, expansion := false) -> bool:
 	var start := footprint_start(point,size)
 	if not game.ground.is_footprint_valid(start,size): return false
 	if expansion: return true
-	if not SupplySource.available(payer,"player"): return false
+	if not SupplySource.available(payer,payer.team if is_instance_valid(payer) else "player"): return false
 	return range_covers_footprint(payer,start,size)
 ## Whether a stockpile's range covers a footprint: the footprint's centre is inside the range, as the
 ## Territory ring shows it (docs/DEPOT_RANGE.md). Every corner used to have to be inside; with the 17.5 m
@@ -176,15 +176,16 @@ func construct(point: Vector3) -> bool:
 	establish(point,0,0)
 	if builder_required: select_depot(payer)
 	return true
-func establish(point: Vector3, energy: int, iron: int, model_yaw := 0.0) -> Node3D:
+func establish(point: Vector3, energy: int, iron: int, model_yaw := 0.0, team := "player") -> Node3D:
 	var node = depot_scene.instantiate()
+	node.team = team
 	node.position = point
 	node.get_node("Visuals").rotation.y = model_yaw
 	node.grant_construction_infantry = true
 	node.initial_energy = energy
 	node.initial_iron = iron
 	game.get_node("Entities/Buildings").add_child(node,true)
-	select_depot(node)
+	if team == "player": select_depot(node)
 	return node
 func deploy_selected_truck() -> bool:
 	for unit in get_tree().get_nodes_in_group("units"):
@@ -206,7 +207,7 @@ func deploy_truck(unit: Node3D, point: Vector3) -> bool:
 		unit._claim(unit.grid_position)
 		var spaced := spacing_notice(point,unit.team,unit)
 		if spaced.is_empty(): spaced = strip_notice(point,depot_size(),&"depot",deploy_yaw(unit))
-		game.notify(spaced if not spaced.is_empty() else "Truck needs an empty Depot footprint on buildable land."); return false
+		game.notify(spaced if not spaced.is_empty() else "Truck needs an empty Depot footprint on buildable land.",unit.team); return false
 	var rules = unit.deployment_rules
 	# The Depot faces east whatever the truck's heading; its model turns and pulls up from where the truck stood.
 	# A truck heading is the Depot's yaw less 90 degrees, so an east-facing Depot matches a truck heading -90.
@@ -219,9 +220,9 @@ func deploy_truck(unit: Node3D, point: Vector3) -> bool:
 	from.y = point.y
 	unit.remove_from_group("units")
 	unit.queue_free()
-	var depot := establish(point,rules.deployed_energy,rules.deployed_iron,model_yaw)
+	var depot := establish(point,rules.deployed_energy,rules.deployed_iron,model_yaw,unit.team)
 	depot.get_node("Visuals/Model").play_deploy(from,angle_difference(heading,yaw))
-	game.notify("Truck consumed; new Depot established with its configured starter inventory.")
+	game.notify("Truck consumed; new Depot established with its configured starter inventory.",unit.team)
 	return true
 
 func construct_generator(point: Vector3) -> bool:
@@ -468,10 +469,10 @@ func plan_overlaps(start: Vector2i, size: Vector2i) -> bool:
 			for cell in strip_cells(plan.global_position):
 				if rect.has_point(cell): return true
 	return false
-func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_payer := false) -> Node3D:
+func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_payer := false, team := "player") -> Node3D:
 	var spec := plan_spec(kind)
 	if spec.is_empty(): return null
-	if kind == &"rail": game.notify("Maglev track is laid piece by piece from the Build page, not planned."); return null
+	if kind == &"rail": game.notify("Maglev track is laid piece by piece from the Build page, not planned.",team); return null
 	var start := footprint_start(point,spec.size)
 	if is_mine_kind(kind):
 		# A mine planned on a mine site takes the whole site.
@@ -481,28 +482,28 @@ func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_paye
 		spec.scene = mine_scene_for(spot); spec.model = _model_scene(spec.scene)
 	if not plan_terrain_valid(start,spec.size,kind) or plan_overlaps(start,spec.size):
 		var strip := strip_notice(point,spec.size,kind)
-		game.notify(strip if not strip.is_empty() else "A Coal Mine needs a coal seam under it with no mine yet, and cannot overlap another plan." if kind == &"coal_mine" else "Plan needs valid empty terrain and cannot overlap another plan. Iron Mines need a mine site or iron deposit.")
+		game.notify(strip if not strip.is_empty() else "A Coal Mine needs a coal seam under it with no mine yet, and cannot overlap another plan." if kind == &"coal_mine" else "Plan needs valid empty terrain and cannot overlap another plan. Iron Mines need a mine site or iron deposit.",team)
 		return null
-	if kind == &"depot" and not depot_spacing_ok(point):
-		game.notify(spacing_notice(point))
+	if kind == &"depot" and not depot_spacing_ok(point,team):
+		game.notify(spacing_notice(point,team),team)
 		return null
 	var plan = PLAN_SCENE.instantiate()
-	plan.kind = kind; plan.spec = spec; plan.start = start
+	plan.kind = kind; plan.spec = spec; plan.start = start; plan.team = team
 	plan.payer = payer; plan.pinned = pin_payer or payer != null
 	plan.position = game.ground.tile_to_world(start+spec.size/2)
 	game.get_node("Entities/Buildings").add_child(plan,true)
-	if kind == &"rail": game.notify("Rail plan placed. A covering Depot pays it when the tile is clear.")
-	else: game.notify("%s plan placed. Deliver %d iron to its footprint, then order Infantry to construct; a covering stockpile pays the energy as they build." % [spec.title,spec.iron])
+	if kind == &"rail": game.notify("Rail plan placed. A covering Depot pays it when the tile is clear.",team)
+	else: game.notify("%s plan placed. Deliver %d iron to its footprint, then order Infantry to construct; a covering stockpile pays the energy as they build." % [spec.title,spec.iron],team)
 	return plan
 ## Depots and deployed Cargo trucks pay plans in their range; rails need a Depot.
 func plan_source_valid(plan: Node3D, source) -> bool:
-	if not SupplySource.available(source,"player"): return false
+	if not SupplySource.available(source,plan.team): return false
 	if source.energy < plan.spec.energy or source.iron < plan.spec.iron: return false
 	return can_place_mine(plan.global_position,source) if is_mine_kind(plan.kind) else can_place_size(plan.global_position,source,plan.spec.size)
 func plan_payer(plan: Node3D) -> Node3D:
 	if plan.pinned: return plan.payer if plan_source_valid(plan,plan.payer) else null
 	# Auto is explicitly selected in the global menu: nearest eligible Depot, stable tie order.
-	for source in SupplySource.candidates(get_tree(),plan.global_position,"player"):
+	for source in SupplySource.candidates(get_tree(),plan.global_position,plan.team):
 		if plan_source_valid(plan,source): return source
 	return null
 func complete_plan(plan: Node3D, payer: Node3D) -> Node3D:
@@ -510,6 +511,7 @@ func complete_plan(plan: Node3D, payer: Node3D) -> Node3D:
 	if plan.finished or not plan_terrain_valid(plan.start,plan.spec.size,plan.kind,plan) or not plan_source_valid(plan,payer): return null
 	if not plan_spacing_ok(plan): return null
 	var building = plan.spec.scene.instantiate()
+	if not is_mine_kind(plan.kind) and building.get("team") != null: building.team = plan.team
 	if plan.kind == &"depot":
 		building.initial_energy = 0; building.initial_iron = 0
 		building.grant_construction_infantry = true
@@ -577,12 +579,12 @@ func materials_inside(rect: Rect2i) -> Dictionary:
 	return result
 ## Whether a stockpile's range covers the plan's footprint (its centre).
 func source_covers_plan(source, plan: Node3D) -> bool:
-	return SupplySource.available(source,"player") and range_covers_footprint(source,plan.start,plan.spec.size)
+	return SupplySource.available(source,plan.team) and range_covers_footprint(source,plan.start,plan.spec.size)
 ## The friendly stockpiles whose range covers a footprint, nearest first.
-func covering_sources(start: Vector2i, size: Vector2i) -> Array[Node3D]:
+func covering_sources(start: Vector2i, size: Vector2i, team := "player") -> Array[Node3D]:
 	var centre: Vector3 = game.ground.tile_to_world(start)+Vector3(size.x*0.5-0.5,0,size.y*0.5-0.5)
 	var result: Array[Node3D] = []
-	for source in SupplySource.candidates(get_tree(),centre,"player"):
+	for source in SupplySource.candidates(get_tree(),centre,team):
 		if range_covers_footprint(source,start,size): result.append(source)
 	return result
 ## Energy comes from one covering Depot or deployed Cargo vehicle; materials never do.
@@ -594,6 +596,7 @@ func finish_plan(plan: Node3D) -> Node3D:
 	if plan.finished or not plan_terrain_valid(plan.start,plan.spec.size,plan.kind,plan) or not plan_spacing_ok(plan): return null
 	var payer = plan.payer if is_instance_valid(plan.payer) and plan.payer.is_in_group("depots") else null
 	var building = plan.spec.scene.instantiate()
+	if not is_mine_kind(plan.kind) and building.get("team") != null: building.team = plan.team
 	if plan.kind == &"depot":
 		building.initial_energy = 0; building.initial_iron = 0
 		building.grant_construction_infantry = true

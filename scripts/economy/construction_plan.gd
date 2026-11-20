@@ -9,6 +9,8 @@ var start := Vector2i.ZERO
 ## The pinned energy payer, or the one latched when construction starts.
 var payer: Node3D
 var pinned := false
+## The side the plan is for (docs/ENEMY_AI.md): only its stockpiles pay and the building is theirs.
+var team := "player"
 var state := "Waiting for materials on site"
 var finished := false
 var elapsed := 0.0
@@ -208,7 +210,7 @@ func site_state() -> StringName:
 func energy_payer(due: int) -> Node3D:
 	if pinned or is_instance_valid(payer):
 		return payer if network.plan_energy_source_valid(self,payer,due) else null
-	for source in SupplySource.candidates(get_tree(),global_position,"player"):
+	for source in SupplySource.candidates(get_tree(),global_position,team):
 		if network.plan_energy_source_valid(self,source,spec.energy-energy_paid):
 			payer = source
 			return source
@@ -231,7 +233,7 @@ func finish() -> Node3D:
 	if network.game.selected_building == self:
 		network.game.selected_building = building if kind != &"rail" else null
 		if kind == &"depot": network.select_depot(building)
-	network.game.notify("%s built." % spec.title)
+	network.game.notify("%s built." % spec.title,team)
 	queue_free()
 	return building
 ## Instant completion paid in full from one covering stockpile: the rail rule, and the shortcut the
@@ -254,7 +256,7 @@ func complete_from_stock() -> Node3D:
 		if network.game.selected_building == self:
 			network.game.selected_building = building if kind != &"rail" else null
 			if kind == &"depot": network.select_depot(building)
-		network.game.notify("%s built from %s local stock." % [spec.title,source.name])
+		network.game.notify("%s built from %s local stock." % [spec.title,source.name],team)
 		queue_free()
 	return building
 ## A Depot site now too close to a friendly Depot, for example one captured nearby: it waits, and can be cancelled.
@@ -290,5 +292,5 @@ func cancel() -> void:
 	finished = true
 	remove_from_group("construction_plans")
 	if network.game.selected_building == self: network.game.selected_building = null
-	network.game.notify("Construction plan cancelled. Materials on the site stay as piles.")
+	network.game.notify("Construction plan cancelled. Materials on the site stay as piles.",team)
 	queue_free()

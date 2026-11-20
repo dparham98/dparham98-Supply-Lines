@@ -1050,7 +1050,7 @@ func plan_target_candidates(team := "player") -> Array[Node3D]:
 	for mine in get_tree().get_nodes_in_group("mines"):
 		if mine.get("health") == null or mine.health > 0: result.append(mine)
 	for plan in get_tree().get_nodes_in_group("construction_plans"):
-		if not plan.finished and plan.kind != &"rail": result.append(plan)
+		if not plan.finished and plan.kind != &"rail" and plan.team == team: result.append(plan)
 	return result
 func _plan_passes(target: Node3D, reach: float) -> bool:
 	var centre := Vector2(target.global_position.x,target.global_position.z)

@@ -76,7 +76,7 @@ var cells: Array[Vector2i] = []
 @onready var game = get_tree().get_first_node_in_group("skirmish")
 @onready var ground = get_tree().get_first_node_in_group("terrain_grid")
 func _ready() -> void:
-	construction_infantry_pending = grant_construction_infantry and team == "player"
+	construction_infantry_pending = grant_construction_infantry and SupplySource.plays(team)
 	if construction_infantry_pending: call_deferred("try_construction_infantry")
 	stockpile = ResourceStockpile.new(storage_capacity_override if storage_capacity_override > 0 else rules.storage_capacity)
 	health = max_health
@@ -118,13 +118,13 @@ func testing_iron_granted() -> bool:
 	return rules.testing_starting_iron >= 0 and (not is_instance_valid(game) or game.get("testing_iron_grant") != false)
 func request_infantry() -> bool:
 	# Compatibility rejection: repeatable infantry production belongs to Barracks.
-	game.notify("Depots grant one Infantry on establishment. Produce additional Infantry at Barracks.")
+	game.notify("Depots grant one Infantry on establishment. Produce additional Infantry at Barracks.",team)
 	return false
 func _process(delta: float) -> void:
 	update_capture(delta)
 	try_construction_infantry()
 	if queue <= 0: progress = 0; $Progress.text = "%s DEPOT · E %d / I %d · capture %d%%" % [team,energy,iron,roundi(capture_progress/rules.capture_seconds*100)]; return
-	if team != "player": return
+	if not SupplySource.plays(team): return
 	if cancelling: _step_cancel(delta); return
 	var truck: bool = pending[0] == "truck"
 	var seconds := current_seconds()
@@ -159,9 +159,8 @@ func _process(delta: float) -> void:
 		Rally.send(self,unit)
 		queue -= 1
 		progress = 0
-		if kind == "infantry": game.units_printed += 1
-		game.notify("%s ready at %s." % [kind,name])
-
+		if kind == "infantry" and team == "player": game.units_printed += 1
+		game.notify("%s ready at %s." % [kind,name],team)
 ## Seconds the job at the head of the queue takes.
 func current_seconds() -> float:
 	return $Visuals/Model.truck_seconds() if not pending.is_empty() and pending[0] == "truck" else print_seconds
@@ -212,9 +211,9 @@ func _complete_truck() -> void:
 	unit.global_position = where
 	unit.get_node("Visuals").rotation.y = $Visuals.rotation.y
 	Rally.send(self,unit)
-	game.notify("truck ready at %s." % name)
+	game.notify("truck ready at %s." % name,team)
 func can_cancel() -> bool:
-	return team == "player" and queue > 0 and not pending.is_empty() and not cancelling
+	return SupplySource.plays(team) and queue > 0 and not pending.is_empty() and not cancelling
 ## Cancels the job in progress for a full refund. A truck first backs its animation out.
 func cancel_current() -> bool:
 	if not can_cancel(): return false
@@ -250,14 +249,14 @@ func _job_cost(kind: String) -> Vector2i:
 func spend_local(energy_cost: int, iron_cost: int) -> bool:
 	return stockpile.spend({&"energy":energy_cost,&"iron":iron_cost})
 func request_truck() -> bool:
-	if team != "player" or queue >= queue_limit: return false
+	if not SupplySource.plays(team) or queue >= queue_limit: return false
 	if not spend_local(rules.truck_energy_cost,rules.truck_iron_cost): return false
 	pending.append("truck")
 	queue += 1
 	return true
 func request_cargo() -> bool:
 	var config = game.get_node("DepotNetwork").supply_rules
-	if team != "player" or queue >= queue_limit: return false
+	if not SupplySource.plays(team) or queue >= queue_limit: return false
 	if not spend_local(config.cargo_energy_cost,config.cargo_iron_cost): return false
 	pending.append("cargo")
 	queue += 1
@@ -333,7 +332,7 @@ func _leave_wreck() -> void:
 	model.play_death()
 
 func try_construction_infantry() -> bool:
-	if not construction_infantry_pending or construction_infantry_spawned or team != "player" or health <= 0: return false
+	if not construction_infantry_pending or construction_infantry_spawned or not SupplySource.plays(team) or health <= 0: return false
 	var spawn := ProductionExit.find_cell(ground,global_position,footprint)
 	if spawn.x < 0: return false
 	var unit = infantry_scene.instantiate()
@@ -343,15 +342,15 @@ func try_construction_infantry() -> bool:
 	Rally.send(self,unit)
 	construction_infantry_pending = false
 	construction_infantry_spawned = true
-	game.notify("Construction infantry ready at %s." % name)
+	game.notify("Construction infantry ready at %s." % name,team)
 	return true
 
 ## `line`: a piece of the line the train starts on, when the Depot has more than one (docs/RAIL_PLANNING.md).
 func request_train(line: Node3D = null) -> bool:
 	var config = game.get_node("RailNetwork").rules
-	if team != "player" or health <= 0 or queue >= queue_limit: return false
+	if not SupplySource.plays(team) or health <= 0 or queue >= queue_limit: return false
 	if not spend_local(config.cargo_energy_cost,config.cargo_iron_cost): return false
 	pending.append("train"); queue += 1
 	train_lines.append(line)
-	game.notify("Train queued%s; needs friendly track in this Depot loading area." % (" on the chosen line" if line != null else ""))
+	game.notify("Train queued%s; needs friendly track in this Depot loading area." % (" on the chosen line" if line != null else ""),team)
 	return true

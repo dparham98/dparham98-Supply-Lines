@@ -230,6 +230,7 @@ func _draw() -> void:
 	var font := get_theme_default_font()
 	draw_coal_rings(camera)
 	for plan in get_tree().get_nodes_in_group("construction_plans"):
+		if plan.team != "player": continue
 		var corners := plan_outline(plan,camera)
 		var ready: bool = plan.kind != &"rail" and plan.materials_covered()
 		for i in range(corners.size()-1): draw_dashed_line(corners[i],corners[i+1],Color(0.45,0.95,0.55,0.9) if ready else Color(0.91,0.96,0.98,0.8),1.5,6)

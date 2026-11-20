@@ -258,7 +258,7 @@ func _crate_stop(node) -> bool:
 	return is_instance_valid(node) and node.is_in_group("supply_crates") and not node.is_queued_for_deletion() and node.team == team
 ## A queued build site (docs/SITE_CONSTRUCTION.md) that trucks can unload materials onto.
 func _site_stop(node) -> bool:
-	return is_instance_valid(node) and node.is_in_group("construction_plans") and not node.is_queued_for_deletion() and not node.finished and node.kind != &"rail" and team == "player"
+	return is_instance_valid(node) and node.is_in_group("construction_plans") and not node.is_queued_for_deletion() and not node.finished and node.kind != &"rail" and node.team == team
 ## Whether this vehicle can stop there: trains need a Depot; trucks also take crates, open ground
 ## and, for unloading, build sites.
 func stop_valid(kind: String, node, point) -> bool:

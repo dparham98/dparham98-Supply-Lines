@@ -806,7 +806,8 @@ func _return_cargo() -> void:
 	if cargo > 0:
 		var accepted: int = depot.stockpile.deposit(cargo_kind,cargo)
 		if accepted > 0 and game.has_method("delivered"): game.delivered(depot,cargo_kind,accepted)
-		if cargo_kind == &"wood": game.wood_delivered += accepted
+		if team != "player": pass
+		elif cargo_kind == &"wood": game.wood_delivered += accepted
 		elif cargo_kind == &"iron": game.ore_delivered += accepted
 		cargo -= accepted
 		if cargo > 0: state = "Stockpile full · carrying remainder"; return

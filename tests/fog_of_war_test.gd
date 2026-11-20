@@ -21,6 +21,7 @@ func run() -> void:
 	for frame in range(3): await process_frame
 	game.set_process(false)
 	for node in get_nodes_in_group("units"): node.set_process(false)
+	game.enemy_player().set_process(false)
 	fog = game.fog_of_war()
 	if not check(fog != null and fog.get_parent() == game,"Two Lakes should have its fog of war in the saved scene"): return
 	fog.update_now()
@@ -37,7 +38,9 @@ func run() -> void:
 			hidden += 1
 		elif unit.team == "player":
 			if not check(unit.visible,"%s is the player's own and should show" % unit.name): return
-	if not check(hidden >= 7,"The East start's enemies should all be hidden: %d" % hidden): return
+	if not check(hidden >= 2,"The East start's enemies should all be hidden: %d" % hidden): return
+	var east_depot: Node3D = game.get_node("Entities/Buildings/EnemyDepot")
+	if not check(not east_depot.visible,"The enemy's Depot should be hidden in the fog"): return
 	for mine in get_nodes_in_group("mines"):
 		if not check(mine.visible,"Shared mines always show"): return
 	# Vision is each unit's own: from a lone Tank (52 m) a point 40 m off is in sight, from an Infantry (30 m) not.

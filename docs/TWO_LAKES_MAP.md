@@ -55,7 +55,7 @@ These are measured from where each start's Depot stands. On West and East that i
 | `scripts/tools/draw_lakes_layout.gd` | Draws `assets/maps/lakes/layout.png` from scratch, measures it and writes `docs/images/two_lakes_layout.png`. Running it again overwrites hand edits to the layout. |
 | `assets/maps/lakes/` | The layout, the files built from it, the ground material, the mountain mesh and the sunken water's meshes. |
 | `scenes/maps/lakes_terrain.tscn`, `lakes_terrain_landmarks.tscn` | The terrain and its saved scenery. |
-| `scenes/maps/lakes_skirmish.tscn` | The playable scene. Every one of the 20 mine sites has its mine from the start (they are shared, so any side's Infantry can work them). The player holds the West start; the East start has one enemy of each unit type, as on the balanced map. The other four starts are markers under `Sites`. |
+| `scenes/maps/lakes_skirmish.tscn` | The playable scene. Every one of the 20 mine sites has its mine from the start (they are shared, so any side's Infantry can work them). The player holds the West start; the enemy player holds the East start with the same Depot, Infantry and Cargo truck (ENEMY_AI.md). The other four starts are markers under `Sites`. |
 | `tests/two_lakes_map_test.gd` | Headless: the mirror, the mine sites, the coal, the built home mines, and that the open way goes round a lake while the straight road is shut by forest. |
 | `tests/two_lakes_runtime_check.gd` | Rendered: the whole map, the West start, the Crossing, the Crag and a pass, and the frame rate. |
 
