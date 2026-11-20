@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/fog_of_war.gd" id="fog"]
+[ext_resource type="Shader" path="res://assets/shaders/fog_of_war.gdshader" id="shader"]
+
+[sub_resource type="QuadMesh" id="screen"]
+size = Vector2(2, 2)
+
+[sub_resource type="ShaderMaterial" id="dim"]
+render_priority = 100
+shader = ExtResource("shader")
+
+[node name="FogOfWar" type="Node3D"]
+script = ExtResource("fog")
+
+[node name="Overlay" type="MeshInstance3D" parent="."]
+cast_shadow = 0
+extra_cull_margin = 16384.0
+custom_aabb = AABB(-10000, -10000, -10000, 20000, 20000, 20000)
+mesh = SubResource("screen")
+material_override = SubResource("dim")

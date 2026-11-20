@@ -58,7 +58,12 @@ func _draw() -> void:
 		var at := world_to_map(field.center)
 		draw_colored_polygon(PackedVector2Array([at+Vector2(0,-5),at+Vector2(5,0),at+Vector2(0,5),at+Vector2(-5,0)]),EDGE)
 		draw_colored_polygon(PackedVector2Array([at+Vector2(0,-3.5),at+Vector2(3.5,0),at+Vector2(0,3.5),at+Vector2(-3.5,0)]),COAL_MARK)
+	# Fog of war (docs/FOG_OF_WAR.md): the map is dimmed outside the player's sight, and the other side's
+	# markers show only inside it.
+	var fog = game.fog_of_war()
+	if fog != null: draw_texture_rect(fog.shade_texture(),Rect2(world_to_map(fog.map_corner()),world_to_map(fog.map_corner()+fog.map_size())-world_to_map(fog.map_corner())),false,Color(1,1,1,0.55))
 	for rail in get_tree().get_nodes_in_group("rails"):
+		if fog != null and not fog.shows(rail): continue
 		var colour := Color(0.4,0.8,0.85) if game.get_node("RailNetwork").friendly_piece(rail,"player") else Color(0.85,0.3,0.25)
 		var total: float = rail.length()
 		var steps := maxi(2,int(total/2.0))
@@ -69,6 +74,7 @@ func _draw() -> void:
 	for group in ["resources","selectable_buildings","units"]:
 		for node in get_tree().get_nodes_in_group(group):
 			if group == "resources" and node.is_in_group("mines"): continue
+			if fog != null and not fog.shows(node): continue
 			var point := world_to_map(node.global_position)
 			var color: Color = Overlay.RESOURCE_COLORS[&"coal"] if group == "resources" else Overlay.TEAM_COLORS.get(str(node.team),Overlay.TEAM_COLORS["neutral"])
 			if group == "selectable_buildings":

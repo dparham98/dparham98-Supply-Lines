@@ -72,6 +72,8 @@ func run() -> void:
 		if barracks.all(func(b): return b.global_position.distance_to(spot) > 9.0): enemy.global_position = spot; break
 	for unit in get_nodes_in_group("units"):
 		if unit != enemy and unit.global_position.distance_to(enemy.global_position) < 5.0: unit.global_position += Vector3(40,0,0)
+	# Beside the Depot it is inside the player's sight (docs/FOG_OF_WAR.md).
+	if game.fog_of_war() != null: game.fog_of_war().update_now()
 	var own: Node3D = get_nodes_in_group("units").filter(func(u): return u.team == "player")[0]
 	own.set_selected(true)
 	click(enemy)

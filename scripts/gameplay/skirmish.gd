@@ -299,6 +299,9 @@ const FellLane = preload("res://scripts/terrain/fell_lane.gd")
 ## from the point to the node's model bounds, so a large building is picked anywhere on its footprint.
 func pick_distance(node: Node3D, camera: Camera3D, screen) -> float:
 	if not screen is MapPick: return SelectionBounds.hit_distance(node,camera,screen)
+	# The other side's things hidden by fog of war cannot be picked from the minimap either.
+	var fog := fog_of_war()
+	if fog != null and not fog.shows(node): return INF
 	var at := Vector2(screen.point.x,screen.point.z)
 	var d := Vector2(node.global_position.x,node.global_position.z).distance_to(at)
 	for mesh in SelectionBounds.meshes(node):
@@ -440,7 +443,14 @@ func show_shot(start: Vector3, end: Vector3, team: String, projectile: PackedSce
 	var shot = (projectile if projectile != null else tracer_scene).instantiate()
 	add_child(shot)
 	shot.configure(start,end,team)
+	# Under fog of war (docs/FOG_OF_WAR.md) the other side's shots show only where the player can see them land
+	# or leave.
+	var fog := fog_of_war()
+	if fog != null and team != fog.viewer and not fog.visible_to(fog.viewer,start) and not fog.visible_to(fog.viewer,end): shot.visible = false
 	return shot
+## The map's fog of war (docs/FOG_OF_WAR.md), or null on a map without one.
+func fog_of_war() -> Node:
+	return get_tree().get_first_node_in_group("fog_of_war")
 
 ## A Fell box being dragged, in screen pixels (docs/FELL.md). Shorter drags are clicks.
 const FELL_DRAG := 6.0
