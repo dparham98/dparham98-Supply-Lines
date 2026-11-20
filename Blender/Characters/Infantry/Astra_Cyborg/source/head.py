@@ -1,7 +1,8 @@
 """Sculpted head in the infantry bind pose. Dimensions below are in facial millimetres."""
-from math import asin, cos, pi, sin
+from math import asin, ceil, cos, pi, sin
 
 from mathutils import Vector
+from mathutils.geometry import tessellate_polygon
 
 
 def _world(point):
@@ -13,6 +14,7 @@ class Assembly:
     def __init__(self, kit, name):
         self.kit, self.name = kit, name
         self.points, self.faces, self.mats, self.indices = [], [], [], []
+        self.smooth_faces = []
 
     def solid(self, points, faces, material):
         start = len(self.points)
@@ -39,7 +41,10 @@ class Assembly:
         self.solid([v for r in rings for v in r], faces, mats)
 
     def finish(self):
-        return self.kit.mesh(self.name, self.points, self.faces, self.mats, "head", self.indices)
+        obj = self.kit.mesh(self.name, self.points, self.faces, self.mats, "head", self.indices)
+        for index in self.smooth_faces:
+            obj.data.polygons[index].use_smooth=True
+        return obj
 
 
 # The seven front columns follow the philtrum, nose wing, orbital rim, cheekbone,
@@ -76,16 +81,87 @@ ROWS = [
 ]
 
 
-def face_skin(artist, skin, liner):
-    rings = []
-    for z, front, back in ROWS:
-        jaw_taper = min(1, .91 + z / 610)
-        cranium_taper = max(.77, 1 - max(0,z-142) / 360)
-        half = [(x*jaw_taper*(cranium_taper if i==6 else 1),y,z+h)
-                for i,(x,y,h) in enumerate(front)]
-        half += [(x*cranium_taper*jaw_taper,y*cranium_taper,z) for x,y in back]
-        rings.append(half + [(-x,y,zz) for x,y,zz in half[-2:0:-1]])
-    artist.rings(rings,lambda j,i:liner if 7<=i<11 else skin,(skin,skin))
+def face_skin(artist, cast, chassis, liner):
+    rings,guard_rings=[],[]
+    for z,front,back in ROWS:
+        jaw_taper=min(1,.91+z/610)
+        chin_taper=min(1,.79+z/550)
+        cranium=max(.77,1-max(0,z-142)/360)
+        lower_width=.77+.23*min(1,z/120)
+        lower_lift=13*max(0,1-z/94)
+        original=[]
+        half=[]
+        for i,(x,y,h) in enumerate(front):
+            width=jaw_taper*(cranium if i==6 else 1)
+            original.append((x*width,y,z+h))
+            # Keep a broad cheekbone and draw the lower corners inward and up
+            # toward the ear. The jaw pivots inside the padded nape guard.
+            blend=max(0,min(1,(i-2)/3))
+            narrowed=(1-blend)*chin_taper+blend*width*lower_width
+            half.append((x*narrowed,y,z+h+lower_lift*blend))
+        original.extend((x*cranium*jaw_taper,y*cranium,z) for x,y in back)
+        half.extend((x*cranium*jaw_taper*lower_width,y*cranium,z+lower_lift) for x,y in back)
+        def mirror(arc):
+            return arc+[(-x,y,zz) for x,y,zz in arc[-2:0:-1]]
+        rings.append(mirror(half))
+        guard_rings.append(mirror(original))
+
+    # The ivory mask ends along the moving jaw seam. Divide intersected
+    # skin triangles at that line so the side casting is a continuous solid.
+    cut=[(2,39),(19,51),(44,69),(63,79),(81,89),(96,99),(112,106),
+         (135,112),(155,115),(180,120),(205,125),(280,111)]
+    def mask_edge(v):
+        x,_,z=v
+        for (lo,a),(hi,b) in zip(cut,cut[1:]):
+            if z<=hi:
+                return abs(x)-(a+(b-a)*max(0,(z-lo)/(hi-lo)))
+        return abs(x)-cut[-1][1]
+
+    verts,faces,mats,index=[],[],[],{}
+    def polygon(points,mat):
+        indices=[]
+        for p in points:
+            key=tuple(round(c,5) for c in p)
+            if key not in index:
+                index[key]=len(verts)
+                verts.append(p)
+            indices.append(index[key])
+        if len(set(indices))>=3:
+            faces.append(indices)
+            mats.append(mat)
+
+    def split_triangle(points):
+        inside,outside=[],[]
+        for a,b in zip(points,points[1:]+points[:1]):
+            da,db=mask_edge(a),mask_edge(b)
+            (inside if da<=0 else outside).append(a)
+            if (da<0<db) or (db<0<da):
+                t=da/(da-db)
+                seam=tuple(x+(y-x)*t for x,y in zip(a,b))
+                inside.append(seam)
+                outside.append(seam)
+        polygon(inside,cast)
+        polygon(outside,chassis)
+
+    count=len(rings[0])
+    polygon(rings[0][::-1],chassis)
+    for lo,hi in zip(rings,rings[1:]):
+        for i in range(count):
+            j=(i+1)%count
+            quad=[lo[i],lo[j],hi[j],hi[i]]
+            if i<6 or i>=count-6:
+                # Mirror the triangulation at the midline like the surface
+                # sampler below, including the diagonal through the nose.
+                if i<6:
+                    split_triangle([quad[0],quad[1],quad[2]])
+                    split_triangle([quad[0],quad[2],quad[3]])
+                else:
+                    split_triangle([quad[0],quad[1],quad[3]])
+                    split_triangle([quad[1],quad[2],quad[3]])
+            else:
+                polygon(quad,liner if 7<=i<11 else chassis)
+    polygon(rings[-1],chassis)
+    artist.solid(verts,faces,mats)
 
     # Fit facial details to the real, triangulated skin surface from either side.
     tris = []
@@ -105,7 +181,7 @@ def face_skin(artist, skin, liner):
             if min(u,v,1-u-v) >= -.0001:
                 return u*a[1]+v*b[1]+(1-u-v)*c[1]
         raise ValueError(f"Face marking outside the forehead, cheek or jaw at {x}, {z}")
-    return front_y,rings
+    return front_y,guard_rings
 
 
 def nape_guard(k,skin_rings):
@@ -161,47 +237,72 @@ def nape_guard(k,skin_rings):
     artist.finish()
 
 
-def relief(artist, surface, xz, mat, lift=2.0):
-    # Fan around a surface-fitted centre, keeping eyelids and lips flush across facets.
-    cx = sum(x for x,z in xz)/len(xz)
-    cz = sum(z for x,z in xz)/len(xz)
-    ring = list(xz)
-    if sum(x*z2-z*x2 for (x,z),(x2,z2) in zip(ring,ring[1:]+ring[:1])) < 0:
-        ring.reverse()
-    points = [(cx,surface(cx,cz)-lift,cz)]
-    points.extend((x,surface(x,z)-lift,z) for x,z in ring)
-    artist.solid(points,[(0,i+1,(i+1)%len(ring)+1) for i in range(len(ring))],mat)
+def plate(artist, surface, outline, material, lift, edge=None, bevel=1.5):
+    """A pressed face plate, with a bevel and a dark return against the casting.
+
+    Project the outline and subdivided front onto the actual cheek surface.
+    This keeps the mouth and the jaw seams attached around the facial planes.
+    """
+    loop = [Vector((x,z,0)) for x,z in outline]
+    if sum(a.x*b.y-b.x*a.y for a,b in zip(loop,loop[1:]+loop[:1])) < 0:
+        loop.reverse()
+    # The inner lip rolls in toward the plate's centre without moving the
+    # outside silhouette. Small eye parts can use a zero-width bevel.
+    centre = sum(loop,Vector())/len(loop)
+    inner = [v+(centre-v).normalized()*bevel for v in loop]
+    verts,faces,mats,indices = [],[],[],{}
+    def vertex(p,depth):
+        key=(round(p.x,4),round(p.y,4),round(depth,3))
+        if key not in indices:
+            indices[key]=len(verts)
+            verts.append((p.x,surface(p.x,p.y)-depth,p.y))
+        return indices[key]
+
+    def face(points,mat):
+        faces.append(points)
+        mats.append(mat)
+
+    # Shared sampling across every boundary keeps adjacent triangles joined
+    # where the plate bends around the cheekbone.
+    steps=min(5,max(1,ceil(max((p-centre).length for p in loop)/11)))
+    for a,b,c in tessellate_polygon([inner]):
+        a,b,c=inner[a],inner[b],inner[c]
+        grid={(i,j): vertex(a+(b-a)*(i/steps)+(c-a)*(j/steps),lift)
+              for i in range(steps+1) for j in range(steps+1-i)}
+        for i in range(steps):
+            for j in range(steps-i):
+                face((grid[i,j],grid[i+1,j],grid[i,j+1]),material)
+                if i+j+1<steps:
+                    face((grid[i+1,j],grid[i+1,j+1],grid[i,j+1]),material)
+    # The stamped front follows one continuous curve. Its rim and returns
+    # keep their hard edges so the plate still reads at gameplay distance.
+    artist.smooth_faces.extend(range(len(artist.faces),len(artist.faces)+len(faces)))
+    for i,a in enumerate(loop):
+        j=(i+1)%len(loop)
+        b=loop[j]
+        count=steps
+        for n in range(count):
+            t,u=n/count,(n+1)/count
+            p,q=a.lerp(b,t),a.lerp(b,u)
+            low=lift-max(1.2,bevel)
+            rim=lift if bevel==0 else low
+            if bevel:
+                face((vertex(p,rim),vertex(q,rim),
+                      vertex(inner[i].lerp(inner[j],u),lift),vertex(inner[i].lerp(inner[j],t),lift)),edge or material)
+            face((vertex(p,.2),vertex(q,.2),vertex(q,rim),vertex(p,rim)),edge or material)
+    artist.solid(verts,faces,mats)
 
 
-def eyebrow(artist,surface,brow):
-    # A bevelled ridge keeps the eyebrow attached at every change of forehead slope.
-    sections=[(25,161,167),(32,160,173),(49,165,178),(66,169,182),
-              (82,171,183),(93,173,180),(103,174,176)]
-    verts=[]
-    for x,bottom,top in sections:
-        for z,lift in ((bottom,3.8),(top-1.0,5),(top,.8)):
-            verts.append((x,surface(x,z)-lift,z))
-    faces=[]
-    for i in range(len(sections)-1):
-        a=3*i
-        faces.extend([(a,a+3,a+4,a+1),(a+1,a+4,a+5,a+2)])
-    artist.solid(verts,faces,brow)
-
-
-def finish_face(artist, skin_polygons):
+def finish_face(artist):
     # Blend the broad cheek and forehead planes while retaining the angular cut
-    # across the brow and underside of the mandible. Detail shares no vertices.
+    # across the brow and underside of the mandible.
     mesh=artist.finish().data
     adjacent=[[] for _ in mesh.vertices]
-    for poly in list(mesh.polygons)[:skin_polygons]:
+    for poly in mesh.polygons:
         for point in poly.vertices:
             adjacent[point].append(poly.normal.copy())
     normals=[(0,0,0)]*len(mesh.loops)
     for poly in mesh.polygons:
-        if poly.index >= skin_polygons:
-            for i in poly.loop_indices:
-                normals[i]=tuple(poly.normal)
-            continue
         poly.use_smooth=True
         for i in poly.loop_indices:
             local=adjacent[mesh.loops[i].vertex_index]
@@ -264,73 +365,140 @@ def circle(rx,rz,n=16):
     return [(rx*cos(2*pi*i/n),rz*sin(2*pi*i/n)) for i in range(n)]
 
 
-def implants(k):
-    case = Assembly(k,"orbital_implant_and_helmet_pads")
-    graphite=k.blacksteel
-    steel=k.gunmetal
-    dark=k.mat("optic_recess",(.012,.014,.014),.36,.36)
-    warm=k.mat("optic_copper_ring",(.23,.080,.035),.58,.40)
+def temple_and_optic(k, surface):
+    armor=Assembly(k,"orbital_implant_and_helmet_pads")
+    metal=k.gunmetal
+    dark=k.mat("Optic • graphite insulator",(.015,.016,.019),.38,.39)
+    enamel=k.mat("Optic • oxide red enamel",(.30,.028,.015),.55,.36)
+    lamp=k.mat("ocular_vermilion",(.83,.027,.008),.22,.27,1.35)
+    hot=k.mat("Optic • hot glass",(.99,.39,.14),.12,.21,1.85)
     for side in (-1,1):
-        # The helmet suspension terminates in a separate pair of leather ear guards.
-        centre=(side*122,0,145)
+        # Original padded ear defenders, with an exposed communication hinge.
         u=(0,side,0)
-        local_rings(case,centre,u,(0,0,1),
+        local_rings(armor,(side*122,0,145),u,(0,0,1),
             [(-3,octagon(48,42,13)),(8,octagon(50,42,12)),(15,octagon(44,36,12))],
             lambda j,i:k.leather,(k.leather,k.leather))
-        local_rings(case,(side*139,-9,151),u,(0,0,1),
-            [(0,circle(17,17,12)),(3,circle(17,17,12)),(5,circle(13,13,12))],
-            lambda j,i:graphite,(graphite,steel))
-    # Orbital implant follows the slope of the temple and has a one-sided bridge.
-    centre=(-68,-133,155)
-    u=(1,-.29,0)
-    v=(0,0,1)
-    local_rings(case,centre,u,v,
-        [(-13,octagon(47,34,9)),(4,octagon(48,34,9)),(12,octagon(44,31,8))],
-        lambda j,i:graphite if j==0 else steel,(graphite,graphite))
-    local_rings(case,centre,u,v,
-        [(11,circle(24.5,24.5)),(16,circle(25.5,25.5)),(20,circle(22.5,22.5)),
-         (21,circle(18,18)),(17,circle(15,15))],
-        lambda j,i:(graphite,steel,dark,warm)[j],(graphite,dark))
-    # Rear link/temple wiring follows the outside of the cheek and tucks under the cap.
-    local_rings(case,(-122,-68,157),(0,-1,0),v,
-        [(0,octagon(35,12,6)),(9,octagon(34,12,5)),(11,octagon(32,10,4))],
-        lambda j,i:graphite,(graphite,steel))
-    case.finish()
+        local_rings(armor,(side*136,-10,140),u,(0,0,1),
+            [(0,circle(26,26)),(4,circle(27,27)),(7,circle(24,24)),
+             (8,circle(18.5,18.5)),(6,circle(15,15))],
+            lambda j,i:(dark,metal,k.blacksteel,k.steel)[j],(dark,k.blacksteel))
+
+    plate(armor,surface,[(-15,156),(-26,176),(-68,188),(-98,180),
+                         (-110,158),(-102,138),(-80,119),(-53,117),(-29,134)],
+          k.blacksteel,5,metal,2.5)
+    # Build every optical surface about the same tilted axis. The outer steel
+    # flange sits under the helmet; the annular lamp and bore sit inside it.
+    centre=(-62,-139,152)
+    u=Vector((1,-.27,0)).normalized()
+    v=Vector((0,0,1))
+    axis=u.cross(v)
+    local_rings(armor,centre,u,v,[
+        (-15,circle(38,38,24)),(-2,circle(40,40,24)),(3,circle(39,39,24)),
+        (5,circle(35.5,35.5,24)),(9,circle(34,34,24)),(11,circle(28.5,28.5,24))],
+        lambda j,i:(dark,metal,k.steel,k.blacksteel,metal)[j],(dark,dark))
+    for a in range(0,360,60):
+        angle=(a+18)*pi/180
+        p=Vector(centre)+axis*5+36*(cos(angle)*u+sin(angle)*v)
+        local_rings(armor,p,u,v,[(0,circle(2.1,2.1,8)),(1.8,circle(1.8,1.8,8))],
+                    lambda j,i:k.steel,(metal,k.steel))
+    armor.finish()
+
     lens=Assembly(k,"eye_lens_rig")
-    lamp=k.mat("ocular_vermilion",(.77,.039,.010),.12,.28,.60)
-    local_rings(lens,centre,u,v,
-        [(17.2,circle(15,15)),(21.4,circle(16,16)),(24.5,circle(11.8,11.8))],
-        lambda j,i:lamp,(lamp,lamp))
+    local_rings(lens,centre,u,v,[
+        (10.7,circle(27.8,27.8,32)),(12,circle(25.5,25.5,32)),(12.6,circle(23,23,32)),
+        (13,circle(21,21,32)),(13.1,circle(18,18,32)),(15,circle(15.8,15.8,32)),
+        (16.6,circle(9,9,32)),(17.1,circle(6.8,6.8,32))],
+        lambda j,i:(lamp,lamp,enamel,dark,dark,lamp,hot)[j],(dark,hot))
     lens.finish()
 
 
 def build(k):
     artist=Assembly(k,"sculpted_head")
-    skin=k.mat("skin_warm_ochre",(.51,.286,.154),.0,.77)
-    lid=k.mat("skin_lid",(.35,.188,.102),0,.79)
-    lip=k.mat("skin_lip",(.42,.232,.146),0,.70)
-    shadow=k.mat("face_crease",(.086,.049,.031),.0,.81)
-    brow=k.mat("brows",(.039,.029,.022),0,.79)
-    eye=k.mat("eye_ivory",(.57,.48,.35),0,.40)
-    iris=k.mat("eye_iris",(.065,.059,.043),0,.42)
-    surface,skin_rings=face_skin(artist,skin,k.leather)
-    skin_polygons=len(artist.faces)
-    # A hooded human eye with an uninterrupted brow; the opposite eye is prosthetic.
-    relief(artist,surface,[(31,146),(39,156),(69,164),(93,163),(86,153),(60,145),(37,144)],shadow,2.3)
-    relief(artist,surface,[(35,147),(43,155),(68,159),(88,160),(82,153),(57,146)],eye,3.8)
-    relief(artist,surface,[(53,156),(67,159),(66,151),(62,147),(54,147),(50,151)],iris,4.9)
-    relief(artist,surface,[(55,157),(62,158),(60,150),(55,150)],brow,5.6)
-    relief(artist,surface,[(36,143),(57,142),(78,147),(84,150),(62,145),(44,145)],lid,2.3)
-    eyebrow(artist,surface,brow)
-    # Distinct upper lip, downturned seam, lower lip and a small cut beneath the nose.
-    relief(artist,surface,[(-40,54),(-25,62),(-8,66),(0,64),(8,66),(25,62),(40,54),
-                            (15,58),(0,57),(-17,58)],lip,2.3)
-    relief(artist,surface,[(-41,53),(-23,59),(-9,61),(0,60),(9,61),(23,59),(41,53),
-                            (29,54),(12,57),(-12,57),(-29,54)],shadow,3.7)
-    relief(artist,surface,[(-26,52),(-12,55),(11,55),(26,52),(12,48),(-10,48)],lip,1.7)
+    cast=k.mat("Face • satin ivory alloy",(.53,.415,.315),.39,.45)
+    polished=k.mat("Face • honed cheek edges",(.59,.49,.39),.54,.38)
+    shadow=k.mat("Face • recessed bronze cast",(.245,.183,.143),.48,.51)
+    seam=k.mat("Face • joint gasket",(.016,.016,.018),.13,.62)
+    eye=k.mat("Eye • sclera",(.72,.66,.54),.03,.36)
+    iris=k.mat("Eye • smoke amber",(.18,.115,.071),.19,.38)
+    pupil=k.mat("Eye • pupil",(.016,.013,.013),.03,.29)
+    chassis=k.mat("Face • graphite jaw casting",(.093,.089,.086),.51,.46)
+    surface,skin_rings=face_skin(artist,cast,chassis,k.leather)
+    finish_face(artist)
+
+    jaw=Assembly(k,"mandible_cheeks_and_chin")
+    for side in (-1,1):
+        def cheek(outline, mat, lift, edge=None, bevel=1.5):
+            plate(jaw,surface,[(side*x,z) for x,z in outline],mat,lift,edge,bevel)
+        # Cheek shield with a pressed lower return, a slender shadow break
+        # at the masseter and an articulated outer rail fading into the chin.
+        cheek([(31,123),(50,137),(89,143),(103,131),(83,115),
+               (56,93),(49,83),(52,103)],cast,4.6,polished,1.6)
+        cheek([(107,138),(116,128),(113,106),(102,87),(85,66),(72,39),
+               (49,21),(61,41),(72,69),(91,91),(101,111)],seam,6.5,bevel=.8)
+        cheek([(114,127),(121,119),(113,96),(96,73),(81,42),(53,18),
+               (67,39),(77,67),(96,91),(108,113)],shadow,8.2,k.gunmetal,1.8)
+        cheek([(110,107),(113,106),(114,103),(112,101),(109,102),(108,105)],
+              k.steel,10.4,bevel=.45)
+        # A secondary link emerges from the cheek hinge and passes beneath
+        # the rail. The axis of the pin follows the curved side of the jaw.
+        cheek([(113,99),(118,93),(113,79),(95,63),(78,39),(69,32),
+               (80,53),(94,72),(105,83)],k.gunmetal,4.1,k.blacksteel,1.1)
+        x,z=side*112,94
+        slope=(surface(x+1,z)-surface(x-1,z))/2
+        tangent=(1,slope,0)
+        local_rings(jaw,(x,surface(x,z),z),tangent,(0,0,1),
+                    [(1,circle(9.3,9.3,16)),(4,circle(9.7,9.7,16)),(5.5,circle(8.2,8.2,16)),
+                     (6,circle(5.4,5.4,16)),(5.2,circle(3.6,3.6,16))],
+                    lambda j,i:(seam,k.gunmetal,k.steel,k.blacksteel)[j],(seam,k.blacksteel))
+    # A dark, lightly downturned articulation line replaces the flesh lips.
+    plate(jaw,surface,[(-43,54),(-34,60),(-16,65),(0,64),(16,65),(34,60),
+                       (43,54),(29,57),(12,60),(0,59),(-15,60),(-30,57)],seam,3.7,bevel=.65)
+    plate(jaw,surface,[(-30,53),(-14,57),(13,57),(30,53),(18,50),(0,48),(-17,50)],
+          cast,3.7,shadow,.85)
+    # The chin is independently cast around a recessed four-rib breather.
+    plate(jaw,surface,[(-46,30),(-33,40),(31,40),(46,31),(40,13),
+                       (25,5),(-24,5),(-40,13)],k.blacksteel,5.1,seam,2)
+    for x in (-23,-8,8,23):
+        drop=2 if abs(x)>15 else 0
+        plate(jaw,surface,[(x-5.7,29-drop),(x-4,35-drop),(x+3.8,35-drop),(x+5.3,30-drop),
+                           (x+4.0,12+drop),(x+1,8+drop),(x-4.5,12+drop)],
+              k.gunmetal,8.5,k.steel,1.05)
+    plate(jaw,surface,[(-42,28),(-32,40),(31,40),(43,30),(37,30),(28,35),(-28,35),(-37,27)],
+          k.gunmetal,8.8,k.steel,1)
+    jaw.finish()
+
+    bridge=Assembly(k,"brow_and_bridge")
+    # Raised forged bridge with distinct lit and shadow planes and an underside.
+    rows=[(171,8,4),(142,10,7),(118,12,8),(106,16,6)]
+    verts=[]
+    for z,w,depth in rows:
+        for x,d in ((-w,.55),(0,depth),(w,.55)):
+            verts.append((x,surface(x,z)-d,z))
+    faces=[(r*3+i,r*3+i+3,r*3+i+4,r*3+i+1) for r in range(3) for i in range(2)]
+    verts.append((0,surface(0,98)-.7,98))
+    faces.extend([(9,12,10),(10,12,11)])
+    bridge.solid(verts,faces,[cast]*6+[shadow,shadow])
     for s in (-1,1):
-        relief(artist,surface,[(s*11,93),(s*19,96),(s*25,95),(s*20,92)],shadow,1.7)
-    finish_face(artist,skin_polygons)
+        plate(bridge,surface,[(s*10,98),(s*18,102),(s*23,101),(s*19,97),(s*13,95)],
+              seam,2,bevel=.55)
+
+    plate(bridge,surface,[(24,149),(37,166),(77,174),(102,169),(92,152),(71,142),(48,142)],
+          seam,5.3,k.blacksteel,1.4)
+    plate(bridge,surface,[(34,152),(49,158),(76,165),(92,165),(79,152),(62,147),(48,147)],
+          eye,7.2,shadow,.75)
+    plate(bridge,surface,[(49,157),(55,161),(64,161),(69,158),(68,153),(62,149),(54,150),(50,153)],
+          iris,8.8,bevel=.6)
+    plate(bridge,surface,[(54,156),(57,159),(62,159),(65,156),(63,152),(58,151),(55,153)],
+          pupil,9.6,bevel=.35)
+    plate(bridge,surface,[(54.7,157),(55.4,159),(57.5,159.3),(58,157.7),(56.6,156.9)],
+          eye,10.1,bevel=.12)
+    plate(bridge,surface,[(21,153),(27,173),(83,185),(105,176),(87,164),(45,156)],
+          k.blacksteel,10.2,seam,1.2)
+    plate(bridge,surface,[(23,159),(29,176),(82,187),(104,178),(85,169),(42,160)],
+          cast,13,polished,2)
+    plate(bridge,surface,[(36,145),(49,147),(67,145),(94,155),(83,146),(63,140),(47,140)],
+          cast,5.9,shadow,1.4)
+    bridge.finish()
     nape_guard(k,skin_rings)
     helmet(k)
-    implants(k)
+    temple_and_optic(k,surface)

@@ -1,6 +1,6 @@
 # Cyborg infantry
 
-An editable interpretation of the supplied character sheet, built on Supply Lines' existing 22-bone infantry rig. The helmet stripe, epaulettes and back yoke share one team paint. The eye implant stays red for both teams.
+The playable cyborg infantry wears the greatcoat and field helmet from the supplied character sheet. Its cast ivory face, armored brow, ringed optic and hinged jaw follow the Ubermech. The optic stays red for both teams. The helmet stripe, epaulettes and back yoke share one team paint.
 
 | Open | File |
 | --- | --- |
@@ -17,7 +17,7 @@ Extract the ZIP outside the playable checkout, open its `project.godot` in Godot
 
 The Blender source opens in Rest. Meshes for the face, optic, helmet, sleeves, mechanical arm, double-breasted coat, skirt halves and boots can be edited separately. The exporter combines the garment and facial meshes into one skinned body while keeping the named props, teeth, light and flash accessible to Godot. The supplied [concept sheet](source/concept.png) is the visual reference.
 
-The GLB contains 7,564 triangles, six meshes, 25 PBR materials and zero textures. The accepted infantry contains 9,336 triangles, six meshes and eight materials. Re-exporting the saved prototype in Blender 4.5.3 reproduced the delivered GLB byte for byte.
+The GLB contains 14,234 triangles, six meshes and 27 untextured materials on the 22-bone infantry rig. The cheek and chin assembly, brow, eye and optic follow the head bone through all five clips.
 
 Run these commands from the Supply Lines checkout in PowerShell. **Export hand edits** operates on the saved prototype. **Regenerate** rebuilds that prototype from the modeling scripts and the authoritative `Blender/Characters/Infantry/Infantry.blend` rig.
 

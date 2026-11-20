@@ -46,8 +46,8 @@
   "team_surfaces_per_actor": 1,
   "renderer": "Vulkan 1.4.341 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 5070 Ti",
   "godot": "4.7.2.stable.official.ed1daf0bf",
-  "glb_sha256": "110cd6ac655cec33042d700ddc64bad2c82640d636f7a6b4d24d2136a481a4fb",
-  "project_zip_sha256": "4de82a84758c0301822493458a24fc5282069545ec33beb04cf86cba8aba3ba6",
+  "glb_sha256": "63f05b4fde3630f45582f2660552308bf7e73aa0b07d8568aed51f451b0663da",
+  "project_zip_sha256": "7ca82d7049a13d33f1b006a0de7b8d72bf49dbc6e7a3042a04de9f1a945d3618",
   "staged_game_files": [
     "scenes/models/infantry_model.tscn",
     "scenes/models/infantry_death_fx.tscn",
