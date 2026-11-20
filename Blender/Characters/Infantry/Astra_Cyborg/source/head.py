@@ -1,5 +1,6 @@
 """Sculpted head in the infantry bind pose. Dimensions below are in facial millimetres."""
-from math import asin, ceil, cos, pi, sin
+from math import ceil, cos, pi, sin
+from field_helmet import build as build_helmet
 
 from mathutils import Vector
 from mathutils.geometry import tessellate_polygon
@@ -185,8 +186,8 @@ def face_skin(artist, cast, chassis, liner):
 
 
 def nape_guard(k,skin_rings):
-    # Tapered suspension curtain. Its front ends tuck under the ear guards;
-    # the lowered centre edge covers the neck at the back of the greatcoat.
+    # A leather suspension curtain with a turned lower hem. The longitudinal
+    # channels let the curtain bend behind the ears as the head turns.
     artist=Assembly(k,"helmet_nape_guard")
     leather=k.leather
     welt=k.mat("helmet_liner_welt",(.044,.041,.039),.11,.63)
@@ -202,18 +203,24 @@ def nape_guard(k,skin_rings):
         return Vector(skin_rings[-1][column])
 
     verts,faces,mats=[],[],[]
-    steps=[(0,0),(.032,1),(.16,1),(.30,1.1),(.43,1.3),(.59,.8),(.77,.4),(1,0)]
-    cols=len(heights)
+    steps=[(0,0),(.009,.8),(.020,1.6),(.031,1.7),(.041,1.1),(.052,.75),
+           (.11,.8),(.22,1.1),(.37,1.4),(.53,1.6),(.68,1.0),(.83,.6),(1,0)]
+    per_span=4
+    cols=(len(heights)-1)*per_span+1
     last=len(steps)-1
     outside=cols*len(steps)
     for depth in (-2.5,4.4):
         for t,padding in steps:
-            for j,bottom in enumerate(heights):
-                z=bottom+(170-bottom)*t
-                point=at_height(j+5,z)
+            guides=[at_height(j+5,bottom+(170-bottom)*t) for j,bottom in enumerate(heights)]
+            for col in range(cols):
+                j=min(col//per_span,len(guides)-2)
+                u=col/per_span-j
+                a,b,c,d=guides[max(0,j-1)],guides[j],guides[j+1],guides[min(j+2,len(guides)-1)]
+                point=.5*((2*b)+(c-a)*u+(2*a-5*b+4*c-d)*u*u+(3*b-a-3*c+d)*u**3)
                 normal=Vector((point.x,point.y,0)).normalized()
-                ear_return = 3.0 if depth>0 and j in (0,1,7,8) else 0
-                verts.append(point+normal*(depth+padding+ear_return))
+                ear_return=3*max(0,1-min(col,cols-1-col)/(per_span*2)) if depth>0 else 0
+                relief=1.1*cos((col/(cols-1)-.5)*5*pi)**5*sin(pi*t)
+                verts.append(point+normal*(depth+padding+ear_return+relief))
     # Make both sidewalls, lower rolled lip and the forward cutout editable.
     for layer in (0,1):
         for row in range(last):
@@ -221,7 +228,7 @@ def nape_guard(k,skin_rings):
                 a=layer*outside+row*cols+j
                 face=(a,a+1,a+cols+1,a+cols)
                 faces.append(face if layer else face[::-1])
-                mats.append(welt if row==0 and layer else leather)
+                mats.append(welt if row<4 and layer else leather)
     for j in range(cols-1):
         upper=j+cols*last
         faces.extend([(j,j+1,j+outside+1,j+outside),
@@ -234,6 +241,7 @@ def nape_guard(k,skin_rings):
                       (b,b+cols,b+cols+outside,b+outside)])
         mats.extend([welt,welt])
     artist.solid(verts,faces,mats)
+    artist.smooth_faces.extend(range(2*last*(cols-1)))
     artist.finish()
 
 
@@ -299,61 +307,34 @@ def finish_face(artist):
     mesh=artist.finish().data
     adjacent=[[] for _ in mesh.vertices]
     for poly in mesh.polygons:
-        for point in poly.vertices:
-            adjacent[point].append(poly.normal.copy())
+        vertices=list(poly.vertices)
+        for i,point in enumerate(vertices):
+            centre=mesh.vertices[point].co
+            a=mesh.vertices[vertices[i-1]].co-centre
+            b=mesh.vertices[vertices[(i+1)%len(vertices)]].co-centre
+            adjacent[point].append((poly.normal.copy(),a.angle(b,0)))
     normals=[(0,0,0)]*len(mesh.loops)
     for poly in mesh.polygons:
         poly.use_smooth=True
         for i in poly.loop_indices:
             local=adjacent[mesh.loops[i].vertex_index]
-            avg=sum((n for n in local if n.dot(poly.normal)>.89),Vector()).normalized()
-            normals[i]=tuple(poly.normal.lerp(avg,.65).normalized())
+            avg=sum((n*angle for n,angle in local if n.dot(poly.normal)>.70),Vector())
+            normals[i]=tuple(avg.normalized()) if avg.length_squared else tuple(poly.normal)
     mesh.normals_split_custom_set(normals)
 
 
-def helmet(k):
-    artist=Assembly(k,"helmet_shell_and_colourband")
-    shell=k.mat("helmet_graphite",(.045,.047,.046),.32,.51)
-    rim=k.mat("helmet_rolled_edge",(.068,.071,.069),.48,.42)
-    liner=k.mat("helmet_gasket",(.019,.018,.016),.03,.78)
-    # True flared brim: the visor clears the eyebrow while the sides cover the ears.
-    # Fixed-width axial paint continues continuously across the dome and down its back.
-    sections=[
-        (168,159,192,134,124,-3),(183,177,193,131,121,-5),
-        (187,180,198,137,128,-5),(168,161,213,169,161,-1),
-        (154,150,226,204,198,3),(152,147,249,240,236,5),
-        (140,137,285,280,277,8),(118,116,319,319,315,9),
-        (89,87,345,345,342,9),(57,56,360,360,359,9),
-        (32,32,365,365,365,9)]
-    rings=[]
-    qcount=7
-    for rx,ry,nose,side,back,shift in sections:
-        cut=asin(min(.976,32/rx))
-        quadrant=[0,cut]+[cut+(pi/2-cut)*i/(qcount-1) for i in range(1,qcount)]
-        angles=(quadrant[:-1] + [pi-a for a in reversed(quadrant[1:])] +
-                [pi+a for a in quadrant[:-1]] + [2*pi-a for a in reversed(quadrant[1:])])
-        ring=[]
-        for a in angles:
-            cs=cos(a)
-            z=side+(nose-side)*max(0,cs)**2.2+(back-side)*max(0,-cs)**1.65
-            ring.append((rx*sin(a),shift-ry*cs,z))
-        rings.append(ring)
-    on_axis={0,2*qcount-1,2*qcount,4*qcount-1}
-    def band(j,i):
-        if j>=6 and i in on_axis:
-            return k.team
-        return liner if j==0 else rim if j==1 else shell
-    artist.rings(rings,band,(liner,k.team))
-    return artist.finish()
 
 
-def local_rings(artist, centre, right, up, profiles, bands, caps):
+def local_rings(artist, centre, right, up, profiles, bands, caps, smooth=False):
     u, v = Vector(right).normalized(), Vector(up).normalized()
     n = u.cross(v).normalized()
     rings=[]
     for depth,xz in profiles:
         rings.append([Vector(centre)+u*x+v*z+n*depth for x,z in xz])
+    first=len(artist.faces)
     artist.rings(rings,bands,caps)
+    if smooth:
+        artist.smooth_faces.extend(range(first+1,len(artist.faces)-1))
 
 
 def octagon(hw,hh,clip):
@@ -370,8 +351,9 @@ def temple_and_optic(k, surface):
     metal=k.gunmetal
     dark=k.mat("Optic • graphite insulator",(.015,.016,.019),.38,.39)
     enamel=k.mat("Optic • oxide red enamel",(.30,.028,.015),.55,.36)
-    lamp=k.mat("ocular_vermilion",(.83,.027,.008),.22,.27,1.35)
-    hot=k.mat("Optic • hot glass",(.99,.39,.14),.12,.21,1.85)
+    lamp=k.mat("ocular_vermilion",(.83,.027,.008),.19,.24,1.20)
+    glass=k.mat("Optic • ruby objective",(.48,.021,.008),.20,.18,.36)
+    hot=k.mat("Optic • hot glass",(.99,.30,.09),.11,.17,1.38)
     for side in (-1,1):
         # Original padded ear defenders, with an exposed communication hinge.
         u=(0,side,0)
@@ -393,9 +375,9 @@ def temple_and_optic(k, surface):
     v=Vector((0,0,1))
     axis=u.cross(v)
     local_rings(armor,centre,u,v,[
-        (-15,circle(38,38,24)),(-2,circle(40,40,24)),(3,circle(39,39,24)),
-        (5,circle(35.5,35.5,24)),(9,circle(34,34,24)),(11,circle(28.5,28.5,24))],
-        lambda j,i:(dark,metal,k.steel,k.blacksteel,metal)[j],(dark,dark))
+        (-15,circle(38,38,56)),(-2,circle(40,40,56)),(3,circle(39,39,56)),
+        (5,circle(35.5,35.5,56)),(9,circle(34,34,56)),(11,circle(28.5,28.5,56))],
+        lambda j,i:(dark,metal,k.steel,k.blacksteel,metal)[j],(dark,dark),smooth=True)
     for a in range(0,360,60):
         angle=(a+18)*pi/180
         p=Vector(centre)+axis*5+36*(cos(angle)*u+sin(angle)*v)
@@ -404,12 +386,107 @@ def temple_and_optic(k, surface):
     armor.finish()
 
     lens=Assembly(k,"eye_lens_rig")
-    local_rings(lens,centre,u,v,[
-        (10.7,circle(27.8,27.8,32)),(12,circle(25.5,25.5,32)),(12.6,circle(23,23,32)),
-        (13,circle(21,21,32)),(13.1,circle(18,18,32)),(15,circle(15.8,15.8,32)),
-        (16.6,circle(9,9,32)),(17.1,circle(6.8,6.8,32))],
-        lambda j,i:(lamp,lamp,enamel,dark,dark,lamp,hot)[j],(dark,hot))
+    # The ruby objective bulges forward of a recessed black retaining ring.
+    # The change in curvature reflects the portrait lights across the glass.
+    profile=[(27.8,10.7),(26.8,11.8),(25.2,12.1),(23.1,12.2),(21.6,11.8),
+             (19.1,11.7),(18.5,12.3),(17.8,13.3),(15.7,15.9),(12.7,17.9),
+             (9.2,19.4),(6.4,20.2),(3.4,20.7),(1,20.9)]
+    coatings=[enamel,lamp,lamp,enamel,dark,metal,dark,glass,glass,lamp,lamp,hot,hot]
+    local_rings(lens,centre,u,v,[(d,circle(r,r,64)) for r,d in profile],
+                lambda j,i:coatings[j],(dark,hot),smooth=True)
     lens.finish()
+
+
+def natural_eye(artist,surface,eye,iris,pupil):
+    # A convex exposed eye sits under the existing metal lids. Intersect the
+    # iris with the aperture so its upper edge actually disappears under the brow.
+    def bounds(x):
+        t=max(0.,min(1.,(x-33.)/61.))
+        arc=max(0.,sin(pi*t))**.78
+        middle=151.1+11.7*t
+        return middle-7.45*arc,middle+7.8*arc
+    def on_eye(x,z,offset=0):
+        lo,hi=bounds(x)
+        z=max(lo,min(hi,z))
+        h=2*(z-lo)/max(.001,hi-lo)-1
+        bulge=5.6*max(0,sin(pi*(x-33)/61))**.76*max(0,1-h*h)
+        return (x,surface(x,z)-6.9-bulge-offset,z)
+
+    verts=[on_eye(33,151.1)]
+    faces=[]
+    columns=28
+    rows=8
+    for col in range(1,columns):
+        x=33+61*col/columns
+        lo,hi=bounds(x)
+        verts.extend(on_eye(x,lo+(hi-lo)*j/rows) for j in range(rows+1))
+    tip=len(verts)
+    verts.append(on_eye(94,162.8))
+    for j in range(rows):
+        faces.append((0,1+j,2+j))
+        faces.append((tip,tip-rows+j,tip-rows+j-1))
+    for col in range(columns-2):
+        for j in range(rows):
+            a=1+col*(rows+1)+j
+            faces.append((a,a+rows+1,a+rows+2,a+1))
+    first=len(artist.faces)
+    artist.solid(verts,faces,eye)
+    artist.smooth_faces.extend(range(first,len(artist.faces)))
+
+    def disc(cx,cz,profile,materials):
+        vs=[]
+        fs=[]
+        mats=[]
+        count=40
+        for radius,depth in profile:
+            for i in range(count):
+                a=2*pi*i/count
+                vs.append(on_eye(cx+radius*cos(a),cz+1.06*radius*sin(a),depth))
+        for row,mat in enumerate(materials[:-1]):
+            for i in range(count):
+                j=(i+1)%count
+                a=row*count
+                fs.append((a+i,a+j,a+count+j,a+count+i))
+                mats.append(mat)
+        centre=len(vs)
+        vs.append(on_eye(cx,cz,profile[-1][1]+.015))
+        for i in range(count):
+            fs.append((centre-count+i,centre-count+(i+1)%count,centre))
+            mats.append(materials[-1])
+        first=len(artist.faces)
+        artist.solid(vs,fs,mats)
+        artist.smooth_faces.extend(range(first,len(artist.faces)))
+    disc(59.5,157.3,[(8.2,.22),(7.55,.39),(5,.56),(3.45,.65),(2.85,.69)],
+         [pupil,iris,iris,pupil,pupil])
+    disc(57.25,159.6,[(.95,.90),(.64,1.02)],[eye,eye])
+
+
+def nose_bridge(artist,surface,cast,shadow):
+    # Round the center ridge and tip while preserving the pressed side planes.
+    profiles=[(194,3,-.65),(186,4.3,.4),(178,6.2,1.3),(171,7.4,2.8),
+              (162,8.1,4.5),(149,9.0,5.7),(137,10.2,6.9),
+              (126,11.2,7.8),(116,12.7,8.1),(110,15.3,7.1),(106,16,4.8),
+              (103.5,13.9,4.0),(100.5,8.4,2.7),(98.5,3.2,-.4)]
+    fractions=(-1,-.90,-.56,-.21,0,.21,.56,.90,1)
+    verts=[]
+    faces=[]
+    mats=[]
+    for z,w,depth in profiles:
+        mid=surface(0,z)-depth
+        side=surface(w,z)+.32
+        for t in fractions:
+            x=w*t
+            y=min(mid+(side-mid)*abs(t)**1.57,surface(x,z)+.32)
+            verts.append((x,y,z))
+    stride=len(fractions)
+    for r in range(len(profiles)-1):
+        for i in range(stride-1):
+            a=r*stride+i
+            faces.append((a,a+stride,a+stride+1,a+1))
+            mats.append(cast if profiles[r][0]>104 else shadow)
+    first=len(artist.faces)
+    artist.solid(verts,faces,mats)
+    artist.smooth_faces.extend(range(first,len(artist.faces)))
 
 
 def build(k):
@@ -418,9 +495,9 @@ def build(k):
     polished=k.mat("Face • honed cheek edges",(.59,.49,.39),.54,.38)
     shadow=k.mat("Face • recessed bronze cast",(.245,.183,.143),.48,.51)
     seam=k.mat("Face • joint gasket",(.016,.016,.018),.13,.62)
-    eye=k.mat("Eye • sclera",(.72,.66,.54),.03,.36)
-    iris=k.mat("Eye • smoke amber",(.18,.115,.071),.19,.38)
-    pupil=k.mat("Eye • pupil",(.016,.013,.013),.03,.29)
+    eye=k.mat("Eye • sclera",(.66,.61,.53),.02,.28)
+    iris=k.mat("Eye • smoke amber",(.14,.086,.044),.09,.24)
+    pupil=k.mat("Eye • pupil",(.011,.010,.011),.02,.22)
     chassis=k.mat("Face • graphite jaw casting",(.093,.089,.086),.51,.46)
     surface,skin_rings=face_skin(artist,cast,chassis,k.leather)
     finish_face(artist)
@@ -468,30 +545,14 @@ def build(k):
     jaw.finish()
 
     bridge=Assembly(k,"brow_and_bridge")
-    # Raised forged bridge with distinct lit and shadow planes and an underside.
-    rows=[(171,8,4),(142,10,7),(118,12,8),(106,16,6)]
-    verts=[]
-    for z,w,depth in rows:
-        for x,d in ((-w,.55),(0,depth),(w,.55)):
-            verts.append((x,surface(x,z)-d,z))
-    faces=[(r*3+i,r*3+i+3,r*3+i+4,r*3+i+1) for r in range(3) for i in range(2)]
-    verts.append((0,surface(0,98)-.7,98))
-    faces.extend([(9,12,10),(10,12,11)])
-    bridge.solid(verts,faces,[cast]*6+[shadow,shadow])
+    nose_bridge(bridge,surface,cast,shadow)
     for s in (-1,1):
         plate(bridge,surface,[(s*10,98),(s*18,102),(s*23,101),(s*19,97),(s*13,95)],
               seam,2,bevel=.55)
 
     plate(bridge,surface,[(24,149),(37,166),(77,174),(102,169),(92,152),(71,142),(48,142)],
           seam,5.3,k.blacksteel,1.4)
-    plate(bridge,surface,[(34,152),(49,158),(76,165),(92,165),(79,152),(62,147),(48,147)],
-          eye,7.2,shadow,.75)
-    plate(bridge,surface,[(49,157),(55,161),(64,161),(69,158),(68,153),(62,149),(54,150),(50,153)],
-          iris,8.8,bevel=.6)
-    plate(bridge,surface,[(54,156),(57,159),(62,159),(65,156),(63,152),(58,151),(55,153)],
-          pupil,9.6,bevel=.35)
-    plate(bridge,surface,[(54.7,157),(55.4,159),(57.5,159.3),(58,157.7),(56.6,156.9)],
-          eye,10.1,bevel=.12)
+    natural_eye(bridge,surface,eye,iris,pupil)
     plate(bridge,surface,[(21,153),(27,173),(83,185),(105,176),(87,164),(45,156)],
           k.blacksteel,10.2,seam,1.2)
     plate(bridge,surface,[(23,159),(29,176),(82,187),(104,178),(85,169),(42,160)],
@@ -500,5 +561,5 @@ def build(k):
           cast,5.9,shadow,1.4)
     bridge.finish()
     nape_guard(k,skin_rings)
-    helmet(k)
+    build_helmet(k,_world)
     temple_and_optic(k,surface)

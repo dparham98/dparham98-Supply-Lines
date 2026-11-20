@@ -100,23 +100,39 @@ def upper_sleeve(k, side, shoulder, elbow):
     for centre,w,d in stations:
         rings.append([centre+Vector((x,y,-sign*x*.30)) for x,y in section(w,d,.47)])
     sleeve.solid(rings,k.wool)
-    sleeve.finish()
-
-    epaulette=Assembly(k,'Team shoulder tab.'+side,shoulder_weights)
-    # Each section crosses the shoulder from front to back. The coloured cloth
-    # rolls down over the seam, keeping a definite coloured plane in front view.
-    rings=[]
-    for x,top,y_front,y_back,front_drop in [
-            (.148,1.375,-.047,.146,.033),(.180,1.365,-.073,.164,.038),
-            (.250,1.344,-.078,.166,.038),(.291,1.331,-.071,.165,.040),
-            (.326,1.316,-.052,.154,.045),(.338,1.295,-.032,.135,.033)]:
-        yz=[(y_front,top-front_drop),(y_front+.009,top-front_drop+.013),
-            (y_front+.051,top-.005),(y_front+.084,top),(y_back-.048,top-.003),
-            (y_back-.009,top-.020),(y_back,top-.034)]
-        rr=[Vector((sign*x,y,z)) for y,z in yz]
-        rings.append(rr+[p-Vector((0,0,.007)) for p in reversed(rr)])
-    epaulette.solid(rings,k.team,k.leather,lambda j,i: k.team if i<6 else k.leather)
-    epaulette.finish()
+    from uniform import Pattern, cloth_normals, faced_panel, interpolated_rows
+    cloth_normals(sleeve.finish())
+    epaulette=Pattern(k,'Team shoulder tab.'+side,[k.team,k.leather,k.gunmetal,k.blacksteel])
+    # A padded cloth board lies over the shoulder seam. The rolled front edge
+    # bends back into its dark backing; the seam trough is part of the dyed cloth.
+    stations=interpolated_rows([(.148,1.375,-.047,.146),(.180,1.365,-.073,.164),
+                                (.250,1.344,-.078,.166),(.291,1.331,-.071,.165),
+                                (.324,1.316,-.052,.154),(.338,1.295,-.032,.135)],3)
+    tab=[]
+    for x,top,y0,y1 in stations:
+        row=[]
+        for j in range(17):
+            t=j/16
+            sag=(.039 if t<.5 else .033)*(1-sin(pi*t)**.72)
+            seam=.0012*max(0,1-min(abs(t-.063),abs(t-.937))/.041)
+            row.append((sign*x,y0+(y1-y0)*t,top-sag-seam))
+        tab.append(row)
+    faced_panel(epaulette,tab,(sign*.29,-.06,1),shoulder_weights,0,1,.006)
+    # One quiet oxided snap anchors the tab near the collar.
+    centre=Vector((sign*.189,.022,1.3585))
+    u=Vector((sign,0,-.29)).normalized()
+    v=Vector((0,1,.18)).normalized()
+    normal=u.cross(v).normalized()*sign
+    snap=[]
+    for radius,height in [(.0085,0),(.009,.0013),(.0088,.0024),(.0076,.0031),
+                          (.0069,.0034),(.0055,.0040)]:
+        snap.append([centre+radius*(cos(j*pi/12)*u+sin(j*pi/12)*v)+height*normal
+                     for j in range(24)])
+    if sign<0:
+        snap=[ring[::-1] for ring in snap]
+    epaulette.loft(snap,lambda j,i:3 if j<2 else 2,shoulder_weights,caps=False)
+    epaulette.add(snap[-1],[tuple(range(24))],3,shoulder_weights)
+    cloth_normals(epaulette.finish())
 
 
 def cuff_and_glove(k, elbow, wrist, gun_hand):

@@ -4,7 +4,7 @@ The Infantry is a 1.8 m cyborg with a pistol and a chainsaw. The unit agent repo
 
 ## Playable cyborg
 
-The game uses the cyborg from `Blender/Characters/Infantry/Astra_Cyborg/`. Its cast faceplate, cheek hinges and concentric red optic follow the Ubermech. Both sides keep the red optic. The helmet stripe, epaulettes and back yoke take the owning side’s paint. The current model has 14,234 triangles, six meshes and 27 untextured materials. The earlier `Infantry.blend` supplies the 22-bone rig and its Rest, Run, Hack, Shoot and Die clips. [Editable model and export instructions](../Blender/Characters/Infantry/Astra_Cyborg/README.md)
+The game uses the cyborg from `Blender/Characters/Infantry/Astra_Cyborg/`. Its cast faceplate, cheek hinges and concentric red optic follow the Ubermech. Both sides keep the red optic. The helmet stripe, epaulettes and back yoke take the owning side’s paint. The full-detail model has 33,905 triangles, six meshes and 28 materials. A 256 × 256 texture supplies roughness and metallic values for the steel helmet. The earlier `Infantry.blend` supplies the 22-bone rig and its Rest, Run, Hack, Shoot and Die clips. [Editable model and export instructions](../Blender/Characters/Infantry/Astra_Cyborg/README.md)
 
 ## Pieces
 

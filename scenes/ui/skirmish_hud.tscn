@@ -2830,6 +2830,7 @@ mouse_filter = 2
 script = ExtResource("ornament_script")
 [node name="Portrait" type="TextureRect" parent="Bottom/Body/Row/Ornament"]
 visible = false
+custom_maximum_size = Vector2(360, -1)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
