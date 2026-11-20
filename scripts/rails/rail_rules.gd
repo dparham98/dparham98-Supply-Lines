@@ -21,3 +21,6 @@ extends SupplyRules
 @export_range(0,100,0.01) var upkeep_per_100m := 0.1
 ## Each train running on the line adds this many times the idle upkeep.
 @export_range(0,100,0.01) var upkeep_per_running_train := 1.0
+## Mining Trains (docs/TEMPLE_OF_SCIENCE.md, provisional): iron a second an upgraded train digs while it stands at
+## an Iron Mine joined by track. At 10 it fills its 300 in 30 s.
+@export_range(0,100,0.5) var train_mine_rate := 10.0

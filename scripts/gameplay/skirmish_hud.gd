@@ -43,7 +43,8 @@ const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 
 	"DeployCargo": 2, "Load": 4, "Unload": 5, "Trips": 6,
 	"PrintTruck": 0, "PrintCargo": 1, "PrintTrain": 2,
 	"PrintInfantry": 0, "ProduceScout": 1, "ProduceGrenadier": 2, "ProduceTank": 3, "ProduceMotorcycle": 4, "ProduceDrone": 5, "ProduceUbermech": 6,
-	"ToggleGenerator": 0, "FocusAssigned": 1}
+	"ToggleGenerator": 0, "FocusAssigned": 1,
+	"Research": 0, "MineIron": 7}
 const TILE := 46
 const TRIP_LABELS := {"once": "once", "all": "all available", "repeat": "repeat"}
 ## One icon per stat row (assets/ui/icons).
@@ -86,6 +87,7 @@ func _ready() -> void:
 		feed.get_child(i).pressed.connect(focus_alert.bind(i))
 	card.get_node("CancelPlan").pressed.connect(func():
 		if is_instance_valid(shown) and shown.is_in_group("construction_plans"): shown.cancel()
+		elif is_instance_valid(shown) and shown.is_in_group("research_buildings"): shown.cancel_research()
 		elif is_instance_valid(shown) and shown.is_in_group("depots"): shown.cancel_current())
 	card.get_node("ToggleRefuel").pressed.connect(toggle_refuel)
 	# Supply panel buttons with fixed text get their key label once.
@@ -165,12 +167,16 @@ func _ready() -> void:
 	card.get_node("PrintTruck").pressed.connect(func():
 		if network.owned_selected() and not least_busy().request_truck(): game.notify("Depot lacks local funds or queue space."))
 	card.get_node("PrintTrain").pressed.connect(queue_train)
+	# The Temple of Science's research (docs/TEMPLE_OF_SCIENCE.md) and the Mining Trains order it unlocks.
+	card.get_node("Research").pressed.connect(func():
+		if is_instance_valid(shown) and shown.is_in_group("research_buildings"): shown.request_research(Research.MINING_TRAINS))
+	card.get_node("MineIron").pressed.connect(func(): game.pending_unit_command = "mine_rail"; game.notify("Mine iron: click an Iron Mine joined to this train's track. Esc cancels."))
 	card.get_node("PrintCargo").pressed.connect(func():
 		if network.owned_selected() and not least_busy().request_cargo(): game.notify("Depot lacks local funds or queue space."))
 	for id in ["scout","grenadier","tank","motorcycle","drone","ubermech"]:
 		card.get_node("Produce"+id.capitalize()).pressed.connect(func():
 			if is_instance_valid(shown) and shown.is_in_group("production_buildings"): least_busy().request_unit(StringName(id)))
-	for pair in [["Depot",&"depot"],["Generator",&"generator"],["Barracks",&"barracks"],["TankFactory",&"tank_factory"],["Mine",&"iron_mine"],["CoalMine",&"coal_mine"],["Rail",&"rail"]]:
+	for pair in [["Depot",&"depot"],["Generator",&"generator"],["Barracks",&"barracks"],["TankFactory",&"tank_factory"],["Temple",&"temple_of_science"],["Mine",&"iron_mine"],["CoalMine",&"coal_mine"],["Rail",&"rail"]]:
 		build_menu.get_node("Actions/"+pair[0]).pressed.connect(begin_global_placement.bind(pair[1]))
 	build_menu.get_node("Actions/Pin").pressed.connect(toggle_pin)
 	card.get_node("DeployTruck").pressed.connect(func(): game.pending_unit_command = "deploy"; game.notify("Click a site for the Depot. Only an empty Depot footprint is accepted; Shift queues."))
@@ -348,7 +354,7 @@ func update_depot_panels() -> void:
 	show_storage("%s storage" % depot.name,depot.stockpile,storage_panel.get_node("Storage"))
 ## Your production building's power slider, under the Depot panel (docs/PRODUCTION_POWER.md).
 func update_production_panel(depot: Node3D) -> void:
-	var building: Node3D = shown if is_instance_valid(shown) and shown.is_in_group("production_buildings") and shown.team == "player" else null
+	var building: Node3D = shown if is_instance_valid(shown) and shown.is_in_group("production_buildings") and shown.team == "player" and not shown.stats.unit_scenes.is_empty() else null
 	production_panel.visible = building != null
 	panel_building = building
 	if building == null: return
@@ -425,6 +431,7 @@ func update_portrait(node) -> void:
 func icon_name(node: Node) -> String:
 	if node.is_in_group("depots"): return "depot"
 	if node.is_in_group("mines"): return "mine" if str(node.scene_file_path).ends_with("site_mine.tscn") else "pithead"
+	if node.is_in_group("research_buildings"): return "temple"
 	if node.is_in_group("production_buildings"): return "barracks" if str(node.scene_file_path).ends_with("barracks.tscn") else "tank_factory"
 	if node.is_in_group("energy_generators"): return "generator"
 	if node.is_in_group("rail_trains"): return "train"
@@ -813,6 +820,7 @@ func update_contents() -> void:
 		show_progress("Iron reserves","%s / %s" % [grouped(node.remaining),grouped(node.amount)],float(node.remaining)/maxi(1,node.amount))
 		info.get_node("Details").text = "Shared access · no capture"
 		hint_text = "Deforesters gather with right-click. Use its Repair card to repair this shared mine, or Attack to destroy it."
+	elif node.is_in_group("research_buildings"): show_research_building(node)
 	elif node.is_in_group("production_buildings"):
 		commands.get_node("Title").text = node.stats.display_name.to_upper()+" · PRODUCTION"
 		var payer = node.assigned_depot
@@ -878,6 +886,7 @@ func update_contents() -> void:
 			show_button("Trips","Trips: %s" % TRIP_LABELS[node.trips])
 			set_card(card.get_node("Trips"),"trips_"+str(node.trips))
 			if not node.is_in_group("rail_trains"): show_button("Worksite","Worksite")
+			else: show_mine_tile(node)
 			hint_text = "Worksite places a building and fetches exactly its materials. Right-click a build site to fetch for it. Load sets a manifest of crates, then picks a Depot. Unload at a Depot to unpack, or on open ground to set crates down. Shift queues stops. Trips: %s." % TRIP_LABELS[node.trips]
 		elif node.is_depot_truck:
 			show_button("DeployTruck","Deploy")
@@ -959,6 +968,39 @@ func update_tip() -> void:
 func set_label(button: Button, text: String) -> void:
 	if button.text != text: button.text = text
 # Production tiles: name over cost. Unaffordable costs turn amber and the tooltip says what's missing.
+## The Temple of Science (docs/TEMPLE_OF_SCIENCE.md): its research, under way or to start.
+func show_research_building(node: Node3D) -> void:
+	commands.get_node("Title").text = node.stats.display_name.to_upper()+" · RESEARCH"
+	var payer = node.assigned_depot
+	state_label.text = "%s · %s" % [team_label(node),("pays from "+str(payer.name)) if node.source_friendly() else "no friendly Depot in range"]
+	if node.researching != null: show_progress("Researching · "+node.researching.display_name,"%d%% · %s s left" % [roundi(node.fraction()*100),_seconds(ceilf(node.seconds_left()))],node.fraction())
+	if is_instance_valid(payer): set_stats([["Energy",grouped(payer.energy)],["Iron",grouped(payer.iron)]])
+	var entry: ResearchStats = node.research_by_id(Research.MINING_TRAINS)
+	var done: bool = entry != null and node.is_done(entry.research_id)
+	info.get_node("Details").text = "Researched: Mining Trains" if done else "Research holds for every building and train of yours.
+Pays from a covering Depot when started."
+	hint_text = "Research is paid when it starts, from a friendly Depot whose range covers the Temple. Cancel gives the cost back. One research at a time; a finished research holds for your whole side."
+	if node.team != "player" or entry == null: return
+	if node.researching != null: show_button("CancelPlan","Cancel research")
+	var button: Button = card.get_node("Research")
+	if done:
+		desired_buttons.append("Research")
+		button.add_theme_color_override("icon_normal_color",UNAFFORDABLE)
+		set_tile(button,entry.display_name+" · researched",entry.summary)
+		button.disabled = true
+		return
+	var pays = node.payer_for(entry.energy_cost,entry.iron_cost)
+	show_production("Research","Research "+entry.display_name+" (%s s)" % _seconds(entry.seconds),entry.energy_cost,entry.iron_cost,pays if pays != null else payer)
+	var blocker: String = node.research_blocker(entry.research_id)
+	button.disabled = node.researching != null or (not blocker.is_empty() and pays != null)
+	if not button.disabled: button.tooltip_text += "
+"+entry.summary
+	elif node.researching != null: button.tooltip_text += "
+Researching now."
+## A train's Mine iron tile: open once Mining Trains is researched (docs/TEMPLE_OF_SCIENCE.md).
+func show_mine_tile(node: Node3D) -> void:
+	show_button("MineIron","Mine iron")
+	explain(card.get_node("MineIron"),not node.can_mine(),"Research Mining Trains at a Temple of Science first.")
 func show_production(id: String, title: String, energy_cost: int, iron_cost: int, payer: Node) -> void:
 	desired_buttons.append(id)
 	var button: Button = card.get_node(id)
@@ -1111,7 +1153,7 @@ func refresh_global_menu() -> void:
 	if worksite_open:
 		build_menu.get_node("Bank").text = "DELIVERS: EXACT MATERIALS"
 		build_menu.get_node("Bank").tooltip_text = "The selected trucks load exactly what the building needs and unload it on the footprint. A covering stockpile pays the energy as Deforesters build."
-		for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"]]:
+		for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"]]:
 			var spec: Dictionary = network.plan_spec(pair[0])
 			var button: Button = build_menu.get_node("Actions/"+pair[1])
 			button.disabled = false
@@ -1124,7 +1166,7 @@ func refresh_global_menu() -> void:
 	build_menu.get_node("Bank").tooltip_text = "One covering Depot or deployed Cargo truck pays each plan's energy as Deforesters build it. Iron must be delivered to the footprint first. Rails pay fully from Depots. No pooled resources."
 	set_card(build_menu.get_node("Actions/Pin"),"unpin_payer" if global_pinned else "pin_payer")
 	set_tile(build_menu.get_node("Actions/Pin"),"Unpin payer (back to Auto)" if global_pinned else "Pin payer","New plans pay from the nearest covering stockpile that can pay." if global_pinned else "Pick one Depot or deployed Cargo truck on the map or minimap; new plans pay only from it.")
-	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"],[&"rail","Rail"]]:
+	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"],[&"rail","Rail"]]:
 		var spec: Dictionary = network.plan_spec(pair[0])
 		var button: Button = build_menu.get_node("Actions/"+pair[1])
 		button.disabled = false
