@@ -34,23 +34,22 @@ const DRIVE := 3.0
 const REACH := 4.0
 
 ## The three starts of the west half and what is drawn round each: the mountain north of it that holds its mine,
-## its lake (a few ovals, a bay and the channel between them, which is a place for a dam) and its two coal fields.
+## its lake (a few ovals, a bay and the channel between them, which is a place for a dam) and its coal field by the
+## lake. A start has no coal beside its Depot: that made coal too easy to reach (playtest of 2026-11-19).
 ## The shapes differ so the starts are not copies; what each has within reach is kept the same.
 const KITS := [
 	{"name": "North-west", "start": Vector2i(96, 94), "mountain": [64, 42, 138, 69], "lake": [[38, 50, 26, 28], [60, 26, 18, 11]],
-		"bay": [38, 98, 9, 8], "channel": [38, 76, 38, 92], "starter": Vector2i(86, 120), "lake_coal": Vector2i(56, 124)},
-	{"name": "West", "start": Vector2i(66, 250), "mountain": [30, 198, 104, 225], "lake": [[18, 256, 16, 26], [26, 236, 11, 9]],
-		"bay": [22, 298, 9, 8], "channel": [22, 280, 22, 292], "starter": Vector2i(53, 276), "lake_coal": Vector2i(44, 300)},
+		"bay": [38, 98, 9, 8], "channel": [38, 76, 38, 92], "lake_coal": Vector2i(56, 124)},
+	{"name": "West", "start": Vector2i(66, 250), "depot": Vector2i(66, 242), "mountain": [30, 198, 104, 225], "lake": [[18, 256, 16, 26], [26, 236, 11, 9]],
+		"bay": [22, 298, 9, 8], "channel": [22, 280, 22, 292], "lake_coal": Vector2i(44, 300)},
 	{"name": "South-west", "start": Vector2i(100, 412), "mountain": [78, 360, 148, 387], "lake": [[40, 456, 28, 24], [74, 472, 22, 13]],
-		"bay": [36, 414, 9, 8], "channel": [36, 422, 36, 434], "starter": Vector2i(87, 438), "lake_coal": Vector2i(58, 426)},
+		"bay": [36, 414, 9, 8], "channel": [36, 422, 36, 434], "lake_coal": Vector2i(58, 426)},
 ]
 ## Coal fields as cells per row. Each cell holds 50.
-const STARTER_ROWS := [3, 4, 3]
 const FIELD_ROWS := [3, 5, 5, 4, 3]
 const PASS_ROWS := [4, 6, 7, 7, 6, 6, 4]
 const MOTHER_ROWS := [6, 8, 10, 10, 12, 12, 12, 12, 10, 10, 8, 8]
-const STARTER_BELT := 8.5
-const LAKE_BELT := 15.0
+const LAKE_BELT := 8.5
 
 var cells := PackedByteArray()
 var edge_noise := FastNoiseLite.new()
@@ -237,7 +236,6 @@ func _forest() -> void:
 
 func _coal() -> void:
 	for kit in KITS:
-		coal_field(kit.starter.x, kit.starter.y, STARTER_ROWS, STARTER_BELT, "starter")
 		coal_field(kit.lake_coal.x, kit.lake_coal.y, FIELD_ROWS, LAKE_BELT, "lake")
 	# Between each pair of facing massifs, walled by rock west and east.
 	coal_field(250, 68, PASS_ROWS, 0.0, "pass")
@@ -294,13 +292,12 @@ func _measure() -> void:
 	var room := clearance()
 	# What each start has within reach.
 	lines.append("")
-	lines.append("Each start: walk to its mine; then distance and trees to fell for starter coal, lake coal and water")
+	lines.append("Each start: walk to its mine; then distance and trees to fell for lake coal and water")
 	var reach: Array = []
 	for kit in KITS:
-		var start: Vector2i = kit.start
+		var start: Vector2i = kit.get("depot", kit.start)
 		var felled := trees_from(start)
 		var home := nearest(start, "mine", "home")
-		var starter := nearest(start, "coal", "starter")
 		var lake := nearest(start, "coal", "lake")
 		var water: Array = []
 		for oval in kit.lake:
@@ -308,10 +305,9 @@ func _measure() -> void:
 				for x in range(maxi(0, int(oval[0]-oval[2])), int(oval[0]+oval[2])+1):
 					if z >= 0 and z < SIZE and cells[z*SIZE+x] == WATER: water.append(Vector2i(x, z))
 		var entry := {"name": kit.name, "mine": length(way(grid, start, Vector2i(home.yard))),
-			"starter": Vector2(start).distance_to(starter.at), "starter_trees": trees_to(felled, starter.cells),
-			"lake": Vector2(start).distance_to(lake.at), "lake_trees": trees_to(felled, lake.cells), "water_trees": trees_to(felled, water)}
+			"lake": Vector2(start).distance_to(lake.at), "lake_trees": mine_trees(felled, lake.cells), "water_trees": trees_to(felled, water)}
 		reach.append(entry)
-		lines.append("  %-11s mine %3.0f m | starter coal %2.0f m, %d trees | lake coal %2.0f m, %d trees | water %d trees" % [entry.name, entry.mine, entry.starter, entry.starter_trees, entry.lake, entry.lake_trees, entry.water_trees])
+		lines.append("  %-11s mine %3.0f m | lake coal %2.0f m, %d trees | water %d trees" % [entry.name, entry.mine, entry.lake, entry.lake_trees, entry.water_trees])
 	found["reach"] = reach
 	# The ways between starts, on open ground with no tree felled.
 	lines.append("")
@@ -340,7 +336,7 @@ func _measure() -> void:
 	var mouth := Vector2i(180, 256)
 	lines.append("  Mouth: %.0f m, %s on foot, %s by truck" % [length(way(grid, west, mouth)), clock(length(way(grid, west, mouth))/WALK), clock(length(way(grid, west, mouth))/DRIVE)])
 	lines.append("  Trees to fell before reaching: gate mine %d, forward coal %d, Crag mines %d, mother seam %d, the far side's start %d" % [
-		int(felled[int(gate.yard.y)*SIZE+int(gate.yard.x)]), trees_to(felled, forward.cells), int(felled[int(crag.yard.y)*SIZE+int(crag.yard.x)]), trees_to(felled, mother.cells), int(felled[west.y*SIZE+SIZE-1-west.x])])
+		int(felled[int(gate.yard.y)*SIZE+int(gate.yard.x)]), mine_trees(felled, forward.cells), int(felled[int(crag.yard.y)*SIZE+int(crag.yard.x)]), mine_trees(felled, mother.cells), int(felled[west.y*SIZE+SIZE-1-west.x])])
 	found["through"] = int(felled[west.y*SIZE+SIZE-1-west.x])
 	for kit in KITS:
 		lines.append("  From %s to the mouth: %.0f m, %s on foot" % [kit.name, length(way(grid, kit.start, mouth)), clock(length(way(grid, kit.start, mouth))/WALK)])
@@ -362,7 +358,7 @@ func _measure() -> void:
 			own = minf(own, length(way(grid, kit.start, Vector2i(mark.yard))))
 			other = minf(other, length(way(grid, mirror(kit.start), Vector2i(mark.yard))))
 		var seam := nearest(Vector2i(mark.at), "coal", "pass")
-		lines.append("  At %s: %.0f m from its own side's nearest start, %.0f m from the other side's; %d trees between its yard and the coal beside it" % [Vector2i(mark.at), own, other, trees_to(trees_from(Vector2i(mark.yard)), seam.cells)])
+		lines.append("  At %s: %.0f m from its own side's nearest start, %.0f m from the other side's; %d trees between its yard and the coal beside it" % [Vector2i(mark.at), own, other, mine_trees(trees_from(Vector2i(mark.yard)), seam.cells)])
 	# Totals.
 	lines.append("")
 	var mines := {}
@@ -477,6 +473,18 @@ func trees_to(felled: PackedInt32Array, targets: Array) -> int:
 				var cell: Vector2i = target+Vector2i(dx, dz)
 				if cell.x < 0 or cell.y < 0 or cell.x >= SIZE or cell.y >= SIZE or Vector2(dx, dz).length() > REACH: continue
 				best = mini(best, felled[cell.y*SIZE+cell.x])
+	return best
+
+## The fewest trees felled before a builder touches a 2 x 2 mine footprint on a coal seam.
+func mine_trees(felled: PackedInt32Array, seam: Array) -> int:
+	var best := 1 << 30
+	for cell in seam:
+		if not (cell+Vector2i(1, 0) in seam and cell+Vector2i(0, 1) in seam and cell+Vector2i(1, 1) in seam): continue
+		for dz in range(-1, 3):
+			for dx in range(-1, 3):
+				var stand: Vector2i = cell+Vector2i(dx, dz)
+				if stand.x >= 0 and stand.y >= 0 and stand.x < SIZE and stand.y < SIZE:
+					best = mini(best, felled[stand.y*SIZE+stand.x])
 	return best
 
 ## For every cell, how many cells of open ground lie between it and the nearest thing in the way.
@@ -645,7 +653,7 @@ func _picture() -> void:
 	sheet.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	sheet.size = Vector2(SIZE*2+640, SIZE*2+90)
 	var tints := {"home": Color(1.0, 0.9, 0.2), "expansion": Color(1.0, 0.6, 0.15), "pass": Color(1.0, 0.25, 0.25), "gate": Color(0.85, 0.45, 1.0), "crag": Color(1.0, 1.0, 1.0)}
-	var sizes := {"starter": 6.0, "lake": 8.0, "pass": 10.0, "forward": 10.0, "mother": 14.0}
+	var sizes := {"lake": 8.0, "pass": 10.0, "forward": 10.0, "mother": 14.0}
 	for mark in marks:
 		var copy := mark.duplicate()
 		if mark.kind == "mine": copy["colour"] = tints[mark.tier]
