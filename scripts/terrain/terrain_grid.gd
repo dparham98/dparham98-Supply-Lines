@@ -218,10 +218,32 @@ func actor_path(start: Vector2i, goal: Vector2i, layer: int, owner: String) -> A
 	var goal_solid := grid.is_point_solid(goal)
 	grid.set_point_solid(start,false)
 	grid.set_point_solid(goal,false)
-	var path: Array[Vector2i] = grid.get_id_path(start,goal)
+	# A search that cannot succeed floods every cell it can reach first, ten times the cost of a long route; a crowd
+	# of units walling in a free cell near a rally point or a target set that off for every unit headed there, each
+	# time it planned again. A goal or start sealed in a small pocket is turned down before the search.
+	var path: Array[Vector2i] = []
+	if not sealed(grid,goal,start) and not sealed(grid,start,goal): path = grid.get_id_path(start,goal)
 	grid.set_point_solid(start,start_solid)
 	grid.set_point_solid(goal,goal_solid)
 	return path
+## Pockets smaller than this are found by `sealed`; larger ones are left to the route search itself.
+const POCKET_CELLS := 256
+## Whether `from` lies in a pocket of open cells, smaller than POCKET_CELLS, that does not hold `other`. The
+## grid moves diagonally only past open corners, so side neighbours alone decide what is joined.
+func sealed(grid: AStarGrid2D, from: Vector2i, other: Vector2i) -> bool:
+	var seen := {from: true}
+	var queue: Array[Vector2i] = [from]
+	var head := 0
+	while head < queue.size():
+		var cell := queue[head]
+		head += 1
+		for next in [cell+Vector2i.RIGHT,cell+Vector2i.LEFT,cell+Vector2i.DOWN,cell+Vector2i.UP]:
+			if next == other: return false
+			if seen.has(next) or not grid.is_in_boundsv(next) or grid.is_point_solid(next): continue
+			if queue.size() >= POCKET_CELLS: return false
+			seen[next] = true
+			queue.append(next)
+	return true
 func nearest_actor_cell(origin: Vector2i, layer: int, owner: String = "") -> Vector2i:
 	if can_traverse(origin,layer,owner): return origin
 	for radius in range(1,maxi(grid_size.x,grid_size.y)):
