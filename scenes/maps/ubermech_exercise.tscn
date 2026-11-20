@@ -1,0 +1,194 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/gameplay/skirmish.gd" id="game"]
+[ext_resource type="PackedScene" path="res://scenes/maps/lakes_terrain.tscn" id="terrain"]
+[ext_resource type="PackedScene" path="res://scenes/maps/lighting.tscn" id="lights"]
+[ext_resource type="PackedScene" path="res://scenes/camera/rts_camera.tscn" id="camera"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/depot.tscn" id="depot"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/infantry.tscn" id="infantry"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/cargo_vehicle.tscn" id="cargo_start"]
+[ext_resource type="PackedScene" path="res://assets/models/rails/maglev_track_straight.glb" id="ghost_straight"]
+[ext_resource type="PackedScene" path="res://assets/models/rails/maglev_track_curve.glb" id="ghost_curve"]
+[ext_resource type="PackedScene" path="res://assets/models/rails/maglev_track_fork_left.glb" id="ghost_fork_left"]
+[ext_resource type="PackedScene" path="res://assets/models/rails/maglev_track_fork_right.glb" id="ghost_fork_right"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/scout.tscn" id="scout"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/grenadier.tscn" id="grenadier"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/tank.tscn" id="tank"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/motorcycle.tscn" id="motorcycle"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/drone.tscn" id="drone"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/ubermech.tscn" id="ubermech"]
+[ext_resource type="PackedScene" path="res://scenes/ui/skirmish_hud.tscn" id="hud"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/tracer.tscn" id="tracer"]
+[ext_resource type="Script" path="res://scripts/economy/depot_network.gd" id="network"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/depot_truck.tscn" id="truck"]
+[ext_resource type="Resource" path="res://assets/economy/supply_rules.tres" id="supply"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/energy_generator.tscn" id="generator"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/cargo_vehicle.tscn" id="cargo"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/construction_preview.tscn" id="preview"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/barracks.tscn" id="barracks"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/tank_factory.tscn" id="factory"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/iron_mine.tscn" id="mine"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/site_mine.tscn" id="site_mine"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/rail_network.tscn" id="rails"]
+[ext_resource type="Resource" path="res://assets/economy/engineering_rules.tres" id="engineering"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/material_pile.tscn" id="pile"]
+[ext_resource type="Texture2D" path="res://assets/maps/lakes/layout.png" id="layout"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/fog_of_war.tscn" id="fog"]
+[node name="UbermechExercise" type="Node3D" groups=["skirmish"]]
+editor_description = "Ubermech trial (docs/UBERMECH_EXERCISE.md): Two Lakes with a player Tank Factory already standing beside the Depot, two player Ubermechs at the yard and the Depot stocked for two more. Everything else is Two Lakes as it is, the enemy Ubermech at start B included."
+script = ExtResource("game")
+tracer_scene = ExtResource("tracer")
+pile_scene = ExtResource("pile")
+vehicle_fuel_required = true
+testing_coal_amount = 0
+playtest_tools = true
+testing_iron_grant = false
+testing_full_tanks = false
+message = "Ubermech trial: two Ubermechs and a Tank Factory are yours. Select the factory to build more; the enemy Ubermech waits at the east camp."
+[node name="DepotNetwork" type="Node" parent="."]
+script = ExtResource("network")
+depot_scene = ExtResource("depot")
+truck_scene = ExtResource("truck")
+generator_scene = ExtResource("generator")
+cargo_scene = ExtResource("cargo")
+barracks_scene = ExtResource("barracks")
+tank_factory_scene = ExtResource("factory")
+supply_rules = ExtResource("supply")
+mine_scene = ExtResource("mine")
+site_mine_scene = ExtResource("site_mine")
+engineering_rules = ExtResource("engineering")
+[node name="ConstructionPreview" parent="." instance=ExtResource("preview")]
+[node name="Terrain" parent="." instance=ExtResource("terrain")]
+[node name="RailNetwork" parent="." instance=ExtResource("rails")]
+[node name="Lighting" parent="." instance=ExtResource("lights")]
+[node name="FogOfWar" parent="." instance=ExtResource("fog")]
+[node name="CameraRig" parent="." instance=ExtResource("camera")]
+process_mode = 3
+position = Vector3(-184,0,0)
+default_zoom = 72.0
+preview_zoom = 72.0
+[node name="Sites" type="Node3D" parent="."]
+editor_description = "Where each side is meant to settle. Markers only: nothing reads them in play. The map test measures from them, and an opponent can be placed on EnemyStart later."
+[node name="PlayerStart" type="Marker3D" parent="Sites"]
+editor_description = "Start A. The player's Depot stands here, 8 m north of the yard's centre so the home mine is about 19 m away (playtest of 2026-11-17)."
+position = Vector3(-184,0,-8)
+gizmo_extents = 6.0
+[node name="EnemyStart" type="Marker3D" parent="Sites"]
+editor_description = "Start B: start A turned half a circle about the map centre. No opponent yet; a Depot placed here stands on the mirrored footprint."
+position = Vector3(184,0,-8)
+gizmo_extents = 6.0
+[node name="StartNorthWest" type="Marker3D" parent="Sites"]
+position = Vector3(-153.5,0,-155.5)
+gizmo_extents = 6.0
+[node name="StartNorthEast" type="Marker3D" parent="Sites"]
+position = Vector3(153.5,0,-155.5)
+gizmo_extents = 6.0
+[node name="StartSouthWest" type="Marker3D" parent="Sites"]
+position = Vector3(-149.5,0,162.5)
+gizmo_extents = 6.0
+[node name="StartSouthEast" type="Marker3D" parent="Sites"]
+position = Vector3(149.5,0,162.5)
+gizmo_extents = 6.0
+[node name="Entities" type="Node3D" parent="."]
+[node name="Buildings" type="Node3D" parent="Entities"]
+[node name="Depot" parent="Entities/Buildings" instance=ExtResource("depot")]
+position = Vector3(-184,0,-8)
+initial_energy = 800
+initial_iron = 200
+initial_wood = 40
+initial_coal = 60
+[node name="IronMine" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+editor_description = "Starter mine on start A's iron field, so the first iron can be gathered before any can be spent."
+position = Vector3(-180.5,0,-26.5)
+[node name="IronMineB" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+editor_description = "Starter mine on start B's iron field, mirroring start A's."
+position = Vector3(180.5,0,-26.5)
+[node name="Mine01" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-83.5,0,-217.5)
+[node name="Mine02" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(82.5,0,-217.5)
+[node name="Mine03" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-150.5,0,-182.5)
+[node name="Mine04" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(149.5,0,-182.5)
+[node name="Mine05" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-18.5,0,-154.5)
+[node name="Mine06" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(18.5,0,-154.5)
+[node name="Mine07" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-130.5,0,-71.5)
+[node name="Mine08" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(129.5,0,-71.5)
+[node name="Mine09" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-46.5,0,-24.5)
+[node name="Mine10" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(46.5,0,-24.5)
+[node name="Mine11" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-10.5,0,-23.5)
+[node name="Mine12" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(9.5,0,-23.5)
+[node name="Mine13" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-109.5,0,99.5)
+[node name="Mine14" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(108.5,0,99.5)
+[node name="Mine15" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-146.5,0,135.5)
+[node name="Mine16" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(145.5,0,135.5)
+[node name="Mine17" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-18.5,0,173.5)
+[node name="Mine18" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(18.5,0,173.5)
+[node name="TankFactory" parent="Entities/Buildings" instance=ExtResource("factory")]
+editor_description = "Stands east of the Depot, clear of its truck strip and inside its range, so it pays from it."
+position = Vector3(-170,0,-18)
+[node name="Resources" type="Node3D" parent="Entities"]
+[node name="Units" type="Node3D" parent="Entities"]
+[node name="Infantry" parent="Entities/Units" instance=ExtResource("infantry")]
+position = Vector3(-181.5,0,1.5)
+[node name="Ubermech" parent="Entities/Units" instance=ExtResource("ubermech")]
+position = Vector3(-188.5,0,6.5)
+[node name="UbermechB" parent="Entities/Units" instance=ExtResource("ubermech")]
+position = Vector3(-183.5,0,8.5)
+[node name="StarterTruck" parent="Entities/Units" instance=ExtResource("cargo_start")]
+position = Vector3(-193.5,0,-6.5)
+[node name="EnemyInfantry" parent="Entities/Units" instance=ExtResource("infantry")]
+team = "enemy"
+position = Vector3(195.5,0,-7.5)
+[node name="EnemyScout" parent="Entities/Units" instance=ExtResource("scout")]
+team = "enemy"
+position = Vector3(192.5,0,-0.5)
+[node name="EnemyGrenadier" parent="Entities/Units" instance=ExtResource("grenadier")]
+team = "enemy"
+position = Vector3(185.5,0,2.5)
+[node name="EnemyTank" parent="Entities/Units" instance=ExtResource("tank")]
+team = "enemy"
+position = Vector3(178.5,0,1.5)
+[node name="EnemyMotorcycle" parent="Entities/Units" instance=ExtResource("motorcycle")]
+team = "enemy"
+position = Vector3(173.5,0,-4.5)
+[node name="EnemyDrone" parent="Entities/Units" instance=ExtResource("drone")]
+team = "enemy"
+position = Vector3(173.5,0,-11.5)
+[node name="EnemyUbermech" parent="Entities/Units" instance=ExtResource("ubermech")]
+team = "enemy"
+position = Vector3(178.5,0,-17.5)
+[node name="EnemyCargoTruck" parent="Entities/Units" instance=ExtResource("cargo")]
+team = "enemy"
+position = Vector3(185.5,0,-18.5)
+[node name="EnemyDepotTruck" parent="Entities/Units" instance=ExtResource("truck")]
+team = "enemy"
+position = Vector3(192.5,0,-15.5)
+[node name="RailPreview" type="Node3D" parent="."]
+visible = false
+[node name="Straight" parent="RailPreview" instance=ExtResource("ghost_straight")]
+transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
+[node name="Curve" parent="RailPreview" instance=ExtResource("ghost_curve")]
+transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
+[node name="ForkLeft" parent="RailPreview" instance=ExtResource("ghost_fork_left")]
+transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
+[node name="ForkRight" parent="RailPreview" instance=ExtResource("ghost_fork_right")]
+transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
+[node name="Interface" parent="." instance=ExtResource("hud")]
+[node name="Terrain" parent="Interface/Bottom/Body/Row/MapColumn/Map" index="0"]
+texture = ExtResource("layout")
+[editable path="Interface"]

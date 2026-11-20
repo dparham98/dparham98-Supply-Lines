@@ -70,7 +70,7 @@ func run() -> void:
 	if not check(info("HealthText").visible and info("HealthText").text == "Health %d / %d" % [depot.health,depot.max_health],"A building should show its health as a number"): return
 
 	# Pictures: renders for units and buildings, portraits for both.
-	for id in ["infantry","tank","cargo","depot","barracks","tank_factory","generator","mine","pithead"]:
+	for id in ["infantry","ubermech","tank","cargo","depot","barracks","tank_factory","generator","mine","pithead"]:
 		if not check(hud.has_render(id) and ResourceLoader.exists(HUD.PORTRAIT_PATH % id),"No render or portrait for "+id): return
 	if not check(hud.icon_name(depot) == "depot" and info("Head/Icon").texture.resource_path == HUD.RENDER_PATH % "depot","The Depot's icon should be its render"): return
 	if not check(load("res://assets/units/infantry.tres").display_name == "Deforester","The worker should be called the Deforester"): return

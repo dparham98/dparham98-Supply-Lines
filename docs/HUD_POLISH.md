@@ -79,6 +79,4 @@ A list of smaller changes asked for on 2026-11-19, after fog of war was merged. 
 - The production tiles grey out only when no covering Depot can pay, and their tooltip names the one that would.
 - Capturing a Depot still cancels the queue it was paying for, as before.
 
-## Not changed
-
-- **The Ubermech** keeps its glyph icon until its model lands; on main its model is still a placeholder box.
+The Ubermech got its renders once its walker model landed (`HUD_RENDERS.md`).
