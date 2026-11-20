@@ -375,7 +375,7 @@ func hud_name(node: Node) -> String:
 	if node.is_in_group("supply_crates"): return "Empty crate" if node.amount == 0 else "%s crate" % str(node.material_kind).capitalize()
 	if node.is_in_group("material_piles"): return "%s pile" % str(node.material_kind).capitalize()
 	if node.is_in_group("iron_deposits"): return "Iron deposit · build a mine to gather"
-	if node.is_in_group("coal_cells"): return "Coal deposit · Infantry dig it directly"
+	if node.is_in_group("coal_cells"): return "Coal deposit · Deforesters dig it directly"
 	if node.is_in_group("resources"): return str(node.get("resource_name")) if node.get("resource_name") != null else "Resource"
 	if node.is_in_group("construction_plans"): return node.spec.title+" plan"
 	return get_parent().object_name(node)

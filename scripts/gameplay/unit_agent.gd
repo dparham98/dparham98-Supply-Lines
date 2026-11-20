@@ -257,7 +257,7 @@ func _fell(delta: float) -> void:
 func command_attack(node: Node3D, forced := false) -> void:
 	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or not CombatResolver.can_attack(self,node,forced): return
 	attack_forced = forced
-	if carrying() and is_instance_valid(game): game.notify("Infantry carrying cargo can't fire: drop it (X) first.")
+	if carrying() and is_instance_valid(game): game.notify("A Deforester carrying cargo can't fire: drop it (X) first.")
 	_stop_route()
 	order = "attack"
 	order_target = node
@@ -564,6 +564,12 @@ func _walk(delta: float) -> void:
 			if fuel_rules.coal_per_movement_unit > 0: step = minf(step,fuel/fuel_rules.coal_per_movement_unit)
 	var before := global_position
 	var next := global_position.move_toward(point,step)
+	# An empty tank keeps a vehicle inside Depot power: it stops at the edge rather than drive out and be
+	# stranded (docs/FUEL_BATCH.md, Staying in range). The order waits until it has fuel.
+	if fuel_active() and powered_by != null and fuel <= 0 and _depot_power(next) == null:
+		if state != NO_FUEL_EDGE and team == "player" and game.has_method("alert"): game.alert("%s has no fuel to leave Depot range" % game.hud.object_name(self),global_position,"edge:%d" % get_instance_id(),"fuel")
+		state = NO_FUEL_EDGE
+		return
 	var cell = ground.get_tile_at_position(next)
 	if cell != null and not _is_ours(cell):
 		if not ground.can_traverse(cell,mobility_layer(),_owner_key()):
@@ -1142,11 +1148,13 @@ func fuel_active() -> bool:
 ## fuel_rules.depot_energy_per_metre, instead of its tank. A Depot with no energy left powers nothing.
 var powered_by: Node3D
 var _depot_power_owed := 0.0
-func _depot_power() -> Node3D:
+func _depot_power(at = null) -> Node3D:
 	if fuel_rules.depot_energy_per_metre <= 0: return null
+	var point: Vector3 = global_position if at == null else at
 	for depot in get_tree().get_nodes_in_group("depots"):
-		if depot.energy > 0 and SupplySource.covers(depot,global_position,team): return depot
+		if depot.energy > 0 and SupplySource.covers(depot,point,team): return depot
 	return null
+const NO_FUEL_EDGE := "No fuel · can't leave Depot range"
 func _pay_for_move(distance: float) -> void:
 	if not is_instance_valid(powered_by):
 		burn_fuel(distance)

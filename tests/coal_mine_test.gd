@@ -68,8 +68,8 @@ func run() -> void:
 	if not check(other_start.x >= 0,"No mine spot on the lake coal seam"): return
 	var other_centre: Vector3 = ground.tile_to_world(other_start+size/2)
 	# Coal takes the Coal Mine (C on the build page); the Iron Mine tile refuses a seam.
-	if not check(network.queue_plan(other_centre,&"iron_mine") == null,"An Iron Mine plan should not go on a coal seam"): return
-	var plan = network.queue_plan(other_centre,&"coal_mine")
+	if not check(network.queue_plan(other_centre,&"iron_mine",null,false,false) == null,"An Iron Mine plan should not go on a coal seam"): return
+	var plan = network.queue_plan(other_centre,&"coal_mine",null,false,false)
 	if not check(plan != null and plan.spec.title == "Coal Mine","A Coal Mine plan on an enclosed coal seam outside Depot range was refused"): return
 	depot.energy = 0
 	plan.receive(&"iron",15)

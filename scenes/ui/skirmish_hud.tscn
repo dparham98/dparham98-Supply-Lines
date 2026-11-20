@@ -494,7 +494,7 @@ shortcut = SubResource("shortcut_command_global_build")
 custom_minimum_size = Vector2(0,26)
 layout_mode = 2
 text = "Build…"
-tooltip_text = "Place unpaid construction plans anywhere on valid terrain. Infantry and Depots no longer have their own build menus."
+tooltip_text = "Place unpaid construction plans anywhere on valid terrain. Deforesters and Depots no longer have their own build menus."
 [node name="Focus" type="Button" parent="Bottom/Body/Header"]
 shortcut = SubResource("shortcut_camera_focus_selection")
 custom_minimum_size = Vector2(0,26)
@@ -2505,11 +2505,6 @@ custom_minimum_size = Vector2(250,0)
 layout_mode = 2
 size_flags_horizontal = 0
 theme_override_constants/separation = 5
-[node name="AssignedSource" type="OptionButton" parent="Bottom/Body/Row/Context"]
-layout_mode = 2
-visible = false
-fit_to_longest_item = false
-clip_text = true
 [node name="Production" type="VBoxContainer" parent="Bottom/Body/Row/Context"]
 layout_mode = 2
 visible = false
@@ -2842,7 +2837,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 expand_mode = 1
-stretch_mode = 6
+stretch_mode = 5
 [node name="Commands" type="VBoxContainer" parent="Bottom/Body/Row"]
 layout_mode = 2
 custom_minimum_size = Vector2(212,0)
@@ -3062,7 +3057,7 @@ theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="Fell" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
-tooltip_text = "Click a forest. Infantry cut down the trees there and round it, and keep no wood.\nRight-click: autocast. Idle Infantry fell the trees round where they are left."
+tooltip_text = "Click a forest. Deforesters cut down the trees there and round it, and keep no wood.\nRight-click: autocast. Idle Deforesters fell the trees round where they are left."
 shortcut = SubResource("shortcut_command_fell")
 layout_mode = 0
 custom_minimum_size = Vector2(46,46)
@@ -3154,7 +3149,7 @@ theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="DropMaterials" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
-tooltip_text = "Drop carried materials as a pile any Infantry can gather."
+tooltip_text = "Drop carried materials as a pile any Deforester can gather."
 shortcut = SubResource("shortcut_command_drop")
 layout_mode = 0
 custom_minimum_size = Vector2(46,46)
@@ -3593,7 +3588,7 @@ theme_override_font_sizes/font_size = 11
 text = "?"
 [node name="DeployCargo" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
-tooltip_text = "Deploy supplies for 2 s so Infantry deliver here and crates can be prepared. Moving packs first."
+tooltip_text = "Deploy supplies for 2 s so Deforesters deliver here and crates can be prepared. Moving packs first."
 shortcut = SubResource("shortcut_command_deploy")
 layout_mode = 0
 visible = false

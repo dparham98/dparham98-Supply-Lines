@@ -1,6 +1,6 @@
 extends SceneTree
-# Headless: unit portraits (docs/UNIT_PORTRAITS.md). A selected Infantry shows its painted portrait in the Ornament
-# frame; a selected Depot shows none.
+# Headless: portraits (docs/UNIT_PORTRAITS.md, docs/HUD_RENDERS.md). A selected Deforester shows its rendered portrait
+# in the Ornament frame, and so does a selected Depot; nothing selected shows none.
 func _initialize() -> void: call_deferred("run")
 func check(value: bool, message: String) -> bool:
 	if value: return true
@@ -24,6 +24,9 @@ func run() -> void:
 	infantry.set_selected(false)
 	game.selected_building = game.depot
 	for frame in range(3): await process_frame
-	if not check(not portrait.visible,"A Depot has no portrait"): return
+	if not check(portrait.visible and portrait.texture != null and portrait.texture.resource_path == "res://assets/ui/portraits/depot.png","The Depot portrait should show"): return
+	game.selected_building = null
+	for frame in range(3): await process_frame
+	if not check(not portrait.visible,"Nothing selected shows no portrait"): return
 	print("UNIT_PORTRAITS_TEST_PASSED")
 	quit(0)

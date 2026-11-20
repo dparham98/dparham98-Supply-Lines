@@ -12,7 +12,7 @@ The playtest of main at 9eaed10 (2026-11-15) set the range back up to 75% of the
 
 ## Every range shows while placing
 
-The playtest of PRs #88 and #89 together (2026-11-16) asked to see all Depot ranges while placing. Every friendly Depot's Territory ring now shows whenever the player places anything: a building or plan from the Build page, a Depot, a Generator, or a Depot Truck's Deploy site. Otherwise only the selected Depot's ring shows, as before. A Depot about to be placed still shows its own range ring around the cursor. Enemy Depots' rings never show.
+The playtest of PRs #88 and #89 together (2026-11-16) asked to see all Depot ranges while placing. Every friendly Depot's Territory ring now shows whenever the player places anything: a building or plan from the Build page, a Depot, a Generator, or a Depot Truck's Deploy site. Since 2026-11-19 they also show while the Build page is open and while any building or building site is selected (`HUD_POLISH.md`). Otherwise only the selected Depot's ring shows, as before. A Depot about to be placed still shows its own range ring around the cursor. Enemy Depots' rings never show.
 
 ## Placement colours and stock in range
 

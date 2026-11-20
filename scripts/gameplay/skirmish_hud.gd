@@ -60,9 +60,13 @@ var feed_points: Array[Vector3] = []
 const UNAFFORDABLE := Color(0.5,0.42,0.4)
 ## Darkens the fuel choices that are not the current one.
 const UNSELECTED := Color(0.5,0.46,0.44)
-const FEED_SECONDS := 45.0
-var assignment_sources: Array[Node3D] = []
-var assignment_signature := ""
+## Warnings (the alert feed and the header message) show for FEED_SECONDS, then fade out over FEED_FADE_SECONDS
+## (docs/HUD_POLISH.md). Nothing needs closing by hand.
+const FEED_SECONDS := 3.0
+const FEED_FADE_SECONDS := 0.6
+## How visible a warning `age` seconds old is: 1 while it shows, falling to 0 as it fades.
+static func warning_alpha(age: float) -> float:
+	return clampf((FEED_SECONDS+FEED_FADE_SECONDS-age)/FEED_FADE_SECONDS,0.0,1.0)
 ## The build page holds global, unpaid plans only; Infantry and Depots have no build menus of their own.
 var global_build_open := false
 ## The build page opened from a truck's Worksite tile (docs/TRUCK_WORKSITES.md).
@@ -121,6 +125,11 @@ func _ready() -> void:
 		load_tiles.get_node(pair[0]).pressed.connect(func():
 			if crate_page_open: make_crates(pair[1],Input.is_key_pressed(KEY_SHIFT))
 			else: edit_manifest(pair[1],Input.is_key_pressed(KEY_SHIFT)))
+		# Right-click takes a crate off the manifest; Shift+right-click takes all of that resource off.
+		load_tiles.get_node(pair[0]).gui_input.connect(func(event: InputEvent):
+			if crate_page_open or not event is InputEventMouseButton or event.button_index != MOUSE_BUTTON_RIGHT or not event.pressed: return
+			lower_manifest(pair[1],event.shift_pressed)
+			load_tiles.get_node(pair[0]).accept_event())
 	load_tiles.get_node("Clear").pressed.connect(clear_manifest)
 	card.get_node("MakeCrates").pressed.connect(open_crate_page)
 	depot_panel.get_node("Body/CeilingSlider").value_changed.connect(func(value: float):
@@ -141,10 +150,7 @@ func _ready() -> void:
 				unit.order_queue.clear()
 				unit._stop_route(); unit.order = "idle"; unit.source = null
 				game.drop_material(unit)
-		game.notify("Materials dropped. Any Infantry can gather the pile before spending it."))
-	context.get_node("AssignedSource").item_selected.connect(func(index):
-		if is_instance_valid(shown) and index >= 0 and index < assignment_sources.size():
-			game.notify("Depot assigned." if shown.assign_source(assignment_sources[index]) else "Assignment requires an empty production queue and a friendly covering Depot."))
+		game.notify("Materials dropped. Any Deforester can gather the pile before spending it."))
 	for mode in ["move","attack","gather","fell","repair","capture","derail"]:
 		card.get_node(mode.capitalize()).pressed.connect(func(): game.pending_unit_command = mode; game.notify("Click a target for %s. Esc cancels." % mode))
 	card.get_node("Stop").pressed.connect(stop_units)
@@ -221,7 +227,7 @@ func object_name(node: Node3D) -> String:
 	if node.is_in_group("rail_trains"): return "Train"
 	if node.is_cargo_vehicle: return "Cargo Vehicle"
 	if node.is_depot_truck: return "Depot Truck"
-	return node.unit_stats.display_name if node.unit_stats != null else "Infantry"
+	return node.unit_stats.display_name if node.unit_stats != null else "Deforester"
 func nearest_depot(node: Node3D) -> Node3D:
 	var nearest: Node3D
 	var distance := INF
@@ -383,31 +389,48 @@ func update_bars(node: Node3D) -> void:
 		cargo_bar.value = carried
 		bars.get_node("CargoValue").text = "%d / %d%s" % [carried,capacity," "+str(node.cargo_kind) if carried > 0 else ""]
 		for id in ["CargoLabel","Cargo","CargoValue"]: bars.get_node(id).visible = true
-const DEPOT_PRODUCTS := {"infantry":"Infantry","truck":"Depot truck","cargo":"Cargo vehicle","train":"Train"}
+const DEPOT_PRODUCTS := {"infantry":"Deforester","truck":"Depot truck","cargo":"Cargo vehicle","train":"Train"}
+## Rendered pictures of the units and buildings (docs/HUD_RENDERS.md), made by scripts/tools/render_hud_images.gd.
+const RENDER_PATH := "res://assets/ui/renders/%s.png"
+const PORTRAIT_PATH := "res://assets/ui/portraits/%s.png"
+const GLYPH_TINT := Color(0.855,0.69,0.4)
 func set_icon(id: String) -> void:
-	if id.is_empty(): info.get_node("Head/Icon").texture = null; return
-	if not _icons.has(id): _icons[id] = load("res://assets/ui/icons/%s.svg" % id)
-	info.get_node("Head/Icon").texture = _icons[id]
-## The shown unit's painted portrait in the Ornament frame, where it has one in assets/ui/portraits
-## (docs/UNIT_PORTRAITS.md); the frame's emblem otherwise.
+	var icon: TextureRect = info.get_node("Head/Icon")
+	if id.is_empty(): icon.texture = null; return
+	icon.texture = unit_image(id)
+	# A render keeps its own colours; a glyph takes the HUD's gold.
+	icon.modulate = Color.WHITE if has_render(id) else GLYPH_TINT
+## A unit's or building's render where there is one, else its glyph.
+func unit_image(id: String) -> Texture2D:
+	var key := "image:"+id
+	if not _icons.has(key): _icons[key] = load(RENDER_PATH % id) if has_render(id) else load("res://assets/ui/icons/%s.svg" % glyph_name(id))
+	return _icons[key]
+func has_render(id: String) -> bool:
+	return ResourceLoader.exists(RENDER_PATH % id)
+## The glyph for an id with no render, or for one with no glyph of its own.
+static func glyph_name(id: String) -> String:
+	if id in ["barracks","tank_factory"]: return "factory"
+	if id == "pithead": return "mine"
+	return id if ResourceLoader.exists("res://assets/ui/icons/%s.svg" % id) else "infantry"
+## The shown unit's or building's portrait in the Ornament frame, a render from assets/ui/portraits
+## (docs/UNIT_PORTRAITS.md); the frame's emblem where there is none.
 func update_portrait(node) -> void:
 	var frame: TextureRect = $Bottom/Body/Row/Ornament/Portrait
 	var path := ""
-	if is_instance_valid(node) and node.is_in_group("units"): path = "res://assets/ui/portraits/%s.png" % icon_name(node)
+	if is_instance_valid(node) and (node.is_in_group("units") or node.is_in_group("selectable_buildings")): path = PORTRAIT_PATH % icon_name(node)
 	if path.is_empty() or not ResourceLoader.exists(path): frame.visible = false; return
 	if not _icons.has(path): _icons[path] = load(path)
 	frame.texture = _icons[path]
 	frame.visible = true
 func icon_name(node: Node) -> String:
 	if node.is_in_group("depots"): return "depot"
-	if node.is_in_group("mines"): return "mine"
-	if node.is_in_group("production_buildings"): return "factory"
+	if node.is_in_group("mines"): return "mine" if str(node.scene_file_path).ends_with("site_mine.tscn") else "pithead"
+	if node.is_in_group("production_buildings"): return "barracks" if str(node.scene_file_path).ends_with("barracks.tscn") else "tank_factory"
 	if node.is_in_group("energy_generators"): return "generator"
 	if node.is_in_group("rail_trains"): return "train"
 	if node.get("is_cargo_vehicle"): return "cargo"
 	if node.get("is_depot_truck"): return "truck"
-	var id := str(node.unit_stats.unit_id) if node.get("unit_stats") != null else "infantry"
-	return id if ResourceLoader.exists("res://assets/ui/icons/%s.svg" % id) else "infantry"
+	return str(node.unit_stats.unit_id) if node.get("unit_stats") != null else "infantry"
 func team_label(node: Node) -> String:
 	return str(node.team).capitalize()
 func grouped(value: int) -> String:
@@ -531,7 +554,11 @@ func update_portraits(units: Array[Node3D]) -> void:
 	var many := units.size() > 1 and not global_build_open
 	portraits.visible = many
 	portrait_units.clear()
-	if not many: return
+	# The single selection's health number, bars and details come back once the portraits go: they used to stay
+	# hidden after any group selection, which hid every vehicle's fuel and the health number from then on.
+	if not many:
+		for id in ["HealthText","Bars","Details"]: info.get_node(id).visible = true
+		return
 	for id in ["Health","HealthText","Bars","Storage","Warning","Details"]: info.get_node(id).visible = false
 	var types: Array[String] = []
 	for unit in units:
@@ -548,8 +575,18 @@ func update_portraits(units: Array[Node3D]) -> void:
 		if not button.visible: continue
 		var unit: Node3D = portrait_units[i]
 		var id := icon_name(unit)
-		if not _icons.has(id): _icons[id] = load("res://assets/ui/icons/%s.svg" % id)
-		if button.icon != _icons[id]: button.icon = _icons[id]
+		var image := unit_image(id)
+		if button.icon != image:
+			button.icon = image
+			# A render shows in its own colours, a little brighter on hover; a glyph keeps the scene's gold.
+			if has_render(id):
+				button.add_theme_color_override("icon_normal_color",Color.WHITE)
+				button.add_theme_color_override("icon_hover_color",Color(1.15,1.15,1.15))
+				button.add_theme_color_override("icon_pressed_color",Color(0.85,0.85,0.85))
+			else:
+				button.add_theme_color_override("icon_normal_color",GLYPH_TINT)
+				button.add_theme_color_override("icon_hover_color",Color(1,0.86,0.58))
+				button.add_theme_color_override("icon_pressed_color",Color(0.72,0.6,0.38))
 		var health: ProgressBar = button.get_node("Health")
 		health.max_value = unit.max_health
 		health.value = unit.health
@@ -623,9 +660,11 @@ func update_feed() -> void:
 	var now := Time.get_ticks_msec()/1000.0
 	feed_points.clear()
 	for entry in game.alerts:
-		if now-entry.time <= FEED_SECONDS and feed_points.size() < feed.get_child_count():
+		var alpha := warning_alpha(now-entry.time)
+		if alpha > 0.0 and feed_points.size() < feed.get_child_count():
 			var button: Button = feed.get_child(feed_points.size())
-			button.text = "%s · %ds" % [entry.text,int(now-entry.time)]
+			if button.text != entry.text: button.text = entry.text
+			button.modulate.a = alpha
 			set_alert_style(button,entry.get("kind",""))
 			feed_points.append(entry.point)
 	for i in feed.get_child_count(): feed.get_child(i).visible = i < feed_points.size()
@@ -694,11 +733,12 @@ func update_contents() -> void:
 	var show_build := global_build_open
 	build_menu.visible = show_build
 	card.visible = not show_build
-	context.get_node("AssignedSource").visible = not show_build and is_instance_valid(node) and node.is_in_group("production_buildings") and node.team == "player"
-	if context.get_node("AssignedSource").visible: update_assignment(node)
 	info.get_node("Health").visible = is_instance_valid(node)
 	$Bottom/Body/Header/Focus.disabled = not is_instance_valid(node)
-	$Bottom/Body/Header/Message.text = game.outcome if not game.outcome.is_empty() else game.message
+	var header: Label = $Bottom/Body/Header/Message
+	header.text = game.outcome if not game.outcome.is_empty() else game.message
+	# The outcome stays; any other message fades like the alert feed.
+	header.modulate.a = 1.0 if not game.outcome.is_empty() else warning_alpha(Time.get_ticks_msec()/1000.0-game.message_time)
 	if global_build_open and worksite_open:
 		commands.get_node("Title").text = "WORKSITE · CHOOSE A BUILDING"
 		refresh_global_menu()
@@ -706,7 +746,7 @@ func update_contents() -> void:
 		name_label.text = "Worksite"
 		var trucks := worksite_trucks()
 		info.get_node("HealthText").text = "%d truck%s will fetch" % [trucks.size(),"" if trucks.size() == 1 else "s"]
-		info.get_node("Details").text = "Place a building. The selected trucks\nbring exactly its materials from the\nnearest Depot, then Infantry build it.\nShift places more and queues them."
+		info.get_node("Details").text = "Place a building. The selected trucks\nbring exactly its materials from the\nnearest Depot, then Deforesters build it.\nShift places more and queues them."
 		hint_text = "Each tile's key places that building. The trucks load exact amounts, deliver them to the footprint and go back until it is covered. Esc stops placing; Back returns to the truck."
 		return
 	if global_build_open:
@@ -715,7 +755,7 @@ func update_contents() -> void:
 		info.get_node("Health").visible = false
 		name_label.text = "Construction plans"
 		info.get_node("HealthText").text = "%d pending" % get_tree().get_nodes_in_group("construction_plans").size()
-		info.get_node("Details").text = "Place on valid terrain, or on a pile.\nDeliver iron to the footprint, then\norder Infantry to construct; a covering\nstockpile pays the energy as they build."
+		info.get_node("Details").text = "Place on valid terrain, or on a pile.\nDeliver iron to the footprint, then\norder Deforesters to construct; a covering\nstockpile pays the energy as they build."
 		hint_text = "B opens this page; each tile's key places that plan. Pin (P) makes new plans pay only from one Depot or deployed Cargo truck you pick on the map or minimap."
 		return
 	if is_instance_valid(node) and node.is_in_group("construction_plans"):
@@ -730,7 +770,7 @@ func update_contents() -> void:
 		else:
 			info.get_node("HealthText").text = ("Materials on site" if node.materials_covered() else "Needs materials on site") if not node.state.begins_with("Constructing") else node.state
 			info.get_node("Details").text = "%s\n%s\nEnergy %d/%d from %s\n%s" % [node.site_text().replace(" · ","\n"),node.state,node.energy_paid,node.spec.energy,payer_text,"Does not block movement"]
-			hint_text = "Unload a Cargo truck here, or right-click with a worker carrying iron, to pile materials on the footprint. Right-click with Infantry to construct: 5 iron per saw blow, energy charged as they build. Cancel is free; piles stay."
+			hint_text = "Unload a Cargo truck here, or right-click with a worker carrying iron, to pile materials on the footprint. Right-click with Deforesters to construct: 5 iron per saw blow, energy charged as they build. Cancel is free; piles stay."
 		commands.get_node("Title").text = "PENDING CONSTRUCTION"
 		show_button("CancelPlan","Cancel plan")
 		return
@@ -772,20 +812,22 @@ func update_contents() -> void:
 		state_label.text = "Shared · any side can gather, repair or destroy"
 		show_progress("Iron reserves","%s / %s" % [grouped(node.remaining),grouped(node.amount)],float(node.remaining)/maxi(1,node.amount))
 		info.get_node("Details").text = "Shared access · no capture"
-		hint_text = "Infantry gathers with right-click. Use its Repair card to repair this shared mine, or Attack to destroy it."
+		hint_text = "Deforesters gather with right-click. Use its Repair card to repair this shared mine, or Attack to destroy it."
 	elif node.is_in_group("production_buildings"):
 		commands.get_node("Title").text = node.stats.display_name.to_upper()+" · PRODUCTION"
 		var payer = node.assigned_depot
-		state_label.text = "%s · %s" % [team_label(node),("pays from "+str(payer.name)) if node.source_friendly() else "assigned Depot unavailable"]
+		state_label.text = "%s · %s" % [team_label(node),("pays from "+str(payer.name)) if node.source_friendly() else "no friendly Depot in range"]
 		if node.queue > 0 and not node.pending.is_empty():
 			show_progress("Producing · "+node.unit_stats_for(node.pending[0]).display_name,"%d%%%s" % [roundi(node.fraction()*100)," · %d more queued" % (node.queue-1) if node.queue > 1 else ""],node.fraction())
 		if is_instance_valid(payer): set_stats([["Energy",grouped(payer.energy)],["Iron",grouped(payer.iron)],["Queue","%d / %d" % [node.queue,node.stats.queue_limit]]])
-		info.get_node("Details").text = "Production uses this building's assigned Depot only."
+		info.get_node("Details").text = "Pays from a friendly Depot whose range covers it:\nthe one shown while it can, else another that can."
 		if node.source_friendly():
 			for scene in node.stats.unit_scenes:
 				var stats = node.unit_stats_for(scene)
-				show_production("PrintInfantry" if stats.unit_id == &"infantry" else "Produce"+str(stats.unit_id).capitalize(),stats.display_name,stats.energy_cost,stats.iron_cost,node.assigned_depot)
-		hint_text = "Production uses this building’s assigned Depot only. Drone attacks and tentative abilities remain unspecified."
+				# The tile names the Depot that would pay: the current one, or another covering one that can.
+				var pays = node.payer_for(stats.energy_cost,stats.iron_cost)
+				show_production("PrintInfantry" if stats.unit_id == &"infantry" else "Produce"+str(stats.unit_id).capitalize(),stats.display_name,stats.energy_cost,stats.iron_cost,pays if pays != null else node.assigned_depot)
+		hint_text = "Production pays from a friendly Depot whose range covers this building, picked for you: the one it has while that one can pay, otherwise the nearest covering Depot that can. Drone attacks and tentative abilities remain unspecified."
 	elif node.is_in_group("energy_generators"):
 		commands.get_node("Title").text = "GENERATOR · LOCAL POWER"
 		var source = node.assigned_depot
@@ -961,7 +1003,7 @@ func toggle_fell_autocast() -> void:
 	var on := not fell_autocast_on()
 	for unit in units: unit.set_fell_autocast(on)
 	card.get_node("Fell/Auto").visible = on
-	game.notify("Autocast Fell on: idle Infantry fell the trees round where they are left." if on else "Autocast Fell off.")
+	game.notify("Autocast Fell on: idle Deforesters fell the trees round where they are left." if on else "Autocast Fell off.")
 func stop_units() -> void:
 	for unit in selected_units():
 		unit.order_queue.clear()
@@ -980,6 +1022,11 @@ func edit_manifest(kind: StringName, fill := false) -> void:
 	for unit in selected_units():
 		if unit.is_cargo_vehicle and (unit.manifest_fill(kind) if fill else unit.manifest_add(kind)): changed = true
 	if not changed: game.notify("The manifest is full. Clear it to change the mix.")
+func lower_manifest(kind: StringName, every := false) -> void:
+	var changed := false
+	for unit in selected_units():
+		if unit.is_cargo_vehicle and unit.manifest_remove(kind,every): changed = true
+	if not changed: game.notify("No %s crates on the manifest to take off." % kind)
 func clear_manifest() -> void:
 	for unit in selected_units():
 		if unit.is_cargo_vehicle: unit.manifest.clear()
@@ -991,7 +1038,7 @@ func update_manifest_panel() -> void:
 		for i in range(vehicle.manifest.get(kind,0)): planned.append({kind = kind, amount = ResourceStockpile.CRATE})
 	manifest_panel.get_node("Pips").show_crates(planned,vehicle.crate_slots())
 	for pair in [["Iron","Iron"],["Energy","Energy"],["Wood","Wood"],["Coal","Coal"]]:
-		set_tile(load_tiles.get_node(pair[0]),pair[1]+" crate","Adds one crate to the manifest. Shift fills every free slot.")
+		set_tile(load_tiles.get_node(pair[0]),pair[1]+" crate","Adds one crate to the manifest. Shift fills every free slot.\nRight-click takes one off; Shift+right-click takes them all off.")
 		load_tiles.get_node(pair[0]).disabled = false
 	set_tile(load_tiles.get_node("Clear"),"Clear manifest","Removes every crate from the manifest.")
 func show_fuel_tile(id: String, label: String, mode: String, current: String) -> void:
@@ -999,21 +1046,6 @@ func show_fuel_tile(id: String, label: String, mode: String, current: String) ->
 	var button: Button = card.get_node(id)
 	if mode == current: button.remove_theme_color_override("icon_normal_color")
 	else: button.add_theme_color_override("icon_normal_color",UNSELECTED)
-func update_assignment(building: Node3D) -> void:
-	var candidates: Array[Node3D] = []
-	for depot in get_tree().get_nodes_in_group("depots"):
-		if SupplySource.covers(depot,building.global_position,building.team): candidates.append(depot)
-	var option: OptionButton = context.get_node("AssignedSource")
-	var signature := str(building.get_instance_id())+":"
-	for source in candidates: signature += str(source.get_instance_id())+":"
-	if signature != assignment_signature:
-		assignment_signature = signature; option.clear()
-		for source in candidates: option.add_item("Assign Depot: "+str(source.name))
-	assignment_sources = candidates
-	var index := candidates.find(building.assigned_depot) if is_instance_valid(building.assigned_depot) else -1
-	option.select(index)
-	option.text = "Choose covering Depot to operate" if index < 0 else option.get_item_text(index)
-	option.tooltip_text = "Construction payer and operating Depot are separate. Production queues must be empty to reassign. No automatic assignment or resource pooling."
 
 ## The Worksite page: the build page for the selected trucks (docs/TRUCK_WORKSITES.md).
 func open_worksite() -> void:
@@ -1078,18 +1110,18 @@ func refresh_global_menu() -> void:
 	build_menu.get_node("Actions/Rail").visible = not worksite_open
 	if worksite_open:
 		build_menu.get_node("Bank").text = "DELIVERS: EXACT MATERIALS"
-		build_menu.get_node("Bank").tooltip_text = "The selected trucks load exactly what the building needs and unload it on the footprint. A covering stockpile pays the energy as Infantry build."
+		build_menu.get_node("Bank").tooltip_text = "The selected trucks load exactly what the building needs and unload it on the footprint. A covering stockpile pays the energy as Deforesters build."
 		for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"]]:
 			var spec: Dictionary = network.plan_spec(pair[0])
 			var button: Button = build_menu.get_node("Actions/"+pair[1])
 			button.disabled = false
-			set_tile(button,spec.title+" worksite","%d E · %d I · the trucks bring the %d iron; energy is paid as Infantry build" % [spec.energy,spec.iron,spec.iron])
+			set_tile(button,spec.title+" worksite","%d E · %d I · the trucks bring the %d iron; energy is paid as Deforesters build" % [spec.energy,spec.iron,spec.iron])
 		return
 	var pin_name := str(global_payer.name) if global_pinned and SupplySource.available(global_payer,"player") else ""
 	if not global_pinned: build_menu.get_node("Bank").text = "PAYS: AUTO (NEAREST)"
 	elif pin_name.is_empty(): build_menu.get_node("Bank").text = "PAYS: PIN LOST · PLANS WAIT"
 	else: build_menu.get_node("Bank").text = "PAYS: %s ONLY" % pin_name.to_upper()
-	build_menu.get_node("Bank").tooltip_text = "One covering Depot or deployed Cargo truck pays each plan's energy as Infantry build it. Iron must be delivered to the footprint first. Rails pay fully from Depots. No pooled resources."
+	build_menu.get_node("Bank").tooltip_text = "One covering Depot or deployed Cargo truck pays each plan's energy as Deforesters build it. Iron must be delivered to the footprint first. Rails pay fully from Depots. No pooled resources."
 	set_card(build_menu.get_node("Actions/Pin"),"unpin_payer" if global_pinned else "pin_payer")
 	set_tile(build_menu.get_node("Actions/Pin"),"Unpin payer (back to Auto)" if global_pinned else "Pin payer","New plans pay from the nearest covering stockpile that can pay." if global_pinned else "Pick one Depot or deployed Cargo truck on the map or minimap; new plans pay only from it.")
 	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"],[&"rail","Rail"]]:

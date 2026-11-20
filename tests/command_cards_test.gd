@@ -88,6 +88,6 @@ func run() -> void:
 	if not check(generator.fuel_left_text() == "2 coal · 6s","Coal fuel left wrong: "+generator.fuel_left_text()): return
 	generator.set_fuel_preference("either")
 	if not check(generator.fuel_left_text() == "4 wood + 2 coal · 14s","Either fuel left wrong: "+generator.fuel_left_text()): return
-	if not check(not hud.has_node("Bottom/Body/Row/Context/GeneratorMode") and not hud.context.get_node("AssignedSource").visible,"Generator dropdowns still shown"): return
+	if not check(not hud.has_node("Bottom/Body/Row/Context/GeneratorMode"),"Generator dropdowns still shown"): return
 	print("COMMAND_CARDS_TEST_PASSED")
 	quit(0)

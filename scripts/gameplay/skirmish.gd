@@ -70,11 +70,12 @@ var wood_delivered := 0
 var units_printed := 0
 var enemies_killed := 0
 var outcome := ""
-@export var message := "Select your infantry, then right-click the marked iron deposit."
+@export var message := "Select your Deforester, then right-click the marked iron deposit."
 @onready var depot = $Entities/Buildings/Depot
 @onready var ground = $Terrain/Ground
 @onready var hud = $Interface
 func _ready() -> void:
+	message_time = Time.get_ticks_msec()/1000.0
 	if depot.rules.testing_starting_iron < 0: ore = starting_ore
 	if testing_coal_amount > 0 and has_node("Entities/Resources/TestingCoalPoint"):
 		var pile = pile_scene.instantiate()
@@ -96,8 +97,11 @@ func cancel_armed() -> void:
 	pending_unit_command = ""
 	fell_dragging = false
 	$DepotNetwork.clear_builder()
+## When the header message last changed, for its fade (docs/HUD_POLISH.md).
+var message_time := 0.0
 func notify(text: String) -> void:
 	message = text
+	message_time = Time.get_ticks_msec()/1000.0
 # Positioned alerts for the HUD feed, newest first. A key repeats at most every ALERT_REPEAT_SECONDS.
 var alerts: Array[Dictionary] = []
 var _alert_times := {}
@@ -246,14 +250,14 @@ func _unhandled_input(event: InputEvent) -> void:
 func place_global_plan(point: Vector3, queued := false) -> Node3D:
 	var worksite: bool = hud.worksite_open
 	var payer: Node3D = hud.global_payer if not worksite and is_instance_valid(hud.global_payer) else null
-	var plan = $DepotNetwork.queue_plan(point,global_plan_kind,payer,hud.global_pinned and not worksite)
+	var plan = $DepotNetwork.queue_plan(point,global_plan_kind,payer,hud.global_pinned and not worksite,not worksite)
 	if plan == null: return null
 	if worksite:
 		var trucks: Array[Node3D] = hud.worksite_trucks()
 		for truck in trucks: give_order(truck,{kind = "fetch", target = plan},queued)
 		var materials := PackedStringArray()
 		for kind in plan.materials(): materials.append("%d %s" % [plan.materials()[kind],kind])
-		notify("%s worksite placed. %s %s, then order Infantry to construct it." % [plan.spec.title,"The truck brings" if trucks.size() == 1 else "%d trucks bring" % trucks.size()," and ".join(materials)])
+		notify("%s worksite placed. %s %s, then order Deforesters to construct it." % [plan.spec.title,"The truck brings" if trucks.size() == 1 else "%d trucks bring" % trucks.size()," and ".join(materials)])
 		if not queued:
 			global_plan_kind = &""
 			hud.close_build()
@@ -430,10 +434,10 @@ func issue_order(screen, queued := false) -> void:
 			var cell = ground.get_tile_at_position(point)
 			if cell != null and ground.can_traverse(cell,unit.mobility_layer(),unit._owner_key()): give_order(unit,{kind = "move", point = point},queued)
 			else: notify("That terrain is blocked. Right-click open land, resources, or a hostile.")
-	if selected == 0: notify("Left-click an infantry unit first.")
+	if selected == 0: notify("Left-click a Deforester first.")
 	elif queued: notify("Order queued. Shift-right-click adds more; a plain order replaces the queue.")
 	elif enemy: notify("Attack order: approach and fire at range.")
-	elif plan: notify("Build site: Cargo vehicles fetch exactly the materials it lacks; Infantry construct from the pile.")
+	elif plan: notify("Build site: Cargo vehicles fetch exactly the materials it lacks; Deforesters construct from the pile.")
 	elif crate: notify("Crate order: vehicles load it; workers deliver into it or gather from it.")
 	elif forest_ordered: notify("Harvest wood from the forest tile and deliver it to a friendly Depot.")
 	elif is_instance_valid(coal_ordered): notify("Dig coal and deliver it to a friendly Depot. %d left in this field; workers fell any trees in their way and move on through it cell by cell." % coal_ordered.field_remaining())

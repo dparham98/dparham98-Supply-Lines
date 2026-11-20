@@ -84,7 +84,7 @@ func run() -> void:
 	# A build site past the far end is the second target.
 	var site: Node3D = null
 	for r in range(3,16):
-		site = network.queue_plan(tip.position+tip.out*r,&"generator")
+		site = network.queue_plan(tip.position+tip.out*r,&"generator",null,false,false)
 		if site != null: break
 	if not check(site != null,"No build site past the plan"): return
 	site.set_process(false)
@@ -144,7 +144,7 @@ func run() -> void:
 	if not check(rails.target_at(depot.global_position+Vector3(1,0,1)) == depot and rails.target_at(depot.global_position+Vector3(200,0,0)) == null,"A click inside the Depot's ring should pick it, and one far off nothing"): return
 	var far_site: Node3D = null
 	for offset in [Vector3(40,0,30),Vector3(-40,0,30),Vector3(40,0,-30),Vector3(-40,0,-30),Vector3(0,0,45),Vector3(0,0,-45)]:
-		far_site = network.queue_plan(depot.global_position+offset,&"generator")
+		far_site = network.queue_plan(depot.global_position+offset,&"generator",null,false,false)
 		if far_site != null: break
 	if not check(far_site != null,"No build site to route to"): return
 	far_site.set_process(false)

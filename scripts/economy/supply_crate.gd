@@ -29,12 +29,18 @@ func receive(kind: StringName, requested: int) -> int:
 	refresh()
 	return accepted
 func can_extract(_team: String) -> bool: return amount > 0 and not is_queued_for_deletion()
-## Workers take from a crate like a pile; an emptied crate stays as an empty container.
+## Workers and vehicles take from a crate like a pile. A crate emptied this way leaves the map, as a pile does
+## (docs/CRATE_CONTAINERS.md).
 func extract(requested: int, _team := "") -> int:
 	if not can_extract(_team): return 0
 	var taken := mini(maxi(0,requested),amount)
 	amount -= taken
-	if amount == 0: material_kind = ""
+	if amount == 0:
+		material_kind = ""
+		remove_from_group("supply_crates")
+		remove_from_group("resources")
+		queue_free()
+		return taken
 	refresh()
 	return taken
 func refresh() -> void:
