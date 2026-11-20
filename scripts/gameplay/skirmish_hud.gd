@@ -886,7 +886,7 @@ func update_contents() -> void:
 			show_button("Trips","Trips: %s" % TRIP_LABELS[node.trips])
 			set_card(card.get_node("Trips"),"trips_"+str(node.trips))
 			if not node.is_in_group("rail_trains"): show_button("Worksite","Worksite")
-			else: show_mine_tile(node)
+			elif node.has_method("can_mine"): show_mine_tile(node)
 			hint_text = "Worksite places a building and fetches exactly its materials. Right-click a build site to fetch for it. Load sets a manifest of crates, then picks a Depot. Unload at a Depot to unpack, or on open ground to set crates down. Shift queues stops. Trips: %s." % TRIP_LABELS[node.trips]
 		elif node.is_depot_truck:
 			show_button("DeployTruck","Deploy")

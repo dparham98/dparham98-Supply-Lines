@@ -13,6 +13,8 @@ func _ready() -> void:
 	super._ready()
 	if is_queued_for_deletion(): return
 	add_to_group("research_buildings")
+	# Its team_color surfaces take its side's paint, as a Depot's do (docs/TEAM_MARKERS.md).
+	preload("res://scripts/components/team_paint.gd").apply(get_node_or_null("Visuals/Model"),team)
 func research_by_id(id: StringName) -> ResearchStats:
 	for entry in research:
 		if entry.research_id == id: return entry
