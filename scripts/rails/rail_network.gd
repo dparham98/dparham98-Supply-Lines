@@ -471,8 +471,25 @@ func loading_pieces(depot: Node3D, team: String) -> Array[Node3D]:
 	return result
 ## The shortest line from a train at `from_piece`/`from_d` to a stop in `depot`'s loading area, or {}.
 func line_to_depot(from_piece: Node3D, from_d: float, depot: Node3D, team: String, tail := 0.0, from_lane := 0) -> Dictionary:
+	return _line_to_stops(loading_stops(depot,team),from_piece,from_d,team,tail,from_lane)
+## Every lane of friendly track inside a mine's ring (target_reach, where planned track connects to it): where a
+## mining train stops to dig (docs/TEMPLE_OF_SCIENCE.md). {piece, lane, distance}.
+func mine_stops(mine: Node3D, team: String) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if not is_instance_valid(mine) or not mine.is_inside_tree(): return result
+	var reach := target_reach(mine)
+	for piece in pieces:
+		if not friendly_piece(piece,team): continue
+		for lane in range(piece.lane_count()):
+			var hit: Dictionary = piece.nearest(mine.global_position,lane)
+			if hit.gap <= reach+piece.half_width(): result.append({piece = piece, lane = lane, distance = hit.distance})
+	return result
+## The shortest line from a train to a stop at `mine`, or {}.
+func line_to_mine(from_piece: Node3D, from_d: float, mine: Node3D, team: String, tail := 0.0, from_lane := 0) -> Dictionary:
+	return _line_to_stops(mine_stops(mine,team),from_piece,from_d,team,tail,from_lane)
+func _line_to_stops(stops: Array[Dictionary], from_piece: Node3D, from_d: float, team: String, tail: float, from_lane: int) -> Dictionary:
 	var best := {}
-	for stop in loading_stops(depot,team):
+	for stop in stops:
 		var route := chain(from_piece,stop.piece,team,from_lane,stop.lane)
 		if route.is_empty(): continue
 		var track := line(route,from_d,stop.distance,tail)

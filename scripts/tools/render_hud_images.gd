@@ -32,7 +32,13 @@ const ENTRIES := {
 	"generator": ["res://scenes/gameplay/energy_generator.tscn","","build_generator",35.0,1.0],
 	"mine": ["res://scenes/gameplay/site_mine.tscn","","build_mine",20.0,1.0],
 	"pithead": ["res://scenes/gameplay/iron_mine.tscn","","build_coal_mine",35.0,1.0],
+	"temple": ["res://scenes/gameplay/temple_of_science.tscn","","build_temple",35.0,1.0],
 }
+## More cards made from an entry's render (docs/TEMPLE_OF_SCIENCE.md): the Temple's Mining Trains research shows the
+## train, and the train's Mine iron order the portal mine.
+const EXTRA_CARDS := {"train": ["research_mining_trains"], "mine": ["mine_iron"]}
+## The card whose frame a new card copies before its first render.
+const CARD_TEMPLATE := "res://assets/ui/command_cards/sl_build_barracks.png"
 const ICON_SIZE := Vector2i(256,256)
 const PORTRAIT_SIZE := Vector2i(340,400)
 const CARD_SIZE := 128
@@ -149,7 +155,7 @@ func render(id: String, entry: Array) -> void:
 	# A portrait composed for the frame by hand (the Deforester's, from Blender) is kept.
 	if not HUD.COMPOSED_PORTRAITS.has(id): portrait.save_png("res://assets/ui/portraits/%s.png" % id)
 	# Cards: the render inside the card's own frame.
-	for card in [entry[1],entry[2]]:
+	for card in [entry[1],entry[2]]+EXTRA_CARDS.get(id,[]):
 		if not card.is_empty(): card_image("res://assets/ui/command_cards/sl_%s.png" % card,icon)
 	model.queue_free()
 	await process_frame
@@ -166,7 +172,7 @@ func trimmed(image: Image, size: Vector2i) -> Image:
 	return out
 ## Keeps the card's frame and ground and puts the render where its glyph was.
 func card_image(path: String, icon: Image) -> void:
-	var card := Image.load_from_file(ProjectSettings.globalize_path(path))
+	var card := Image.load_from_file(ProjectSettings.globalize_path(path if FileAccess.file_exists(path) else CARD_TEMPLATE))
 	card.convert(Image.FORMAT_RGBA8)
 	if card.get_width() != CARD_SIZE: card.resize(CARD_SIZE,CARD_SIZE,Image.INTERPOLATE_LANCZOS)
 	var ground := card.get_pixel(CARD_BORDER+2,CARD_BORDER+2)

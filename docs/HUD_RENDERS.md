@@ -40,6 +40,9 @@ Add ids after `--` to render only those, for example `-- tank depot`.
 | generator | `energy_generator.tscn` | build_generator |
 | mine | `site_mine.tscn` (the portal mine) | build_mine |
 | pithead | `iron_mine.tscn` (on an ore field or coal seam) | build_coal_mine |
+| temple | `temple_of_science.tscn` (placeholder model) | build_temple |
+
+`EXTRA_CARDS` makes more cards from a render: the train's render is also the Temple's **research_mining_trains** card, and the portal mine's is the train's **mine_iron** card (docs/TEMPLE_OF_SCIENCE.md). A card with no image yet starts from the Barracks card's frame.
 
 
 ## Where they show

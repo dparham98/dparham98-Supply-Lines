@@ -31,6 +31,9 @@
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_produce_motorcycle.png" id="card_produce_motorcycle"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_produce_drone.png" id="card_produce_drone"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_produce_ubermech.png" id="card_produce_ubermech"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_research_mining_trains.png" id="card_research_mining_trains"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_mine_iron.png" id="card_mine_iron"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_temple.png" id="card_build_temple"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_produce_truck.png" id="card_produce_truck"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_produce_cargo.png" id="card_produce_cargo"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_produce_train.png" id="card_produce_train"]
@@ -281,6 +284,18 @@ events = [SubResource("key_build_barracks")]
 action = &"build_tank_factory"
 [sub_resource type="Shortcut" id="shortcut_build_tank_factory"]
 events = [SubResource("key_build_tank_factory")]
+[sub_resource type="InputEventAction" id="key_build_temple"]
+action = &"build_temple"
+[sub_resource type="Shortcut" id="shortcut_build_temple"]
+events = [SubResource("key_build_temple")]
+[sub_resource type="InputEventAction" id="key_research_mining_trains"]
+action = &"research_mining_trains"
+[sub_resource type="Shortcut" id="shortcut_research_mining_trains"]
+events = [SubResource("key_research_mining_trains")]
+[sub_resource type="InputEventAction" id="key_command_mine_iron"]
+action = &"command_mine_iron"
+[sub_resource type="Shortcut" id="shortcut_command_mine_iron"]
+events = [SubResource("key_command_mine_iron")]
 [sub_resource type="InputEventAction" id="key_build_mine"]
 action = &"build_mine"
 [sub_resource type="Shortcut" id="shortcut_build_mine"]
@@ -3390,6 +3405,54 @@ horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
+[node name="Research" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_research_mining_trains")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_research_mining_trains")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Research"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="MineIron" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_command_mine_iron")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_mine_iron")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/MineIron"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="PrintTruck" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
 shortcut = SubResource("shortcut_produce_depot_truck")
@@ -4077,6 +4140,30 @@ icon = ExtResource("card_build_factory")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/TankFactory"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -34.0
+offset_top = 1.0
+offset_right = -4.0
+offset_bottom = 15.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="Temple" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_build_temple")
+layout_mode = 2
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("card_build_temple")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/Temple"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0

@@ -6,6 +6,9 @@ extends Node
 @export var cargo_scene: PackedScene
 @export var barracks_scene: PackedScene
 @export var tank_factory_scene: PackedScene
+## The Temple of Science (docs/TEMPLE_OF_SCIENCE.md). Maps that leave it unset use the saved scene.
+@export var temple_scene: PackedScene
+const TEMPLE_SCENE_PATH := "res://scenes/gameplay/temple_of_science.tscn"
 @export var supply_rules: SupplyRules
 @export var mine_scene: PackedScene
 ## The mine built on a mine site (docs/MINE_SITES.md): the same mine with the model made for the cut in the rock.
@@ -384,6 +387,7 @@ func builder_valid() -> bool:
 func production_scene(kind: StringName) -> PackedScene:
 	if kind == &"barracks": return barracks_scene
 	if kind == &"tank_factory": return tank_factory_scene
+	if kind == &"temple_of_science": return temple_scene if temple_scene != null else load(TEMPLE_SCENE_PATH)
 	return null
 func construct_production(point: Vector3, kind: StringName) -> bool:
 	if kind == &"iron_mine": return construct_mine(point)
