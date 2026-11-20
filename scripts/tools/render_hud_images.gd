@@ -18,7 +18,7 @@ const ENTRIES := {
 	"scout": ["res://scenes/gameplay/scout.tscn","produce_scout","",35.0,0.55],
 	"grenadier": ["res://scenes/gameplay/grenadier.tscn","produce_grenadier","",35.0,0.55],
 	"hostile": ["res://scenes/gameplay/hostile.tscn","","",35.0,0.6],
-	# The Ubermech is a placeholder box on main; it keeps its glyph until its model lands.
+	"ubermech": ["res://scenes/gameplay/ubermech.tscn","produce_ubermech","",35.0,0.6],
 	"tank": ["res://scenes/gameplay/tank.tscn","produce_tank","",35.0,1.0],
 	"motorcycle": ["res://scenes/gameplay/motorcycle.tscn","produce_motorcycle","",55.0,1.0],
 	"drone": ["res://scenes/gameplay/drone.tscn","produce_drone","",35.0,1.0],

@@ -27,6 +27,7 @@ Add ids after `--` to render only those, for example `-- tank depot`.
 | --- | --- | --- |
 | infantry (the Deforester) | `infantry.tscn` | produce_infantry |
 | scout, grenadier | their scenes | produce_scout, produce_grenadier |
+| ubermech | `ubermech.tscn` (the walker) | produce_ubermech |
 | hostile | `hostile.tscn` | |
 | tank, motorcycle, drone | their scenes | produce_tank, produce_motorcycle, produce_drone |
 | cargo | `cargo_vehicle.tscn` | produce_cargo |
@@ -39,7 +40,6 @@ Add ids after `--` to render only those, for example `-- tank depot`.
 | mine | `site_mine.tscn` (the portal mine) | build_mine |
 | pithead | `iron_mine.tscn` (on an ore field or coal seam) | build_coal_mine |
 
-The Ubermech is left out while its model on main is a placeholder box; it keeps its glyph and card.
 
 ## Where they show
 
