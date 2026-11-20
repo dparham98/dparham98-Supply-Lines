@@ -88,6 +88,7 @@ func _ready() -> void:
 	apply_unit_stats()
 	health = max_health
 	add_to_group("units")
+	_units_changed()
 	if team == "enemy": add_to_group("enemies")
 	var cell = ground.get_tile_at_position(global_position)
 	grid_position = ground.nearest_actor_cell(cell if cell != null else Vector2i(250,250),mobility_layer(),_owner_key())
@@ -108,8 +109,11 @@ func set_selected(value: bool) -> void:
 	is_selected = value and team == "player"
 	var marker := get_node_or_null("Visuals/TeamMarker") as Node3D
 	if marker: marker.visible = is_selected
+## The name it claims cells under. Built once: movement asks for it hundreds of times a frame.
+var _owner_name := ""
 func _owner_key() -> String:
-	return "agent_%s" % get_instance_id()
+	if _owner_name.is_empty(): _owner_name = "agent_%s" % get_instance_id()
+	return _owner_name
 func _is_ours(cell: Vector2i) -> bool:
 	if mobility_layer() == MobilityRules.Layer.AIR: return ground.air_occupancy.get(cell) == _owner_key()
 	return ground.is_tile_in_bounds(cell) and ground.tiles[cell.y*500+cell.x].occupied_by == _owner_key()
@@ -629,19 +633,10 @@ func _lane_clear(from: Vector3, to: Vector3) -> bool:
 	var run := Vector3(to.x-from.x,0,to.z-from.z)
 	var length := run.length()
 	if length < 0.01: return true
-	var along := run/length
-	var side := Vector3(-along.z,0,along.x)*LANE_HALF_WIDTH
-	var checked := {}
-	var steps := ceili(length/0.25)
-	for i in range(steps+1):
-		var at := from+along*(length*i/steps)
-		for offset in [Vector3.ZERO,side,-side]:
-			var cell = ground.get_tile_at_position(at+offset)
-			if cell == null: return false
-			if checked.has(cell): continue
-			checked[cell] = true
-			if not ground.can_traverse(cell,mobility_layer(),_owner_key()): return false
-	return true
+	var side := Vector3(-run.z,0,run.x)/length*LANE_HALF_WIDTH
+	var layer := mobility_layer()
+	var key := _owner_key()
+	return ground.segment_open(from,to,layer,key) and ground.segment_open(from+side,to+side,layer,key) and ground.segment_open(from-side,to-side,layer,key)
 ## Turn the body toward a point at turn_rate; returns how far it still is from facing it, in radians.
 func _turn_toward(point: Vector3, delta: float) -> float:
 	var offset := point-global_position
@@ -844,13 +839,18 @@ func _may_hit(target: Node3D) -> bool:
 func in_attack_range(target: Node3D) -> bool:
 	var d := global_position.distance_to(target.global_position)
 	return d <= attack_range and d >= min_attack_range
+## The nearest unit in range it may shoot. Only units near it are looked at (the skirmish's UnitGrid): asking every
+## unit on the map, as every unit does every frame, slowed big battles to a crawl.
 func _nearest_opponent() -> Node3D:
 	var closest: Node3D
 	var distance := attack_range
-	for unit in get_tree().get_nodes_in_group("units"):
-		if not CombatResolver.can_hit(self,unit): continue
+	var nearby: Array = game.units_near(global_position,attack_range) if is_instance_valid(game) and game.has_method("units_near") else get_tree().get_nodes_in_group("units")
+	for unit in nearby:
+		if not is_instance_valid(unit) or unit.team == team: continue
 		var d := global_position.distance_to(unit.global_position)
-		if d < distance and d >= min_attack_range: closest = unit; distance = d
+		if d >= distance or d < min_attack_range: continue
+		if not CombatResolver.can_hit(self,unit): continue
+		closest = unit; distance = d
 	return closest
 func _face(point: Vector3) -> void:
 	var offset := point-global_position
@@ -936,6 +936,7 @@ func take_damage(amount: int) -> void:
 		_dead = true
 		for cell in _claimed.duplicate(): _release(cell)
 		remove_from_group("units")
+		_units_changed()
 		remove_from_group("enemies")
 		died.emit(self)
 		game.unit_died(self)
@@ -948,7 +949,11 @@ func _leave_corpse() -> void:
 	if model == null or not model.has_method("has_death_clip") or not model.has_death_clip(): return
 	model.reparent(game)
 	model.play_death()
+## Tell the skirmish's unit grid (units_near) that the "units" group changed.
+func _units_changed() -> void:
+	if is_instance_valid(game) and game.has_method("units_changed"): game.units_changed()
 func _exit_tree() -> void:
+	_units_changed()
 	if is_instance_valid(ground):
 		for cell in _claimed.duplicate(): _release(cell)
 func _update_display() -> void:

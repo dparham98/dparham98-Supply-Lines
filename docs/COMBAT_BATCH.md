@@ -13,6 +13,10 @@ Edit `assets/units/*.tres` in Godot's Inspector, then restart. UnitStats contain
 - Forced fire: the Attack card (A, then click) also takes a friendly unit or building when nothing hostile is under the pointer, and fires on it until it dies, so its death animation plays. It counts only for that order's target; splash, right-click, attack-move and idle defence still spare friendlies (`tests/friendly_attack_test.gd`).
 - No new enemy pressure, forest navigation/clearing, Drone flight or tentative death/jamming effects in this batch.
 
+## Targeting in big battles
+
+Every armed unit looks for the nearest opponent in range every frame (`unit_agent.gd` `_nearest_opponent`, and the Bastion roof gun's `close_defense.gd`). They used to ask every unit on the map, so the work grew with the square of the units: a battle of a few hundred ran at a few frames a second. They now ask the skirmish's `units_near`, which buckets the units into 16 m squares once a frame (`scripts/combat/unit_grid.gd`) and hands back those in the squares round the asker, with 2 m to spare for the bucket being a frame old. Distance is measured from where each unit stands now, as before, and what may be hit (`CombatResolver.can_hit`) is unchanged. A unit picks the same opponent it did. `tests/battle_lookup_test.gd` checks both: the buckets miss nobody the whole group would find, and 60 mixed units each pick the opponent the old way picks.
+
 ## Editor checks
 
 Run the main resource_skirmish scene. Build Barracks/Tank Factory using Infantry's Build card and their assigned local Depot; select the building to produce its roster. Select each unit to see base attack and special attack/moving-fire details in the HUD. Existing hostile combat is unchanged; the corrected Infantry attack is weaker than the previous fallback, so send supporting infantry rather than expecting one infantry to win alone.

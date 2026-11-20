@@ -441,6 +441,15 @@ func show_shot(start: Vector3, end: Vector3, team: String, projectile: PackedSce
 	add_child(shot)
 	shot.configure(start,end,team)
 	return shot
+## Units bucketed by where they stand, for "who is near me" questions (UnitGrid, docs/COMBAT_BATCH.md).
+const UnitGrid = preload("res://scripts/combat/unit_grid.gd")
+var _unit_grid := UnitGrid.new()
+## Units standing within about `radius` of `point`, perhaps with a few just beyond and some freed (UnitGrid).
+func units_near(point: Vector3, radius: float) -> Array:
+	return _unit_grid.near(get_tree(),point,radius)
+## A unit joined or left the "units" group.
+func units_changed() -> void:
+	_unit_grid.changed()
 
 ## A Fell box being dragged, in screen pixels (docs/FELL.md). Shorter drags are clicks.
 const FELL_DRAG := 6.0
