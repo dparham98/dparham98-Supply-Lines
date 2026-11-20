@@ -67,8 +67,6 @@ const FEED_FADE_SECONDS := 0.6
 ## How visible a warning `age` seconds old is: 1 while it shows, falling to 0 as it fades.
 static func warning_alpha(age: float) -> float:
 	return clampf((FEED_SECONDS+FEED_FADE_SECONDS-age)/FEED_FADE_SECONDS,0.0,1.0)
-var assignment_sources: Array[Node3D] = []
-var assignment_signature := ""
 ## The build page holds global, unpaid plans only; Infantry and Depots have no build menus of their own.
 var global_build_open := false
 ## The build page opened from a truck's Worksite tile (docs/TRUCK_WORKSITES.md).
@@ -153,9 +151,6 @@ func _ready() -> void:
 				unit._stop_route(); unit.order = "idle"; unit.source = null
 				game.drop_material(unit)
 		game.notify("Materials dropped. Any Deforester can gather the pile before spending it."))
-	context.get_node("AssignedSource").item_selected.connect(func(index):
-		if is_instance_valid(shown) and index >= 0 and index < assignment_sources.size():
-			game.notify("Depot assigned." if shown.assign_source(assignment_sources[index]) else "Assignment requires an empty production queue and a friendly covering Depot."))
 	for mode in ["move","attack","gather","fell","repair","capture","derail"]:
 		card.get_node(mode.capitalize()).pressed.connect(func(): game.pending_unit_command = mode; game.notify("Click a target for %s. Esc cancels." % mode))
 	card.get_node("Stop").pressed.connect(stop_units)
@@ -738,8 +733,6 @@ func update_contents() -> void:
 	var show_build := global_build_open
 	build_menu.visible = show_build
 	card.visible = not show_build
-	context.get_node("AssignedSource").visible = not show_build and is_instance_valid(node) and node.is_in_group("production_buildings") and node.team == "player"
-	if context.get_node("AssignedSource").visible: update_assignment(node)
 	info.get_node("Health").visible = is_instance_valid(node)
 	$Bottom/Body/Header/Focus.disabled = not is_instance_valid(node)
 	var header: Label = $Bottom/Body/Header/Message
@@ -823,16 +816,18 @@ func update_contents() -> void:
 	elif node.is_in_group("production_buildings"):
 		commands.get_node("Title").text = node.stats.display_name.to_upper()+" · PRODUCTION"
 		var payer = node.assigned_depot
-		state_label.text = "%s · %s" % [team_label(node),("pays from "+str(payer.name)) if node.source_friendly() else "assigned Depot unavailable"]
+		state_label.text = "%s · %s" % [team_label(node),("pays from "+str(payer.name)) if node.source_friendly() else "no friendly Depot in range"]
 		if node.queue > 0 and not node.pending.is_empty():
 			show_progress("Producing · "+node.unit_stats_for(node.pending[0]).display_name,"%d%%%s" % [roundi(node.fraction()*100)," · %d more queued" % (node.queue-1) if node.queue > 1 else ""],node.fraction())
 		if is_instance_valid(payer): set_stats([["Energy",grouped(payer.energy)],["Iron",grouped(payer.iron)],["Queue","%d / %d" % [node.queue,node.stats.queue_limit]]])
-		info.get_node("Details").text = "Production uses this building's assigned Depot only."
+		info.get_node("Details").text = "Pays from a friendly Depot whose range covers it:\nthe one shown while it can, else another that can."
 		if node.source_friendly():
 			for scene in node.stats.unit_scenes:
 				var stats = node.unit_stats_for(scene)
-				show_production("PrintInfantry" if stats.unit_id == &"infantry" else "Produce"+str(stats.unit_id).capitalize(),stats.display_name,stats.energy_cost,stats.iron_cost,node.assigned_depot)
-		hint_text = "Production uses this building’s assigned Depot only. Drone attacks and tentative abilities remain unspecified."
+				# The tile names the Depot that would pay: the current one, or another covering one that can.
+				var pays = node.payer_for(stats.energy_cost,stats.iron_cost)
+				show_production("PrintInfantry" if stats.unit_id == &"infantry" else "Produce"+str(stats.unit_id).capitalize(),stats.display_name,stats.energy_cost,stats.iron_cost,pays if pays != null else node.assigned_depot)
+		hint_text = "Production pays from a friendly Depot whose range covers this building, picked for you: the one it has while that one can pay, otherwise the nearest covering Depot that can. Drone attacks and tentative abilities remain unspecified."
 	elif node.is_in_group("energy_generators"):
 		commands.get_node("Title").text = "GENERATOR · LOCAL POWER"
 		var source = node.assigned_depot
@@ -1051,21 +1046,6 @@ func show_fuel_tile(id: String, label: String, mode: String, current: String) ->
 	var button: Button = card.get_node(id)
 	if mode == current: button.remove_theme_color_override("icon_normal_color")
 	else: button.add_theme_color_override("icon_normal_color",UNSELECTED)
-func update_assignment(building: Node3D) -> void:
-	var candidates: Array[Node3D] = []
-	for depot in get_tree().get_nodes_in_group("depots"):
-		if SupplySource.covers(depot,building.global_position,building.team): candidates.append(depot)
-	var option: OptionButton = context.get_node("AssignedSource")
-	var signature := str(building.get_instance_id())+":"
-	for source in candidates: signature += str(source.get_instance_id())+":"
-	if signature != assignment_signature:
-		assignment_signature = signature; option.clear()
-		for source in candidates: option.add_item("Assign Depot: "+str(source.name))
-	assignment_sources = candidates
-	var index := candidates.find(building.assigned_depot) if is_instance_valid(building.assigned_depot) else -1
-	option.select(index)
-	option.text = "Choose covering Depot to operate" if index < 0 else option.get_item_text(index)
-	option.tooltip_text = "Construction payer and operating Depot are separate. Production queues must be empty to reassign. No automatic assignment or resource pooling."
 
 ## The Worksite page: the build page for the selected trucks (docs/TRUCK_WORKSITES.md).
 func open_worksite() -> void:

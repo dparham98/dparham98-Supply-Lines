@@ -161,13 +161,13 @@ func run() -> void:
 	if not check(Vector2(rig._focus_target.x-hq.global_position.x,rig._focus_target.z-hq.global_position.z).length() < 0.5,"Space should focus the HQ"): return
 	if not check(stopped[0] == 0,"Space should not press the focused HUD button"): return
 	# A focused dropdown keeps Space for itself.
-	var dropdown: OptionButton = hud.get_node("Bottom/Body/Row/Context/AssignedSource")
-	dropdown.visible = true
+	var dropdown := OptionButton.new()
+	hud.get_node("Bottom/Body/Row/Context").add_child(dropdown)
 	dropdown.grab_focus()
 	rig.focus_position(hq.global_position+Vector3(80,0,80))
 	press(KEY_SPACE)
 	if not check(Vector2(rig._focus_target.x-hq.global_position.x,rig._focus_target.z-hq.global_position.z).length() > 50,"Space should go to a focused dropdown, not the camera"): return
 	dropdown.release_focus()
-	dropdown.visible = false
+	dropdown.free()
 	print("HUD_HOTKEYS_TEST_PASSED")
 	quit(0)

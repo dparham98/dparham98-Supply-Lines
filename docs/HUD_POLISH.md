@@ -68,10 +68,17 @@ A list of smaller changes asked for on 2026-11-19, after fog of war was merged. 
 
 - The unit and building icons, the portraits and the production and build tiles are now pictures rendered from the game's own models. See `HUD_RENDERS.md`.
 
+## Production picks its Depot
+
+- The "Assign Depot" list on Barracks and Tank Factories is gone (asked for on 2026-11-19).
+- A Barracks or Tank Factory pays from a friendly Depot whose range covers it, picked by the game (`production_building.gd` `source_friendly`, `payer_for`):
+  - It keeps the Depot it has while that one stays friendly.
+  - If that Depot is lost, it takes the nearest friendly Depot covering it.
+  - If a unit costs more than that Depot holds, it pays from the nearest covering Depot that can, which becomes its Depot.
+  - With no friendly Depot in range it can't produce, and says so.
+- The production tiles grey out only when no covering Depot can pay, and their tooltip names the one that would.
+- Capturing a Depot still cancels the queue it was paying for, as before.
+
 ## Not changed
 
-- **The "Assign Depot" list on Barracks and Tank Factories.**
-  - What it does: a Barracks or Tank Factory pays for what it makes from one Depot only, the one assigned to it. The list picks which of the Depots whose range covers the building that is.
-  - Production must be empty to change it. With one covering Depot it has a single choice.
-  - It was made deliberately ("no automatic assignment or resource pooling"), so it is left as it is until it is decided whether to remove it.
 - **The Ubermech** keeps its glyph icon until its model lands; on main its model is still a placeholder box.

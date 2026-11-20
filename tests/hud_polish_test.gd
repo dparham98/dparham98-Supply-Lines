@@ -146,7 +146,7 @@ func run() -> void:
 		if not check(false,"The far side of the map should be out of sight at the start"): return
 
 	# A building site joins a control group, and the group holds the building once it stands.
-	depot.energy = 2000; depot.iron = 2000
+	depot.energy = 800; depot.iron = 800
 	var manager = root.get_node("SelectionManager")
 	var plan: Node3D
 	for ring_radius in range(6,22):
@@ -166,5 +166,30 @@ func run() -> void:
 	await process_frame
 	manager.recall_group(5)
 	if not check(game.selected_building == building,"Recalling the group should select the building"): return
+	# Production picks its paying Depot: no list to choose from, and it finds a Depot again after losing one.
+	if not check(not hud.has_node("Bottom/Body/Row/Context/AssignedSource"),"The Assign Depot list should be gone"): return
+	var barracks: Node3D
+	depot.stockpile.withdraw(&"wood",depot.wood); depot.stockpile.withdraw(&"coal",depot.coal)
+	depot.energy = 800; depot.iron = 800
+	for ring_radius in range(8,26):
+		for step in range(12):
+			var angle := TAU*step/12.0
+			var site = network.queue_plan(depot.global_position+Vector3(cos(angle),0,sin(angle))*ring_radius,&"barracks")
+			if site != null:
+				barracks = site.complete_from_stock()
+				if barracks == null: site.cancel()
+			if barracks != null: break
+		if barracks != null: break
+	if not check(barracks != null,"No spot for a Barracks near the Depot"): return
+	barracks.set_process(false)
+	barracks.assigned_depot = null
+	if not check(barracks.source_friendly() and barracks.assigned_depot == depot,"A Barracks should take the covering Depot by itself"): return
+	depot.team = "enemy"; depot.ownership_changed.emit()
+	if not check(not barracks.source_friendly() and not barracks.request_unit(&"infantry"),"With no friendly Depot in range nothing pays"): return
+	depot.team = "player"; depot.ownership_changed.emit()
+	depot.energy = 0
+	if not check(barracks.source_friendly() and barracks.payer_for(100,0) == null and not barracks.request_unit(&"infantry") and "No Depot in range has" in game.message,"A Depot that can't pay should be explained"): return
+	depot.energy = 800
+	if not check(barracks.request_unit(&"infantry") and barracks.assigned_depot == depot,"The Depot in range should pay"): return
 	print("HUD_POLISH_TEST_PASSED")
 	quit()

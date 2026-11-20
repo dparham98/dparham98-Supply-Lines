@@ -2505,11 +2505,6 @@ custom_minimum_size = Vector2(250,0)
 layout_mode = 2
 size_flags_horizontal = 0
 theme_override_constants/separation = 5
-[node name="AssignedSource" type="OptionButton" parent="Bottom/Body/Row/Context"]
-layout_mode = 2
-visible = false
-fit_to_longest_item = false
-clip_text = true
 [node name="Production" type="VBoxContainer" parent="Bottom/Body/Row/Context"]
 layout_mode = 2
 visible = false

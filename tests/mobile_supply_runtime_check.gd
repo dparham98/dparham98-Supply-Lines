@@ -175,9 +175,8 @@ func run() -> void:
 	var building = get_nodes_in_group("production_buildings")[0]; building.set_process(false)
 	await click(hud.build_menu.get_node("Actions/Back"))
 	await click_at(target(building))
-	if not check(hud.shown == building and building.assigned_depot == null,"Remote building selection/assignment wrong"): return
-	await choose(hud.context.get_node("AssignedSource"),hud.assignment_sources.find(game.depot))
-	if not check(building.assigned_depot == game.depot,"Operating Depot popup failed"): return
+	# Production picks its covering Depot itself (docs/HUD_POLISH.md).
+	if not check(hud.shown == building and building.assigned_depot == game.depot,"The Barracks should pay from the covering Depot"): return
 	await click(hud.card.get_node("PrintInfantry"))
 	if not check(building.queue == 1 and game.depot.energy == 400 and game.depot.iron == 480 and train.energy == 100 and train.iron == 45,"Operating production charged mobile stock or ignored Depot choice"): return
 	train._update_display(); building._process(0)
