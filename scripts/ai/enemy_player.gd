@@ -125,10 +125,12 @@ func remember() -> void:
 		if gone and sees(known[id]): known.erase(id)
 ## Its units by job: workers gather and build, one Scout scouts, the rest are the army.
 func _sort(units: Array[Node3D]) -> void:
-	workers = workers.filter(func(unit): return units.has(unit))
-	army = army.filter(func(unit): return units.has(unit))
-	wave = wave.filter(func(unit): return units.has(unit))
-	if not units.has(scout): scout = null
+	# Units killed since the last round are freed: check that first, before looking them up.
+	var alive := func(unit) -> bool: return is_instance_valid(unit) and units.has(unit)
+	workers = workers.filter(alive)
+	army = army.filter(alive)
+	wave = wave.filter(alive)
+	if not alive.call(scout): scout = null
 	for unit in units:
 		if workers.has(unit) or army.has(unit) or unit == scout: continue
 		if unit.is_depot_truck or unit.is_cargo_vehicle: continue
