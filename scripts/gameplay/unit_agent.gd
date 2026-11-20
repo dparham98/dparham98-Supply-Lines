@@ -889,14 +889,19 @@ func _shoot(target: Node3D) -> void:
 	var shot: Node3D = game.show_shot(muzzle,_shot_end(muzzle,target,target.global_position+Vector3.UP*1.7+target_height),team,projectile_scene)
 	var forced := _forced_on(target)
 	# A shell or grenade hurts when it gets there; a shooter gone by then takes its shot with it.
-	if shot != null and shot.get("damage_on_impact") == true: shot.on_impact = _strike_on_impact.bind(target,forced)
+	if shot != null and shot.get("damage_on_impact") == true:
+		shot.target = weakref(target)
+		shot.on_impact = _strike_on_impact.bind(target,forced,shot)
 	else: CombatResolver.strike(self,target,forced)
 	if is_instance_valid(target) and game.has_method("mark_attacked"): game.mark_attacked(target)
 	if is_instance_valid(target) and target.is_in_group("selectable_buildings") and target.get("team") == "player" and team != "player" and game.has_method("alert"):
 		game.alert("%s under attack" % target.name,target.global_position,"attack:%d" % target.get_instance_id(),"attack")
-## A shell's or grenade's damage, when it lands. The target may have died or gone meanwhile.
-func _strike_on_impact(target: Node3D, forced: bool) -> void:
-	if is_instance_valid(target): CombatResolver.strike(self,target,forced)
+## A shell's or grenade's damage, when it bursts: the target if it is still there, and splash round the burst. The
+## target may have died or gone meanwhile, so it is untyped: a freed Node3D fails a typed argument before this
+## body can check it.
+func _strike_on_impact(target, forced: bool, shot) -> void:
+	var point: Vector3 = shot.impact_point() if is_instance_valid(shot) else (target.global_position if is_instance_valid(target) else global_position)
+	CombatResolver.strike_at(self,target if is_instance_valid(target) else null,point,forced)
 ## Where a modelled projectile stops: on the near face of the target's body, so its impact is not buried inside.
 func _shot_end(muzzle: Vector3, target: Node3D, fallback: Vector3) -> Vector3:
 	if projectile_scene == null: return fallback

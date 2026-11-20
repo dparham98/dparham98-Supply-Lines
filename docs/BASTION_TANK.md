@@ -8,7 +8,7 @@ The Bastion replaces the original tank model. It carries two weapons: the main g
 | --- | --- | --- |
 | Range | 10–30 m | 0–10 m |
 | Targets | Anything hostile, including buildings | Hostile units only |
-| Damage | 12 every 1 s; 50 every 3 s against Tanks and buildings; 3 m splash | 3 every 0.35 s |
+| Damage | 12 every 1 s; 50 every 3 s against Tanks and buildings; 3 m splash round the burst; a shell whose target is gone bursts on the ground | 3 every 0.35 s |
 | Round | Shell, damage on impact | Bullet at 18 m/s, damage on impact; a target that moves clear is missed |
 | Orders | Follows attack and attack-move orders | Always on, picks the nearest hostile unit itself |
 
