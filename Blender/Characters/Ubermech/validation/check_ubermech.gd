@@ -8,6 +8,11 @@ const TWO_LAKES := "res://scenes/maps/lakes_skirmish.tscn"
 const TeamPaint := preload("res://scripts/components/team_paint.gd")
 const Bounds := preload("res://scripts/units/selection_bounds.gd")
 const STRIDE_SPEED := 3.10
+const LASER := "res://scenes/gameplay/ubermech_laser.tscn"
+const ROUND := "res://scenes/gameplay/ubermech_pod_round.tscn"
+const PORTS := ["Pod01","Pod04","Pod05","Pod02","Pod03","Pod06"]
+const RELEASES := [12,17,22,27,32,37]
+const DT := 1./120.
 
 var checks := 0
 var issues: Array[String] = []
@@ -184,10 +189,11 @@ func check_animator(unit):
 	var model = unit.get_node("Visuals/Model")
 	if not check(unit._animator()==model and model.player!=null and model.skeleton!=null,
 			"Existing unit-agent animation path resolves model, skeleton and AnimationPlayer"): return
-	if not check(model.player.has_animation("Rest") and model.player.has_animation("Walk") and model.player.has_animation("Shoot"),
-			"Production actor imports Rest, Walk and Shoot"): return
+	for clip in [&"Rest",&"Walk",&"Shoot",&"PodVolley"]:
+		if not check(model.player.has_animation(clip),"Production actor imports "+str(clip)): return
 	check(is_equal_approx(model.run_reference_speed,STRIDE_SPEED),"Walk reference speed matches 3.10 m/s")
 	model.set_process(false)
+	model.player.callback_mode_process=AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	unit._animate()
 	model._process(0.)
 	check(model.current_clip()==&"Rest","Stationary actor rests")
@@ -210,6 +216,8 @@ func check_animator(unit):
 	check(walked and distance>2. and unit.order=="idle","A terrain move order walks at production speed and arrives")
 	measures["factory_yard_walk_m"] = distance
 	gait(model)
+	test_weapon_meshes(model)
+	test_weapon_motion(model)
 	model.play_action(&"shoot",model.gun_sample_time)
 	seek(model,model.gun_sample_time)
 	var tip: Vector3 = model.to_local(model.muzzle_position())
@@ -261,24 +269,194 @@ func check_selection(unit, game):
 	unit.set_selected(false)
 	check(not marker.visible,"Deselection hides the ground marker")
 
-func check_shot_from_actor(game, player, enemy):
-	var model=player.get_node("Visuals/Model")
-	var before: int=enemy.health
+func check_socket_surface(model, socket: String, material: String, radius: float) -> float:
+	var sk: Skeleton3D=model.skeleton
+	var joint:=sk.find_bone(socket)
+	if not check(joint>=0,"Exported socket "+socket): return INF
+	var tip:=joint_in_model(model,sk,joint,true)
+	var axis:=tip.basis.y.normalized()
+	var area:=0.
+	var weighted:=Vector3.ZERO
+	# Find the coplanar triangles of the luminous lens or enamel cap on the
+	# actual imported mesh. Area weighting gives a triangulation-independent centre.
+	for part: MeshInstance3D in model.find_children("*","MeshInstance3D",true,false):
+		var transform: Transform3D=model.global_transform.affine_inverse()*part.global_transform
+		for surface in part.mesh.get_surface_count():
+			if part.mesh.surface_get_material(surface).resource_name!=material: continue
+			var arrays:=part.mesh.surface_get_arrays(surface)
+			var v: PackedVector3Array=arrays[Mesh.ARRAY_VERTEX]
+			var ids: PackedInt32Array=arrays[Mesh.ARRAY_INDEX]
+			for i in range(0,ids.size(),3):
+				var a: Vector3=transform*v[ids[i]]
+				if a.distance_to(tip.origin)>radius: continue
+				var b: Vector3=transform*v[ids[i+1]]
+				var c: Vector3=transform*v[ids[i+2]]
+				if b.distance_to(tip.origin)>radius or c.distance_to(tip.origin)>radius: continue
+				var normal: Vector3=(b-a).cross(c-a)
+				if normal.length_squared()<1.e-17 or absf(normal.normalized().dot(axis))<.997: continue
+				var center: Vector3=(a+b+c)/3.
+				if absf((center-tip.origin).dot(axis))>.0015: continue
+				var weight:=normal.length()*.5
+				area+=weight
+				weighted+=center*weight
+	if not check(area>PI*radius*radius*.20,"Resolved emitting end face of "+socket): return INF
+	var error: float=(weighted/area).distance_to(tip.origin)
+	check(error<.003,"%s socket lies on the centre of its visible end face (%.5f m)" %[socket,error])
+	return error
+
+func test_weapon_meshes(model) -> void:
+	var errors: Dictionary={"Muzzle":check_socket_surface(model,"Muzzle","glow_core",.132)}
+	for port in PORTS:
+		errors[port]=check_socket_surface(model,port,"enamel",.014)
+	measures["mesh_socket_error_m"]=errors
+
+func test_weapon_motion(model) -> void:
+	var sk: Skeleton3D=model.skeleton
+	var slide:=sk.find_bone("EmitterSlide")
+	if not check(slide>=0,"Emitter coupling is bound to its independent slide"): return
+	model.player.play(&"Shoot",0.)
+	seek(model,12./30.)
+	var charged:=sk.get_bone_pose_position(slide)
+	seek(model,15./30.)
+	var travel:=charged.distance_to(sk.get_bone_pose_position(slide))
+	check(travel>.12,"Emitter coupling visibly travels between charged and recoil poses")
+	model.player.play(&"PodVolley",0.)
+	for i in PORTS.size():
+		var port: String=PORTS[i]
+		var cap:=sk.find_bone(port.replace("Pod","PodCap"))
+		if not check(cap>=0,"Retractable cap for "+port): return
+		seek(model,float(RELEASES[i])/30.)
+		var loaded:=sk.get_bone_pose_position(cap)
+		seek(model,float(RELEASES[i]+2)/30.)
+		check(loaded.distance_to(sk.get_bone_pose_position(cap))>.14,"Visible cap retracts after "+port+" fires")
+		seek(model,59./30.)
+		check(loaded.distance_to(sk.get_bone_pose_position(cap))<.005,"Visible cap reloads into "+port)
+	measures["emitter_slide_travel_m"]=travel
+	model.player.stop()
+
+func inspect_release(fx: Node3D, model, target, port_index: int, expected_clip: String) -> Dictionary:
+	var is_laser:=expected_clip=="Shoot"
+	var socket: String="Muzzle" if is_laser else PORTS[port_index]
+	var pose_time: float=model.player.current_animation_position
+	var due: float=.4 if is_laser else float(RELEASES[port_index])/30.
+	var sk: Skeleton3D=model.skeleton
+	var joint:=sk.find_bone(socket)
+	if not check(joint>=0,"Active rig has "+socket): return {}
+	sk.force_update_all_bone_transforms()
+	var end: Vector3=target.global_position+Vector3.UP*1.7+target.get_node("Visuals").position
+	var tip: Transform3D=sk.global_transform*sk.get_bone_global_pose(joint)
+	var start:=fx.global_position
+	var axis:=tip.basis.y.normalized()
+	check(model.current_clip()==StringName(expected_clip),"Release uses "+expected_clip)
+	check(absf(pose_time-due)<DT*1.9,"Release at the authored time for %s (%.5f vs %.5f)"%[socket,pose_time,due])
+	if is_laser:
+		check(fx.get_node("Impact").global_position.distance_to(end)<.015,"Laser reaches its target at discharge")
+		check(fx.get_node("Lens").is_visible_in_tree() and fx.get_node("Span/Core").is_visible_in_tree(),"Laser displays beam and lens flare")
+	else:
+		# The existing projectile starts half a model length beyond the socket.
+		start=fx.to_global(Vector3.BACK*fx.half_length)
+		check(not fx.damage_on_impact and not fx.on_impact.is_valid(),"Each pod round is visual-only")
+		check(fx.get_node("Nose").is_visible_in_tree() and fx.get_node("Exhaust").is_visible_in_tree(),"Pod round carries its body and exhaust")
+		var launch_position:=fx.global_position
+		var hp: int=target.health
+		fx._process(.025)
+		check(fx.global_position.distance_to(end)<launch_position.distance_to(end),"Pod round visibly travels toward the target")
+		fx._process(4.)
+		check(target.health==hp and fx.is_queued_for_deletion(),"The round clears on arrival with no further damage")
+	var error:=start.distance_to(tip.origin)
+	var bearing:=Vector2(end.x-start.x,end.z-start.z).normalized()
+	var alignment:=Vector2(axis.x,axis.z).normalized().dot(bearing)
+	check(error<.016,"Effect starts at %s (%.5f m)" %[socket,error])
+	check(alignment>.995,"%s points toward the target at discharge" %socket)
+	return {"socket":socket,"clip_s":pose_time,"origin_error_m":error,"horizontal_alignment":alignment}
+
+func check_shot_from_actor(game, unit, enemy):
+	var model=unit.get_node("Visuals/Model")
 	var initial: Vector3=enemy.global_position
-	enemy.global_position=player.global_position+Vector3.FORWARD*11.
-	player.fuel=player.fuel_rules.reserve_capacity
-	player._cooldown=0.
-	player.command_attack(enemy)
-	var before_children: int=game.get_child_count()
-	player._attack_order()
-	if check(game.get_child_count()>before_children,"An ordinary Ubermech attack order spawns its existing shot effect"):
-		var tracer=game.get_child(-1)
-		check(tracer.scene_file_path==game.tracer_scene.resource_path,"Existing map tracer is preserved")
-		var start: Vector3=tracer.global_transform*Vector3(0,0,.5)
-		var error:=start.distance_to(model.muzzle_position())
-		check(error<.012,"World-space shot starts at the animated muzzle (%.4f m)" % error)
-		check(enemy.health<before and model.current_clip()==&"Shoot","The existing attack system deals damage and plays the firing clip")
-		measures["shot"]={"muzzle_error_m":error,"damage":before-enemy.health}
+	enemy.global_position=unit.global_position+Vector3.FORWARD*11.+Vector3.RIGHT*4.
+	unit.fuel=unit.fuel_rules.reserve_capacity
+	unit.command_attack(enemy)
+	var before: int=enemy.health
+	var unconfirmed: int=game.get_child_count()
+	unit._cooldown=.30
+	unit._attack_order()
+	check(model.current_clip()==&"Shoot" and model.acting(),"In-range attack enters its wind-up before the cooldown expires")
+	model.player.advance(.04)
+	unit.command_move(unit.global_position)
+	model.set_motion(&"idle")
+	model._process(DT)
+	model.player.advance(.50)
+	check(not model.acting() and model.current_clip()==&"Rest" and enemy.health==before and game.get_child_count()==unconfirmed,
+			"Interrupting the wind-up returns to rest without spending a strike")
+	unit._cooldown=0.
+	unit.command_attack(enemy)
+	var strikes: Array[float]=[]
+	var shots: Array[Dictionary]=[]
+	var rounds:=0
+	var lasers:=0
+	# Exercise ordinary orders, cooldown, animation lead and the renderer hook
+	# with a fixed tick. The model runs before its AnimationPlayer child.
+	for tick in range(1250):
+		var child_count: int=game.get_child_count()
+		var hp: int=enemy.health
+		unit._process(DT)
+		model._process(DT)
+		if hp!=enemy.health:
+			strikes.append(tick*DT)
+			check(hp-enemy.health==12,"A confirmed attack deals one 12-damage strike")
+		for i in range(child_count,game.get_child_count()):
+			var fx=game.get_child(i)
+			if fx.scene_file_path==LASER:
+				lasers+=1
+				shots.append(inspect_release(fx,model,enemy,0,"Shoot"))
+			elif fx.scene_file_path==ROUND:
+				if check(rounds<6,"Volley has at most six visual rounds"):
+					shots.append(inspect_release(fx,model,enemy,rounds,"PodVolley"))
+				rounds+=1
+			else:
+				check(fx.scene_file_path!=game.tracer_scene.resource_path,"Ubermech uses its own weapon visuals")
+		model.player.advance(DT)
+	check(lasers==2 and rounds==6 and shots.size()==8,"Three attacks produce laser, six-port volley, laser")
+	if shots.size()==8:
+		check(shots[0].get("socket")=="Muzzle" and shots[-1].get("socket")=="Muzzle","Laser bookends the six distinct port releases")
+	check(before-enemy.health==36 and strikes.size()==3,"The entire six-round volley resolves exactly once")
+	for i in range(1,strikes.size()):
+		check(absf(strikes[i]-strikes[i-1]-5.)<DT*2,"Strike cooldown remains five seconds")
+	measures["combat"]={"damage":before-enemy.health,"strike_times_s":strikes,"releases":shots}
+	# A different instance starts on its own laser, even after this walker
+	# has used its laser again and would next choose its pod.
+	var peer_count: int=game.get_child_count()
+	enemy.fuel=enemy.fuel_rules.reserve_capacity
+	enemy._cooldown=0.
+	enemy.command_attack(unit)
+	enemy._attack_order()
+	check(game.get_child_count()==peer_count+1 and game.get_child(-1).scene_file_path==LASER,
+			"Second Ubermech independently opens combat with its own laser")
+	unit.command_move(unit.global_position)
+	model.set_motion(&"run",STRIDE_SPEED)
+	model._process(3.)
+	model._process(DT)
+	check(model.current_clip()==&"Walk","Movement resumes after either arm finishes its action")
+	unit.command_attack(enemy)
+	unit._cooldown=.25
+	unit._attack_order()
+	check(model.acting() and model.current_clip()==&"PodVolley","Next attack winds up the alternate arm")
+	var before_cancel: int=game.get_child_count()
+	var hp_before_cancel: int=enemy.health
+	unit.command_move(unit.global_position)
+	model.set_motion(&"run",STRIDE_SPEED)
+	model._process(DT)
+	model.player.advance(1.5)
+	model._process(DT)
+	check(model.current_clip()==&"Walk" and not model.acting() and
+			game.get_child_count()==before_cancel and enemy.health==hp_before_cancel,
+			"An interrupted pod wind-up resumes walking without launching any rounds")
+	unit.command_attack(enemy)
+	unit._cooldown=0.
+	unit._attack_order()
+	check(game.get_child_count()==before_cancel+1 and game.get_child(-1).scene_file_path==ROUND and
+			model.current_clip()==&"PodVolley" and hp_before_cancel-enemy.health==12,
+			"Reissuing the attack after interruption still fires the pod")
 	enemy.global_position=initial
 
 func run() -> void:

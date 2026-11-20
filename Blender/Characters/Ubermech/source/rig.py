@@ -7,19 +7,24 @@ from mathutils import Matrix, Quaternion, Vector
 
 FPS = 30
 WALK_SPEED = 3.10
-PERIODS = {"Rest": 60, "Walk": 36, "Shoot": 18}
+PERIODS = {"Rest": 60, "Walk": 36, "Shoot": 36, "PodVolley": 60}
 FORWARD = Vector((0, -1, 0))
 SIDES = (("R",-1),("L",1))
+RELEASE_FRAME = 12   # Elapsed frames. Blender frame 1 is exported time zero.
+POD_RELEASES = ((12,1),(17,4),(22,5),(27,2),(32,3),(37,6))
+
+
+def end_face(obj):
+    """Find the two end polygons of a lathed part, before its edge bevel."""
+    caps=sorted(obj.data.polygons,key=lambda p: len(p.vertices),reverse=True)[:2]
+    centres=[obj.matrix_world @ p.center for p in caps]
+    tip,base=sorted(centres,key=lambda v:v.y)
+    return tip,(tip-base).normalized()
 
 
 def muzzle_frame(pieces):
-    """Return the true centre of the luminous end face and its outward unit axis."""
     core=next(obj for obj in pieces if obj.name.startswith("Emitter | radiant core"))
-    # Measure the two original end faces rather than the bevel's generated rim.
-    caps=sorted(core.data.polygons,key=lambda p: len(p.vertices),reverse=True)[:2]
-    centres=[core.matrix_world @ p.center for p in caps]
-    tip,base=sorted(centres,key=lambda v:v.y)
-    return tip,(tip-base).normalized()
+    return end_face(core)
 
 
 def skeleton(pieces):
@@ -40,6 +45,19 @@ def skeleton(pieces):
         link("Shin","Thigh."+side,knee,ankle)
         link("Foot","Shin."+side,ankle,(s*.90,-.48,.16))
     layout.append(("Muzzle","Forearm.R",tip,tip+.21*axis))
+    part={obj.name:obj for obj in pieces}
+    band=part["Emitter | steel bridge band"]
+    band_front,_=end_face(band)
+    layout.append(("EmitterSlide","Forearm.R",band_front,band_front+.12*axis))
+    band["joint"]="EmitterSlide"
+    for port in range(1,7):
+        cap=part[f"Pod | crimson ogive {port}"]
+        point,pod_axis=end_face(cap)
+        port_name=f"Pod{port:02d}"
+        cap_name=f"PodCap{port:02d}"
+        layout.append((port_name,"Forearm.L",point,point+.15*pod_axis))
+        layout.append((cap_name,port_name,point,point+.08*pod_axis))
+        cap["joint"]=cap_name
     arm_data=bpy.data.armatures.new("Ubermech linkages")
     arm=bpy.data.objects.new("Ubermech Rig",arm_data)
     bpy.context.scene.collection.objects.link(arm)
@@ -56,6 +74,7 @@ def skeleton(pieces):
     arm.show_in_front=False
     arm["muzzle_rest_axis"]=list(axis)
     arm["muzzle_rest_point"]=list(tip)
+    arm["pod_rest_axis"]=list(pod_axis)
     arm["walk_speed_mps"]=WALK_SPEED
     for obj in pieces:
         bone=arm_data.bones[obj["joint"]]
@@ -103,6 +122,10 @@ class Pose:
         rest=self.rest[name]
         self.world[name]=Matrix.Translation(origin)@rotation.to_matrix().to_4x4()@Matrix.Translation(-rest.translation)@rest
 
+    def slide(self,name,distance):
+        # The controls' local +Y directions coincide with their machined axes.
+        self.world[name]=self.get(name)@Matrix.Translation((0,distance,0))
+
     def limb(self,name,origin,original,target):
         q=original.normalized().rotation_difference(target.normalized())
         self.rigid(name,origin,q)
@@ -124,20 +147,9 @@ class Pose:
             bone.keyframe_insert(data_path="rotation_quaternion",frame=frame,group=name)
 
 
-def leg_cycle(pose,side,s,phase):
+def place_leg(pose,side,s,offset,lift,pitch):
     upper,lower,foot=["%s.%s"%(key,side) for key in ("Thigh","Shin","Foot")]
     h,k,a=[pose.rest[key].translation for key in (upper,lower,foot)]
-    phase%=1
-    stride=WALK_SPEED*PERIODS['Walk']/FPS
-    if phase<=.5:
-        offset=stride*(phase-.25)
-        lift=pitch=0
-    else:
-        t=2*(phase-.5)
-        # Contact velocity is continuous at lift-off and heel strike.
-        offset=stride*(.25+.5*t-t*t*(3-2*t))
-        lift=.305*sin(pi*t)**2
-        pitch=11*sin(2*pi*t)*sin(pi*t)
     af=a+Vector((0,offset,lift))
     hf=pose.get(upper).translation
     reach=af-hf
@@ -145,7 +157,7 @@ def leg_cycle(pose,side,s,phase):
     u=reach.normalized()
     l1,l2=(k-h).length,(a-k).length
     if distance>l1+l2+.0001:
-        raise ValueError("Unreachable %s ankle at %.3f: %.4f > %.4f"%(side,phase,distance,l1+l2))
+        raise ValueError("Unreachable %s ankle: %.4f > %.4f"%(side,distance,l1+l2))
     along=(l1*l1-l2*l2+distance*distance)/(2*distance)
     forward=Vector((s*.10,-1,0))
     bend=(forward-u*forward.dot(u)).normalized()
@@ -158,6 +170,21 @@ def leg_cycle(pose,side,s,phase):
     inherited=pelvis.to_quaternion()
     tasset='Tasset.'+side
     pose.rigid(tasset,pose.get(tasset).translation,inherited.slerp(thigh,.52))
+
+
+def leg_cycle(pose,side,s,phase):
+    phase%=1
+    stride=WALK_SPEED*PERIODS['Walk']/FPS
+    if phase<=.5:
+        offset=stride*(phase-.25)
+        lift=pitch=0
+    else:
+        t=2*(phase-.5)
+        # Contact velocity is continuous at lift-off and heel strike.
+        offset=stride*(.25+.5*t-t*t*(3-2*t))
+        lift=.305*sin(pi*t)**2
+        pitch=11*sin(2*pi*t)*sin(pi*t)
+    place_leg(pose,side,s,offset,lift,pitch)
 
 
 def walk(pose,phase):
@@ -183,22 +210,76 @@ def rest(pose,phase):
         pose.move("UpperArm."+side,turn((1,0,0),.55*sin(w)))
 
 
+def envelope(time,keys):
+    """Smooth keyed mechanical travel, including a hold before and after."""
+    for (start,low),(end,high) in zip(keys,keys[1:]):
+        if time<=end:
+            amount=max(0.,(time-start)/(end-start))
+            return low+(high-low)*amount*amount*(3-2*amount)
+    return keys[-1][1]
+
+
+def combat_legs(pose,side,brace,kick):
+    # Load the outside hip while the soles stay flat through the recoil.
+    roll=turn((0,1,0),side*(1.7*brace+.4*kick))
+    pose.move("Pelvis",roll,(side*(.066*brace+.015*kick),.025*brace+.038*kick,
+                             -.028-.075*brace-.028*kick))
+    for label,direction in SIDES:
+        place_leg(pose,label,direction,0.,0.,0.)
+
+
+def aim_forearm(pose,side,axis,line,amount):
+    name="Forearm."+side
+    inherited=pose.get(name)
+    rotation=(inherited@pose.rest[name].inverted()).to_quaternion()
+    aligned=axis.rotation_difference(line)
+    pose.rigid(name,inherited.translation,rotation.slerp(aligned,amount))
+
+
 def shoot(pose,phase):
-    time=phase*PERIODS["Shoot"]
-    pulses=[(0,0),(1,.54),(2,1),(4,.64),(7,.10),(9,-.10),(13,0),(18,0)]
-    for (a,lo),(b,hi) in zip(pulses,pulses[1:]):
-        if time<=b:
-            t=(time-a)/(b-a)
-            recoil=lo+(hi-lo)*t*t*(3-2*t)
-            break
-    pose.move("Chest",turn((0,0,1),-2.1-recoil)@turn((1,0,0),-1.5*recoil))
-    pose.move("Head",turn((0,0,1),2.1+recoil))
-    pose.move("Shoulder.R",turn((1,0,0),-5+1.7*recoil))
-    pose.move("UpperArm.R",turn((1,0,0),-29+8*recoil)@turn((0,1,0),3.5))
-    axis=Vector(pose.arm["muzzle_rest_axis"])
-    line=turn((1,0,0),-3.7*recoil)@FORWARD
-    pose.rigid("Forearm.R",pose.get("Forearm.R").translation,axis.rotation_difference(line))
-    pose.move("UpperArm.L",turn((1,0,0),-6))
+    f=phase*PERIODS["Shoot"]
+    brace=envelope(f,[(0,.08),(7,.84),(11,1),(24,.96),(36,.88)])
+    aim=envelope(f,[(0,.12),(5,.47),(10,1)])
+    kick=envelope(f,[(12,0),(14,1),(16,.68),(20,.13),(23,-.08),(29,0)])
+    combat_legs(pose,-1,brace,kick)
+    pose.move("Chest",turn((0,0,1),5.0*brace-2.1*kick)@turn((1,0,0),2.2*brace-3.5*kick))
+    pose.move("Head",turn((0,0,1),-4.8*brace+1.6*kick)@turn((1,0,0),-2.0*brace+2.3*kick))
+    pose.move("Shoulder.R",turn((1,0,0),-5.8*brace+3.0*kick))
+    pose.move("UpperArm.R",turn((1,0,0),-8.-31.*brace+11.*kick)@turn((0,1,0),3.4*brace))
+    line=turn((1,0,0),-5.0*kick)@FORWARD
+    aim_forearm(pose,"R",Vector(pose.arm["muzzle_rest_axis"]),line,aim)
+    pose.move("UpperArm.L",turn((1,0,0),-6.5*brace+1.7*kick))
+    pose.move("Forearm.L",turn((1,0,0),-3.5*brace))
+    travel=envelope(f,[(0,0),(10,-.088),(12,-.09),(15,.105),(19,.066),(28,0)])
+    pose.slide("EmitterSlide",travel)
+
+
+def pod_volley(pose,phase):
+    f=phase*PERIODS["PodVolley"]
+    brace=envelope(f,[(0,.05),(7,.78),(11,1),(39,1),(55,.85)])
+    aim=envelope(f,[(0,0),(5,.32),(10,1)])
+    kick=twist=0.
+    for release,port in POD_RELEASES:
+        impulse=envelope(f-release,[(0,0),(1,1),(2,.57),(4,.04),(5,0)])
+        kick+=impulse
+        twist+=impulse*(-1 if port%2 else 1)
+    combat_legs(pose,1,brace,.77*kick)
+    # The pod is carried low but level. Lift the entire support arm onto its
+    # shoulder line, counterbalance with the torso, then cycle the six ports.
+    pose.move("Chest",turn((0,0,1),-7.1*brace+1.9*kick)@turn((0,1,0),-2.5*brace)@
+              turn((1,0,0),2.*brace-2.9*kick))
+    pose.move("Head",turn((0,0,1),6.2*brace-1.4*kick)@turn((0,1,0),3.3*brace))
+    pose.move("Shoulder.L",turn((1,0,0),-9.2*brace+2.6*kick))
+    pose.move("UpperArm.L",turn((1,0,0),-56.*brace+7.8*kick)@turn((0,1,0),-3.*brace))
+    line=turn((0,0,1),1.4*twist)@turn((1,0,0),-3.6*kick)@FORWARD
+    aim_forearm(pose,"L",Vector(pose.arm["pod_rest_axis"]),line,aim)
+    pose.move("UpperArm.R",turn((1,0,0),-12.*brace+2.5*kick))
+    pose.move("Forearm.R",turn((0,1,0),3.5*brace)@turn((1,0,0),-5.5*brace))
+    for index,(release,port) in enumerate(POD_RELEASES):
+        reload_frame=43+index*1.4
+        withdrawal=envelope(f,[(release,0),(release+1,.88),(release+2,1),
+                               (reload_frame,1),(reload_frame+6,0)])
+        pose.slide(f"PodCap{port:02d}",-.177*withdrawal)
 
 
 def create(pieces):
@@ -212,15 +293,21 @@ def create(pieces):
         pose=Pose(arm)
         action=bpy.data.actions.new(name)
         data.action=action
-        animate={"Rest":rest,"Walk":walk,"Shoot":shoot}[name]
+        animate={"Rest":rest,"Walk":walk,"Shoot":shoot,"PodVolley":pod_volley}[name]
+        loop=name in ("Rest","Walk")
         for i in range(intervals+1):
             pose.world.clear()
-            animate(pose,(i%intervals)/intervals)
+            animate(pose,(i%intervals if loop else i)/intervals)
             pose.record(i+1)
         for curve in action.fcurves:
             for key in curve.keyframe_points:key.interpolation='LINEAR'
         action.use_fake_user=True
-        action.use_cyclic=name!='Shoot'
+        action.use_cyclic=loop
+        if name=="Shoot":
+            action.pose_markers.new("Emitter release").frame=1+RELEASE_FRAME
+        elif name=="PodVolley":
+            for frame,port in POD_RELEASES:
+                action.pose_markers.new(f"Release Pod{port:02d}").frame=1+frame
         data.action=None
         track=data.nla_tracks.new();track.name=name
         strip=track.strips.new(name,1,action);strip.extrapolation='NOTHING'

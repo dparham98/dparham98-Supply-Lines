@@ -1,5 +1,5 @@
 {
-  "checks": 73,
+  "checks": 202,
   "failures": [],
   "godot": "4.7.2-stable (official)",
   "measurements": {
@@ -9,17 +9,76 @@
         2.70000004768372
       ],
       "max": [
-        2.60972118377686,
+        2.62022590637207,
         5.16400003433228,
-        0.843500018119812
+        0.843499898910522
       ],
       "min": [
         -2.21309041976929,
         -0.000000059873826785406,
-        -1.33299291133881
+        -1.28716349601746
       ]
     },
     "authored_mesh_nodes": 1,
+    "combat": {
+      "damage": 36,
+      "releases": [
+        {
+          "clip_s": 0.4,
+          "horizontal_alignment": 0.999975860118866,
+          "origin_error_m": 0.0,
+          "socket": "Muzzle"
+        },
+        {
+          "clip_s": 0.4,
+          "horizontal_alignment": 0.999998390674591,
+          "origin_error_m": 0.0,
+          "socket": "Pod01"
+        },
+        {
+          "clip_s": 0.566666666666667,
+          "horizontal_alignment": 0.999577522277832,
+          "origin_error_m": 0.000000533120157797384,
+          "socket": "Pod04"
+        },
+        {
+          "clip_s": 0.733333333333333,
+          "horizontal_alignment": 0.999999165534973,
+          "origin_error_m": 0.000000533120157797384,
+          "socket": "Pod05"
+        },
+        {
+          "clip_s": 0.899999999999999,
+          "horizontal_alignment": 0.99958473443985,
+          "origin_error_m": 0.000000983024960987677,
+          "socket": "Pod02"
+        },
+        {
+          "clip_s": 1.06666666666667,
+          "horizontal_alignment": 0.999998867511749,
+          "origin_error_m": 0.000000476837158203125,
+          "socket": "Pod03"
+        },
+        {
+          "clip_s": 1.23333333333333,
+          "horizontal_alignment": 0.999570250511169,
+          "origin_error_m": 0.0,
+          "socket": "Pod06"
+        },
+        {
+          "clip_s": 0.4,
+          "horizontal_alignment": 0.999975860118866,
+          "origin_error_m": 0.0,
+          "socket": "Muzzle"
+        }
+      ],
+      "strike_times_s": [
+        0.0,
+        5.0,
+        10.0
+      ]
+    },
+    "emitter_slide_travel_m": 0.194998756051064,
     "enemy_paint": {
       "fixed": 12,
       "painted": 1,
@@ -31,23 +90,28 @@
     ],
     "factory_yard_walk_m": 4.0,
     "firing_direction_local": [
-      0.0000286743761535035,
-      0.0529328174889088,
-      -0.998598098754883
+      0.000000247029674937949,
+      -0.000000601305941927421,
+      -1.0
     ],
     "firing_muzzle_local": [
-      1.82972717285156,
-      2.56450366973877,
-      -2.42758750915527
+      1.71046447753906,
+      3.24877500534058,
+      -2.91223335266113
     ],
+    "mesh_socket_error_m": {
+      "Muzzle": 0.000000533120157797384,
+      "Pod01": 0.000000790744991263637,
+      "Pod02": 0.000000491512480493839,
+      "Pod03": 0.000000961096020546393,
+      "Pod04": 0.00000086785672692713,
+      "Pod05": 0.000000641961662495305,
+      "Pod06": 0.000000790744991263637
+    },
     "player_paint": {
       "fixed": 12,
       "painted": 1,
       "red_emissive": 1
-    },
-    "shot": {
-      "damage": 12,
-      "muzzle_error_m": 0.000000533120157797384
     },
     "walk": {
       "Foot.L": {
@@ -64,6 +128,6 @@
       }
     }
   },
-  "model_sha256": "8e3d78829e1fa97875c21dca84255168e212af343a071940813684c2716e0da0",
+  "model_sha256": "9ac830c4e30844bdf5496a736268621b5363e1647b4f14ed459a5bd8ac02f90f",
   "success": true
 }

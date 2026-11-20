@@ -1,7 +1,7 @@
 """Torso, segmented armored coat, power pack and twin signal masts."""
 from math import cos, pi, sin
 from mathutils import Vector
-from mech import box, mesh, rod, shell
+from mech import box, material, mesh, rod, shell
 
 
 def octagon(x,y,w,d,cut):
@@ -112,6 +112,79 @@ def pack():
         rod("Aerial tip",(x,.38,z-.049),(x,.38,z+.024),.033,"graphite",g,12,.005)
 
 
+def collar():
+    group="Chest"
+    # Sections follow the open neck from the right front, around the nape and
+    # back to the left front. The lip has a return on its inside face.
+    side=[
+        ((.270,-.411,4.302),(.327,-.434,4.208)),
+        ((.402,-.312,4.438),(.514,-.370,4.209)),
+        ((.446,-.187,4.497),(.562,-.233,4.246)),
+        ((.425,-.073,4.490),(.515,-.093,4.276)),
+        ((.342,.051,4.457),(.366,.067,4.294)),
+        ((.296,.186,4.451),(.320,.214,4.300)),
+        ((.177,.299,4.467),(.187,.331,4.300)),
+        ((0,.329,4.476),(0,.360,4.302)),
+    ]
+    arc=side+[((-x,y,z),(-bx,by,bz)) for (x,y,z),(bx,by,bz) in reversed(side[:-1])]
+    verts=[]
+    for top,base in arc:
+        t,b=Vector(top),Vector(base)
+        radial=Vector((t.x,t.y,0)).normalized()
+        verts.extend((b,t,t-radial*.045-Vector((0,0,.005)),b-radial*.054))
+    faces=[(0,1,2,3)]
+    for i in range(len(arc)-1):
+        k=i*4
+        for j in range(4):
+            faces.append((k+j,k+(j+1)%4,k+4+(j+1)%4,k+4+j))
+    faces.append(tuple(range(len(verts)-4,len(verts))))
+    stand=mesh("Collar | wrapped nape stand",verts,faces,"graphite",group,.012)
+    stand.data.materials.append(material("edge"))
+    stand.data.materials.append(material("black"))
+    for i in range(len(arc)-1):
+        stand.data.polygons[2+4*i].material_index=1
+        stand.data.polygons[3+4*i].material_index=2
+
+    # Nested lames bridge the gimbal and breastplate under the open coat.
+    for i in range(3):
+        z=4.044+.060*i
+        y=-.536+.050*i
+        w=.38-.027*i
+        plate("Collar | throat lame",[
+            (-w,y+.054,z+.070),(-.18,y,z+.085),(.18,y,z+.085),(w,y+.054,z+.070),
+            (w-.027,y+.044,z+.015),(.14,y-.013,z-.011),(-.14,y-.013,z-.011),
+            (-w+.027,y+.044,z+.015)],"joint",group,.085,.009)
+
+    for sign in (-1,1):
+        # The longer facing crosses the shorter one at the sternum. Each roll
+        # joins its facing to the collar stand behind the jaw.
+        long=sign==1
+        tip=(-.13,3.975) if long else (-.052,4.052)
+        outline=[(.441,4.449),(.405,4.399),(.328,4.302),(.155,4.165),
+                 tip,((-.096 if long else -.020),tip[1]-.029),
+                 (.379,4.004 if long else 4.039),(.644,4.079),(.751,4.170),
+                 (.700,4.197),(.783,4.236),(.796,4.318),(.596,4.369)]
+        def surface(x,z):
+            return -.66+.19*x+.38*(z-4.00)-(.046 if long else 0)
+        outline3=[(sign*x,surface(x,z),z) for x,z in outline]
+        plate("Raised gorget wing | coat facing",outline3,"plate",group,.070,.016)
+        shoulder=[outline[i] for i in (11,12,0,1)]
+        front=[Vector((sign*x,surface(x,z)+.002,z)) for x,z in shoulder]
+        back=[Vector((sign*x,y,z)) for x,y,z in
+              [(.731,-.219,4.290),(.550,-.200,4.375),(.456,-.202,4.481),(.408,-.311,4.432)]]
+        outer=front+back
+        vs=outer+[p-Vector((0,0,.052)) for p in outer]
+        fs=[]
+        for i in range(3):
+            fs.extend([(i,i+1,5+i,4+i),(8+i,12+i,13+i,9+i),
+                       (i,8+i,9+i,i+1),(4+i,5+i,13+i,12+i)])
+        fs.extend([(0,4,12,8),(3,11,15,7)])
+        mesh("Collar | rolled upper seam",vs,fs,"graphite",group,.008)
+        normal=Vector((sign*.19,-1,.38)).normalized()
+        for x,z,r in [(.677,4.255,.024),(.356,4.102,.016)]:
+            bolt("Collar | recessed facing stud",(sign*x,surface(x,z),z),r,group,normal)
+
+
 def build():
     belt()
     g="Chest"
@@ -148,20 +221,5 @@ def build():
     plate("Central breastplate",[(x,breast_plane(x,z),z) for x,_,z in pts],"plate",g,.07,.017)
     for x,y,z in [(-.26,-.599,3.828),(.32,-.589,3.843),(-.251,-.608,3.475),(.28,-.601,3.48)]:
         bolt("Breastplate recessed stud",(x,breast_plane(x,z)-.001,z),.061,g)
-    for s in (-1,1):
-        # Blade-like collar pieces overlap at the sternum, leaving a V beneath the jaw.
-        pts=[(s*.046,-.604,4.028),(s*.61,-.453,4.317),(s*.96,-.30,4.231),
-             (s*.903,-.411,4.018),(s*.655,-.525,3.906),(s*.377,-.603,3.986)]
-        def gorget_plane(x,z):
-            return -.65+.34*(abs(x)-.25)+.16*(z-4)
-        plate("Raised gorget wing",[(x,gorget_plane(x,z),z) for x,_,z in pts],"plate",g,.115,.024)
-        for x,z,r in [(.766,4.126,.03),(.606,4.206,.020)]:
-            bolt("Collar inset",(s*x,gorget_plane(x,z)-.002,z),r,g)
-    def peak_plane(x,z):
-        return -.721+.145*x+.075*(z-4.08)
-    edge=[(-.488,3.916),(.168,4.252),(.478,4.139),(.587,3.995),(.095,4.032)]
-    plate("Overlapping gorget peak",[(x,peak_plane(x,z),z) for x,z in edge],"graphite",g,.065,.014)
-    for p in [(.328,-.676,4.098),(-.289,-.704,3.990)]:
-        x,_,z=p
-        bolt("Gorget stud",(x,peak_plane(x,z)-.002,z),.021,g)
+    collar()
     pack()

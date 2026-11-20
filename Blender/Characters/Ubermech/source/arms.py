@@ -272,6 +272,63 @@ def gauntlet(sign,side):
     return group
 
 
+def emitter_terminal(axis, group):
+    # One closed annular casting. Every ring, land and optical seat is machined
+    # around the barrel axis. The red face is inset behind the armored lip.
+    # Each row names the finish of the surface leading to the next row.
+    profile = [
+        (-.375, .220, 8, "plate"),       # rear shoulder covers the field windows
+        (-.351, .239, 8, "edge"),
+        (-.328, .258, 8, "graphite"),
+        (-.300, .258, 8, "plate"),
+        (-.265, .287, 8, "plate"),
+        (-.080, .287, 8, "plate"),
+        (-.037, .302, 8, "edge"),
+        (-.012, .293, 8, "plate"),
+        ( .000, .270, 8, "plate"),       # flat end face perpendicular to the shaft
+        ( .000, .218, 32, "edge"),
+        (-.007, .211, 32, "joint"),
+        (-.010, .197, 32, "black"),
+        (-.016, .192, 32, "glow_red"),
+        (-.016, .150, 32, "enamel"),
+        (-.021, .140, 32, "joint"),
+        (-.021, .125, 32, "black"),
+        (-.030, .120, 32, "black"),
+        (-.061, .120, 32, "joint"),
+        (-.075, .178, 32, "joint"),
+        (-.375, .178, 32, "joint"),
+    ]
+    count = 32
+    vertices = []
+    faces = []
+    for depth, radius, facets, _ in profile:
+        # Linear subdivision holds the eight flat armor faces while transitioning
+        # smoothly to the circular bore without disconnected rings or end caps.
+        corners = [axis.at(axis.length+depth, radius*cos(TAU*i/facets), radius*sin(TAU*i/facets))
+                   for i in range(facets)]
+        subdivisions = count//facets
+        for i in range(count):
+            corner, step = divmod(i, subdivisions)
+            vertices.append(corners[corner].lerp(corners[(corner+1) % facets],step/subdivisions))
+    for row in range(len(profile)):
+        first = row*count
+        second = (row+1) % len(profile)*count
+        for i in range(count):
+            j = (i+1) % count
+            faces.append((first+i,first+j,second+j,second+i))
+    finishes = list(dict.fromkeys(row[3] for row in profile))
+    housing = mech.mesh('Emitter | muzzle bell',vertices,faces,finishes[0],group)
+    for material in finishes[1:]:
+        housing.data.materials.append(mech.material(material))
+    for polygon in housing.data.polygons:
+        polygon.material_index = finishes.index(profile[polygon.index//count][3])
+
+    # The lens overlaps the circular seat below its opening, with a measurable
+    # planar end face for the animation rig's muzzle socket.
+    axis.turned('Emitter | radiant core',[(axis.length-.057,.137),
+                (axis.length-.031,.129),(axis.length-.023,.123)],'glow_core',group,32,.001)
+
+
 def emitter(group):
     a=Axis((-1.78,-.27,2.665),(-2.350,-1.04,1.35))
     l=a.length
@@ -298,18 +355,24 @@ def emitter(group):
              'plate',group,10,.013)
     a.turned('Emitter | steel bridge band',[(l*.49,.224),(l*.51,.258),(l*.59,.257),
              (l*.61,.224)],'edge',group,10,.011)
-    bell=Axis(a.at(l-.355),a.at(l)+Vector((-.012,-.160,.081)))
-    d=bell.length
-    bell.turned('Emitter | muzzle bell',[(0,.212),(.077,.289),(d-.108,.305),
-             (d-.025,.270)],'plate',group,10,.014)
-    bell.turned('Emitter | dark muzzle liner',[(d-.10,.245),(d-.05,.260),(d-.007,.237)],
-             'joint',group,20,.006)
-    bell.turned('Emitter | luminous corona',[(d-.03,.203),(d+.001,.203),(d+.015,.154)],
-             'glow_red',group,24,.005)
-    bell.turned('Emitter | optic retaining ring',[(d+.006,.158),(d+.017,.151),(d+.021,.133)],
-             'enamel',group,24,.003)
-    bell.turned('Emitter | radiant core',[(d+.014,.130),(d+.029,.115),(d+.032,.086)],
-             'glow_core',group,32,.003)
+    emitter_terminal(a,group)
+
+
+def pod_socket(axis,x,y,label,group):
+    # The cap slides behind the bottom of this dark cup on discharge.
+    # Its small illuminated mouth remains readable after the cap withdraws.
+    sections=[(.003,.127,'graphite'),(.024,.128,'graphite'),(.044,.114,'graphite'),
+              (.044,.102,'glow_red'),(.048,.100,'glow_red'),(.048,.090,'joint'),
+              (.043,.087,'black'),(.017,.078,'black')]
+    sides=20
+    cup=axis.turned('Pod | seal bezel '+label,[(axis.length+d,r) for d,r,_ in sections],
+                    'graphite',group,sides,0,x,y)
+    finishes=['graphite','glow_red','joint','black']
+    for finish in finishes[1:]:
+        cup.data.materials.append(mech.material(finish))
+    for face in cup.data.polygons[1:]:
+        row=(face.index-1)//sides
+        face.material_index=finishes.index(sections[row][2])
 
 
 def capsule_pod(group):
@@ -331,10 +394,7 @@ def capsule_pod(group):
             x=(c-.5)*.29
             y=(1-r)*.268
             label=str(1+r*2+c)
-            a.turned('Pod | seal bezel '+label,[(l+.003,.127),(l+.024,.128),
-                     (l+.044,.114)],'graphite',group,20,.004,x,y)
-            a.turned('Pod | indicator gasket '+label,[(l+.04,.099),(l+.048,.102)],
-                     'glow_red',group,20,.0015,x,y)
+            pod_socket(a,x,y,label,group)
             a.turned('Pod | crimson ogive '+label,[(l+.045,.097),(l+.070,.098),
                      (l+.102,.089),(l+.15,.058),(l+.186,.018),(l+.188,.011)],
                      'enamel',group,20,.003,x,y)
