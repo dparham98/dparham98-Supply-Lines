@@ -894,8 +894,9 @@ func _shoot(target: Node3D) -> void:
 	if is_instance_valid(target) and game.has_method("mark_attacked"): game.mark_attacked(target)
 	if is_instance_valid(target) and target.is_in_group("selectable_buildings") and target.get("team") == "player" and team != "player" and game.has_method("alert"):
 		game.alert("%s under attack" % target.name,target.global_position,"attack:%d" % target.get_instance_id(),"attack")
-## A shell's or grenade's damage, when it lands. The target may have died or gone meanwhile.
-func _strike_on_impact(target: Node3D, forced: bool) -> void:
+## A shell's or grenade's damage, when it lands. The target may have died or gone meanwhile, so it is untyped: a
+## freed Node3D fails a typed argument before this body can check it.
+func _strike_on_impact(target, forced: bool) -> void:
 	if is_instance_valid(target): CombatResolver.strike(self,target,forced)
 ## Where a modelled projectile stops: on the near face of the target's body, so its impact is not buried inside.
 func _shot_end(muzzle: Vector3, target: Node3D, fallback: Vector3) -> Vector3:

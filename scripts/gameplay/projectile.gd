@@ -57,9 +57,12 @@ func _process(delta: float) -> void:
 	else: global_position += -global_transform.basis.z*step
 	if _spinner: _spinner.rotate_object_local(Vector3.RIGHT,deg_to_rad(spin_speed)*delta)
 	if _left > 0.0: return
-	if on_impact.is_valid(): on_impact.call()
-	_land()
+	# Land and go first: a callback that fails (its target freed in flight) must not leave the shot in the air.
 	queue_free()
+	_land()
+	var impact := on_impact
+	on_impact = Callable()
+	if impact.is_valid(): impact.call()
 ## A parabola over the straight line from muzzle to target, pointing along its own slope.
 func _follow_arc() -> void:
 	if _line_length <= 0.0: return
