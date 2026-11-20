@@ -34,5 +34,5 @@ func run() -> void:
 	factory._process(40.1)
 	for frame in range(2): await process_frame
 	if not check(get_nodes_in_group("units").size() == before+1,"The factory did not build an Ubermech"): return
-	print("Ubermech exercise passed: factory, two Ubermechs, production")
+	print("UBERMECH_EXERCISE_TEST_PASSED")
 	quit()
