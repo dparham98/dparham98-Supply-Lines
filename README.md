@@ -105,3 +105,5 @@ Mobile supply deployment, Infantry delivery and physical material piles: [guide 
 Wood/coal-powered generators: [rules and editor exercise](docs/GENERATOR_BATCH.md).
 
 Coal deposits, the balanced map and per-map terrain data: [balanced map](docs/BALANCED_MAP.md).
+
+Warnings that fade, rendered HUD pictures, plans that need sight and the Deforester: [HUD polish](docs/HUD_POLISH.md), [HUD renders](docs/HUD_RENDERS.md).

@@ -557,7 +557,7 @@ func update_global_preview(point: Vector3) -> bool:
 	var valid := plan_terrain_valid(start,spec.size,game.global_plan_kind) and not plan_overlaps(start,spec.size)
 	var spaced: bool = game.global_plan_kind != &"depot" or depot_spacing_ok(point)
 	var hud_node = game.get_node_or_null("Interface")
-	var seen: bool = (hud_node != null and hud_node.worksite_open) or in_sight(start,spec.size)
+	var seen: bool = game.global_plan_kind == &"rail" or (hud_node != null and hud_node.worksite_open) or in_sight(start,spec.size)
 	valid = valid and spaced and seen
 	if preview_material == null:
 		preview_material = ghost.get_node("Footprint").mesh.material.duplicate()

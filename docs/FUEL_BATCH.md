@@ -76,3 +76,9 @@ Asked for after the playtest of 2026-11-19. These rules replace the earlier ones
 - **Coal crates on the ground refuel** a stopped friendly vehicle within 4 m (`UnitAgent.CRATE_REFUEL_RANGE`), so a truck can set down its own fuel.
 - **Energy cannot be crated** (`ResourceStockpile.CRATED`). The Energy tile is gone from the Load and Make crates pages.
 - Check: `tests/truck_fuel_test.gd`.
+
+## Staying in range (2026-11-19)
+
+- A vehicle with an empty tank stops at the edge of Depot power instead of driving out and being stranded. It says "No fuel · can't leave Depot range" and warns once in the feed.
+- Its order waits, and goes on once it has fuel. A vehicle with some fuel may still leave and use it up.
+- `unit_agent.gd` `_walk`; checked in `tests/hud_polish_test.gd`. See `HUD_POLISH.md`.

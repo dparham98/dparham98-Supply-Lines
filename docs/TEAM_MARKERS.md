@@ -97,3 +97,9 @@ Health bars already exist in `MapOverlay` (`docs/UI_PHASE_C.md`) and are drawn i
 - Infantry and the Tank carry no team paint. The Infantry has no accent material to give it, and the Tank's look is one baked texture. Both need team surfaces made in Blender: a separate `team_color` material for the Infantry, and a team mask for the Tank.
 - The Scout's and Grenadier's trims could be made larger in Blender to read at play zoom. With the markers now hidden, the Infantry, Tank, Ubermech and Hostile have nothing on them that shows their side.
 - Markers are hidden under trees and rock like everything else at ground level.
+
+## Depot paint (2026-11-19)
+
+- The Depot model, with its parked truck, has `team_color` surfaces that were never painted, since only units called `team_paint.gd`.
+- `depot.gd` `paint_team` now paints them when the Depot is ready and again when it is captured.
+- The other buildings have no `team_color` surfaces yet.

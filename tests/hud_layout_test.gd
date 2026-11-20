@@ -108,7 +108,7 @@ func run() -> void:
 	for i in 240: tank._process(1.0/60)
 	if not check(game.alerts[0].text == "Tank out of fuel","Out of fuel alert missing: %s" % [game.alerts[0].text]): return
 	second.take_damage(second.health+10); await process_frame
-	if not check(game.alerts[0].text == "Infantry lost","Unit lost alert missing"): return
+	if not check(game.alerts[0].text == "Deforester lost","Unit lost alert missing"): return
 	var hostile = game.get_node("Entities/Units/Hostile")
 	hostile.global_position = game.depot.global_position+Vector3(0,0,6)
 	var before: int = game.alerts.size()
