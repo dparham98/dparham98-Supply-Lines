@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("stats")
 unit_id = &"infantry"
-display_name = "Infantry"
+display_name = "Deforester"
 energy_cost = 100
 iron_cost = 20
 build_seconds = 10.0
