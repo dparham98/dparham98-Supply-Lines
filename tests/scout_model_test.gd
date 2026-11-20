@@ -1,5 +1,5 @@
 extends SceneTree
-# Headless: the Scout's rigged model (assets/models/units/scout.glb via scenes/models/scout_model.tscn).
+# Headless: the Scout's rigged model (assets/models/units/scout_cyborg.glb via scenes/models/scout_model.tscn).
 # Idle and run loop, the shot starts the shoot clip early so the flash lands on it, the muzzle light
 # follows the flash bone like the Blender driver does, and tracers leave the muzzle.
 const Bounds = preload("res://scripts/units/selection_bounds.gd")
@@ -36,13 +36,14 @@ func run() -> void:
 	for clip in ["idle","run"]:
 		if not check(player.has_animation(clip) and player.get_animation(clip).loop_mode == Animation.LOOP_LINEAR,"%s should loop" % clip): return
 	if not check(player.has_animation("shoot") and player.get_animation("shoot").loop_mode == Animation.LOOP_NONE,"Shoot should play once"): return
-	if not check(model.skeleton.get_bone_count() == 39 and model.flash_light != null and not model.flash_light.shadow_enabled and model.flash_light.omni_range <= 4.0 and model.get_node("Rig/Skater rig/Skeleton3D/flash/Muzzle flash").material_override != null,"Scout rig, muzzle light or flash material missing"): return
-	# One head: the helmet or the bare head with its hair and goggles, never both or neither.
-	var head: Node3D = model.get_node("Rig/Skater rig/Skeleton3D/head")
+	if not check(model.skeleton.get_bone_count() == 35 and model.flash_light != null and not model.flash_light.shadow_enabled and model.flash_light.omni_range <= 4.0 and model.get_node("Rig/ScoutCyborg_Rig/Skeleton3D/Muzzle_Flash").material_override != null,"Scout rig, muzzle light or flash material missing"): return
+	# One head: the helmet or the bare head with its face, hair, cyber jaw and goggles, never both or neither.
+	var parts: Node3D = model.get_node("Rig/ScoutCyborg_Rig/Skeleton3D")
 	for look in [0,1,model.get_node("HeadLook").look]:
 		model.get_node("HeadLook").show_look(look)
-		var bare: bool = head.get_node("head_bare").visible
-		if not check(head.get_node("head_helmet").visible != bare and head.get_node("head_bare_hair").visible == bare and head.get_node("head_bare_goggles").visible == bare,"Scout should show exactly one head (look %d)" % look): return
+		var bare: bool = parts.get_node("Head_Face").visible
+		if not check(parts.get_node("Head_Helmet").visible != bare and parts.get_node("Head_HairCap").visible == bare and parts.get_node("Head_CyberJaw").visible == bare and parts.get_node("Head_Goggles").visible == bare and parts.get_node("Head_Ponytail").visible,"Scout should show exactly one head (look %d)" % look): return
+	if not check(model.player.has_animation("die") and model.has_death_clip(),"Scout should have a death clip"): return
 	# Size: on the ground and about 1.67 m tall; the gun points to -Z.
 	var low := INF; var high := -INF
 	for mesh in Bounds.meshes(unit):
