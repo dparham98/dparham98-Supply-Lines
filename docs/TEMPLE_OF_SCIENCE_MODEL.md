@@ -34,4 +34,4 @@ blender Blender/Buildings/TempleOfScience/TempleOfScience.blend --background --p
 Godot --path . --script res://scripts/tools/render_hud_images.gd -- temple
 ```
 
-The HUD renderer views models from -Z, so the icon shows the Temple from behind, as it does the Barracks.
+The HUD renderer views models from -Z, where units face. The Temple's door faces +Z, so its entry in `render_hud_images.gd` turns the view to 215° to show the front. Other buildings still use 35°, which shows their backs.
