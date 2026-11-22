@@ -18,12 +18,9 @@ All the figures are provisional.
   - `scenes/gameplay/temple_of_science.tscn`, with `scripts/buildings/temple_of_science.gd` (which extends `production_building.gd`) and the stats in `assets/buildings/temple_of_science.tres`. Maps can set `DepotNetwork.temple_scene`; those that leave it unset use the saved scene.
   - The Temple is in the `production_buildings` group as well as `research_buildings`. Repair, selection, the defeat check and the Depot panels therefore treat it as they treat the factories. It makes no units, so the production-speed panel stays hidden for it.
 - **Paying.** Research pays from the Depot the Temple picks, as factories do (`payer_for`): the Depot it has while that Depot can pay, else the nearest covering Depot that can.
-- **Model.** There is no art yet. `scenes/models/temple_of_science_model.tscn` is a **placeholder** made of primitive meshes in the `Visuals` slot:
-  - a stepped plinth, eight columns round a cella, and a bronze dome;
-  - a glowing orb in an armillary on top;
-  - team-paint bands on the top step and the frieze (material `team_color`).
+- **Model.** `scenes/models/temple_of_science_model.tscn` is the armoured observatory temple, `assets/models/buildings/temple_of_science.glb`, in the `Visuals` slot (docs/TEMPLE_OF_SCIENCE_MODEL.md).
 
-  While research runs, the armillary turns and the orb brightens (`scripts/components/temple_model.gd`, `show_research`). The construction site shows the plain plan grid, since the placeholder has no construction clip.
+  While research runs, the armillary turns and the orb brightens (`scripts/components/temple_model.gd`, `show_research`). The construction site shows the plain plan grid, since the model has no construction clip.
 
 ## Research
 
