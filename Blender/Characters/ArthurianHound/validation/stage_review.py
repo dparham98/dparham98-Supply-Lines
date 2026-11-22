@@ -13,6 +13,7 @@ def stage(destination, archive=None):
         if path.suffix in {".gd", ".tscn"}:
             files.append((path, "godot/" + path.name))
     files.extend([(PACKAGE / "export/arthurian_hound.glb", "export/arthurian_hound.glb"),
+                  (PACKAGE / "godot/arthurian_hound.glb.import", "export/arthurian_hound.glb.import"),
                   (PACKAGE / "validation/check_hound.gd", "validation/check_hound.gd")])
     for source, name in files:
         path = destination / name

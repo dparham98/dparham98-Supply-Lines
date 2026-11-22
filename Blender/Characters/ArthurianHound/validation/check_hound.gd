@@ -1,5 +1,5 @@
 extends SceneTree
-## Verify the imported model's ground placement, dimensions, rig, paint and rest clip.
+## Verify the imported model's ground placement, dimensions, rig, paint and clips.
 var errors: Array[String] = []
 var checks := 0
 
@@ -57,6 +57,9 @@ func run() -> void:
 			player.play("Rest")
 			player.seek(0.0, true)
 			await process_frame
+		expect(player.has_animation("Run"), "Provides Run animation")
+		if player.has_animation("Run"):
+			expect(absf(player.get_animation("Run").length - 20.0 / 24.0) < 0.06, "Run has the expected duration")
 	var report := {"checks": checks, "errors": errors, "bounds_position": bounds.position,
 		"bounds_size": bounds.size, "mesh_count": meshes.size(), "materials": materials.keys()}
 	hound.queue_free()

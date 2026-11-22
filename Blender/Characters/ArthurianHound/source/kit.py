@@ -1,4 +1,4 @@
-"""Shared hard-surface construction tools for the Ubermech, in Blender world space."""
+"""Armored hound materials and mesh tools, in Blender bind coordinates."""
 from math import cos, pi, sin
 from pathlib import Path
 
@@ -12,8 +12,8 @@ PALETTE = {
     "black": ("262d35", .05, .78, 0), "fur": ("353e48", .02, .86, 0),
     "muzzle": ("604746", .02, .84, 0), "leather": ("4c3b31", .04, .70, 0),
     "white": ("dad9d0", .42, .42, 0), "steel": ("9ea8ae", .65, .35, 0),
-    "blue": ("2457a2", .25, .52, 0), "team_color": ("2457a2", .25, .52, 0),
-    "gold": ("c49a4e", .68, .34, 0), "glow": ("ffe4a2", .16, .28, 1.0),
+    "blue": ("29559f", .24, .56, 0), "team_color": ("29559f", .24, .56, 0),
+    "gold": ("caaa69", .62, .35, 0), "glow": ("ffe4a2", .16, .28, 1.0),
     "graphite": ("323a43", .26, .56, 0), "plate": ("56606a", .40, .48, 0),
     "edge": ("949da1", .6, .4, 0), "joint": ("222930", .25, .6, 0)
 }

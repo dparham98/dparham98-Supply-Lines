@@ -62,4 +62,4 @@ offset_left = 20.0
 offset_top = 18.0
 theme_override_colors/font_color = Color(0.9, 0.91, 0.92, 1)
 theme_override_font_sizes/font_size = 16
-text = "Drag to orbit   ·   Wheel to zoom   ·   1 full view   ·   2 head"
+text = "Drag to orbit   ·   Wheel to zoom   ·   1 full view   ·   2 head   ·   Space Rest / Run"
