@@ -1,0 +1,65 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="review.gd" id="review"]
+[ext_resource type="PackedScene" path="../export/arthurian_hound.glb" id="hound"]
+
+[sub_resource type="Environment" id="World"]
+background_mode = 1
+background_color = Color(0.09, 0.105, 0.12, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.78, 0.84, 0.95, 1)
+ambient_light_energy = 1.35
+tonemap_mode = 2
+
+[sub_resource type="StandardMaterial3D" id="FloorMat"]
+albedo_color = Color(0.115, 0.125, 0.135, 1)
+roughness = 0.9
+
+[sub_resource type="PlaneMesh" id="Floor"]
+material = SubResource("FloorMat")
+size = Vector2(60, 60)
+
+[node name="HoundReview" type="Node3D"]
+script = ExtResource("review")
+
+[node name="Environment" type="WorldEnvironment" parent="."]
+environment = SubResource("World")
+
+[node name="Key" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-52, -35, 0)
+light_color = Color(1, 0.89, 0.74, 1)
+light_energy = 1.1
+shadow_enabled = true
+directional_shadow_max_distance = 20
+shadow_blur = 1.7
+
+[node name="Fill" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-25, 125, 0)
+light_color = Color(0.67, 0.8, 1, 1)
+light_energy = 0.52
+
+[node name="Floor" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.006, 0)
+mesh = SubResource("Floor")
+
+[node name="Hound" parent="." instance=ExtResource("hound")]
+
+[node name="Pivot" type="Node3D" parent="."]
+position = Vector3(0, 0.78, 0)
+rotation_degrees = Vector3(-7, 42, 0)
+
+[node name="Camera" type="Camera3D" parent="Pivot"]
+position = Vector3(0, 0, 5)
+projection = 1
+size = 2.0
+current = true
+far = 100.0
+
+[node name="Controls" type="CanvasLayer" parent="."]
+
+[node name="Help" type="Label" parent="Controls"]
+offset_left = 20.0
+offset_top = 18.0
+theme_override_colors/font_color = Color(0.9, 0.91, 0.92, 1)
+theme_override_font_sizes/font_size = 16
+text = "Drag to orbit   ·   Wheel to zoom   ·   1 full view   ·   2 head"

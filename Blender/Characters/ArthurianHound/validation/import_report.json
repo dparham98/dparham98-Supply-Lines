@@ -1,0 +1,19 @@
+{
+  "bounds_position": "(-0.26676, -0.00078, -0.99361)",
+  "bounds_size": "(0.53352, 1.298439, 1.85395)",
+  "checks": 8,
+  "errors": [],
+  "materials": [
+    "white",
+    "team_color",
+    "gold",
+    "fur",
+    "black",
+    "muzzle",
+    "leather",
+    "steel",
+    "glow"
+  ],
+  "mesh_count": 105,
+  "glb_sha256": "6ffb161c868032d9d8df187a458451a2edbb1587553b76390d7a780a8058fc91"
+}
