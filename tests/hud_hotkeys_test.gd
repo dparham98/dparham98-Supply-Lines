@@ -1,5 +1,6 @@
 extends SceneTree
-# Command card hotkeys, camera key moves, additive selection, same-type selection and control groups.
+# Command card hotkeys, camera key moves, additive selection, same-type selection (double-click or Ctrl-click),
+# Tab through the primary type, and control groups.
 var game: Node3D
 var hud: CanvasLayer
 var manager: Node
@@ -11,17 +12,18 @@ func key_of(action: String) -> int:
 	for event in InputMap.action_get_events(action):
 		if event is InputEventKey: return event.physical_keycode
 	return 0
-func press(keycode: int, ctrl := false) -> void:
+func press(keycode: int, ctrl := false, shift := false) -> void:
 	for pressed in [true,false]:
 		var event := InputEventKey.new()
 		event.physical_keycode = keycode
 		event.keycode = keycode
 		event.ctrl_pressed = ctrl
+		event.shift_pressed = shift
 		if keycode >= KEY_A and keycode <= KEY_Z: event.unicode = keycode+32
 		event.pressed = pressed
 		root.push_input(event)
 	hud._process(0)
-func click(unit: Node3D, shift := false, double := false) -> void:
+func click(unit: Node3D, shift := false, double := false, ctrl := false) -> void:
 	var point: Vector2 = game.get_viewport().get_camera_3d().unproject_position(unit.global_position+Vector3.UP*1.5)
 	for pressed in [true,false]:
 		var event := InputEventMouseButton.new()
@@ -30,6 +32,7 @@ func click(unit: Node3D, shift := false, double := false) -> void:
 		event.pressed = pressed
 		event.shift_pressed = shift
 		event.double_click = double and pressed
+		event.ctrl_pressed = ctrl
 		manager._unhandled_input(event)
 	hud._process(0)
 func spawn(path: String, offset: Vector3) -> Node3D:
@@ -150,6 +153,49 @@ func run() -> void:
 	if not check(worker.is_selected and manager.groups[1].size() == 1,"Control group kept a freed unit"): return
 	press(KEY_2)
 	if not check(worker.is_selected,"Empty control group cleared the selection"): return
+	# Ctrl-click picks the type on screen as a double-click does; Ctrl+Shift-click adds it to the selection.
+	var third = spawn(worker.scene_file_path,Vector3(-6,0,18))
+	await process_frame
+	third.set_process(false)
+	click(tank)
+	click(worker,false,false,true)
+	if not check(worker.is_selected and third.is_selected and not tank.is_selected and not truck.is_selected,"Ctrl-click did not select visible units of the same type"): return
+	click(tank)
+	click(worker,true,false,true)
+	if not check(worker.is_selected and third.is_selected and tank.is_selected and not truck.is_selected,"Ctrl+Shift-click did not add the type"): return
+	if not check(hud.selected_object().scene_file_path == worker.scene_file_path,"The added type should be the primary"): return
+	# Tab steps the primary (card, stats, outlined portrait) through the types; Shift+Tab steps back.
+	click(truck,true)
+	hud._process(0)
+	var order: Array = manager.types_of(hud.selected_units())
+	if not check(order.size() == 3,"Three types should be selected: %s" % [order]): return
+	var start: String = hud.selected_object().scene_file_path
+	var visited := [start]
+	for i in range(3):
+		press(KEY_TAB)
+		visited.append(hud.selected_object().scene_file_path)
+	if not check(visited[1] == order[(order.find(start)+1)%3] and visited[2] == order[(order.find(start)+2)%3] and visited[3] == start,"Tab should visit every type in portrait order and come round: %s" % [visited]): return
+	press(KEY_TAB)
+	var outlined: Array = []
+	for i in hud.portrait_units.size():
+		if hud.portraits.get_child(i).get_node("Primary").visible: outlined.append(hud.portrait_units[i])
+	if not check(outlined.size() == 1 and outlined[0] == hud.selected_object() and hud.state_label.text.contains("Tab: next type"),"One outlined portrait, the primary: %s" % [outlined]): return
+	if not check(hud.portrait_units[0].scene_file_path == order[0],"The portraits keep their order while Tab moves the outline"): return
+	var on: String = hud.selected_object().scene_file_path
+	press(KEY_TAB,false,true)
+	if not check(hud.selected_object().scene_file_path == order[(order.find(on)+2)%3],"Shift+Tab should step back"): return
+	# The card follows the primary.
+	var cards := {}
+	for i in range(3):
+		cards[hud.selected_object().scene_file_path] = hud.desired_buttons.duplicate()
+		if not check(hud.shown == hud.selected_object(),"The HUD should show the primary"): return
+		press(KEY_TAB)
+	if not check(cards[truck.scene_file_path] != cards[worker.scene_file_path] and cards[tank.scene_file_path] != cards[worker.scene_file_path],"Each primary type should bring its own card: %s" % [cards]): return
+	# A new selection starts from its first unit; one type selected leaves Tab alone.
+	click(tank)
+	press(KEY_TAB)
+	if not check(hud.selected_object() == tank and manager.primary_type == "","Tab with one type should do nothing"): return
+	third.queue_free()
 	# Space focuses the HQ even while a HUD button has focus, and does not press that button.
 	var hq: Node3D = get_first_node_in_group("headquarters")
 	rig.focus_position(hq.global_position+Vector3(80,0,80))
