@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/gameplay/unit_agent.gd" id="agent"]
+[ext_resource type="Script" path="res://scripts/gameplay/round_table_marine.gd" id="agent"]
 [ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
 [ext_resource type="PackedScene" path="res://scenes/models/round_table_marine_model.tscn" id="model"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/infantry_bullet.tscn" id="bullet"]

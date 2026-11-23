@@ -20,6 +20,8 @@ extends Node3D
 @export var gun_bone: StringName = &""
 ## The barrel's direction in skeleton space while the rig rests (the pistol mesh's long axis).
 @export var gun_rest_axis := Vector3(0,0,1)
+## An authored barrel socket can specify its forward axis in bone-local space.
+@export var gun_local_axis := Vector3.ZERO
 ## Time into the shoot clip at which the arm is extended; the gun line is measured there.
 @export_range(0,2,0.01) var gun_sample_time := 0.1
 ## Seconds into the shoot clip at which the shot goes off. The owner starts the clip this early, so
@@ -64,6 +66,7 @@ func _measure_gun() -> void:
 	if player.has_animation(idle_clip):
 		player.play(idle_clip); player.seek(0.0,true); skeleton.force_update_all_bone_transforms()
 	_gun_axis = (skeleton.get_bone_global_pose(bone).basis.inverse()*gun_rest_axis).normalized()
+	if gun_local_axis != Vector3.ZERO: _gun_axis = gun_local_axis.normalized()
 	player.play(shoot_clip); player.seek(gun_sample_time,true); skeleton.force_update_all_bone_transforms()
 	var pose := skeleton.get_bone_global_pose(bone)
 	var world := skeleton.global_transform*pose
@@ -111,6 +114,17 @@ func play_action(kind: StringName, from := 0.0) -> void:
 	player.play(clip,blend_time if from < 0.05 else 0.0)
 	player.seek(from,true)
 	_action_left = player.get_animation(clip).length-from
+
+## Sample a weapon pose on the owning unit's firing clock. The same pose can
+## supply the muzzle for a round and remain on screen until the next tick.
+func pose_shoot(time: float) -> void:
+	if player == null or not player.has_animation(shoot_clip): return
+	if player.assigned_animation != String(shoot_clip):
+		player.play(shoot_clip, 0.0)
+	if player.is_playing(): player.pause()
+	player.seek(time, true)
+	if skeleton: skeleton.force_update_all_bone_transforms()
+
 func has_death_clip() -> bool:
 	return player != null and player.has_animation(death_clip)
 ## The owner has already gone and this model is its corpse: play the death out, then remove it.

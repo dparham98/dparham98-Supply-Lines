@@ -33,6 +33,8 @@ Cyborg maps don't place any of it. The main menu's faction choice (docs/MAIN_MEN
 | Questing Marine | 75 | 35 | 65 | Range 19 |
 | Azure Dragon | 160 | 60 | 180 | Breath; its Breath_Light shows only while breathing |
 
+Round Table Marines plant their boots and fire independently when a squad receives one attack order. Each half-second attack shows a three-round burst and applies one hit. [Watch the squad firing in-game](../Blender/Characters/ArthurianMarines/preview/round_table_squad_fire.mp4).
+
 ## Mechanics
 
 **Food:** a new resource, alongside energy, iron, wood and coal. It is in stockpiles, crates, piles, the crate pips,
