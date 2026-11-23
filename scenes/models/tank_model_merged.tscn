@@ -1,0 +1,184 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/tank_rig.gd" id="1_l0dy3"]
+[ext_resource type="PackedScene" path="res://scenes/models/tank_death_cookoff.tscn" id="2_7ae1w"]
+[ext_resource type="PackedScene" path="res://scenes/models/tank_death_bleed.tscn" id="3_n6pkv"]
+[ext_resource type="PackedScene" path="res://scenes/models/tank_death_overload.tscn" id="4_bp4fg"]
+[ext_resource type="ArrayMesh" path="res://assets/models/units/merged/tank_tank_hull.res" id="5_l8jw6"]
+[ext_resource type="ArrayMesh" path="res://assets/models/units/merged/tank_drive_sprocket_l.res" id="6_jdhta"]
+[ext_resource type="ArrayMesh" path="res://assets/models/units/merged/tank_drive_sprocket_r.res" id="7_acshn"]
+[ext_resource type="ArrayMesh" path="res://assets/models/units/merged/tank_hull_driver_hatch.res" id="8_4b6gf"]
+[ext_resource type="ArrayMesh" path="res://assets/models/units/merged/tank_idler_wheel_l.res" id="9_ht6l8"]
+[ext_resource type="ArrayMesh" path="res://assets/models/units/merged/tank_idler_wheel_r.res" id="10_ym6y3"]
+[ext_resource type="ArrayMesh" path="res://assets/models/units/merged/tank_neon_headlamp_l.res" id="11_fco4s"]
+[ext_resource type="ArrayMesh" path="res://assets/models/units/merged/tank_neon_headlamp_r.res" id="12_xxxcr"]
+[ext_resource type="ArrayMesh" path="res://assets/models/units/merged/tank_tank_turret.res" id="13_0cvse"]
+[ext_resource type="ArrayMesh" path="res://assets/models/units/merged/tank_barrel_mount.res" id="14_d8acu"]
+[ext_resource type="ArrayMesh" path="res://assets/models/units/merged/tank_tank_barrel.res" id="15_58cg7"]
+[ext_resource type="PackedScene" path="res://scenes/models/tank_muzzle_fx.tscn" id="16_p7st0"]
+[ext_resource type="Script" path="res://scripts/components/burst_effect.gd" id="17_qwrl8"]
+[ext_resource type="ArrayMesh" path="res://assets/models/units/merged/tank_neon_sensor_lens.res" id="18_mwf0i"]
+[ext_resource type="ArrayMesh" path="res://assets/models/units/merged/tank_turret_hatch.res" id="19_v5th3"]
+[ext_resource type="ArrayMesh" path="res://assets/models/units/merged/tank_aux_turret.res" id="20_mywm6"]
+[ext_resource type="Shader" path="res://assets/shaders/tank_running_gear.gdshader" id="21_magaa"]
+[ext_resource type="Texture2D" path="res://assets/models/units/tank_T_Tank_BaseColor.png" id="22_254tx"]
+[ext_resource type="Texture2D" path="res://assets/models/units/tank_T_Tank_Emission.png" id="23_k8f4j"]
+[ext_resource type="Texture2D" path="res://assets/models/units/tank_T_Tank_Metallic-T_Tank_Roughness.png" id="24_o6twp"]
+[ext_resource type="ArrayMesh" path="res://assets/models/units/merged/tank_track_links_l.res" id="25_72oyx"]
+[ext_resource type="ArrayMesh" path="res://assets/models/units/merged/tank_track_links_r.res" id="26_bgxvp"]
+[ext_resource type="ArrayMesh" path="res://assets/models/units/merged/tank_road_wheels_l.res" id="27_nds4e"]
+[ext_resource type="ArrayMesh" path="res://assets/models/units/merged/tank_road_wheels_r.res" id="28_sl6li"]
+[ext_resource type="ArrayMesh" path="res://assets/models/units/merged/tank_return_rollers_l.res" id="29_mkt01"]
+[ext_resource type="ArrayMesh" path="res://assets/models/units/merged/tank_return_rollers_r.res" id="30_oxkc8"]
+
+[sub_resource type="ShaderMaterial" id="links"]
+render_priority = 0
+shader = ExtResource("21_magaa")
+shader_parameter/albedo_texture = ExtResource("22_254tx")
+shader_parameter/metal_rough_texture = ExtResource("24_o6twp")
+shader_parameter/emission_texture = ExtResource("23_k8f4j")
+shader_parameter/wheel_spacing = null
+
+[sub_resource type="ShaderMaterial" id="road"]
+render_priority = 0
+shader = ExtResource("21_magaa")
+shader_parameter/albedo_texture = ExtResource("22_254tx")
+shader_parameter/metal_rough_texture = ExtResource("24_o6twp")
+shader_parameter/emission_texture = ExtResource("23_k8f4j")
+shader_parameter/wheel_spacing = 1.1
+
+[sub_resource type="ShaderMaterial" id="rollers"]
+render_priority = 0
+shader = ExtResource("21_magaa")
+shader_parameter/albedo_texture = ExtResource("22_254tx")
+shader_parameter/metal_rough_texture = ExtResource("24_o6twp")
+shader_parameter/emission_texture = ExtResource("23_k8f4j")
+shader_parameter/wheel_spacing = 2.0
+
+[node name="TankModel" type="Node3D" unique_id=1849428243]
+script = ExtResource("1_l0dy3")
+death_scenes = Array[PackedScene]([ExtResource("2_7ae1w"), ExtResource("3_n6pkv"), ExtResource("4_bp4fg")])
+turret_path = NodePath("Tank/Tank_Root/Tank_Hull/Tank_Turret")
+muzzle_path = NodePath("Tank/Tank_Root/Tank_Hull/Tank_Turret/Barrel_Mount/MuzzleFx")
+
+[node name="Tank" type="Node3D" parent="." unique_id=1595963037]
+transform = Transform3D(-0.6, 0, 0, 0, 0.6, 0, 0, 0, -0.6, 0, 0, 0)
+
+[node name="Tank_Root" type="Node3D" parent="Tank" unique_id=1877381532]
+
+[node name="Tank_Hull" type="MeshInstance3D" parent="Tank/Tank_Root" unique_id=544470986]
+mesh = ExtResource("5_l8jw6")
+skeleton = NodePath("")
+
+[node name="Drive_Sprocket_L" type="MeshInstance3D" parent="Tank/Tank_Root/Tank_Hull" unique_id=572100159]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.05, 0.95, -3.72)
+mesh = ExtResource("6_jdhta")
+skeleton = NodePath("")
+
+[node name="Drive_Sprocket_R" type="MeshInstance3D" parent="Tank/Tank_Root/Tank_Hull" unique_id=1321865697]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.05, 0.95, -3.72)
+mesh = ExtResource("7_acshn")
+skeleton = NodePath("")
+
+[node name="Hull_Driver_Hatch" type="MeshInstance3D" parent="Tank/Tank_Root/Tank_Hull" unique_id=1887862853]
+mesh = ExtResource("8_4b6gf")
+skeleton = NodePath("")
+
+[node name="Idler_Wheel_L" type="MeshInstance3D" parent="Tank/Tank_Root/Tank_Hull" unique_id=188239881]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.05, 0.95, 3.72)
+mesh = ExtResource("9_ht6l8")
+skeleton = NodePath("")
+
+[node name="Idler_Wheel_R" type="MeshInstance3D" parent="Tank/Tank_Root/Tank_Hull" unique_id=1460299167]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.05, 0.95, 3.72)
+mesh = ExtResource("10_ym6y3")
+skeleton = NodePath("")
+
+[node name="Neon_Headlamp_L" type="MeshInstance3D" parent="Tank/Tank_Root/Tank_Hull" unique_id=191593105]
+mesh = ExtResource("11_fco4s")
+skeleton = NodePath("")
+
+[node name="Neon_Headlamp_R" type="MeshInstance3D" parent="Tank/Tank_Root/Tank_Hull" unique_id=199829519]
+mesh = ExtResource("12_xxxcr")
+skeleton = NodePath("")
+
+[node name="Tank_Turret" type="MeshInstance3D" parent="Tank/Tank_Root/Tank_Hull" unique_id=132988101]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.16, -0.5)
+mesh = ExtResource("13_0cvse")
+skeleton = NodePath("")
+
+[node name="Barrel_Mount" type="MeshInstance3D" parent="Tank/Tank_Root/Tank_Hull/Tank_Turret" unique_id=1984599208]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.46000004, 1.95)
+mesh = ExtResource("14_d8acu")
+skeleton = NodePath("")
+
+[node name="Tank_Barrel" type="MeshInstance3D" parent="Tank/Tank_Root/Tank_Hull/Tank_Turret/Barrel_Mount" unique_id=1174687247]
+mesh = ExtResource("15_58cg7")
+skeleton = NodePath("")
+
+[node name="MuzzleFx" type="Node3D" parent="Tank/Tank_Root/Tank_Hull/Tank_Turret/Barrel_Mount" unique_id=1829147537 instance=ExtResource("16_p7st0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5.65)
+script = ExtResource("17_qwrl8")
+flash_path = NodePath("Model/Muzzle_Flash")
+light_path = NodePath("Light")
+metadata/not_selectable = true
+
+[node name="Neon_Sensor_Lens" type="MeshInstance3D" parent="Tank/Tank_Root/Tank_Hull/Tank_Turret" unique_id=1710401932]
+mesh = ExtResource("18_mwf0i")
+skeleton = NodePath("")
+
+[node name="Turret_Hatch" type="MeshInstance3D" parent="Tank/Tank_Root/Tank_Hull/Tank_Turret" unique_id=517817440]
+mesh = ExtResource("19_v5th3")
+skeleton = NodePath("")
+
+[node name="Aux_Turret" type="MeshInstance3D" parent="Tank/Tank_Root/Tank_Hull/Tank_Turret/Turret_Hatch" unique_id=1393320942]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.67, 2.0250003, -0.15999997)
+mesh = ExtResource("20_mywm6")
+skeleton = NodePath("")
+
+[node name="Aux_Muzzle" type="Node3D" parent="Tank/Tank_Root/Tank_Hull/Tank_Turret/Turret_Hatch/Aux_Turret" unique_id=1409069206]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.26499987, 1.52)
+
+[node name="AuxMuzzleFx" type="Node3D" parent="Tank/Tank_Root/Tank_Hull/Tank_Turret/Turret_Hatch/Aux_Turret/Aux_Muzzle" unique_id=1105532937 instance=ExtResource("16_p7st0")]
+transform = Transform3D(0.45, 0, 0, 0, 0.45, 0, 0, 0, 0.45, 0, 0, 0)
+script = ExtResource("17_qwrl8")
+flash_path = NodePath("Model/Muzzle_Flash")
+light_path = NodePath("Light")
+light_energy = 3.0
+metadata/not_selectable = true
+
+[node name="Track_Links_L" type="MeshInstance3D" parent="Tank/Tank_Root/Tank_Hull" unique_id=1566627708]
+transform = Transform3D(0, 1, 0, 0, 0, -1, -1, 0, 0, 2.05, 0, 0)
+material_override = SubResource("links")
+mesh = ExtResource("25_72oyx")
+skeleton = NodePath("")
+
+[node name="Track_Links_R" type="MeshInstance3D" parent="Tank/Tank_Root/Tank_Hull" unique_id=266555138]
+transform = Transform3D(0, 1, 0, 0, 0, -1, -1, 0, 0, -2.05, 0, 0)
+material_override = SubResource("links")
+mesh = ExtResource("26_bgxvp")
+skeleton = NodePath("")
+
+[node name="Road_Wheels_L" type="MeshInstance3D" parent="Tank/Tank_Root/Tank_Hull" unique_id=233720814]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.05, 0.6, 2.75)
+material_override = SubResource("road")
+mesh = ExtResource("27_nds4e")
+skeleton = NodePath("")
+
+[node name="Road_Wheels_R" type="MeshInstance3D" parent="Tank/Tank_Root/Tank_Hull" unique_id=2038216268]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.05, 0.6, 2.75)
+material_override = SubResource("road")
+mesh = ExtResource("28_sl6li")
+skeleton = NodePath("")
+
+[node name="Return_Rollers_L" type="MeshInstance3D" parent="Tank/Tank_Root/Tank_Hull" unique_id=1844006451]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.05, 1.3, 2)
+material_override = SubResource("rollers")
+mesh = ExtResource("29_mkt01")
+skeleton = NodePath("")
+
+[node name="Return_Rollers_R" type="MeshInstance3D" parent="Tank/Tank_Root/Tank_Hull" unique_id=947657730]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.05, 1.3, 2)
+material_override = SubResource("rollers")
+mesh = ExtResource("30_oxkc8")
+skeleton = NodePath("")

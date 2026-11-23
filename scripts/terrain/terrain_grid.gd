@@ -81,6 +81,33 @@ func get_tile_at_position(world_pos: Vector3) -> Variant:
 	var pos := Vector2i(floori(local.x / tile_size + grid_size.x * 0.5), floori(local.z / tile_size + grid_size.y * 0.5))
 	return pos if is_tile_in_bounds(pos) else null
 
+## Whether every cell the straight segment from `from` to `to` passes through is open to a unit on `layer` that
+## owns cells as `owner` (docs/PATHING.md). Each cell crossed is visited once, in order (a grid walk), rather than
+## sampling points along the line: movement asks this hundreds of times a frame in a big battle.
+func segment_open(from: Vector3, to: Vector3, layer: int, owner: String) -> bool:
+	var a := to_local(from)
+	var b := to_local(to)
+	var x0 := a.x/tile_size+grid_size.x*0.5
+	var z0 := a.z/tile_size+grid_size.y*0.5
+	var dx := b.x/tile_size+grid_size.x*0.5-x0
+	var dz := b.z/tile_size+grid_size.y*0.5-z0
+	var cell := Vector2i(floori(x0),floori(z0))
+	var end := Vector2i(floori(x0+dx),floori(z0+dz))
+	var step := Vector2i(1 if dx > 0.0 else -1,1 if dz > 0.0 else -1)
+	# How far along the segment (0 to 1) each step across a cell edge costs, and where the next edge is.
+	var t_dx := absf(1.0/dx) if dx != 0.0 else INF
+	var t_dz := absf(1.0/dz) if dz != 0.0 else INF
+	var next_x := ((cell.x+1-x0) if dx > 0.0 else (x0-cell.x))*t_dx if dx != 0.0 else INF
+	var next_z := ((cell.y+1-z0) if dz > 0.0 else (z0-cell.y))*t_dz if dz != 0.0 else INF
+	var left := absi(end.x-cell.x)+absi(end.y-cell.y)
+	while true:
+		if not can_traverse(cell,layer,owner): return false
+		if left <= 0: return true
+		left -= 1
+		if next_x < next_z: cell.x += step.x; next_x += t_dx
+		else: cell.y += step.y; next_z += t_dz
+	return true
+
 ## The cell under `world_pos`, or the nearest cell on the map when it lies off the edge.
 func clamped_tile_at(world_pos: Vector3) -> Vector2i:
 	var local := to_local(world_pos)

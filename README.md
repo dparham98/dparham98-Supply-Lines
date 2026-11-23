@@ -86,6 +86,7 @@ Camera.tscn at the root is a small compatibility entry that instances the main w
 The rebuild and refresh controls use Godot's supported [Inspector tool buttons](https://docs.godotengine.org/en/4.6/tutorials/scripting/gdscript/gdscript_exports.html#export-tool-button).
 
 Combat values, moving fire and splash: [combat batch](docs/COMBAT_BATCH.md).
+Big-battle performance, what was measured and what is still to do: [performance](docs/PERFORMANCE.md).
 
 Tank: the [Bastion](docs/BASTION_TANK.md), with a 10–30 m main gun and a roof gun for anything within 10 m.
 Scout/Tank/Drone terrain abilities and editor exercise: [terrain abilities](docs/TERRAIN_ABILITIES.md).

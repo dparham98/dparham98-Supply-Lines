@@ -43,3 +43,7 @@ The Bastion has no antenna mast, so it stands 0.55 m lower. The extra surfaces a
 The package's production notes are in [REPORT.md](../Blender/Vehicles/Tank/Astra_Bastion/validation/REPORT.md) and its pivots in [CONTRACT.md](../Blender/Vehicles/Tank/Astra_Bastion/validation/audit/CONTRACT.md). The roof gun's own notes are in [AutoTurret/README.md](../Blender/Vehicles/Tank/Astra_Bastion/AutoTurret/README.md). The review ZIPs are not committed.
 
 Checks: `roof_gun_runtime_check` (rendered: flash, round and hit), `bastion_weapons_test` (both ranges, backing off, the roof gun's hits and card line), `combat_batch_test`, `turret_aim_test`, `tank_tracks_test`, `tank_fire_test`, `tank_death_test`, `tank_factory_model_test`, `empty_tanks_test` (headless) and `tank_model_runtime_check`, `tank_factory_model_runtime_check` (rendered).
+
+## In the game: the merged model
+
+The game uses `scenes/models/tank_model_merged.tscn`, made from `tank_model.tscn` by `scripts/tools/merge_model_parts.gd`, with the Tank's static pieces folded together (docs/PERFORMANCE.md, Merged models). Edit `tank_model.tscn` or the GLB, then run the tool again.

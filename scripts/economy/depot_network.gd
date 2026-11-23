@@ -230,6 +230,7 @@ func deploy_truck(unit: Node3D, point: Vector3) -> bool:
 	var from: Vector3 = trailer.global_position if trailer != null else unit.global_position
 	from.y = point.y
 	unit.remove_from_group("units")
+	if game.has_method("units_changed"): game.units_changed()
 	unit.queue_free()
 	var depot := establish(point,rules.deployed_energy,rules.deployed_iron,model_yaw)
 	depot.get_node("Visuals/Model").play_deploy(from,angle_difference(heading,yaw))

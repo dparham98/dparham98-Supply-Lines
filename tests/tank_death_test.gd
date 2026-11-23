@@ -52,14 +52,14 @@ func run() -> void:
 	game.set_process(false)
 	for node in get_nodes_in_group("units"): node.set_process(false)
 	var origin := Vector3(180,0,180)
-	var spare: Node3D = load("res://scenes/models/tank_model.tscn").instantiate()
+	var spare: Node3D = load("res://scenes/models/tank_model_merged.tscn").instantiate()
 	var kinds: int = spare.death_scenes.size()
 	spare.free()
 	if not check(kinds == 3,"The tank should have three deaths"): return
 	# Left to chance, every death turns up. Missing one of three in 45 tries is about a one in three million fluke.
 	var chosen := {}
 	for i in range(45):
-		var wreck: Node3D = load("res://scenes/models/tank_model.tscn").instantiate()
+		var wreck: Node3D = load("res://scenes/models/tank_model_merged.tscn").instantiate()
 		root.add_child(wreck)
 		wreck.play_death()
 		chosen[wreck.get_child(wreck.get_child_count()-1).name] = true

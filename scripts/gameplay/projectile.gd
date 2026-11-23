@@ -107,6 +107,8 @@ func _follow_arc() -> void:
 	look_at(global_position+ahead,Vector3.FORWARD if absf(ahead.normalized().y) > 0.99 else Vector3.UP)
 func _land() -> void:
 	if impact_scene == null: return
+	# A burst nobody can see is skipped (skirmish.in_view).
+	if get_parent().has_method("in_view") and not get_parent().in_view(_end): return
 	var impact: Node3D = impact_scene.instantiate()
 	get_parent().add_child(impact)
 	impact.global_position = _end
