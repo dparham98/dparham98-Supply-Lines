@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="ProductionBuildingStats" format=3]
+[ext_resource type="Script" path="res://scripts/production/production_building_stats.gd" id="stats"]
+[resource]
+script = ExtResource("stats")
+building_id = &"temple_of_science"
+display_name = "Temple of Science"
+energy_cost = 150
+iron_cost = 60
+footprint = Vector2i(6,6)
+queue_limit = 1

@@ -15,6 +15,14 @@ extends Node3D
 ## the barrel. The shooter sets `on_impact`.
 @export var damage_on_impact := false
 var on_impact: Callable
+## A shell whose target is gone when it gets there (dead or removed) flies on and bursts on the ground instead of
+## stopping in the air (docs/TURRET_AIM.md). The shooter sets `target`. Straight shots only.
+@export var follow_to_ground := false
+## How far past its aim point, across the ground, such a shot comes down: where its line meets the ground if that is
+## nearer, else this far on, dipping to reach it.
+@export_range(0,100,0.5) var max_follow := 8.0
+var target: WeakRef
+var _followed := false
 ## Spawned where the shot lands, leaning back toward the shooter (the scene's -Z).
 @export var impact_scene: PackedScene
 ## A lobbed shot rises above the straight line by this share of its length; 0 flies straight.
@@ -57,9 +65,37 @@ func _process(delta: float) -> void:
 	else: global_position += -global_transform.basis.z*step
 	if _spinner: _spinner.rotate_object_local(Vector3.RIGHT,deg_to_rad(spin_speed)*delta)
 	if _left > 0.0: return
-	if on_impact.is_valid(): on_impact.call()
-	_land()
+	if follow_to_ground and not _followed and _target_gone():
+		_followed = true
+		if _fly_on(): return
+	# Land and go first: a callback that fails (its target freed in flight) must not leave the shot in the air.
 	queue_free()
+	_land()
+	var impact := on_impact
+	on_impact = Callable()
+	if impact.is_valid(): impact.call()
+## Where the shot bursts: the nose's stopping point.
+func impact_point() -> Vector3: return _end
+func _target_gone() -> bool:
+	if target == null: return false
+	var node = target.get_ref()
+	return not is_instance_valid(node) or node.is_queued_for_deletion() or (node.get("health") != null and node.health <= 0)
+## Carries the shot on to the ground (y = 0, the ground units stand on). False when it cannot.
+func _fly_on() -> bool:
+	if arc_ratio > 0.0: return false
+	var dir := -global_transform.basis.z
+	var nose := global_position+dir*half_length
+	var flat := Vector3(dir.x,0,dir.z)
+	if flat.length_squared() < 0.000001 or nose.y <= 0.05: return false
+	flat = flat.normalized()
+	var ground := nose+flat*max_follow
+	if dir.y < -0.001 and nose.y/-dir.y*flat.dot(dir) <= max_follow: ground = nose+dir*(nose.y/-dir.y)
+	ground.y = 0.0
+	var path := ground-nose
+	look_at(global_position+path,Vector3.UP)
+	_end = ground
+	_left = path.length()
+	return true
 ## A parabola over the straight line from muzzle to target, pointing along its own slope.
 func _follow_arc() -> void:
 	if _line_length <= 0.0: return
@@ -71,6 +107,8 @@ func _follow_arc() -> void:
 	look_at(global_position+ahead,Vector3.FORWARD if absf(ahead.normalized().y) > 0.99 else Vector3.UP)
 func _land() -> void:
 	if impact_scene == null: return
+	# A burst nobody can see is skipped (skirmish.in_view).
+	if get_parent().has_method("in_view") and not get_parent().in_view(_end): return
 	var impact: Node3D = impact_scene.instantiate()
 	get_parent().add_child(impact)
 	impact.global_position = _end

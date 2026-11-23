@@ -38,16 +38,16 @@
   "muzzle_light_shoot": 1.46906971931458,
   "paint_framebuffer": {
     "blue_pixels_changed_over_four_levels": 0,
-    "blue_pixels_reassigned_red": 5230,
+    "blue_pixels_reassigned_red": 5074,
     "left_max_delta_when_right_changed_255": 0,
-    "red_pixels_reassigned_blue": 4980,
+    "red_pixels_reassigned_blue": 5009,
     "right_max_delta_when_left_changed_255": 0
   },
   "team_surfaces_per_actor": 1,
   "renderer": "Vulkan 1.4.341 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 5070 Ti",
   "godot": "4.7.2.stable.official.ed1daf0bf",
-  "glb_sha256": "110cd6ac655cec33042d700ddc64bad2c82640d636f7a6b4d24d2136a481a4fb",
-  "project_zip_sha256": "4de82a84758c0301822493458a24fc5282069545ec33beb04cf86cba8aba3ba6",
+  "glb_sha256": "840ca1459e390a65acaa570b6a2c39060199c6160a7d4f10b7eb2ac62edec96a",
+  "project_zip_sha256": "8a5f3aa030c09951adbd3c8b329089f70d9c3dd836b1de37c1e32324e6fdea39",
   "staged_game_files": [
     "scenes/models/infantry_model.tscn",
     "scenes/models/infantry_death_fx.tscn",

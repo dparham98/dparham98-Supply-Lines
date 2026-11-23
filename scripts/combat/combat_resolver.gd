@@ -31,3 +31,14 @@ static func strike(attacker: Node3D, primary: Node3D, forced := false) -> void:
 			if target != primary and target.global_position.distance_to(primary.global_position) <= radius: victims.append(target)
 	for victim in victims:
 		if can_hit(attacker,victim) or (forced and victim == primary and can_force(attacker,victim)): victim.take_damage(damage_for(attacker,victim))
+## A shell or grenade bursting at `point`: the target it was fired at, when still there (`primary`, may be null),
+## and every hostile within the splash radius of the burst, measured across the ground. Friendlies are spared.
+static func strike_at(attacker: Node3D, primary, point: Vector3, forced := false) -> void:
+	var victims: Array[Node3D] = []
+	if is_instance_valid(primary): victims.append(primary)
+	var radius: float = attacker.unit_stats.splash_radius if attacker.unit_stats != null else 0.0
+	if radius > 0:
+		for target in targets(attacker):
+			if target != primary and Vector2(target.global_position.x-point.x,target.global_position.z-point.z).length() <= radius: victims.append(target)
+	for victim in victims:
+		if can_hit(attacker,victim) or (forced and victim == primary and can_force(attacker,victim)): victim.take_damage(damage_for(attacker,victim))

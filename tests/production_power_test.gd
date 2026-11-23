@@ -103,11 +103,11 @@ func run() -> void:
 	var slider: HSlider = panel.get_node("Body/PowerSlider")
 	if not check(panel.visible and slider.value == 4.0 and slider.max_value == 4.0,"The production panel should show the Barracks at 4x"): return
 	if not check(panel.get_node("Body/Power/Value").text == "4.0x energy","Power label: %s" % panel.get_node("Body/Power/Value").text): return
-	if not check(panel.get_node("Body/Note").text.begins_with("Infantry: 2.5 s for 400 E (base 10 s, 100 E)"),"Note: %s" % panel.get_node("Body/Note").text): return
+	if not check(panel.get_node("Body/Note").text.begins_with("Deforester: 2.5 s for 400 E (base 10 s, 100 E)"),"Note: %s" % panel.get_node("Body/Note").text): return
 	slider.value = 1.5
 	if not check(barracks.power == 1.5,"The slider should set the power (%.1f)" % barracks.power): return
 	for frame in range(2): await process_frame
-	if not check(panel.get_node("Body/Note").text.begins_with("Infantry: 6.7 s for 150 E"),"Note at 1.5x: %s" % panel.get_node("Body/Note").text): return
+	if not check(panel.get_node("Body/Note").text.begins_with("Deforester: 6.7 s for 150 E"),"Note at 1.5x: %s" % panel.get_node("Body/Note").text): return
 	game.selected_building = null
 	for frame in range(4): await process_frame
 	if not check(not panel.visible,"The panel goes with the selection"): return

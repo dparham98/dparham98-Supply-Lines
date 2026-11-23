@@ -1,0 +1,66 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/projectile.gd" id="flight"]
+
+[sub_resource type="StandardMaterial3D" id="casing"]
+albedo_color = Color(0.21, 0.19, 0.17, 1)
+metallic = 0.65
+roughness = 0.33
+
+[sub_resource type="StandardMaterial3D" id="nose"]
+albedo_color = Color(0.69, 0.034, 0.012, 1)
+metallic = 0.43
+roughness = 0.3
+
+[sub_resource type="StandardMaterial3D" id="exhaust"]
+shading_mode = 0
+albedo_color = Color(1, 0.53, 0.11, 1)
+emission_enabled = true
+emission = Color(1, 0.22, 0.025, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="CylinderMesh" id="body"]
+material = SubResource("casing")
+height = 0.35
+top_radius = 0.102
+bottom_radius = 0.088
+radial_segments = 12
+rings = 0
+
+[sub_resource type="CylinderMesh" id="tip"]
+material = SubResource("nose")
+height = 0.18
+top_radius = 0.014
+bottom_radius = 0.103
+radial_segments = 12
+rings = 0
+
+[sub_resource type="CylinderMesh" id="flame"]
+material = SubResource("exhaust")
+height = 0.49
+top_radius = 0.077
+bottom_radius = 0.006
+radial_segments = 10
+rings = 0
+
+[node name="UbermechPodRound" type="Node3D"]
+script = ExtResource("flight")
+speed = 24.0
+half_length = 0.265
+keep_body_material = true
+
+[node name="Body" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0, 0.09)
+rotation = Vector3(-1.5707963, 0, 0)
+mesh = SubResource("body")
+
+[node name="Nose" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0, -0.175)
+rotation = Vector3(-1.5707963, 0, 0)
+mesh = SubResource("tip")
+
+[node name="Exhaust" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0, 0.51)
+rotation = Vector3(-1.5707963, 0, 0)
+cast_shadow = 0
+mesh = SubResource("flame")

@@ -70,11 +70,12 @@ var wood_delivered := 0
 var units_printed := 0
 var enemies_killed := 0
 var outcome := ""
-@export var message := "Select your infantry, then right-click the marked iron deposit."
+@export var message := "Select your Deforester, then right-click the marked iron deposit."
 @onready var depot = $Entities/Buildings/Depot
 @onready var ground = $Terrain/Ground
 @onready var hud = $Interface
 func _ready() -> void:
+	message_time = Time.get_ticks_msec()/1000.0
 	if depot.rules.testing_starting_iron < 0: ore = starting_ore
 	if testing_coal_amount > 0 and has_node("Entities/Resources/TestingCoalPoint"):
 		var pile = pile_scene.instantiate()
@@ -96,8 +97,11 @@ func cancel_armed() -> void:
 	pending_unit_command = ""
 	fell_dragging = false
 	$DepotNetwork.clear_builder()
+## When the header message last changed, for its fade (docs/HUD_POLISH.md).
+var message_time := 0.0
 func notify(text: String) -> void:
 	message = text
+	message_time = Time.get_ticks_msec()/1000.0
 # Positioned alerts for the HUD feed, newest first. A key repeats at most every ALERT_REPEAT_SECONDS.
 var alerts: Array[Dictionary] = []
 var _alert_times := {}
@@ -246,14 +250,14 @@ func _unhandled_input(event: InputEvent) -> void:
 func place_global_plan(point: Vector3, queued := false) -> Node3D:
 	var worksite: bool = hud.worksite_open
 	var payer: Node3D = hud.global_payer if not worksite and is_instance_valid(hud.global_payer) else null
-	var plan = $DepotNetwork.queue_plan(point,global_plan_kind,payer,hud.global_pinned and not worksite)
+	var plan = $DepotNetwork.queue_plan(point,global_plan_kind,payer,hud.global_pinned and not worksite,not worksite)
 	if plan == null: return null
 	if worksite:
 		var trucks: Array[Node3D] = hud.worksite_trucks()
 		for truck in trucks: give_order(truck,{kind = "fetch", target = plan},queued)
 		var materials := PackedStringArray()
 		for kind in plan.materials(): materials.append("%d %s" % [plan.materials()[kind],kind])
-		notify("%s worksite placed. %s %s, then order Infantry to construct it." % [plan.spec.title,"The truck brings" if trucks.size() == 1 else "%d trucks bring" % trucks.size()," and ".join(materials)])
+		notify("%s worksite placed. %s %s, then order Deforesters to construct it." % [plan.spec.title,"The truck brings" if trucks.size() == 1 else "%d trucks bring" % trucks.size()," and ".join(materials)])
 		if not queued:
 			global_plan_kind = &""
 			hud.close_build()
@@ -299,6 +303,9 @@ const FellLane = preload("res://scripts/terrain/fell_lane.gd")
 ## from the point to the node's model bounds, so a large building is picked anywhere on its footprint.
 func pick_distance(node: Node3D, camera: Camera3D, screen) -> float:
 	if not screen is MapPick: return SelectionBounds.hit_distance(node,camera,screen)
+	# The other side's things hidden by fog of war cannot be picked from the minimap either.
+	var fog := fog_of_war()
+	if fog != null and not fog.shows(node): return INF
 	var at := Vector2(screen.point.x,screen.point.z)
 	var d := Vector2(node.global_position.x,node.global_position.z).distance_to(at)
 	for mesh in SelectionBounds.meshes(node):
@@ -306,6 +313,16 @@ func pick_distance(node: Node3D, camera: Camera3D, screen) -> float:
 		var nearest := at.clamp(Vector2(box.position.x,box.position.z),Vector2(box.end.x,box.end.z))
 		d = minf(d,nearest.distance_to(at))
 	return d if d <= screen.radius else INF
+## A damaged vehicle of yours under the pointer, for Infantry to repair (docs/VEHICLE_REPAIR.md).
+func pick_vehicle_to_repair(screen) -> Node3D:
+	var camera := get_viewport().get_camera_3d()
+	var closest: Node3D
+	var distance := INF
+	for node in get_tree().get_nodes_in_group("units"):
+		if node.get("team") != "player" or node.health >= node.max_health or not EngineeringWork.is_vehicle(node): continue
+		var d: float = pick_distance(node,camera,screen)
+		if d < distance: distance = d; closest = node
+	return closest
 ## A friendly unit or building under the pointer, for forced fire with the Attack command.
 func pick_friendly(screen: Vector2) -> Node3D:
 	var camera := get_viewport().get_camera_3d()
@@ -372,6 +389,7 @@ func issue_order(screen, queued := false) -> void:
 	var plan := pick_target(screen,"construction_plans",50)
 	if is_instance_valid(plan) and (plan.finished or plan.kind == &"rail"): plan = null
 	var crate := pick_crate(screen)
+	var vehicle := pick_vehicle_to_repair(screen)
 	var point = ground_at(screen)
 	if plan == null and point != null:
 		var coal_cell = ground.get_tile_at_position(point)
@@ -389,6 +407,8 @@ func issue_order(screen, queued := false) -> void:
 		elif plan and unit.can_construct and not unit.is_cargo_vehicle and not unit.is_depot_truck: give_order(unit,{kind = "construct", target = plan},queued)
 		elif crate and unit.is_cargo_vehicle and not unit.is_in_group("rail_trains"): give_order(unit,{kind = "load", target = crate, point = crate.global_position},queued)
 		elif crate and unit.can_gather and unit.cargo > 0 and crate.accepts(unit.cargo_kind): give_order(unit,{kind = "return", target = crate},queued)
+		# A damaged vehicle of yours: workers repair it, unless they are bringing cargo to it.
+		elif vehicle and vehicle != unit and unit.can_repair and not (unit.cargo > 0 and vehicle == dropoff): give_order(unit,{kind = "repair", target = vehicle},queued)
 		elif point != null and ground.get_tile_at_position(point) != null and ground.get_terrain(ground.get_tile_at_position(point)) == 3 and unit.can_gather:
 			give_order(unit,{kind = "gather", target = ground.forest_source(ground.get_tile_at_position(point))},queued)
 			forest_ordered = true
@@ -414,10 +434,10 @@ func issue_order(screen, queued := false) -> void:
 			var cell = ground.get_tile_at_position(point)
 			if cell != null and ground.can_traverse(cell,unit.mobility_layer(),unit._owner_key()): give_order(unit,{kind = "move", point = point},queued)
 			else: notify("That terrain is blocked. Right-click open land, resources, or a hostile.")
-	if selected == 0: notify("Left-click an infantry unit first.")
+	if selected == 0: notify("Left-click a Deforester first.")
 	elif queued: notify("Order queued. Shift-right-click adds more; a plain order replaces the queue.")
 	elif enemy: notify("Attack order: approach and fire at range.")
-	elif plan: notify("Build site: Cargo vehicles fetch exactly the materials it lacks; Infantry construct from the pile.")
+	elif plan: notify("Build site: Cargo vehicles fetch exactly the materials it lacks; Deforesters construct from the pile.")
 	elif crate: notify("Crate order: vehicles load it; workers deliver into it or gather from it.")
 	elif forest_ordered: notify("Harvest wood from the forest tile and deliver it to a friendly Depot.")
 	elif is_instance_valid(coal_ordered): notify("Dig coal and deliver it to a friendly Depot. %d left in this field; workers fell any trees in their way and move on through it cell by cell." % coal_ordered.field_remaining())
@@ -427,7 +447,33 @@ func show_shot(start: Vector3, end: Vector3, team: String, projectile: PackedSce
 	var shot = (projectile if projectile != null else tracer_scene).instantiate()
 	add_child(shot)
 	shot.configure(start,end,team)
+	# Under fog of war (docs/FOG_OF_WAR.md) the other side's shots show only where the player can see them land
+	# or leave.
+	var fog := fog_of_war()
+	if fog != null and team != fog.viewer and not fog.visible_to(fog.viewer,start) and not fog.visible_to(fog.viewer,end): shot.visible = false
 	return shot
+## Units bucketed by where they stand, for "who is near me" questions (UnitGrid, docs/COMBAT_BATCH.md).
+const UnitGrid = preload("res://scripts/combat/unit_grid.gd")
+var _unit_grid := UnitGrid.new()
+## Units standing within about `radius` of `point`, perhaps with a few just beyond and some freed (UnitGrid).
+func units_near(point: Vector3, radius: float) -> Array:
+	return _unit_grid.near(get_tree(),point,radius)
+## Whether an effect at `point` could be seen: on the screen, or within `margin` (a share of the screen's size) of
+## its edge. Death clips and shell bursts nobody can see are skipped: each is tens to hundreds of animated pieces,
+## and in a big battle most of them happened off screen. Without a window (the headless checks) all count as seen.
+func in_view(point: Vector3, margin := 0.2) -> bool:
+	if DisplayServer.get_name() == "headless": return true
+	var camera := get_viewport().get_camera_3d()
+	if camera == null: return true
+	if camera.is_position_behind(point): return false
+	var screen := get_viewport().get_visible_rect()
+	return screen.grow_individual(screen.size.x*margin,screen.size.y*margin,screen.size.x*margin,screen.size.y*margin).has_point(camera.unproject_position(point))
+## A unit joined or left the "units" group.
+func units_changed() -> void:
+	_unit_grid.changed()
+## The map's fog of war (docs/FOG_OF_WAR.md), or null on a map without one.
+func fog_of_war() -> Node:
+	return get_tree().get_first_node_in_group("fog_of_war")
 
 ## A Fell box being dragged, in screen pixels (docs/FELL.md). Shorter drags are clicks.
 const FELL_DRAG := 6.0
@@ -520,8 +566,14 @@ func issue_card_order(screen, queued := false) -> void:
 		var point = ground_at(screen)
 		if point != null and ground.get_tile_at_position(point) != null: order_fell(ground.get_tile_at_position(point),Rect2i(),point,queued)
 		return
-	elif pending_unit_command == "repair": target = pick_target(screen,"selectable_buildings",50)
+	elif pending_unit_command == "repair":
+		target = pick_vehicle_to_repair(screen)
+		if target == null: target = pick_target(screen,"selectable_buildings",50)
 	elif pending_unit_command == "capture": target = pick_target(screen,"capturable_buildings",50)
+	elif pending_unit_command == "mine_rail":
+		# Mine iron (docs/TEMPLE_OF_SCIENCE.md) takes an Iron Mine; trains only.
+		target = pick_target(screen,"mines",50)
+		if target == null: notify("Click an Iron Mine joined to the train's track."); return
 	elif pending_unit_command == "derail":
 		# Derail takes a piece of track, anyone's (docs/DERAILER.md).
 		var on = ground_at(screen)
@@ -586,6 +638,7 @@ func issue_card_order(screen, queued := false) -> void:
 			if point != null: give_order(unit,{kind = "move", point = point},queued)
 		elif pending_unit_command == "attack" and target.get("team") == unit.team: give_order(unit,{kind = "attack", target = target, forced = true},queued)
 		elif pending_unit_command == "derail" and not unit.has_ability(&"derail"): continue
+		elif pending_unit_command == "mine_rail" and not unit.is_in_group("rail_trains"): continue
 		else: give_order(unit,{kind = pending_unit_command, target = target},queued)
 	# Shift keeps the command armed so several targets can be queued.
 	notify(pending_unit_command.capitalize()+(" order queued. Shift-click adds more; Esc stops." if queued else " order issued."))

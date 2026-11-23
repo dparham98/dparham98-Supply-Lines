@@ -5,6 +5,7 @@
 Routes are still found on the 1 m grid with A* (`terrain_grid.gd` `actor_path`, diagonals only past open corners). Units no longer walk them cell centre to cell centre. `unit_agent.gd` `_walk` instead heads for the farthest route cell it can reach in a straight, clear lane:
 
 - **The aim:** of the next 32 route cells (`AIM_LOOKAHEAD`), the last one first, then a halving search for the farthest one reachable in a straight lane. A lane is clear when every cell under the line, and 0.35 m either side of it (`LANE_HALF_WIDTH`), is open to the unit. This keeps runs off building corners and out of diagonal gaps.
+- **Lane checks:** each of the three lines (the centre and either side) is walked cell by cell across the grid (`terrain_grid.gd` `segment_open`), so every cell it crosses is looked at once. This replaced sampling every 0.25 m, which looked at each cell several times and could step over the corner of one; in a battle of a few hundred units that sampling took most of the frame. The unit's claim name (`_owner_key`) is also built once rather than on every call.
 - **Re-aiming:** the aim is chosen again each time the unit crosses into a new cell, and when it reaches the aim. On open ground a unit within 32 cells of its goal walks one straight line to it. Longer routes bend gently toward the goal.
 - **Fallback:** when even the next cell is out of a straight lane (something moved into it, or a unit stopped off centre beside an obstacle), the unit plans again from its own cell and goes back through that cell's centre first. If there is no route, it waits half a second and its order plans again.
 - **Cells held:** a unit claims each cell as it crosses into it and lets go of the one it left, so it holds exactly the cell it stands in. If the next cell is taken by then, it stops at the edge, waits half a second and plans again, as before.
@@ -60,3 +61,15 @@ Attack ranges were far short of what fits the map: the camera sits 95 m out, and
 - The unit holds exactly its own cell every frame.
 - A Tank facing away never turns faster than 90 degrees a second, pivots on the spot for about a second without moving, then drives on.
 - A unit standing on the line is gone around, never through.
+- `tests/battle_lookup_test.gd`: a unit on a lane closes it, one beside it doesn't, its own cell doesn't close it for itself, and a lane off the map is closed. Over 600 random short lanes the walk passes nothing a sampling every 2 cm finds closed.
+
+## Searches that cannot succeed
+
+Reported in play on 2026-11-19: the game froze in a big fight, and once when a Barracks rally point got crowded.
+
+- **Cause.** A route search that cannot reach its goal floods every cell it can reach before it gives up. Each failed search took 12 to 20 ms; a long route that succeeds takes about 3 ms. Units stand on their cells, so a crowd round a rally point or a target walls in the free cells left between them. Every unit headed there planned toward one of those cells, failed, and tried again within a second.
+- **Measured.** In a headless run, 80 units streamed to one rally point. Over its busiest 5 seconds, route search took 1,864 ms, 162 searches failed, and the slowest frame was 351 ms.
+- **Fix.** Before searching, `actor_path` checks whether the goal or the start lies in a pocket of fewer than 256 open cells (`POCKET_CELLS`) that does not hold the other (`TerrainGrid.sealed`). If it does, the search is skipped. Diagonal steps pass only open corners, so side neighbours alone decide what is joined.
+- **After the fix,** the same run took 66 ms of route search over the same 5 seconds, every failure was caught by the check, and the slowest frame was 27 ms.
+- **Not covered.** A goal in a pocket larger than 256 cells that is still cut off, such as a clearing ringed by forest, is still searched in full.
+- **Check:** `tests/route_pocket_test.gd`.

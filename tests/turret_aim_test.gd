@@ -14,7 +14,7 @@ func step(model: Node3D, frames: int, aim = null) -> void:
 func shots() -> Array:
 	return root.find_children("*","",true,false).filter(func(node): return node.get_script() == preload("res://scripts/gameplay/projectile.gd") and not node.is_queued_for_deletion())
 func run() -> void:
-	var model = load("res://scenes/models/tank_model.tscn").instantiate()
+	var model = load("res://scenes/models/tank_model_merged.tscn").instantiate()
 	root.add_child(model)
 	await process_frame
 	if not check(model.turret != null and model.muzzle != null,"Tank model has no turret or muzzle node"): return

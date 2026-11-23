@@ -1,0 +1,7 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/buildings/temple_of_science.glb" id="model"]
+[ext_resource type="Script" path="res://scripts/components/temple_model.gd" id="model_script"]
+
+[node name="TempleOfScienceModel" instance=ExtResource("model")]
+script = ExtResource("model_script")

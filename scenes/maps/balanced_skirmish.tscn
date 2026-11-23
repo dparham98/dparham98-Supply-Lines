@@ -32,6 +32,7 @@
 [ext_resource type="Resource" path="res://assets/economy/engineering_rules.tres" id="engineering"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/material_pile.tscn" id="pile"]
 [ext_resource type="Texture2D" path="res://assets/maps/balanced/layout.png" id="layout"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/fog_of_war.tscn" id="fog"]
 [node name="BalancedSkirmish" type="Node3D" groups=["skirmish"]]
 editor_description = "Balanced two-player map with coal (docs/BALANCED_MAP.md). The player holds start A in the west. Start B in the east is the same land turned half a circle; it has no opponent yet, only the EnemyStart marker and one enemy of each unit type. Everything east of the map centre is the mirror of the west: move a marker and move its partner to the opposite position (x and z negated)."
 script = ExtResource("game")
@@ -59,6 +60,7 @@ engineering_rules = ExtResource("engineering")
 [node name="Terrain" parent="." instance=ExtResource("terrain")]
 [node name="RailNetwork" parent="." instance=ExtResource("rails")]
 [node name="Lighting" parent="." instance=ExtResource("lights")]
+[node name="FogOfWar" parent="." instance=ExtResource("fog")]
 [node name="CameraRig" parent="." instance=ExtResource("camera")]
 process_mode = 3
 position = Vector3(-166,0,0)
@@ -155,14 +157,6 @@ transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
 transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
 [node name="ForkRight" parent="RailPreview" instance=ExtResource("ghost_fork_right")]
 transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
-[node name="Status" type="Label3D" parent="RailPreview"]
-billboard = 1
-font_size = 30
-pixel_size = 0.03
-no_depth_test = true
-modulate = Color(0.75,1,0.85,1)
-text = "RAIL"
-
 [node name="Interface" parent="." instance=ExtResource("hud")]
 [node name="Terrain" parent="Interface/Bottom/Body/Row/MapColumn/Map" index="0"]
 texture = ExtResource("layout")

@@ -45,17 +45,26 @@ func run() -> void:
 	# Every site has its mine from the start, and no coal lumps stand on the seams.
 	if not check(built == 20,"Every mine site should start with its mine: %d of 20" % built): return
 	if not check(not game.get_node("Terrain").has_node("Landmarks/CoalDeposits"),"Coal should lie in the ground, with no lumps on it"): return
+	# The forest tiles read the match's clearing mask, so their leaves thin over coal (docs/COAL_LOOK.md).
+	var batch: MultiMeshInstance3D = game.get_node("Terrain/Landmarks/Forests").get_child(0)
+	var rings: Array = game.get_node("Interface/MapOverlay").coal_rings()
+	if not check(rings.size() == 11 and rings.all(func(ring): return ring.radius > 2.0),"Every coal field should have a ring round it: %d" % rings.size()): return
+	if not check(batch.material_override is ShaderMaterial and batch.material_override.get_shader_parameter("cleared_cells") == ground.material_override.get_shader_parameter("cleared_cells"),"The forest tiles do not read the clearing mask"): return
 	for name in ["IronMine","IronMineB"]:
 		var mine = game.get_node("Entities/Buildings/"+name)
 		if not check(is_instance_valid(mine) and mine.cells.size() == 12 and mine.get_node("Visuals/Model").player.has_animation(&"Work"),"%s is not a portal mine on its site" % name): return
 	var depot = game.get_node("Entities/Buildings/Depot")
 	var home = game.get_node("Entities/Buildings/IronMine")
 	if not check(depot.global_position.distance_to(home.global_position) < 32.0,"The home mine is not beside the start"): return
-	# Coal: seventeen fields (six starter, six by the home lakes, two in the passes, two inside the mouths and the mother seam); the mother seam in the middle is the largest.
-	if not check(ground.coal_fields.size() == 17,"Expected seventeen coal fields: %d" % ground.coal_fields.size()): return
+	# Coal: eleven fields (six by the home lakes, two in the passes, two inside the mouths and the mother seam); the mother seam in the middle is the largest.
+	if not check(ground.coal_fields.size() == 11,"Expected eleven coal fields: %d" % ground.coal_fields.size()): return
+	var nearest := {}
 	var largest := {}
 	for field in ground.coal_fields:
+		if nearest.is_empty() or field.center.distance_to(depot.global_position) < nearest.center.distance_to(depot.global_position): nearest = field
 		if largest.is_empty() or field.cells.size() > largest.cells.size(): largest = field
+	# No coal beside the start: the nearest seam lies well outside the starting Depot's 26.25 m range, in the lake woods.
+	if not check(nearest.center.distance_to(depot.global_position) > 40.0,"Coal lies too near the start: %.1f m" % nearest.center.distance_to(depot.global_position)): return
 	if not check(largest.cells.size() >= 110 and largest.center.distance_to(Vector3(0,0,19)) < 12.0,"The mother seam should be the largest field, at the middle: %d cells at %s" % [largest.cells.size(),largest.center]): return
 	# Sunk water is in the saved scenery.
 	if not check(game.find_child("Bed",true,false) != null and game.find_child("Surface",true,false) != null,"The lakes are not sunk"): return
