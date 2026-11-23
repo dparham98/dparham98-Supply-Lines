@@ -133,5 +133,14 @@ func run() -> void:
 	extra.free()
 	if not check(bounds.meshes(shooter).size() == before,"A freed mesh should be dropped at once"): return
 	shooter.free()
+	# Death clips: at most DEATH_CLIPS_MAX play at once; the rest go at once (headless counts every point as in view).
+	var Agent = preload("res://scripts/gameplay/unit_agent.gd")
+	var doomed := []
+	for i in range(Agent.DEATH_CLIPS_MAX+8): doomed.append(spawn("infantry","enemy",spot+Vector3(-10+(i%6)*2,0,8+(i/6)*2)))
+	await process_frame
+	for unit in doomed: unit.take_damage(100000)
+	await process_frame
+	var playing := get_nodes_in_group(Agent.DYING).size()
+	if not check(playing == Agent.DEATH_CLIPS_MAX,"Exactly DEATH_CLIPS_MAX death clips should play, not %d" % playing): return
 	print("BATTLE_LOOKUP_TEST_PASSED")
 	quit()

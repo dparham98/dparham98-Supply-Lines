@@ -969,6 +969,9 @@ func take_damage(amount: int) -> void:
 		game.unit_died(self)
 		_leave_corpse()
 		queue_free()
+## Unit death clips playing at once at most, and the group their models join while they play.
+const DEATH_CLIPS_MAX := 12
+const DYING := &"dying_models"
 ## A model with a death clip stays behind to play it out. The unit itself is gone at once, so a
 ## corpse cannot be selected, targeted or walked into.
 func _leave_corpse() -> void:
@@ -976,7 +979,11 @@ func _leave_corpse() -> void:
 	if model == null or not model.has_method("has_death_clip") or not model.has_death_clip(): return
 	# Off screen nobody sees it: the model goes with the unit (skirmish.in_view).
 	if is_instance_valid(game) and game.has_method("in_view") and not game.in_view(global_position): return
+	# In a big fight only so many play at once (DEATH_CLIPS_MAX): each is tens to hundreds of animated pieces. The
+	# rest go at once, as off-screen deaths do (docs/PERFORMANCE.md).
+	if get_tree().get_node_count_in_group(DYING) >= DEATH_CLIPS_MAX: return
 	model.reparent(game)
+	model.add_to_group(DYING)
 	model.play_death()
 ## Tell the skirmish's unit grid (units_near) that the "units" group changed.
 func _units_changed() -> void:
