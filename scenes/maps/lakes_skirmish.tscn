@@ -59,6 +59,12 @@ engineering_rules = ExtResource("engineering")
 [node name="EnemyPlayer" type="Node" parent="."]
 editor_description = "The enemy player (docs/ENEMY_AI.md): plays the East start by the same rules and fog as the player."
 script = ExtResource("enemy_ai")
+[node name="PlayerAI" type="Node" parent="."]
+process_mode = 4
+editor_description = "The same AI for the West start, switched off. A spectated match from the main menu switches it on (docs/MAIN_MENU.md)."
+script = ExtResource("enemy_ai")
+team = "player"
+opponent = "enemy"
 [node name="CameraRig" parent="." instance=ExtResource("camera")]
 process_mode = 3
 position = Vector3(-184,0,0)
