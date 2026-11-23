@@ -16,11 +16,12 @@ transparency = 1
 no_depth_test = true
 shading_mode = 0
 billboard_mode = 1
+billboard_keep_scale = true
 albedo_texture = SubResource("burst_texture")
 disable_receive_shadows = true
 [sub_resource type="QuadMesh" id="burst_mesh"]
 material = SubResource("burst_material")
-size = Vector2(2.6, 2.6)
+size = Vector2(1.4, 1.4)
 [sub_resource type="StandardMaterial3D" id="flash_hot"]
 shading_mode = 0
 albedo_color = Color(1,0.8,0.4,1)
