@@ -381,7 +381,7 @@ func _order_process(delta: float) -> void:
 			_update_display()
 			return
 	if not _route.is_empty() or _moving_to.x >= 0:
-		if is_instance_valid(order_target) and ((order == "attack" and in_attack_range(order_target)) or (order == "repair" and global_position.distance_to(order_target.global_position) <= engineering_rules.repair_range) or (order == "heal" and global_position.distance_to(order_target.global_position) <= heal_range)):
+		if is_instance_valid(order_target) and ((order == "attack" and in_attack_range(order_target) and team_sees(order_target)) or (order == "repair" and global_position.distance_to(order_target.global_position) <= engineering_rules.repair_range) or (order == "heal" and global_position.distance_to(order_target.global_position) <= heal_range)):
 			_stop_route()
 		else:
 			_walk(delta)
@@ -842,11 +842,11 @@ func _attack_order() -> void:
 		order = "idle"
 		state = "Idle"
 		return
-	if in_attack_range(order_target):
+	if in_attack_range(order_target) and team_sees(order_target):
 		if carrying(): state = "Carrying cargo · drop it (X) to fire"; return
 		state = "Firing"
 		_shoot(order_target)
-	elif global_position.distance_to(order_target.global_position) < min_attack_range:
+	elif global_position.distance_to(order_target.global_position) < min_attack_range and team_sees(order_target):
 		# Too close for the main gun: back off until the target is at its minimum range.
 		if _retry <= 0:
 			state = "Backing off · too close for main gun"
@@ -876,7 +876,7 @@ var _scan_wait := 0.0
 var _sighted: Node3D
 var _had_sight := false
 func _acquire() -> Node3D:
-	if _had_sight and is_instance_valid(_sighted) and in_attack_range(_sighted) and CombatResolver.can_hit(self,_sighted):
+	if _had_sight and is_instance_valid(_sighted) and in_attack_range(_sighted) and CombatResolver.can_hit(self,_sighted) and team_sees(_sighted):
 		# A building in its sights gives way to a unit that comes into range (docs/COMBAT_BATCH.md, Buildings as targets).
 		if not _sighted.is_in_group("selectable_buildings"): return _sighted
 		if _scan_wait > 0.0: return _sighted
@@ -890,6 +890,16 @@ func _acquire() -> Node3D:
 		_had_sight = _sighted != null
 		return _sighted
 	return null
+## Whether this unit's side sees `target` now (docs/SEE_TO_SHOOT.md): the fog of war's answer, which counts what
+## the side's units and buildings see. A map with no fog sees everything. A unit fires only at what its side sees.
+var _fog: Node
+var _fog_looked := false
+func team_sees(target: Node3D) -> bool:
+	if not is_instance_valid(target): return false
+	if not _fog_looked or (_fog != null and not is_instance_valid(_fog)):
+		_fog = get_tree().get_first_node_in_group("fog_of_war") if is_inside_tree() else null
+		_fog_looked = true
+	return _fog == null or _fog.visible_to(team,target.global_position)
 func _nearest_opponent() -> Node3D:
 	var closest: Node3D
 	var distance := attack_range
@@ -899,6 +909,7 @@ func _nearest_opponent() -> Node3D:
 		var d := global_position.distance_to(unit.global_position)
 		if d >= distance or d < min_attack_range: continue
 		if not CombatResolver.can_hit(self,unit): continue
+		if not team_sees(unit): continue
 		closest = unit; distance = d
 	if closest != null: return closest
 	# With no unit in range it turns on the nearest hostile building, as an attack order on it would (docs/COMBAT_BATCH.md,
@@ -908,6 +919,7 @@ func _nearest_opponent() -> Node3D:
 		var d := global_position.distance_to(building.global_position)
 		if d >= distance or d < min_attack_range: continue
 		if not CombatResolver.can_hit(self,building): continue
+		if not team_sees(building): continue
 		closest = building; distance = d
 	return closest
 func _face(point: Vector3) -> void:
@@ -922,7 +934,7 @@ func _turret() -> Node3D:
 func carrying() -> bool:
 	return can_gather and not is_cargo_vehicle and not is_depot_truck and cargo > 0
 func _shoot(target: Node3D) -> void:
-	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or carrying() or not _may_hit(target) or not in_attack_range(target): return
+	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or carrying() or not _may_hit(target) or not in_attack_range(target) or not team_sees(target): return
 	# A turret tracks the target between shots; a unit without one turns its whole body as it fires.
 	var turret := _turret()
 	if turret: turret.aim_at(target.global_position)
@@ -988,8 +1000,13 @@ func _fire_during_movement() -> void:
 	# Keep navigation/facing under the movement order; firing does not redirect the route.
 	var facing: float = $Visuals.rotation.y
 	var target = _acquire()
-	if target: _shoot(target)
+	if target and _in_moving_arc(target,facing): _shoot(target)
 	$Visuals.rotation.y = facing
+## Whether a unit on the move, its hull at `facing`, may fire at `target`: inside its moving-fire arc.
+func _in_moving_arc(target: Node3D, facing: float) -> bool:
+	if unit_stats == null or unit_stats.moving_fire_arc >= 360.0: return true
+	var to: Vector3 = target.global_position-global_position
+	return absf(angle_difference(facing,atan2(-to.x,-to.z))) <= deg_to_rad(unit_stats.moving_fire_arc*0.5)
 func take_damage(amount: int) -> void:
 	if _dead: return
 	health = maxi(0,health-maxi(0,amount))
