@@ -551,6 +551,10 @@ func issue_card_order(screen, queued := false) -> void:
 		target = pick_vehicle_to_repair(screen)
 		if target == null: target = pick_target(screen,"selectable_buildings",50)
 	elif pending_unit_command == "capture": target = pick_target(screen,"capturable_buildings",50)
+	elif pending_unit_command == "mine_rail":
+		# Mine iron (docs/TEMPLE_OF_SCIENCE.md) takes an Iron Mine; trains only.
+		target = pick_target(screen,"mines",50)
+		if target == null: notify("Click an Iron Mine joined to the train's track."); return
 	elif pending_unit_command == "derail":
 		# Derail takes a piece of track, anyone's (docs/DERAILER.md).
 		var on = ground_at(screen)
@@ -615,6 +619,7 @@ func issue_card_order(screen, queued := false) -> void:
 			if point != null: give_order(unit,{kind = "move", point = point},queued)
 		elif pending_unit_command == "attack" and target.get("team") == unit.team: give_order(unit,{kind = "attack", target = target, forced = true},queued)
 		elif pending_unit_command == "derail" and not unit.has_ability(&"derail"): continue
+		elif pending_unit_command == "mine_rail" and not unit.is_in_group("rail_trains"): continue
 		else: give_order(unit,{kind = pending_unit_command, target = target},queued)
 	# Shift keeps the command armed so several targets can be queued.
 	notify(pending_unit_command.capitalize()+(" order queued. Shift-click adds more; Esc stops." if queued else " order issued."))
