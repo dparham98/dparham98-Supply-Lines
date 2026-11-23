@@ -32,7 +32,7 @@ const ENTRIES := {
 	"generator": ["res://scenes/gameplay/energy_generator.tscn","","build_generator",35.0,1.0],
 	"mine": ["res://scenes/gameplay/site_mine.tscn","","build_mine",20.0,1.0],
 	"pithead": ["res://scenes/gameplay/iron_mine.tscn","","build_coal_mine",35.0,1.0],
-	"temple": ["res://scenes/gameplay/temple_of_science.tscn","","build_temple",35.0,1.0],
+	"temple": ["res://scenes/gameplay/temple_of_science.tscn","","build_temple",215.0,1.0], # its door faces +Z
 }
 ## More cards made from an entry's render (docs/TEMPLE_OF_SCIENCE.md): the Temple's Mining Trains research shows the
 ## train, and the train's Mine iron order the portal mine.
