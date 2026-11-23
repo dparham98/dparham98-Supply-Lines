@@ -9,8 +9,13 @@ extends Node
 ## The Temple of Science (docs/TEMPLE_OF_SCIENCE.md). Maps that leave it unset use the saved scene.
 @export var temple_scene: PackedScene
 const TEMPLE_SCENE_PATH := "res://scenes/gameplay/temple_of_science.tscn"
-@export var keep_scene: PackedScene = preload("res://scenes/gameplay/keep.tscn")
-@export var chapterhouse_scene: PackedScene = preload("res://scenes/gameplay/chapterhouse.tscn")
+## The Arthurian Keep and Chapterhouse (docs/ARTHURIAN_KNIGHTS.md). Maps that leave them unset use the saved scenes,
+## loaded when first needed: a preload here would make a load cycle (the Keep is a Depot) that leaks at exit.
+@export var keep_scene: PackedScene
+@export var chapterhouse_scene: PackedScene
+const KEEP_SCENE_PATH := "res://scenes/gameplay/keep.tscn"
+const CHAPTERHOUSE_SCENE_PATH := "res://scenes/gameplay/chapterhouse.tscn"
+func _keep_scene() -> PackedScene: return keep_scene if keep_scene != null else load(KEEP_SCENE_PATH)
 @export var supply_rules: SupplyRules
 @export var mine_scene: PackedScene
 ## The mine built on a mine site (docs/MINE_SITES.md): the same mine with the model made for the cut in the rock.
@@ -394,7 +399,7 @@ func production_scene(kind: StringName) -> PackedScene:
 	if kind == &"barracks": return barracks_scene
 	if kind == &"tank_factory": return tank_factory_scene
 	if kind == &"temple_of_science": return temple_scene if temple_scene != null else load(TEMPLE_SCENE_PATH)
-	if kind == &"chapterhouse": return chapterhouse_scene
+	if kind == &"chapterhouse": return chapterhouse_scene if chapterhouse_scene != null else load(CHAPTERHOUSE_SCENE_PATH)
 	return null
 func construct_production(point: Vector3, kind: StringName) -> bool:
 	if kind == &"iron_mine": return construct_mine(point)
@@ -444,10 +449,10 @@ func plan_spec(kind: StringName) -> Dictionary:
 		preview.free()
 		return {"title":"Depot","size":size,"energy":depot_rules().depot_energy_cost,"iron":depot_rules().depot_iron_cost,"scene":depot_scene}
 	if kind == &"keep":
-		var preview = keep_scene.instantiate()
+		var preview = _keep_scene().instantiate()
 		var size: Vector2i = preview.footprint
 		preview.free()
-		return {"title":"Keep","size":size,"energy":0,"food":0,"wood":50,"iron":50,"scene":keep_scene,"model":_model_scene(keep_scene)}
+		return {"title":"Keep","size":size,"energy":0,"food":0,"wood":50,"iron":50,"scene":_keep_scene(),"model":_model_scene(_keep_scene())}
 	if kind == &"generator": return {"title":"Generator","size":supply_rules.generator_footprint,"energy":supply_rules.generator_energy_cost,"iron":supply_rules.generator_iron_cost,"scene":generator_scene,"model":_model_scene(generator_scene)}
 	if kind == &"coal_mine": return {"title":"Coal Mine","size":engineering_rules.mine_footprint,"energy":engineering_rules.mine_energy_cost,"iron":engineering_rules.mine_iron_cost,"scene":mine_scene,"model":_model_scene(mine_scene)}
 	if kind == &"iron_mine": return {"title":"Iron Mine","size":engineering_rules.mine_footprint,"energy":engineering_rules.mine_energy_cost,"iron":engineering_rules.mine_iron_cost,"scene":mine_scene,"model":_model_scene(mine_scene)}
