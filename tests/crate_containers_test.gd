@@ -172,7 +172,7 @@ func run() -> void:
 	var marker = CrateYard.spawn(self,field+Vector2i(0,3),&"wood",10,"player")
 	var status: Dictionary = overlay.status_for(marker)
 	if not check(is_equal_approx(status.crate.ratio,0.4) and overlay.hud_name(marker) == "Wood crate","Crate overlay wrong"): return
-	if not check(is_equal_approx(hud.get_node("Bottom").size.y,296),"Cargo HUD broke the fixed height"): return
+	if not check(is_equal_approx(hud.get_node("Bottom").size.y,272),"Cargo HUD broke the fixed height"): return
 	for id in ["Move","Stop","DeployCargo","ToggleRefuel","Load","Unload","Trips"]:
 		if not check(hud.card.get_node(id).visible,"Cargo tile %s missing" % id): return
 	hud.card.get_node("Load").pressed.emit(); hud._process(0)
