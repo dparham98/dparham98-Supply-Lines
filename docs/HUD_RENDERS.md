@@ -50,7 +50,7 @@ Add ids after `--` to render only those, for example `-- tank depot`.
 - **Selection header:** the icon beside the name. A render keeps its own colours; a glyph is tinted gold as before (`skirmish_hud.gd` `set_icon`, `unit_image`).
 - **Group portraits:** the buttons for each selected unit.
 - **Portrait frame** (`Ornament/Portrait`): units and, now, buildings too.
-  - The frame is the painted panel's portrait window, 97 × 173 px at every window size, so the portrait is shown whole and centred on the frame's own background (`stretch_mode` keep aspect centred).
+  - The frame is 204 px tall and 172–812 px wide, depending on the window, so the portrait is shown whole and centred on the frame's own background (`stretch_mode` keep aspect centred).
   - It used to be cropped to fill the frame.
 - **Production tiles** on Barracks, Tank Factories and Depots, and **build tiles** on the Build page: the card images above.
 

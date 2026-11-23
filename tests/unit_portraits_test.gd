@@ -33,8 +33,7 @@ func run() -> void:
 		# Covering the frame, a frame wider than the image would trim its top and bottom: it must not.
 		if not check(portrait.stretch_mode == TextureRect.STRETCH_KEEP_ASPECT_COVERED,"The Deforester's composed portrait should cover the frame"): return
 		if not check(artwork.size.aspect() <= portrait.texture.get_size().aspect()+0.001,"The HUD must retain the crown and chin at %s" % str(window_size)): return
-		# The painted HUD panel (docs/HUD_LAYOUT.md) gives the portrait a window of fixed size at any width.
-		if narrow_width > 0.0 and not check(absf(artwork.size.x-narrow_width) < 1.0,"The portrait window should keep its painted size"): return
+		if narrow_width > 0.0 and not check(artwork.size.x > narrow_width,"The wide layout should expose more of the shoulders"): return
 		narrow_width = artwork.size.x
 	infantry.set_selected(false)
 	game.selected_building = game.depot

@@ -45,14 +45,13 @@ const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 
 	"PrintInfantry": 0, "ProduceScout": 1, "ProduceGrenadier": 2, "ProduceTank": 3, "ProduceMotorcycle": 4, "ProduceDrone": 5, "ProduceUbermech": 6,
 	"ToggleGenerator": 0, "FocusAssigned": 1,
 	"Research": 0, "MineIron": 7}
-## A command tile, sized to the cells painted on the HUD panel (assets/ui/hud_panel.png).
-const TILE := 41
+const TILE := 46
 const TRIP_LABELS := {"once": "once", "all": "all available", "repeat": "repeat"}
 ## One icon per stat row (assets/ui/icons).
 const STAT_ICONS := {"Speed": "speed", "Range": "focus", "Damage": "damage", "Vision": "scout", "Vs buildings": "depot", "Splash": "splash",
 	"Cost": "cost", "Deploys": "deploy", "Output": "generator", "Burning": "refuel", "Cycle": "cycle", "Mode": "mode",
 	"Energy": "generator", "Iron": "mine", "Queue": "queue", "Fuel left": "cargo", "Energy ceiling": "generator", "Coal kept": "refuel"}
-const TILE_GAP := 5
+const TILE_GAP := 4
 @onready var state_label: Label = $Bottom/Body/Row/Info/Head/Text/State
 const RESOURCE_KINDS := [&"energy",&"iron",&"wood",&"coal"]
 var _icons := {}
@@ -736,7 +735,6 @@ func update_contents() -> void:
 		close_build()
 		shown = node
 	for bar in bars.get_children(): bar.visible = false
-	info.get_node("HealthText").tooltip_text = ""
 	bars.get_node("Fuel/Need").visible = false
 	for section in ["Production","Route","Stats","Abilities"]: context.get_node(section).visible = false
 	info.get_node("Storage").visible = false
@@ -761,7 +759,7 @@ func update_contents() -> void:
 		info.get_node("Health").visible = false
 		name_label.text = "Worksite"
 		var trucks := worksite_trucks()
-		info.get_node("HealthText").text = "%d truck%s will fetch · %s" % [trucks.size(),"" if trucks.size() == 1 else "s",build_pay_text]
+		info.get_node("HealthText").text = "%d truck%s will fetch" % [trucks.size(),"" if trucks.size() == 1 else "s"]
 		info.get_node("Details").text = "Place a building. The selected trucks\nbring exactly its materials from the\nnearest Depot, then Deforesters build it.\nShift places more and queues them."
 		hint_text = "Each tile's key places that building. The trucks load exact amounts, deliver them to the footprint and go back until it is covered. Esc stops placing; Back returns to the truck."
 		return
@@ -770,7 +768,7 @@ func update_contents() -> void:
 		refresh_global_menu()
 		info.get_node("Health").visible = false
 		name_label.text = "Construction plans"
-		info.get_node("HealthText").text = "%d pending · %s" % [get_tree().get_nodes_in_group("construction_plans").size(),build_pay_text]
+		info.get_node("HealthText").text = "%d pending" % get_tree().get_nodes_in_group("construction_plans").size()
 		info.get_node("Details").text = "Place on valid terrain, or on a pile.\nDeliver iron to the footprint, then\norder Deforesters to construct; a covering\nstockpile pays the energy as they build."
 		hint_text = "B opens this page; each tile's key places that plan. Pin (P) makes new plans pay only from one Depot or deployed Cargo truck you pick on the map or minimap."
 		return
@@ -1156,15 +1154,12 @@ func begin_global_placement(kind: StringName) -> void:
 		return
 	game.global_plan_kind = kind
 	game.notify("Click valid terrain to place an unpaid %s plan. Esc cancels placement; existing plans remain." % network.plan_spec(kind).title)
-## Who pays for new plans, or what a worksite's trucks bring: shown in the info column beside the plan count, so
-## the build page's three rows of tiles fill the painted grid (docs/HUD_LAYOUT.md).
-var build_pay_text := ""
 func refresh_global_menu() -> void:
 	build_menu.get_node("Actions/Pin").visible = not worksite_open
 	build_menu.get_node("Actions/Rail").visible = not worksite_open
 	if worksite_open:
-		build_pay_text = "Delivers exact materials"
-		info.get_node("HealthText").tooltip_text = "The selected trucks load exactly what the building needs and unload it on the footprint. A covering stockpile pays the energy as Deforesters build."
+		build_menu.get_node("Bank").text = "DELIVERS: EXACT MATERIALS"
+		build_menu.get_node("Bank").tooltip_text = "The selected trucks load exactly what the building needs and unload it on the footprint. A covering stockpile pays the energy as Deforesters build."
 		for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"]]:
 			var spec: Dictionary = network.plan_spec(pair[0])
 			var button: Button = build_menu.get_node("Actions/"+pair[1])
@@ -1172,10 +1167,10 @@ func refresh_global_menu() -> void:
 			set_tile(button,spec.title+" worksite","%d E · %d I · the trucks bring the %d iron; energy is paid as Deforesters build" % [spec.energy,spec.iron,spec.iron])
 		return
 	var pin_name := str(global_payer.name) if global_pinned and SupplySource.available(global_payer,"player") else ""
-	if not global_pinned: build_pay_text = "Pays: auto (nearest)"
-	elif pin_name.is_empty(): build_pay_text = "Pin lost: plans wait"
-	else: build_pay_text = "Pays: %s only" % pin_name
-	info.get_node("HealthText").tooltip_text = "One covering Depot or deployed Cargo truck pays each plan's energy as Deforesters build it. Iron must be delivered to the footprint first. Rails pay fully from Depots. No pooled resources."
+	if not global_pinned: build_menu.get_node("Bank").text = "PAYS: AUTO (NEAREST)"
+	elif pin_name.is_empty(): build_menu.get_node("Bank").text = "PAYS: PIN LOST · PLANS WAIT"
+	else: build_menu.get_node("Bank").text = "PAYS: %s ONLY" % pin_name.to_upper()
+	build_menu.get_node("Bank").tooltip_text = "One covering Depot or deployed Cargo truck pays each plan's energy as Deforesters build it. Iron must be delivered to the footprint first. Rails pay fully from Depots. No pooled resources."
 	set_card(build_menu.get_node("Actions/Pin"),"unpin_payer" if global_pinned else "pin_payer")
 	set_tile(build_menu.get_node("Actions/Pin"),"Unpin payer (back to Auto)" if global_pinned else "Pin payer","New plans pay from the nearest covering stockpile that can pay." if global_pinned else "Pick one Depot or deployed Cargo truck on the map or minimap; new plans pay only from it.")
 	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"],[&"rail","Rail"]]:
