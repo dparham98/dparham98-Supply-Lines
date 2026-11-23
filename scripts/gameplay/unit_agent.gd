@@ -353,6 +353,13 @@ func _order_process(delta: float) -> void:
 		state = "Attack target lost"
 		_update_display()
 		return
+	# A freed target cannot be passed to the typed checks below, so drop the order first.
+	if order in ["repair","heal"] and not is_instance_valid(order_target):
+		_stop_route()
+		state = "Repair target lost" if order == "repair" else "Patient lost"
+		order = "idle"; order_target = null
+		_update_display()
+		return
 	if order == "repair" and (not EngineeringWork.repairable(order_target,team) or not SupplySource.available(repair_payer,team)):
 		_stop_route()
 		_repair(delta)
@@ -1100,7 +1107,7 @@ func command_repair(target: Node3D, payer: Node3D = null) -> void:
 	state = "Repair ordered"
 	game.notify("Repair %s; payer %s only." % [target.name,repair_payer.name if is_instance_valid(repair_payer) else "unavailable"],team)
 func _repair(delta: float) -> void:
-	if not EngineeringWork.repairable(order_target,team):
+	if not is_instance_valid(order_target) or not EngineeringWork.repairable(order_target,team):
 		order = "idle"; state = "Repair target lost"; return
 	if order_target.health >= order_target.max_health: order = "idle"; state = "Repair complete"; return
 	if not SupplySource.available(repair_payer,team):
