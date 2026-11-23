@@ -38,7 +38,7 @@ func _gui_input(event: InputEvent) -> void:
 	if event.button_index == MOUSE_BUTTON_RIGHT:
 		# Right-click cancels an armed command, as on the map, else orders the selected units there.
 		if game.armed(): game.cancel_armed(); game.notify("Command cancelled.")
-		elif not game.hud.selected_units().is_empty(): game.issue_map_order(map_to_world(event.position),order_radius(),false,event.shift_pressed)
+		elif not game.spectating and not game.hud.selected_units().is_empty(): game.issue_map_order(map_to_world(event.position),order_radius(),false,event.shift_pressed)
 		accept_event()
 	elif event.button_index == MOUSE_BUTTON_LEFT:
 		# While Load, Unload or Pin waits for a stop, clicking a pulsing marker picks it. Another waiting unit
