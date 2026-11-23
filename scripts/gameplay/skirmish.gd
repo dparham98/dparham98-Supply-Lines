@@ -160,7 +160,7 @@ func _input(event: InputEvent) -> void:
 	if not event.physical_keycode in RAIL_KEYS: return
 	get_viewport().set_input_as_handled()
 	if not event.echo: _rail_key(event.physical_keycode)
-const RAIL_HELP := "Click two buildings (Depots, mines or build sites) to connect; the suggested track follows the cursor and is green when a Depot can pay for it. Click (or Enter) lays it; Backspace undoes; Esc stops."
+const RAIL_HELP := "Click two buildings (Depots, mines or build sites) to connect; the suggested track follows the cursor and is green when a Depot can pay for it. Click (or Enter) lays it; Backspace undoes; Esc stops. Click a wreck of your track to rebuild it."
 func _rail_key(key: int) -> void:
 	var rails = $RailNetwork
 	if key == KEY_BACKSPACE:
@@ -203,7 +203,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		# With a track suggested, a click lays it (docs/RAIL_PLANNING.md).
 		if point != null:
 			var rails = $RailNetwork
-			if is_instance_valid(rails.route_to) and not rails.pending.is_empty(): lay_route()
+			# A click on a wreck of your track rebuilds it (docs/DERAILER.md).
+			var wreck = rails.wreck_at(point) if rails.pending.is_empty() else null
+			if wreck != null:
+				if rails.rebuild(wreck,_rail_pin()) != null: placing_rail = false
+			elif is_instance_valid(rails.route_to) and not rails.pending.is_empty(): lay_route()
 			else: notify(rails.pick_target(rails.pick_at(point)))
 		get_viewport().set_input_as_handled()
 		return
@@ -577,9 +581,9 @@ func issue_card_order(screen, queued := false) -> void:
 	elif pending_unit_command == "derail":
 		# Derail takes a piece of track, anyone's (docs/DERAILER.md).
 		var on = ground_at(screen)
-		var picked = $RailNetwork.pick_at(on) if on != null else null
-		if not picked is RailAnchor: notify("Click a piece of rail to spike."); return
-		target = picked.piece
+		var hit: Dictionary = $RailNetwork.nearest_piece(on,$RailNetwork.probe("straight").half_width()+0.8) if on != null else {}
+		if hit.is_empty(): notify("Click a piece of rail to destroy."); return
+		target = hit.piece
 	elif pending_unit_command in ["load","unload"]:
 		# Crate stops: a crate, a friendly Depot, or a deployed Cargo vehicle under the pointer.
 		target = pick_crate(screen)

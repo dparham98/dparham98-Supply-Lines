@@ -14,6 +14,7 @@ Rail starts from the Build page's Rail tile (R).
 | Backspace | Takes back the second pick and its track, or the first pick when there is no second. |
 | Enter | Lays the suggested track, as a click does. |
 | Esc, or leaving track laying any other way | Drops the picks and the track. Nothing was paid. |
+| Click a wreck | With no track suggested, rebuilds a piece a Derailer broke (`docs/DERAILER.md`, Rebuilding). |
 
 While track laying is armed, Enter and Backspace go to it before the Build page's tiles. Other Build page keys work as usual, so R or G start the Rail tile or a Generator plan again.
 
@@ -76,13 +77,13 @@ A fork's branch only leads one way along the line: a train off the branch comes 
 
 ## Ready for derailing
 
-The Derailer's spike derails a train onto that piece (`docs/DERAILER.md`). These are the parts that and later derailing build on:
+The Derailer breaks a piece of track, derailing a train on it and leaving a wreck the owner can rebuild (`docs/DERAILER.md`). These are the parts later derailing builds on:
 
 - **Train position:** each train knows the piece, lane and distance it is on (`Train.piece`, `lane`, `along`). These are updated every frame from its line's spans (`RailNetwork.locate`). Each leg's `spans` list every piece and lane the train will cross, in order.
 - **Switches:** each fork has a switch (`route_lane`), set by the train's run as each leg starts (`set_route`). A reversal is its own leg, so a switch is never thrown under a train mid-leg by its own run.
 - **Curves:** every piece knows its geometry. A curve's radius is `curve_radius × world_scale` (12 m), so a speed limit per curve can be read from it.
 - **Hooks for later:**
-  - a switch thrown, or a piece removed, under a train (today the train stops and is put back on the nearest track);
+  - a switch thrown, or a piece removed under a train (a piece a Derailer breaks derails it; any other removal stops the train and puts it back on the nearest track);
   - running into a fork from an exit while its switch is set to the other lane;
   - speed on a curve;
   - damaged track.

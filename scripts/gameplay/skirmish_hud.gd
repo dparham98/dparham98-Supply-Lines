@@ -683,7 +683,7 @@ func update_feed() -> void:
 			set_alert_style(button,entry.get("kind",""))
 			feed_points.append(entry.point)
 	for i in feed.get_child_count(): feed.get_child(i).visible = i < feed_points.size()
-const ALERT_STYLES := {"attack": ["attack",Color(0.89,0.35,0.31)], "lost": ["cancel",Color(0.89,0.35,0.31)], "fuel": ["refuel",Color(0.941,0.698,0.29)]}
+const ALERT_STYLES := {"attack": ["attack",Color(0.89,0.35,0.31)], "lost": ["cancel",Color(0.89,0.35,0.31)], "fuel": ["refuel",Color(0.941,0.698,0.29)], "rail": ["cancel",Color(0.941,0.698,0.29)]}
 # Feed entries show an icon and colour for their alert kind.
 func set_alert_style(button: Button, kind: String) -> void:
 	var style: Array = ALERT_STYLES.get(kind,["focus",Color(0.855,0.69,0.4)])
