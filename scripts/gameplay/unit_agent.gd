@@ -1061,7 +1061,7 @@ func command_repair(target: Node3D, payer: Node3D = null) -> void:
 	_work_timer = 0
 	order = "repair"
 	state = "Repair ordered"
-	game.notify("Repair %s; payer %s only." % [target.name,repair_payer.name if is_instance_valid(repair_payer) else "unavailable"])
+	game.notify("Repair %s; payer %s only." % [target.name,repair_payer.name if is_instance_valid(repair_payer) else "unavailable"],team)
 func _repair(delta: float) -> void:
 	if not EngineeringWork.repairable(order_target,team):
 		order = "idle"; state = "Repair target lost"; return

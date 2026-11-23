@@ -1,8 +1,11 @@
 extends SceneTree
 # Headless, on Two Lakes: the enemy player's rules (docs/ENEMY_AI.md). It starts knowing nothing of the player's
 # base and heads for start sites it has not seen; its plans are its own (its stockpile pays, the building is its,
-# the player's HUD does not count them, and its messages are not shown); it remembers buildings it has seen; it
-# defends against enemies seen near its buildings; and with nothing left it has lost.
+# the player's HUD does not count them, and its messages are not shown); it repairs its damaged buildings; it finds
+# an expansion site beside an iron mine on its side; what its Depot prints is its own; its track is found and laid
+# without touching the player's plan and is its own; with Mining Trains researched it buys a train for its mine; it
+# remembers buildings it has seen; it defends against enemies seen near its buildings; and with nothing left it has
+# lost.
 var game: Node3D
 var ai: Node
 func _initialize() -> void: call_deferred("run")
@@ -41,6 +44,58 @@ func run() -> void:
 	var building: Node3D = network.finish_plan(plan)
 	if not check(building != null and building.team == "enemy" and building.source_friendly(),"A Barracks built from the enemy's plan should be the enemy's, fed by its Depot"): return
 	plan.queue_free()
+	# Repair: a damaged building of its own, with no enemy near, gets a worker.
+	ai._sort(ai.own_units())
+	building.health = int(building.max_health*0.4)
+	ai.repair()
+	if not check(ai.workers.any(func(unit): return unit.order == "repair" and unit.order_target == building),"A damaged enemy building should be repaired by one of its workers"): return
+	building.health = building.max_health
+	# Expansion: a site beside an iron mine on its own side, far enough from home for the spacing rule.
+	var site = ai.expansion_spot(depot,null)
+	var spacing: float = network.depot_rules().min_depot_spacing()
+	if not check(site != null and site.x > 0.0 and site.distance_to(depot.global_position) >= spacing,"The enemy should find an expansion site on its side past %.1f m: %s" % [spacing,site]): return
+	if not check(network.can_place(site,null,true,"enemy"),"The expansion site should take a Depot"): return
+	# What a Depot prints is its side's.
+	depot.stockpile.deposit(&"energy",1000)
+	depot.stockpile.deposit(&"iron",1000)
+	if not check(depot.request_cargo(),"The enemy's Depot should print a Cargo truck"): return
+	var before: Array = ai.own_units()
+	for frame in range(30*20):
+		depot._process(1.0/30.0)
+		if depot.queue == 0: break
+	var printed: Array = get_nodes_in_group("units").filter(func(unit): return unit.is_cargo_vehicle and not before.has(unit) and unit.team == "enemy")
+	if not check(printed.size() == 1,"A Cargo truck printed at the enemy's Depot should be the enemy's"): return
+	printed[0].free()
+	# Track: found and laid for its side without touching the player's plan, paid by its Depot.
+	var rails = game.get_node("RailNetwork")
+	var mine: Node3D = ai.mining_target(depot)
+	if not check(mine != null and mine.global_position.x > 0.0,"The enemy should pick a mine on its side for a mining train"): return
+	# A piece the laid track's own cells find blocked is forbidden and the search run again, as the AI does.
+	var forbidden := {}
+	var path: Array = []
+	for tries in range(6):
+		var job: Dictionary = rails.begin_link(depot,mine,forbidden)
+		while not rails.advance_link(job,5000): pass
+		path = job.found.get("path",[])
+		var unfit: Dictionary = rails.unfit_moves(path)
+		if unfit.is_empty(): break
+		forbidden.merge(unfit)
+	if not check(not path.is_empty() and rails.unfit_moves(path).is_empty(),"The enemy should find track from its Depot to %s that can all be laid" % mine.name): return
+	var iron: int = depot.iron
+	game.message = ""
+	var laid: Array[Node3D] = rails.lay_link(path,depot)
+	if not check(laid.size() == path.size() and depot.iron == iron-rails.link_cost(path),"The enemy's track should all go down, paid by its Depot"): return
+	if not check(laid.all(func(piece): return rails.friendly_piece(piece,"enemy") and not rails.friendly_piece(piece,"player")),"The enemy's track should be the enemy's"): return
+	if not check(rails.pending.is_empty() and game.message.is_empty(),"Laying the enemy's track should leave the player's plan and messages alone"): return
+	if not check(ai.mine_linked(depot,mine),"The enemy's track should join its Depot to %s" % mine.name): return
+	# With the research done, it buys a train for the mine.
+	Research.complete(game,"enemy",Research.MINING_TRAINS)
+	ai.mining_mine = mine
+	# Below the haul cap: a home full of iron would stop mining (home_full).
+	depot.stockpile.set_amount(&"iron",100)
+	ai.wants = {}
+	ai.run_trains(depot)
+	if not check(depot.pending.has("train"),"With Mining Trains researched and track to a mine, the enemy should buy a train"): return
 	# Memory: a player building it sees is remembered, and stays known out of sight until it sees it gone.
 	var seen := actor("scout","enemy",west+Vector3(10,0,0))
 	seen.set_process(false)

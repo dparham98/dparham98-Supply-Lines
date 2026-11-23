@@ -159,6 +159,7 @@ func _process(delta: float) -> void:
 		var unit = scene.instantiate()
 		if "start_fuelled" in unit: unit.start_fuelled = FuelRules.full_tanks_for(game)
 		unit.position = train_stop.position if not train_stop.is_empty() else ground.tile_to_world(spawn)
+		unit.team = team
 		game.get_node("Entities/Units").add_child(unit,true)
 		Rally.send(self,unit)
 		queue -= 1
@@ -211,6 +212,8 @@ func _complete_truck() -> void:
 	var unit = game.get_node("DepotNetwork").truck_scene.instantiate()
 	unit.start_fuelled = FuelRules.full_tanks_for(game)
 	unit.position = where
+	# Printed units are the Depot's side's, whichever side plays it (docs/ENEMY_AI.md).
+	unit.team = team
 	game.get_node("Entities/Units").add_child(unit,true)
 	unit.global_position = where
 	unit.get_node("Visuals").rotation.y = $Visuals.rotation.y

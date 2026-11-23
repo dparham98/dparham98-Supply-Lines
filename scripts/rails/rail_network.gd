@@ -1229,6 +1229,55 @@ func commit_plan(pinned = null) -> Array[Node3D]:
 	var note := " %d could not be laid; their iron went back." % (plan.size()-laid.size()) if refund > 0 else ""
 	game.notify("%d track pieces laid from %s for %d iron.%s" % [laid.size(),payer.name,need-refund,note])
 	return laid
+# ---- track for the enemy player (docs/ENEMY_AI.md)
+## The computer player connects its buildings with the same track the player is suggested: the shortest open
+## path of straights and curves touching both rings (suggest_route). It searches with a router of its own, so the
+## player's plan, picks and cursor search are never touched.
+var _side_router
+## Begins the search from `from` to `to`. Work on it with advance_link(); once `job.done`, `job.found.path` is
+## the track ({kind, transform, cells, move} pieces), empty when there is no open path. `forbidden` lists the
+## `move`s of pieces an earlier search found that unfit_moves() turned down.
+func begin_link(from: Node3D, to: Node3D, forbidden := {}) -> Dictionary:
+	if _side_router == null: _side_router = preload("res://scripts/rails/rail_router.gd").new(self)
+	_side_router.forbidden = forbidden
+	var width: float = probe("straight").half_width()
+	var ring: Array = _side_router.ring_starts(from.global_position,target_reach(from)+width)
+	return _side_router.begin(ring,{centre = to.global_position, reach = target_reach(to)+width})
+## Works on a search from begin_link() for about `usec` microseconds. Returns whether it is done.
+func advance_link(job: Dictionary, usec: int) -> bool:
+	return _side_router.advance(job,usec) if _side_router != null else true
+## The `move`s of a found path's pieces whose ground, worked out as the laid piece works it out, is not clear:
+## the ones lay_link() would leave out. Empty when every piece can be laid.
+func unfit_moves(path: Array) -> Dictionary:
+	var result := {}
+	for entry in path:
+		if not ground_clear(cells_for(entry.kind,entry.transform)): result[entry.move] = true
+	return result
+## The iron a found path costs.
+func link_cost(path: Array) -> int:
+	var total := 0
+	for entry in path: total += cost(entry.kind)
+	return total
+## Lays a found path for `payer`'s side, charging `payer` once, as commit_plan() does. A piece whose ground is
+## no longer clear is left out and its iron goes back. Returns the pieces laid.
+func lay_link(path: Array, payer: Node3D) -> Array[Node3D]:
+	var laid: Array[Node3D] = []
+	if path.is_empty() or not is_instance_valid(payer) or payer.health <= 0: return laid
+	var need := link_cost(path)
+	if not payer.spend_local(rules.rail_energy_cost*path.size(),need): return laid
+	var parent: Node = game.get_node("Entities/Rails") if game.has_node("Entities/Rails") else game
+	var refund := 0
+	for entry in path:
+		if not ground_clear(cells_for(entry.kind,entry.transform)): refund += cost(entry.kind); continue
+		var piece = scene_for(entry.kind).instantiate()
+		piece.assigned_depot = payer
+		piece.transform = entry.transform
+		parent.add_child(piece,true)
+		if is_instance_valid(piece) and not piece.is_queued_for_deletion(): laid.append(piece)
+		else: refund += cost(entry.kind)
+	if refund > 0: payer.stockpile.deposit(&"iron",refund)
+	game.notify("%d track pieces laid from %s for %d iron." % [laid.size(),payer.name,need-refund],payer.team)
+	return laid
 ## Green when the plan can be laid, red when no Depot can pay for it.
 func _tint_plan() -> void:
 	var hud = game.get_node_or_null("Interface")
