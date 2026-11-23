@@ -1,9 +1,10 @@
 extends SceneTree
 # Headless: the main menu, the match it sets up, and the pause menu (docs/MAIN_MENU.md). The game opens on the menu;
-# the factions list the Cyborgs and a locked Arthurian Knights entry. Start match loads Two Lakes against the East
+# the factions list the Cyborgs and the Arthurian Knights, who are for You only (locked on an AI's row). Start match loads Two Lakes against the East
 # AI. Esc pauses into the pause menu, which holds the keyboard until Esc resumes, and an armed command takes Esc
 # first. The sandbox clears the East start and switches its AI off. Spectating switches on the West AI, lifts the
-# fog for the view and leaves the HUD only inspecting. The pause menu's Main menu goes back to the menu.
+# fog for the view and leaves the HUD only inspecting. The pause menu's Main menu goes back to the menu. Choosing the
+# Knights puts a Keep and two Forester Maidens at the West start in place of the Cyborg start.
 var setup: Node
 func _initialize() -> void: call_deferred("run")
 func check(value: bool, message: String) -> bool:
@@ -47,14 +48,22 @@ func run() -> void:
 	var menu := await open_menu()
 	if not check(menu != null and menu.name == "MainMenu","The menu should open"): return
 	if not check(menu.mode == "ai" and menu.get_node("%ModeAI").button_pressed,"The menu starts on one AI opponent"): return
-	# The factions: Cyborgs, and the Knights listed but locked.
+	# The factions: Cyborgs first, chosen; the Knights open to You, locked on the AI's row.
 	for name in ["PlayerFaction","EnemyFaction"]:
 		var option: OptionButton = menu.get_node("%"+name)
 		if not check(option.item_count == menu.FACTION_ORDER.size() and option.get_item_text(0) == "Cyborgs" and option.selected == 0,"%s lists the Cyborgs first, chosen" % name): return
-		if not check(option.get_item_text(1).begins_with("Arthurian Knights") and option.is_item_disabled(1),"%s shows the Knights locked" % name): return
-		for i in range(option.item_count):
-			if not check(option.is_item_disabled(i) != setup.playable(menu.FACTION_ORDER[i]),"%s item %d matches the faction's playable flag" % [name,i]): return
-	if not check(not setup.start("ai",&"arthurian_knights"),"A locked faction cannot be started"): return
+	var mine: OptionButton = menu.get_node("%PlayerFaction")
+	var theirs: OptionButton = menu.get_node("%EnemyFaction")
+	if not check(mine.get_item_text(1) == "Arthurian Knights" and not mine.is_item_disabled(1),"You can choose the Knights: %s" % mine.get_item_text(1)): return
+	if not check(theirs.get_item_text(1) == "Arthurian Knights · You only" and theirs.is_item_disabled(1),"The AI's row shows the Knights locked: %s" % theirs.get_item_text(1)): return
+	if not check(not setup.start("ai",&"cyborgs",&"arthurian_knights") and not setup.start("spectate",&"arthurian_knights"),"No AI side can be the Knights"): return
+	if not check(not setup.start("ai",&"no_such_faction"),"An unknown faction cannot be started"): return
+	# Spectating locks the Knights on your row too, and moves a Knights choice back to the Cyborgs.
+	mine.select(1)
+	menu.get_node("%ModeSpectate").button_pressed = true
+	if not check(mine.is_item_disabled(1) and mine.selected == 0,"Spectating, the West AI can't be the Knights"): return
+	menu.get_node("%ModeAI").button_pressed = true
+	if not check(not mine.is_item_disabled(1) and mine.get_item_text(1) == "Arthurian Knights","Back to one AI, the Knights are open again"): return
 	# The rows follow the mode.
 	menu.get_node("%ModeSandbox").button_pressed = true
 	if not check(menu.mode == "sandbox" and not menu.get_node("%EnemyRow").visible,"No opponent hides the opponent's faction"): return
@@ -145,6 +154,27 @@ func run() -> void:
 	west.defeated = true
 	game._process(0)
 	if not check(game.outcome.begins_with("EAST AI WINS"),"The West AI beaten: %s" % game.outcome): return
+	# The Knights against the AI: a Keep and two Forester Maidens at the West start, the Cyborg start gone, the East
+	# AI as before.
+	setup.to_menu()
+	for frame in range(10):
+		await process_frame
+		if current_scene != null and current_scene.name == "MainMenu": break
+	menu = current_scene as Control
+	menu.get_node("%PlayerFaction").select(1)
+	game = await start_from_menu(menu,"ModeAI")
+	if not check(game != null and game.factions.player == &"arthurian_knights" and game.factions.enemy == &"cyborgs","The Knights match should load"): return
+	await process_frame
+	var keep: Node3D = game.depot
+	var start_at: Vector3 = game.get_node("Sites/PlayerStart").global_position
+	if not check(is_instance_valid(keep) and keep.is_in_group("keeps") and keep.team == "player" and keep.global_position.distance_to(start_at) < 0.1,"A Keep should stand on the West start"): return
+	if not check(game.get_node("DepotNetwork").selected == keep and keep.food > 0,"The Keep is selected and holds Food"): return
+	var mine_units := get_nodes_in_group("units").filter(func(u): return u.team == "player" and not u.is_queued_for_deletion())
+	if not check(mine_units.size() == 2 and mine_units.all(func(u): return u.unit_stats != null and u.unit_stats.unit_id == &"forester_maiden"),"Your units should be two Forester Maidens: %s" % [mine_units.map(func(u): return u.name)]): return
+	var player_depots := get_nodes_in_group("depots").filter(func(d): return d.team == "player" and not d.is_queued_for_deletion())
+	if not check(player_depots == [keep],"The Cyborg Depot is gone: %s" % [player_depots.map(func(d): return d.name)]): return
+	if not check(team_nodes("enemy") > 0 and game.enemy_player().can_process(),"The East AI still plays its Cyborg start"): return
+	if not check(setup.summary().contains("You (Arthurian Knights)"),"The pause menu names your faction: %s" % setup.summary()): return
 	setup.configured = false
 	print("MAIN_MENU_TEST_PASSED")
 	quit(0)

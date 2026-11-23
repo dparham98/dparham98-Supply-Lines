@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/gameplay/keep.tscn" id="keep"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/forester_maiden.tscn" id="forester"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/supply_crate.tscn" id="crate"]
+
+[node name="KnightsStart" type="Node3D"]
+editor_description = "An Arthurian Knights start (docs/MAIN_MENU.md): when You choose the Knights, MatchSetup puts this at Two Lakes' West start in place of the Cyborg Depot, Deforester and Cargo truck. Positions are from the start marker; the Deforester stood 2.5 m east and 9.5 m south of the Depot. The Keep keeps its own stock (150 iron, 150 wood, 300 Food)."
+
+[node name="Keep" parent="." instance=ExtResource("keep")]
+
+[node name="ForesterMaiden1" parent="." instance=ExtResource("forester")]
+position = Vector3(2.5, 0, 9.5)
+
+[node name="ForesterMaiden2" parent="." instance=ExtResource("forester")]
+position = Vector3(5, 0, 9.5)
+
+[node name="StarterFoodCrate" parent="." instance=ExtResource("crate")]
+position = Vector3(-9.5, 0, 1.5)
+material_kind = "food"
+amount = 25
+team = "player"
