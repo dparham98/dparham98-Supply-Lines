@@ -46,13 +46,13 @@ func run() -> void:
 	var far := depot_site(main.global_position,60,100)
 	if not check(close != Vector3.INF and far != Vector3.INF,"No test sites near the main Depot"): return
 	if not check(not network.depot_spacing_ok(close) and network.depot_spacing_ok(far),"36-48 m should be too close and 60 m+ far enough"): return
-	if not check(network.queue_plan(close,&"depot") == null,"A Depot plan with an overlapping range was accepted"): return
-	var plan: Node3D = network.queue_plan(far,&"depot")
+	if not check(network.queue_plan(close,&"depot",null,false,false) == null,"A Depot plan with an overlapping range was accepted"): return
+	var plan: Node3D = network.queue_plan(far,&"depot",null,false,false)
 	if not check(plan != null,"A Depot plan 60 m+ away was refused"): return
 	# Another plan close to that plan is refused too; a Generator plan there is not affected.
 	var beside_plan := depot_site(plan.global_position,21,45)
-	if not check(beside_plan != Vector3.INF and network.queue_plan(beside_plan,&"depot") == null,"A Depot plan overlapping another Depot plan was accepted"): return
-	if not check(network.queue_plan(beside_plan,&"generator") != null,"Spacing should not affect other buildings"): return
+	if not check(beside_plan != Vector3.INF and network.queue_plan(beside_plan,&"depot",null,false,false) == null,"A Depot plan overlapping another Depot plan was accepted"): return
+	if not check(network.queue_plan(beside_plan,&"generator",null,false,false) != null,"Spacing should not affect other buildings"): return
 	# Completing the plan ignores the plan itself.
 	if not check(network.depot_spacing_ok(plan.global_position,"player",plan),"A plan should not block itself"): return
 	plan.queue_free()
@@ -100,7 +100,7 @@ func run() -> void:
 	if not check(network.depot_spacing_ok(open+Vector3(20,0,0)),"A dropped deploy order should free the site"): return
 	# A plan that loses its spacing (here a Depot appears beside it without a check, as a capture does) stops
 	# before taking any material, says why, and is not finished.
-	var held: Node3D = network.queue_plan(open,&"depot")
+	var held: Node3D = network.queue_plan(open,&"depot",null,false,false)
 	if not check(held != null,"A Depot plan at the open site was refused"): return
 	held.set_process(false)
 	var neighbour := depot_site(held.global_position,21,45)

@@ -13,6 +13,14 @@ Edit `assets/units/*.tres` in Godot's Inspector, then restart. UnitStats contain
 - Forced fire: the Attack card (A, then click) also takes a friendly unit or building when nothing hostile is under the pointer, and fires on it until it dies, so its death animation plays. It counts only for that order's target; splash, right-click, attack-move and idle defence still spare friendlies (`tests/friendly_attack_test.gd`).
 - No new enemy pressure, forest navigation/clearing, Drone flight or tentative death/jamming effects in this batch.
 
+## Targeting in big battles
+
+Armed units look for the nearest opponent in range (`unit_agent.gd` `_nearest_opponent`, and the Bastion roof gun's `close_defense.gd`). They used to ask every unit on the map, every frame, so the work grew with the square of the units: a battle of a few hundred ran at a few frames a second.
+
+- **Near units only:** they now ask the skirmish's `units_near`. It buckets the units into 16 m squares (`scripts/combat/unit_grid.gd`), filled once a frame and again when a unit joins or leaves. It hands back the units in the squares round the asker, with 2 m to spare for the buckets being up to a frame old. Distance is measured from where each unit stands now, as before, and what may be hit (`CombatResolver.can_hit`) is unchanged.
+- **On a timer:** a unit with nothing in its sights looks round every 0.2 s (`TARGET_SCAN_SECONDS`), not every frame. It keeps shooting what it found while that stays in range and can be hit, and looks again at once when that target dies or leaves. So an enemy walking into range is noticed within 0.2 s, and a unit no longer switches to a nearer enemy in the middle of a fight.
+- **Checks:** `tests/battle_lookup_test.gd` checks that the buckets miss nobody the whole group would find, that 60 mixed units each pick the opponent the old way picks, and the timer rules above.
+
 ## Editor checks
 
 Run the main resource_skirmish scene. Build Barracks/Tank Factory using Infantry's Build card and their assigned local Depot; select the building to produce its roster. Select each unit to see base attack and special attack/moving-fire details in the HUD. Existing hostile combat is unchanged; the corrected Infantry attack is weaker than the previous fallback, so send supporting infantry rather than expecting one infantry to win alone.

@@ -6,6 +6,9 @@ extends Node
 @export var cargo_scene: PackedScene
 @export var barracks_scene: PackedScene
 @export var tank_factory_scene: PackedScene
+## The Temple of Science (docs/TEMPLE_OF_SCIENCE.md). Maps that leave it unset use the saved scene.
+@export var temple_scene: PackedScene
+const TEMPLE_SCENE_PATH := "res://scenes/gameplay/temple_of_science.tscn"
 @export var supply_rules: SupplyRules
 @export var mine_scene: PackedScene
 ## The mine built on a mine site (docs/MINE_SITES.md): the same mine with the model made for the cut in the rock.
@@ -24,11 +27,20 @@ func select_depot(node: Node3D) -> void:
 ## Whether the player is placing anything: a building or plan, a Depot, a Generator, or a Depot Truck's site.
 func placing_anything() -> bool:
 	return not game.global_plan_kind.is_empty() or game.placing_depot or game.placing_generator or not game.placing_structure.is_empty() or deploying_truck() != null
-## Every friendly Depot's Territory ring shows while the player places anything, so they can see where it can
-## go (docs/DEPOT_RANGE.md). Otherwise only the selected Depot's ring shows.
+## Every friendly Depot's Territory ring shows while the player places anything, while the build page is open, and
+## while any building (or building site) is selected, so they can see where things can go (docs/DEPOT_RANGE.md).
+## Otherwise only the selected Depot's ring shows.
 func show_territories(placing: bool) -> void:
+	var all := placing or ranges_wanted()
 	for depot in get_tree().get_nodes_in_group("depots"):
-		depot.get_node("Territory").visible = depot.team == "player" and (placing or depot == selected)
+		var ring: Node3D = depot.get_node("Territory")
+		var shown: bool = depot.team == "player" and (all or depot == selected)
+		if ring.visible != shown: ring.visible = shown
+func ranges_wanted() -> bool:
+	var hud = game.get("hud")
+	if hud != null and hud.get("global_build_open") == true: return true
+	var building = game.selected_building
+	return is_instance_valid(building) and (building.is_in_group("selectable_buildings") or building.is_in_group("construction_plans"))
 func owned_selected() -> bool:
 	return SupplySource.available(selected,"player")
 ## The mine scene for a spot: the portal mine on a mine site, the pithead on an ore field.
@@ -219,6 +231,7 @@ func deploy_truck(unit: Node3D, point: Vector3) -> bool:
 	var from: Vector3 = trailer.global_position if trailer != null else unit.global_position
 	from.y = point.y
 	unit.remove_from_group("units")
+	if game.has_method("units_changed"): game.units_changed()
 	unit.queue_free()
 	var depot := establish(point,rules.deployed_energy,rules.deployed_iron,model_yaw,unit.team)
 	depot.get_node("Visuals/Model").play_deploy(from,angle_difference(heading,yaw))
@@ -376,6 +389,7 @@ func builder_valid() -> bool:
 func production_scene(kind: StringName) -> PackedScene:
 	if kind == &"barracks": return barracks_scene
 	if kind == &"tank_factory": return tank_factory_scene
+	if kind == &"temple_of_science": return temple_scene if temple_scene != null else load(TEMPLE_SCENE_PATH)
 	return null
 func construct_production(point: Vector3, kind: StringName) -> bool:
 	if kind == &"iron_mine": return construct_mine(point)
@@ -410,7 +424,7 @@ func construct_mine(point: Vector3) -> bool:
 	var mine = mine_scene_for(spot).instantiate()
 	mine.rules = engineering_rules; mine.position = game.ground.tile_to_world(spot.position+spot.size/2)
 	game.get_node("Entities/Buildings").add_child(mine,true)
-	game.notify("Shared %s mine built. Any player's Infantry can gather or repair it." % ("coal" if game.ground.get_terrain(spot.position) == game.ground.Terrain.COAL else "iron"))
+	game.notify("Shared %s mine built. Any player's Deforesters can gather or repair it." % ("coal" if game.ground.get_terrain(spot.position) == game.ground.Terrain.COAL else "iron"))
 	return true
 
 func depot_rules() -> DepotRules:
@@ -469,7 +483,17 @@ func plan_overlaps(start: Vector2i, size: Vector2i) -> bool:
 			for cell in strip_cells(plan.global_position):
 				if rect.has_point(cell): return true
 	return false
-func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_payer := false, team := "player") -> Node3D:
+## Whether the player sees every cell of a footprint now (docs/FOG_OF_WAR.md, Plans need sight). Plans from the
+## Build page need it; a truck's Worksite does not, since the trucks drive out to it.
+func in_sight(start: Vector2i, size: Vector2i, team := "player") -> bool:
+	var fog = game.fog_of_war()
+	if fog == null: return true
+	for z in range(start.y,start.y+size.y):
+		for x in range(start.x,start.x+size.x):
+			if not fog.visible_to(team,game.ground.tile_to_world(Vector2i(x,z))): return false
+	return true
+const OUT_OF_SIGHT := "Plans need sight of the whole site: move a unit near, or send a Cargo truck's Worksite."
+func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_payer := false, needs_sight := true, team := "player") -> Node3D:
 	var spec := plan_spec(kind)
 	if spec.is_empty(): return null
 	if kind == &"rail": game.notify("Maglev track is laid piece by piece from the Build page, not planned.",team); return null
@@ -487,13 +511,16 @@ func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_paye
 	if kind == &"depot" and not depot_spacing_ok(point,team):
 		game.notify(spacing_notice(point,team),team)
 		return null
+	if needs_sight and not in_sight(start,spec.size,team):
+		game.notify(OUT_OF_SIGHT,team)
+		return null
 	var plan = PLAN_SCENE.instantiate()
 	plan.kind = kind; plan.spec = spec; plan.start = start; plan.team = team
 	plan.payer = payer; plan.pinned = pin_payer or payer != null
 	plan.position = game.ground.tile_to_world(start+spec.size/2)
 	game.get_node("Entities/Buildings").add_child(plan,true)
 	if kind == &"rail": game.notify("Rail plan placed. A covering Depot pays it when the tile is clear.",team)
-	else: game.notify("%s plan placed. Deliver %d iron to its footprint, then order Infantry to construct; a covering stockpile pays the energy as they build." % [spec.title,spec.iron],team)
+	else: game.notify("%s plan placed. Deliver %d iron to its footprint, then order Deforesters to construct; a covering stockpile pays the energy as they build." % [spec.title,spec.iron],team)
 	return plan
 ## Depots and deployed Cargo trucks pay plans in their range; rails need a Depot.
 func plan_source_valid(plan: Node3D, source) -> bool:
@@ -536,7 +563,9 @@ func update_global_preview(point: Vector3) -> bool:
 	show_range(game.global_plan_kind == &"depot")
 	var valid := plan_terrain_valid(start,spec.size,game.global_plan_kind) and not plan_overlaps(start,spec.size)
 	var spaced: bool = game.global_plan_kind != &"depot" or depot_spacing_ok(point)
-	valid = valid and spaced
+	var hud_node = game.get_node_or_null("Interface")
+	var seen: bool = game.global_plan_kind == &"rail" or (hud_node != null and hud_node.worksite_open) or in_sight(start,spec.size)
+	valid = valid and spaced and seen
 	if preview_material == null:
 		preview_material = ghost.get_node("Footprint").mesh.material.duplicate()
 		ghost.get_node("Footprint").material_override = preview_material
@@ -557,6 +586,7 @@ func update_global_preview(point: Vector3) -> bool:
 	preview_material.albedo_color = placement_colour(valid,affordable)
 	var site_line := "" if game.global_plan_kind == &"rail" else " · iron on site %d/%d%s" % [on_site.get(&"iron",0),spec.iron," · READY" if covered else ""]
 	if not spaced: site_line = " · "+spacing_reason()
+	elif not seen: site_line = " · out of sight: plans need vision of the whole site"
 	elif not valid and not strip_notice(point,spec.size,game.global_plan_kind).is_empty(): site_line = " · keep the Depot Truck strip clear"
 	elif valid and spec.energy > 0 and sources.is_empty(): site_line += " · no Depot range covers it: nothing pays its energy yet"
 	elif valid and not energy_ok: site_line += " · no %s in range has %d E" % ["pinned payer" if pinned != null else "stockpile",spec.energy]

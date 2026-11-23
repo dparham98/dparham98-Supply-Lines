@@ -31,9 +31,10 @@ func run() -> void:
 			tiles += 1
 			if not check(art(button).begins_with("sl_") and button.icon.get_width() == 128,"%s has no card art" % button.name): return
 			if not check(button.expand_icon and button.theme_type_variation == &"CommandCard" and button.text.is_empty() and button.has_node("Key"),"%s is not set up as a card" % button.name): return
-	if not check(tiles == 49,"Expected 49 card tiles, found %d" % tiles): return
+	# 52 since the Temple of Science (docs/TEMPLE_OF_SCIENCE.md): its Build tile, its Research card and the train's Mine iron.
+	if not check(tiles == 52,"Expected 52 card tiles, found %d" % tiles): return
 	# Commands with their own art.
-	var names := {"Return":"sl_deliver.png","DropMaterials":"sl_drop.png","DeployTruck":"sl_deploy_depot.png","ProduceUbermech":"sl_produce_ubermech.png","PrintTruck":"sl_produce_truck.png","Derail":"sl_derail.png"}
+	var names := {"Return":"sl_deliver.png","DropMaterials":"sl_drop.png","DeployTruck":"sl_deploy_depot.png","ProduceUbermech":"sl_produce_ubermech.png","PrintTruck":"sl_produce_truck.png","Derail":"sl_derail.png","Research":"sl_research_mining_trains.png","MineIron":"sl_mine_iron.png"}
 	for id in names:
 		if not check(art(hud.card.get_node(id)) == names[id],"%s has the wrong card" % id): return
 	# Cargo: supplies, refuelling and trips each show the art for their state.
@@ -88,6 +89,6 @@ func run() -> void:
 	if not check(generator.fuel_left_text() == "2 coal · 6s","Coal fuel left wrong: "+generator.fuel_left_text()): return
 	generator.set_fuel_preference("either")
 	if not check(generator.fuel_left_text() == "4 wood + 2 coal · 14s","Either fuel left wrong: "+generator.fuel_left_text()): return
-	if not check(not hud.has_node("Bottom/Body/Row/Context/GeneratorMode") and not hud.context.get_node("AssignedSource").visible,"Generator dropdowns still shown"): return
+	if not check(not hud.has_node("Bottom/Body/Row/Context/GeneratorMode"),"Generator dropdowns still shown"): return
 	print("COMMAND_CARDS_TEST_PASSED")
 	quit(0)

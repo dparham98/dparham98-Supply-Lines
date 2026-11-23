@@ -1,0 +1,64 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/ubermech_laser.gd" id="effect"]
+
+[sub_resource type="StandardMaterial3D" id="hot"]
+shading_mode = 0
+albedo_color = Color(1, 0.86, 0.68, 1)
+emission_enabled = true
+emission = Color(1, 0.48, 0.24, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="StandardMaterial3D" id="ruby"]
+transparency = 1
+blend_mode = 1
+shading_mode = 0
+albedo_color = Color(1, 0.048, 0.012, 0.74)
+
+[sub_resource type="CylinderMesh" id="core"]
+material = SubResource("hot")
+height = 1.0
+top_radius = 0.043
+bottom_radius = 0.051
+radial_segments = 10
+rings = 0
+
+[sub_resource type="CylinderMesh" id="halo"]
+material = SubResource("ruby")
+height = 1.0
+top_radius = 0.093
+bottom_radius = 0.12
+radial_segments = 10
+rings = 0
+
+[sub_resource type="SphereMesh" id="glint"]
+material = SubResource("hot")
+radius = 0.145
+height = 0.29
+radial_segments = 12
+rings = 6
+
+[node name="UbermechLaser" type="Node3D"]
+script = ExtResource("effect")
+
+[node name="Span" type="Node3D" parent="."]
+
+[node name="Core" type="MeshInstance3D" parent="Span"]
+position = Vector3(0, 0, -0.5)
+rotation = Vector3(-1.5707963, 0, 0)
+cast_shadow = 0
+mesh = SubResource("core")
+
+[node name="Halo" type="MeshInstance3D" parent="Span"]
+position = Vector3(0, 0, -0.5)
+rotation = Vector3(-1.5707963, 0, 0)
+cast_shadow = 0
+mesh = SubResource("halo")
+
+[node name="Lens" type="MeshInstance3D" parent="."]
+cast_shadow = 0
+mesh = SubResource("glint")
+
+[node name="Impact" type="MeshInstance3D" parent="."]
+cast_shadow = 0
+mesh = SubResource("glint")

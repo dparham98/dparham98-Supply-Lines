@@ -34,7 +34,7 @@ func run() -> void:
 	var network = game.get_node("DepotNetwork")
 	var point = ai.building_site(depot,network.plan_spec(&"barracks").size)
 	if not check(point != null and depot.global_position.distance_to(point) <= SupplySource.radius(depot),"The enemy should find a Barracks site in its Depot's range"): return
-	var plan: Node3D = network.queue_plan(point,&"barracks",depot,true,"enemy")
+	var plan: Node3D = network.queue_plan(point,&"barracks",depot,true,true,"enemy")
 	if not check(plan != null and plan.team == "enemy" and network.plan_payer(plan) == depot,"An enemy plan should be the enemy's, paid by its Depot"): return
 	if not check(game.message.is_empty(),"The enemy's notices should not reach the player: %s" % game.message): return
 	if not check(not network.plan_source_valid(plan,game.depot),"The player's Depot should not pay the enemy's plan"): return

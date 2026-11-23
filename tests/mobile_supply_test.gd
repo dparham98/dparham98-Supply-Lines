@@ -167,13 +167,12 @@ func run() -> void:
 			if network.can_place_size(candidate,train,Vector2i(5,5)): building_point = candidate
 	if not check(building_point != Vector3.ZERO and network.construct_production(building_point,&"barracks"),"Train could not fund production building construction"): return
 	var building = get_nodes_in_group("production_buildings")[-1]; building.set_process(false)
-	if not check(building.assigned_depot == null and not building.request_unit(&"infantry") and train.carried_energy == 100 and train.iron == 45,"Mobile construction silently assigned operating funds"): return
-	var nearest_depot: Node3D
-	for candidate in get_nodes_in_group("depots"):
-		if SupplySource.covers(candidate,building.global_position,"player"): nearest_depot = candidate
-	if not check(is_instance_valid(nearest_depot) and building.assign_source(nearest_depot),"Mobile-built structure could not explicitly bind covering Depot"): return
+	# Production picks the nearest covering Depot itself (docs/HUD_POLISH.md) and never pays from the train.
+	var covering: Array[Node3D] = building.covering_depots()
+	if not check(not covering.is_empty(),"No Depot covers the mobile-built Barracks"): return
+	var nearest_depot: Node3D = covering[0]
 	nearest_depot.energy = 100; nearest_depot.iron = 20
-	if not check(building.source_friendly() and building.request_unit(&"infantry"),"Assigned Depot could not pay for Infantry"): return
+	if not check(building.source_friendly() and building.assigned_depot == nearest_depot and building.request_unit(&"infantry") and train.carried_energy == 100 and train.iron == 45,"The Barracks should pay from the covering Depot, not the train"): return
 	if not check(not building.assign_source(depot),"Production reassignment allowed a nonempty queue"): return
 	building._process(building.base_seconds()+0.1)
 	if not check(building.queue == 0,"Explicitly assigned mobile-built Barracks did not produce Infantry"): return

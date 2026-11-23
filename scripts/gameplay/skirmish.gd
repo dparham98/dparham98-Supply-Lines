@@ -70,11 +70,12 @@ var wood_delivered := 0
 var units_printed := 0
 var enemies_killed := 0
 var outcome := ""
-@export var message := "Select your infantry, then right-click the marked iron deposit."
+@export var message := "Select your Deforester, then right-click the marked iron deposit."
 @onready var depot = $Entities/Buildings/Depot
 @onready var ground = $Terrain/Ground
 @onready var hud = $Interface
 func _ready() -> void:
+	message_time = Time.get_ticks_msec()/1000.0
 	if depot.rules.testing_starting_iron < 0: ore = starting_ore
 	if testing_coal_amount > 0 and has_node("Entities/Resources/TestingCoalPoint"):
 		var pile = pile_scene.instantiate()
@@ -96,10 +97,13 @@ func cancel_armed() -> void:
 	pending_unit_command = ""
 	fell_dragging = false
 	$DepotNetwork.clear_builder()
+## When the header message last changed, for its fade (docs/HUD_POLISH.md).
+var message_time := 0.0
 ## A message for the player; one about another side's doings (`team`, the enemy player's) is not shown.
 func notify(text: String, team := "player") -> void:
 	if team != "player": return
 	message = text
+	message_time = Time.get_ticks_msec()/1000.0
 # Positioned alerts for the HUD feed, newest first. A key repeats at most every ALERT_REPEAT_SECONDS.
 var alerts: Array[Dictionary] = []
 var _alert_times := {}
@@ -159,7 +163,7 @@ func _input(event: InputEvent) -> void:
 	if not event.physical_keycode in RAIL_KEYS: return
 	get_viewport().set_input_as_handled()
 	if not event.echo: _rail_key(event.physical_keycode)
-const RAIL_HELP := "Click two buildings (Depots, mines or build sites) to connect; the suggested track follows the cursor and is green when a Depot can pay for it. Click (or Enter) lays it; Backspace undoes; Esc stops."
+const RAIL_HELP := "Click two buildings (Depots, mines or build sites) to connect; the suggested track follows the cursor and is green when a Depot can pay for it. Click (or Enter) lays it; Backspace undoes; Esc stops. Click a wreck of your track to rebuild it."
 func _rail_key(key: int) -> void:
 	var rails = $RailNetwork
 	if key == KEY_BACKSPACE:
@@ -202,7 +206,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		# With a track suggested, a click lays it (docs/RAIL_PLANNING.md).
 		if point != null:
 			var rails = $RailNetwork
-			if is_instance_valid(rails.route_to) and not rails.pending.is_empty(): lay_route()
+			# A click on a wreck of your track rebuilds it (docs/DERAILER.md).
+			var wreck = rails.wreck_at(point) if rails.pending.is_empty() else null
+			if wreck != null:
+				if rails.rebuild(wreck,_rail_pin()) != null: placing_rail = false
+			elif is_instance_valid(rails.route_to) and not rails.pending.is_empty(): lay_route()
 			else: notify(rails.pick_target(rails.pick_at(point)))
 		get_viewport().set_input_as_handled()
 		return
@@ -249,14 +257,14 @@ func _unhandled_input(event: InputEvent) -> void:
 func place_global_plan(point: Vector3, queued := false) -> Node3D:
 	var worksite: bool = hud.worksite_open
 	var payer: Node3D = hud.global_payer if not worksite and is_instance_valid(hud.global_payer) else null
-	var plan = $DepotNetwork.queue_plan(point,global_plan_kind,payer,hud.global_pinned and not worksite)
+	var plan = $DepotNetwork.queue_plan(point,global_plan_kind,payer,hud.global_pinned and not worksite,not worksite)
 	if plan == null: return null
 	if worksite:
 		var trucks: Array[Node3D] = hud.worksite_trucks()
 		for truck in trucks: give_order(truck,{kind = "fetch", target = plan},queued)
 		var materials := PackedStringArray()
 		for kind in plan.materials(): materials.append("%d %s" % [plan.materials()[kind],kind])
-		notify("%s worksite placed. %s %s, then order Infantry to construct it." % [plan.spec.title,"The truck brings" if trucks.size() == 1 else "%d trucks bring" % trucks.size()," and ".join(materials)])
+		notify("%s worksite placed. %s %s, then order Deforesters to construct it." % [plan.spec.title,"The truck brings" if trucks.size() == 1 else "%d trucks bring" % trucks.size()," and ".join(materials)])
 		if not queued:
 			global_plan_kind = &""
 			hud.close_build()
@@ -433,10 +441,10 @@ func issue_order(screen, queued := false) -> void:
 			var cell = ground.get_tile_at_position(point)
 			if cell != null and ground.can_traverse(cell,unit.mobility_layer(),unit._owner_key()): give_order(unit,{kind = "move", point = point},queued)
 			else: notify("That terrain is blocked. Right-click open land, resources, or a hostile.")
-	if selected == 0: notify("Left-click an infantry unit first.")
+	if selected == 0: notify("Left-click a Deforester first.")
 	elif queued: notify("Order queued. Shift-right-click adds more; a plain order replaces the queue.")
 	elif enemy: notify("Attack order: approach and fire at range.")
-	elif plan: notify("Build site: Cargo vehicles fetch exactly the materials it lacks; Infantry construct from the pile.")
+	elif plan: notify("Build site: Cargo vehicles fetch exactly the materials it lacks; Deforesters construct from the pile.")
 	elif crate: notify("Crate order: vehicles load it; workers deliver into it or gather from it.")
 	elif forest_ordered: notify("Harvest wood from the forest tile and deliver it to a friendly Depot.")
 	elif is_instance_valid(coal_ordered): notify("Dig coal and deliver it to a friendly Depot. %d left in this field; workers fell any trees in their way and move on through it cell by cell." % coal_ordered.field_remaining())
@@ -451,6 +459,25 @@ func show_shot(start: Vector3, end: Vector3, team: String, projectile: PackedSce
 	var fog := fog_of_war()
 	if fog != null and team != fog.viewer and not fog.visible_to(fog.viewer,start) and not fog.visible_to(fog.viewer,end): shot.visible = false
 	return shot
+## Units bucketed by where they stand, for "who is near me" questions (UnitGrid, docs/COMBAT_BATCH.md).
+const UnitGrid = preload("res://scripts/combat/unit_grid.gd")
+var _unit_grid := UnitGrid.new()
+## Units standing within about `radius` of `point`, perhaps with a few just beyond and some freed (UnitGrid).
+func units_near(point: Vector3, radius: float) -> Array:
+	return _unit_grid.near(get_tree(),point,radius)
+## Whether an effect at `point` could be seen: on the screen, or within `margin` (a share of the screen's size) of
+## its edge. Death clips and shell bursts nobody can see are skipped: each is tens to hundreds of animated pieces,
+## and in a big battle most of them happened off screen. Without a window (the headless checks) all count as seen.
+func in_view(point: Vector3, margin := 0.2) -> bool:
+	if DisplayServer.get_name() == "headless": return true
+	var camera := get_viewport().get_camera_3d()
+	if camera == null: return true
+	if camera.is_position_behind(point): return false
+	var screen := get_viewport().get_visible_rect()
+	return screen.grow_individual(screen.size.x*margin,screen.size.y*margin,screen.size.x*margin,screen.size.y*margin).has_point(camera.unproject_position(point))
+## A unit joined or left the "units" group.
+func units_changed() -> void:
+	_unit_grid.changed()
 ## The map's fog of war (docs/FOG_OF_WAR.md), or null on a map without one.
 ## The enemy player on this map (docs/ENEMY_AI.md), or null.
 func enemy_player() -> Node:
@@ -553,12 +580,16 @@ func issue_card_order(screen, queued := false) -> void:
 		target = pick_vehicle_to_repair(screen)
 		if target == null: target = pick_target(screen,"selectable_buildings",50)
 	elif pending_unit_command == "capture": target = pick_target(screen,"capturable_buildings",50)
+	elif pending_unit_command == "mine_rail":
+		# Mine iron (docs/TEMPLE_OF_SCIENCE.md) takes an Iron Mine; trains only.
+		target = pick_target(screen,"mines",50)
+		if target == null: notify("Click an Iron Mine joined to the train's track."); return
 	elif pending_unit_command == "derail":
 		# Derail takes a piece of track, anyone's (docs/DERAILER.md).
 		var on = ground_at(screen)
-		var picked = $RailNetwork.pick_at(on) if on != null else null
-		if not picked is RailAnchor: notify("Click a piece of rail to spike."); return
-		target = picked.piece
+		var hit: Dictionary = $RailNetwork.nearest_piece(on,$RailNetwork.probe("straight").half_width()+0.8) if on != null else {}
+		if hit.is_empty(): notify("Click a piece of rail to destroy."); return
+		target = hit.piece
 	elif pending_unit_command in ["load","unload"]:
 		# Crate stops: a crate, a friendly Depot, or a deployed Cargo vehicle under the pointer.
 		target = pick_crate(screen)
@@ -617,6 +648,7 @@ func issue_card_order(screen, queued := false) -> void:
 			if point != null: give_order(unit,{kind = "move", point = point},queued)
 		elif pending_unit_command == "attack" and target.get("team") == unit.team: give_order(unit,{kind = "attack", target = target, forced = true},queued)
 		elif pending_unit_command == "derail" and not unit.has_ability(&"derail"): continue
+		elif pending_unit_command == "mine_rail" and not unit.is_in_group("rail_trains"): continue
 		else: give_order(unit,{kind = pending_unit_command, target = target},queued)
 	# Shift keeps the command armed so several targets can be queued.
 	notify(pending_unit_command.capitalize()+(" order queued. Shift-click adds more; Esc stops." if queued else " order issued."))

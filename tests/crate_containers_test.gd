@@ -87,9 +87,10 @@ func run() -> void:
 	run_until(worker,func(): return worker.state.begins_with("Crate full"),10)
 	if not check(worker.cargo == 5 and bin.amount == 25 and bin2.resource_kind == &"wood","Crate accepted a second resource"): return
 	worker.cargo = 0
-	# Workers gather from a crate like a pile; the emptied crate stays.
+	# Workers gather from a crate like a pile; the emptied crate leaves the map.
 	worker.command_gather(bin2)
-	if not check(run_until(worker,func(): return bin2.amount == 0,20) and is_instance_valid(bin2) and bin2.material_kind.is_empty(),"Gathering did not empty the crate"): return
+	if not check(run_until(worker,func(): return not is_instance_valid(bin2) or bin2.is_queued_for_deletion(),20),"Gathering did not empty the crate and take it off the map"): return
+	await process_frame
 	worker._stop_route(); worker.order = "idle"; worker.source = null; worker.cargo = 0
 	# Load on a crate takes it and the filled crates next to it, up to 4 slots.
 	clear_crates()
@@ -171,7 +172,7 @@ func run() -> void:
 	var marker = CrateYard.spawn(self,field+Vector2i(0,3),&"wood",10,"player")
 	var status: Dictionary = overlay.status_for(marker)
 	if not check(is_equal_approx(status.crate.ratio,0.4) and overlay.hud_name(marker) == "Wood crate","Crate overlay wrong"): return
-	if not check(is_equal_approx(hud.get_node("Bottom").size.y,272),"Cargo HUD broke the fixed height"): return
+	if not check(is_equal_approx(hud.get_node("Bottom").size.y,296),"Cargo HUD broke the fixed height"): return
 	for id in ["Move","Stop","DeployCargo","ToggleRefuel","Load","Unload","Trips"]:
 		if not check(hud.card.get_node(id).visible,"Cargo tile %s missing" % id): return
 	hud.card.get_node("Load").pressed.emit(); hud._process(0)

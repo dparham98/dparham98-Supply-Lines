@@ -161,7 +161,7 @@ func build(depot: Node3D) -> void:
 		var point = coal_site(depot) if kind == &"coal_mine" else building_site(depot,spec.size)
 		if point == null: build_step += 1; return
 		var mine: bool = network.is_mine_kind(kind)
-		plan = network.queue_plan(point,kind,null if mine else depot,not mine,team)
+		plan = network.queue_plan(point,kind,null if mine else depot,not mine,true,team)
 		if plan == null: build_step += 1; return
 		plan.tree_exiting.connect(_plan_gone.bind(plan))
 	var truck := _cargo_truck()

@@ -13,6 +13,64 @@ def between(a,b,t):
     return {a:1-t,b:t}
 
 
+def cloth_normals(obj):
+    mesh=obj.data
+    for face in mesh.polygons:
+        face.use_smooth=True
+    mesh.set_sharp_from_angle(angle=.82)
+
+
+def faced_panel(pattern,rows,normal,weight,face=0,edge=1,thickness=.006):
+    """Sew a continuous curved face to its backing with a turned, rounded edge."""
+    normal=Vector(normal).normalized()
+    h,w=len(rows),len(rows[0])
+    top=[Vector(p) for row in rows for p in row]
+    quads=[(i*w+j,i*w+j+1,(i+1)*w+j+1,(i+1)*w+j)
+           for i in range(h-1) for j in range(w-1)]
+    a,b,c,_=quads[len(quads)//2]
+    reverse=(top[b]-top[a]).cross(top[c]-top[a]).dot(normal)<0
+    if reverse:
+        quads=[q[::-1] for q in quads]
+    boundary=(list(range(w))+[i*w+w-1 for i in range(1,h)]
+              +list(range(h*w-2,(h-1)*w-1,-1))
+              +[i*w for i in range(h-2,0,-1)])
+    if reverse:
+        boundary.reverse()
+    verts=top+[p-normal*thickness for p in top]
+    faces=quads+[tuple(i+len(top) for i in q[::-1]) for q in quads]
+    mats=[face]*len(quads)+[edge]*len(quads)
+    rim=[]
+    for j,id_ in enumerate(boundary):
+        delta=top[boundary[(j+1)%len(boundary)]]-top[boundary[j-1]]
+        rim.append(delta.normalized().cross(normal)*min(.0016,thickness*.3))
+    previous=boundary
+    for depth,bulge in [(.18,.71),(.47,1.),(.78,.71),(1.,0.)]:
+        if depth==1:
+            next_ring=[i+len(top) for i in boundary]
+        else:
+            next_ring=list(range(len(verts),len(verts)+len(boundary)))
+            verts.extend(top[i]+r*bulge-normal*thickness*depth for i,r in zip(boundary,rim))
+        for j in range(len(boundary)):
+            jj=(j+1)%len(boundary)
+            faces.append((previous[jj],previous[j],next_ring[j],next_ring[jj]))
+            mats.append(face if depth<=.47 else edge)
+        previous=next_ring
+    pattern.add(verts,faces,mats,weight)
+
+
+def interpolated_rows(stations,substeps=3):
+    """Interpolate garment sections, including the ends of a collar roll."""
+    controls=[Vector(p) for p in stations]
+    result=[]
+    for j,(b,c) in enumerate(zip(controls,controls[1:])):
+        a=controls[max(0,j-1)]
+        d=controls[min(j+2,len(controls)-1)]
+        for step in range(substeps):
+            t=step/substeps
+            result.append(.5*(2*b+(c-a)*t+(2*a-5*b+4*c-d)*t*t+(3*b-a-3*c+d)*t**3))
+    return result+[controls[-1]]
+
+
 def core(v):
     z=v[2]
     if z<.91: return {'hips':1}
@@ -110,29 +168,137 @@ def torso(k):
     levels=sorted({r[0] for r in BODY}|{1.247,1.357})
     rows=[outline(*spec(z),z) for z in levels]
     p.loft(rows,lambda j,i:2 if 1.247<=levels[j]<1.357 and 6<=i<=11 else 0,core)
-    p.finish()
+    cloth_normals(p.finish())
 
-    # A dark stand collar behind two folded lapels leaves a crisp V at the throat.
-    p=Pattern(k,'Collar stand and throat',[lining,k.wool_light])
-    collar=[(1.303,.119,.088,.076),(1.360,.122,.101,.091),(1.409,.109,.089,.092),
-            (1.418,.092,.082,.085),(1.455,.079,.077,.076),(1.478,.078,.073,.073)]
-    p.loft([outline(w,.050,fr,bk,z) for z,w,fr,bk in collar],0,lambda v:between('chest','neck',.4))
-    p.plate(front([(-.092,1.366),(.092,1.366),(.051,1.272),(.0,1.222),
-                   (-.061,1.273)],.006),(0,-1,0),.006,'chest',0,0)
-    p.finish()
+    # The ribbed throat seal opens into a high, padded collar. Its lowest
+    # rib disappears under the coat and the narrow upper edge turns under the jaw.
+    p=Pattern(k,'Collar stand and throat',[lining,k.wool_light,k.leather])
+    collar=[(1.292,.115,.089,.078),(1.316,.123,.096,.084),(1.348,.125,.100,.090),
+            (1.367,.120,.099,.092),(1.388,.115,.093,.093),(1.405,.110,.090,.093),
+            (1.418,.098,.084,.085),(1.438,.083,.078,.078),(1.455,.079,.077,.076),
+            (1.470,.079,.073,.073),(1.478,.076,.071,.071)]
+    sealrows=[]
+    for z,w,fr,bk in collar:
+        ring=[]
+        for j in range(40):
+            angle=2*pi*j/40
+            cx=cos(angle)
+            ring.append((w*sin(angle),.050-(fr if cx>0 else bk)*cx,z))
+        sealrows.append(ring)
+    p.loft(sealrows,0,lambda v:between('chest','neck',.4))
+    neckpiece=[]
+    for z,w in interpolated_rows([(1.232,.008),(1.251,.034),(1.280,.064),
+                                 (1.314,.088),(1.341,.103),(1.363,.103),
+                                 (1.380,.097),(1.398,.091)],2):
+        row=[]
+        for i in range(13):
+            t=i/6-1
+            x=w*t
+            h=z-.006*(1-t*t)*min(1,max(0,(z-1.353)/.045))
+            # The insert wraps behind the rolled collar on either side.
+            side_return=.039*max(0,(abs(t)-.56)/.44)**2*min(1,max(0,(z-1.348)/.038))
+            row.append((x,surface(x,h)-.0095-.002*(1-t*t)+side_return,h))
+        neckpiece.append(row)
+    faced_panel(p,neckpiece,(0,-1,.10),'chest',0,0,.004)
+    # Three shallow, curved tucks reinforce the insert where it bends. They
+    # share the serge finish; highlights along their rounded crowns describe the weave.
+    for z0,w in [(1.294,.071),(1.315,.086),(1.336,.094)]:
+        tuck=[]
+        for dz,rise in [(-.003,0),(-.002,.0010),(0,.0020),(.0015,.0020),(.003,.0003)]:
+            row=[]
+            for j in range(11):
+                t=j/5-1
+                x=w*t
+                z=z0+dz+.0050*t*t
+                row.append((x,surface(x,z)-.011-rise,z))
+            tuck.append(row)
+        faced_panel(p,tuck,(0,-1,.10),'chest',0,0,.0015)
+    cloth_normals(p.finish())
     p=Pattern(k,'Greatcoat | faced lapels',[k.wool_light,lining,k.wool])
+    # Both folds are cut from one undercollar across the nape.
+    back=[]
+    for i in range(19):
+        t=i/9-1
+        a=Vector((.083*t,.148-.022*t*t,1.424-.011*t*t))
+        b=Vector((.126*t,.175-.039*t*t,1.365+.023*t*t))
+        row=[]
+        for j in range(7):
+            f=j/6
+            point=a.lerp(b,f)
+            # Match the tangents and rounded crown of the two collar ends.
+            point.y+=(.0035-.0075*t*t)*sin(pi*f)
+            point.z+=.007*sin(pi*f)
+            row.append(point)
+        back.append(row)
+    faced_panel(p,back,(0,.92,.40),'chest',2,1,.009)
     for side in (-1,1):
-        # Crease line divides the narrow undercollar from the broad notched lapel.
-        def sym(coords): return [(side*x,z) for x,z in coords]
-        def proj(coords,offset): return front(sym(coords),offset)
-        roll=[(.080,-.022,1.421),(.111,.054,1.444),(.152,.055,1.404),
-              (.208,-.042,1.310),(.149,-.085,1.327),(.101,-.086,1.307)]
-        p.plate([(side*x,y,z) for x,y,z in roll],(side*.48,-1,.23),.014,'chest',2,1)
-        low=(-.071,1.074) if side==1 else (-.014,1.185)
-        fold=[(.085,1.385),(.113,1.327),(.166,1.302),(.135,1.281),(.181,1.272),
-              (.132,1.229),low,(.058,1.292)]
-        p.plate(proj(fold,.023 if side==1 else .016),(0,-1,.15),.012,core,0,1)
-    p.finish()
+        inner=interpolated_rows([(.083,.126,1.413),(.097,.073,1.435),(.096,.027,1.435),
+                                 (.083,-.023,1.415),(.072,-.062,1.375),(.089,-.089,1.330)])
+        outer=interpolated_rows([(.126,.136,1.388),(.144,.082,1.406),(.158,.033,1.392),
+                                 (.177,-.007,1.357),(.202,-.049,1.314),(.204,-.070,1.307)])
+        # The undercollar rolls up from the gorge and turns around the neck.
+        fold=[]
+        for a,b in zip(inner,outer):
+            row=[]
+            for j in range(7):
+                t=j/6
+                x,y,z=a.lerp(b,t)
+                row.append((side*x,y-.004*sin(pi*t),z+.007*sin(pi*t)))
+            fold.append(row)
+        faced_panel(p,fold,(side*.46,-.65,.60),'chest',2,1,.009)
+        # The notch has two short straight cuts. Intermediate fabric sections
+        # conform to the chest and roll over the break line before crossing it.
+        stages=[(1.368,.069,.100),(1.354,.066,.110),(1.327,.055,.121),
+                (1.307,.045,.160),(1.303,.043,.164),(1.284,.031,.137),
+                (1.273,.023,.177),(1.269,.018,.179),(1.237,.001,.137)]
+        if side==1:
+            stages += [(1.192,-.025,.084),(1.136,-.052,.012),(1.077,-.071,-.067)]
+        else:
+            stages += [(1.212,-.008,.067),(1.185,-.016,-.011)]
+        sections=[]
+        for a,b in zip(stages,stages[1:]):
+            steps=max(1,round((a[0]-b[0])/.015))
+            sections.extend([tuple(mix(f,g,i/steps) for f,g in zip(a,b)) for i in range(steps)])
+        sections.append(stages[-1])
+        fold=[]
+        for z,inside,outside in sections:
+            row=[]
+            for j in range(7):
+                t=j/6
+                x=side*mix(inside,outside,t)
+                # Lay the diagonal gorge seam over the undercollar. The top
+                # row must clear the cloth beneath even on the thinner overlap.
+                h=z-.010*t*max(0,1-(1.368-z)/.026)
+                seat=.013*min(1,max(0,(z-1.318)/.030))
+                turn=.0075*sin(pi*t)*min(1,(outside-inside)/.045)
+                y=surface(x,h)-(.024 if side==1 else .016)-turn-seat
+                row.append((x,y,h))
+            fold.append(row)
+        faced_panel(p,fold,(0,-1,.13),core,0,1,.0075)
+        if side==1:
+            # A bound, narrow buttonhole follows the face of the lapel.
+            def top_at(x,z):
+                for a,b in zip(sections,sections[1:]):
+                    if b[0]<=z<=a[0]:
+                        u=(a[0]-z)/(a[0]-b[0])
+                        left,right=mix(a[1],b[1],u),mix(a[2],b[2],u)
+                        return surface(x,z)-.024-.0075*sin(pi*(x-left)/(right-left))
+                raise ValueError('Buttonhole lies outside lapel')
+            rows=[]
+            for length,width,rise in [(.0153,.0020,.0001),(.0153,.0020,.0010),
+                                      (.0146,.0017,.0013),(.0130,.0007,.0014)]:
+                ring=[]
+                for j in range(40):
+                    angle=j*pi/20
+                    dx=length*cos(angle)
+                    dz=width*sin(angle)
+                    x=.112+dx-.27*dz
+                    z=1.263+.27*dx+dz
+                    ring.append((x,top_at(x,z)-rise,z))
+                rows.append(ring)
+            p.loft(rows,2,core,caps=False)
+            p.add(rows[-1],[tuple(range(len(rows[-1])))],1,core)
+    cloth_normals(p.finish())
     p=Pattern(k,'Fly and button stand',[k.wool,lining])
     p.plate(front([(-.074,.858),(-.074,1.081),(.039,1.181),(.066,1.159),
                    (-.063,1.064),(-.063,.858)],.006),(0,-1,0),.005,core,0,1)

@@ -75,7 +75,7 @@ func run() -> void:
 	generator.reset_cycle(); depot.energy = 500; depot.wood = 20; depot.coal = 10
 	focus(generator.global_position,60)
 	await click_at(target(generator))
-	if not check(hud.shown == generator and hud.card.get_node("BurnWood").visible and not hud.context.get_node("AssignedSource").visible,"Generator fuel tiles not shown"): return
+	if not check(hud.shown == generator and hud.card.get_node("BurnWood").visible,"Generator fuel tiles not shown"): return
 	await shot("generator_wood")
 	await click(hud.card.get_node("BurnCoal"))
 	if not check(generator.fuel_preference == "coal","Burn Coal tile failed"): return

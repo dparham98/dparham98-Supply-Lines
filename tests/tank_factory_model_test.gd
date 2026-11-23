@@ -110,14 +110,14 @@ func run() -> void:
 	# The factory reads each unit's model from its scene.
 	for id in ["tank","motorcycle","drone"]:
 		var unit_scene: PackedScene = load("res://scenes/gameplay/%s.tscn" % id)
-		if not check(building.unit_model_scene(unit_scene).resource_path == "res://scenes/models/%s_model.tscn" % id,"The %s's model should be read from its scene" % id): return
+		if not check(building.unit_model_scene(unit_scene).resource_path == "res://scenes/models/%s_model%s.tscn" % [id,"_merged" if id == "tank" else ""],"The %s's model should be read from its scene" % id): return
 	# Production: Produce follows the queue, the Tank's own model forms on the lift, then drives out of the door.
 	if not check(building.request_unit(&"tank"),"Tank not queued"): return
 	var units_before := get_nodes_in_group("units").size()
 	building._process(building.base_seconds()*0.5)
 	if not check(model.player.assigned_animation == &"Produce" and not model.player.is_playing(),"Produce should be posed by production progress"): return
 	if not check(part(model,"turntable").position.y > 2.0,"The lift should hold the unit up near the roof while it is made"): return
-	if not check(model.unit_model != null and model.unit_model.scene_file_path == "res://scenes/models/tank_model.tscn" and model.unit_model.get_parent() == vehicle,"The Tank's own model should stand on the turntable"): return
+	if not check(model.unit_model != null and model.unit_model.scene_file_path == "res://scenes/models/tank_model_merged.tscn" and model.unit_model.get_parent() == vehicle,"The Tank's own model should stand on the turntable"): return
 	if not check(model.unit_model.process_mode == Node.PROCESS_MODE_DISABLED,"The unit model in the factory is scenery only"): return
 	var cut: float = model._unit_material.get_shader_parameter(&"cut_height")
 	if not check(model.unit_forming() and cut > model.unit_model.global_position.y+0.05 and cut < model.unit_model.global_position.y+model._unit_height*vehicle.global_basis.get_scale().y-0.05,"Half made: the Tank should be part formed below the weld seam"): return

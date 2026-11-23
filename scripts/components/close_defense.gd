@@ -47,7 +47,10 @@ func _eligible(unit: Node3D) -> bool:
 func _nearest() -> Node3D:
 	var best: Node3D
 	var best_distance := INF
-	for node in get_tree().get_nodes_in_group("units"):
+	var game = get_tree().get_first_node_in_group("skirmish")
+	var nearby: Array = game.units_near(_actor.global_position,attack_range) if game != null and game.has_method("units_near") else get_tree().get_nodes_in_group("units")
+	for node in nearby:
+		if not is_instance_valid(node): continue
 		var unit := node as Node3D
 		if unit == null or not _eligible(unit):
 			continue

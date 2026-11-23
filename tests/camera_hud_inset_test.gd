@@ -1,7 +1,7 @@
 extends SceneTree
 # The camera treats the HUD's bottom panel as covered: the map's southern edge scrolls up to the
 # top of the panel instead of stopping behind it, at any yaw and in the overview.
-const INSET := 272.0
+const INSET := 296.0
 const SIZE := Vector2i(1280,900)
 var rig: Node3D
 func _initialize() -> void: call_deferred("run")

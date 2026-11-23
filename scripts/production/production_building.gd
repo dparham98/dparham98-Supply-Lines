@@ -42,9 +42,36 @@ func _ready() -> void:
 			ground.set_tile_feature(cell,"occupied_by",_key())
 	add_to_group("production_buildings")
 	add_to_group("selectable_buildings")
-	if is_instance_valid(assigned_depot): assigned_depot.ownership_changed.connect(_source_changed)
+	if is_instance_valid(assigned_depot) and not assigned_depot.ownership_changed.is_connected(_source_changed): assigned_depot.ownership_changed.connect(_source_changed)
+## Production picks its paying Depot itself (docs/HUD_POLISH.md, Production picks its Depot): it keeps the one it
+## has while that stays friendly; otherwise it takes the nearest friendly Depot whose range covers the building.
 func source_friendly() -> bool:
-	return SupplySource.plays(team) and is_instance_valid(assigned_depot) and assigned_depot.health > 0 and assigned_depot.team == team
+	if not SupplySource.plays(team): return false
+	if not _depot_ok(assigned_depot):
+		var options := covering_depots()
+		_set_source(options[0] if not options.is_empty() else null)
+	return assigned_depot != null
+func _depot_ok(depot) -> bool:
+	return is_instance_valid(depot) and depot.is_inside_tree() and depot.health > 0 and depot.team == team
+## Friendly Depots whose range covers the building, nearest first.
+func covering_depots() -> Array[Node3D]:
+	var found: Array[Node3D] = []
+	for depot in get_tree().get_nodes_in_group("depots"):
+		if _depot_ok(depot) and SupplySource.covers(depot,global_position,team): found.append(depot)
+	found.sort_custom(func(a,b): return a.global_position.distance_squared_to(global_position) < b.global_position.distance_squared_to(global_position))
+	return found
+func _set_source(depot: Node3D) -> void:
+	if depot == assigned_depot: return
+	if is_instance_valid(assigned_depot) and assigned_depot.ownership_changed.is_connected(_source_changed): assigned_depot.ownership_changed.disconnect(_source_changed)
+	assigned_depot = depot
+	if is_instance_valid(assigned_depot) and not assigned_depot.ownership_changed.is_connected(_source_changed): assigned_depot.ownership_changed.connect(_source_changed)
+## The Depot to pay `energy` and `iron` now: the current one if it can, else the nearest covering one that can.
+func payer_for(energy: int, iron: int) -> Node3D:
+	if not source_friendly(): return null
+	if assigned_depot.energy >= energy and assigned_depot.iron >= iron: return assigned_depot
+	for depot in covering_depots():
+		if depot.energy >= energy and depot.iron >= iron: return depot
+	return null
 func _source_changed() -> void:
 	# Preserve the existing Depot policy: paid queue cancellation without refund on source capture.
 	pending.clear()
@@ -76,12 +103,15 @@ func unit_stats_for(scene: PackedScene) -> UnitStats:
 		unit.free()
 	return _stats_cache[key]
 func request_unit(id: StringName) -> bool:
-	if not source_friendly(): game.notify("Assigned Depot is unavailable or no longer friendly.",team); return false
+	if not source_friendly(): game.notify("No friendly Depot's range covers %s." % name,team); return false
 	if queue >= stats.queue_limit: game.notify("Production queue is full.",team); return false
 	for scene in stats.unit_scenes:
 		var resource := unit_stats_for(scene)
 		if resource.unit_id != id: continue
-		if not assigned_depot.spend_local(resource.energy_cost,resource.iron_cost): game.notify("Assigned Depot lacks local production resources.",team); return false
+		var payer := payer_for(resource.energy_cost,resource.iron_cost)
+		if payer == null: game.notify("No Depot in range has %d E and %d I for a %s." % [resource.energy_cost,resource.iron_cost,resource.display_name],team); return false
+		_set_source(payer)
+		if not assigned_depot.spend_local(resource.energy_cost,resource.iron_cost): game.notify("%s lacks local production resources." % assigned_depot.name,team); return false
 		pending.append(scene)
 		game.notify("%s queued at %s; paid by %s." % [resource.display_name,name,assigned_depot.name],team)
 		return true
@@ -92,7 +122,7 @@ func _process(delta: float) -> void:
 		pending.clear()
 		progress = 0
 		_show_model(&"show_idle")
-		$Status.text = stats.display_name+" · assigned Depot unavailable"
+		$Status.text = stats.display_name+" · no Depot in range"
 		return
 	if pending.is_empty():
 		progress = 0
@@ -188,7 +218,5 @@ func _exit_tree() -> void:
 func assign_source(depot: Node3D) -> bool:
 	if not is_instance_valid(depot) or not depot.is_in_group("depots") or not SupplySource.covers(depot,global_position,team): return false
 	if not pending.is_empty(): return false
-	if is_instance_valid(assigned_depot) and assigned_depot.ownership_changed.is_connected(_source_changed): assigned_depot.ownership_changed.disconnect(_source_changed)
-	assigned_depot = depot
-	assigned_depot.ownership_changed.connect(_source_changed)
+	_set_source(depot)
 	return true

@@ -13,7 +13,7 @@ func check(value: bool, message: String) -> bool:
 func site_near(point: Vector3) -> Node3D:
 	for r in range(0,40,3):
 		for offset in [Vector3(r,0,0),Vector3(-r,0,0),Vector3(0,0,r),Vector3(0,0,-r)]:
-			var plan = network.queue_plan(point+offset,&"generator")
+			var plan = network.queue_plan(point+offset,&"generator",null,false,false)
 			if plan != null: return plan
 	return null
 func line_of(piece: Node3D) -> Array:

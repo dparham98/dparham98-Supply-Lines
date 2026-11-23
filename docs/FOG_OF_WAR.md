@@ -51,3 +51,9 @@ Asked for on 2026-11-19, together with an enemy AI player, which is to follow th
 
 - A smooth fade as units move; the edge moves in 2 m steps every 0.2 s.
 - Fog on the First Contact and test maps.
+
+## Plans need sight (2026-11-19)
+
+- A plan from the Build page can only be placed where you see every cell of its site (`DepotNetwork.in_sight`).
+- Out of sight, the preview is red and says so, and a click is refused with a note.
+- A Cargo vehicle's Worksite can still place a site out of sight: the trucks drive out to it. See `HUD_POLISH.md`.

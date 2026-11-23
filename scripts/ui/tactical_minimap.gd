@@ -6,9 +6,22 @@ extends Control
 @onready var game = get_tree().get_first_node_in_group("skirmish")
 const Overlay = preload("res://scripts/ui/map_overlay.gd")
 const EDGE := Color(0.05,0.055,0.047,0.9)
-const COAL_MARK := Color(0.93,0.9,0.82)
+const COAL_FILL := Color(0.1,0.09,0.08)
+const COAL_RIM := Color(0.95,0.6,0.22)
+const IRON_FILL := Color(0.58,0.74,0.92)
 const ALERT_PULSE_SECONDS := 6.0
+## The map is drawn again this often, in seconds, and whenever the camera moves. Every felled cell, track piece
+## and actor is drawn each time, which was a large part of a frame in a big battle.
+const REDRAW_SECONDS := 0.1
+var _drawn_at := -1.0
+var _drawn_camera := Transform3D()
 func _process(_delta: float) -> void:
+	var now := Time.get_ticks_msec()/1000.0
+	var camera := get_viewport().get_camera_3d()
+	var view: Transform3D = camera.global_transform if camera != null else Transform3D()
+	if now-_drawn_at < REDRAW_SECONDS and view == _drawn_camera: return
+	_drawn_at = now
+	_drawn_camera = view
 	queue_redraw()
 func world_to_map(point: Vector3) -> Vector2:
 	return (Vector2(point.x,point.z)-bounds.position)/bounds.size*size
@@ -52,12 +65,21 @@ func _draw() -> void:
 		for cell in cleared:
 			var top_left := world_to_map(game.ground.tile_to_world(cell))-size/500.0*0.5
 			draw_rect(Rect2(top_left,size/500.0),Color(0.45,0.35,0.18))
-	# Coal fields are a few pixels across at this scale, so each one that still holds coal gets a marker.
+	# Deposits (docs/MINIMAP_ORDERS.md, Deposits): coal is a black lump in an amber rim, iron a steel-blue peak.
+	# Coal fields are a few pixels across at this scale, so each one that still holds coal gets a marker; a mine
+	# shows the deposit it works, ringed when it is selected.
+	var mined := {}
+	for mine in get_tree().get_nodes_in_group("mines"):
+		if mine.get("on_coal") == true and not mine.cells.is_empty(): mined[game.ground.coal_field_at(mine.cells[0]).get("center")] = true
 	for field in game.ground.coal_fields:
-		if game.ground.coal_field_remaining(field) <= 0: continue
-		var at := world_to_map(field.center)
-		draw_colored_polygon(PackedVector2Array([at+Vector2(0,-5),at+Vector2(5,0),at+Vector2(0,5),at+Vector2(-5,0)]),EDGE)
-		draw_colored_polygon(PackedVector2Array([at+Vector2(0,-3.5),at+Vector2(3.5,0),at+Vector2(0,3.5),at+Vector2(-3.5,0)]),COAL_MARK)
+		if game.ground.coal_field_remaining(field) <= 0 or mined.has(field.center): continue
+		draw_coal(world_to_map(field.center))
+	for group in ["mines","iron_deposits"]:
+		for node in get_tree().get_nodes_in_group(group):
+			var at := world_to_map(node.global_position)
+			if node.get("on_coal") == true: draw_coal(at)
+			else: draw_iron(at)
+			if node == game.selected_building: draw_arc(at,8,0,TAU,16,Color.WHITE,1.5)
 	# Fog of war (docs/FOG_OF_WAR.md): the map is dimmed outside the player's sight, and the other side's
 	# markers show only inside it.
 	var fog = game.fog_of_war()
@@ -70,13 +92,21 @@ func _draw() -> void:
 		var line := PackedVector2Array()
 		for i in range(steps+1): line.append(world_to_map(rail.point_at(total*i/steps)))
 		draw_polyline(line,colour,1.5)
+	# Your wrecked track (docs/DERAILER.md): an amber cross, pulsing, until it is rebuilt.
+	var beat := 0.6+0.4*absf(sin(Time.get_ticks_msec()/1000.0*3.0))
+	for wreck in get_tree().get_nodes_in_group("rail_wrecks"):
+		if wreck.team != "player" or wreck.is_queued_for_deletion(): continue
+		var at := world_to_map(wreck.global_position)
+		for arm in [Vector2(4,4),Vector2(4,-4)]:
+			draw_line(at-arm,at+arm,EDGE,3.5)
+			draw_line(at-arm,at+arm,Color(1,0.75,0.2,beat),2.0)
 	# Markers share the map overlay's team colours, with a dark edge so they read on any terrain.
 	for group in ["resources","selectable_buildings","units"]:
 		for node in get_tree().get_nodes_in_group(group):
-			if group == "resources" and node.is_in_group("mines"): continue
+			if node.is_in_group("mines"): continue
 			if fog != null and not fog.shows(node): continue
 			var point := world_to_map(node.global_position)
-			var color: Color = Overlay.RESOURCE_COLORS[&"coal"] if group == "resources" else Overlay.TEAM_COLORS.get(str(node.team),Overlay.TEAM_COLORS["neutral"])
+			var color: Color = Overlay.RESOURCE_COLORS.get(node.get("resource_kind"),Overlay.RESOURCE_COLORS[&"wood"]) if group == "resources" else Overlay.TEAM_COLORS.get(str(node.team),Overlay.TEAM_COLORS["neutral"])
 			if group == "selectable_buildings":
 				draw_rect(Rect2(point-Vector2(4,4),Vector2(8,8)),EDGE)
 				draw_rect(Rect2(point-Vector2(3,3),Vector2(6,6)),color)
@@ -109,3 +139,13 @@ func _draw() -> void:
 		outline.append(outline[0])
 		draw_polyline(outline,Color(1,1,1,0.85),1.0,true)
 	draw_rect(Rect2(Vector2.ZERO,size),Color(0.451,0.42,0.349),false,2)
+## A coal deposit: a black diamond in an amber rim.
+func draw_coal(at: Vector2) -> void:
+	draw_colored_polygon(PackedVector2Array([at+Vector2(0,-6.5),at+Vector2(6.5,0),at+Vector2(0,6.5),at+Vector2(-6.5,0)]),EDGE)
+	draw_colored_polygon(PackedVector2Array([at+Vector2(0,-5.5),at+Vector2(5.5,0),at+Vector2(0,5.5),at+Vector2(-5.5,0)]),COAL_RIM)
+	draw_colored_polygon(PackedVector2Array([at+Vector2(0,-3.5),at+Vector2(3.5,0),at+Vector2(0,3.5),at+Vector2(-3.5,0)]),COAL_FILL)
+## An iron deposit: a steel-blue peak with a dark edge.
+func draw_iron(at: Vector2) -> void:
+	draw_colored_polygon(PackedVector2Array([at+Vector2(0,-7.5),at+Vector2(7,5),at+Vector2(-7,5)]),EDGE)
+	draw_colored_polygon(PackedVector2Array([at+Vector2(0,-5),at+Vector2(5,3.6),at+Vector2(-5,3.6)]),IRON_FILL)
+	draw_line(at+Vector2(-2,1),at+Vector2(0,-2),Color(1,1,1,0.75),1.0)

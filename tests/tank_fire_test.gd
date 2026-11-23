@@ -34,7 +34,14 @@ func run() -> void:
 	var fx = model.muzzle
 	var hull: Node3D = model.get_node("Tank/Tank_Root/Tank_Hull")
 	var barrel: Node3D = model.get_node("Tank/Tank_Root/Tank_Hull/Tank_Turret/Barrel_Mount/Tank_Barrel")
-	var brake: Node3D = barrel.get_node("Barrel_Muzzle_Brake")
+	# The game's model has the brake folded into the barrel (docs/PERFORMANCE.md, Merged models): find where it sits
+	# from the source model.
+	var source: Node3D = load("res://scenes/models/tank_model.tscn").instantiate()
+	var source_barrel: Node3D = source.get_node("Tank/Tank_Root/Tank_Hull/Tank_Turret/Barrel_Mount/Tank_Barrel")
+	var brake := Node3D.new()
+	barrel.add_child(brake)
+	brake.transform = source_barrel.get_node("Barrel_Muzzle_Brake").transform
+	source.free()
 	if not check(fx != null and fx.get_script() == Burst,"The muzzle node should be the fire effect"): return
 	# The fire effect sits on the tip of the brake and shows nothing until a shot.
 	var tip_offset: Vector3 = model.muzzle_position()-brake.global_position

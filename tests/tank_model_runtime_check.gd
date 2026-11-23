@@ -23,9 +23,10 @@ func run() -> void:
 	game.get_node("Entities/Units").add_child(tank); tank.set_process(false)
 	for frame in range(3): await process_frame
 	var model = tank.get_node("Visuals/Model")
-	if not check(model.scene_file_path == "res://scenes/models/tank_model.tscn","Tank still uses the placeholder"): return
+	if not check(model.scene_file_path == "res://scenes/models/tank_model_merged.tscn","Tank still uses the placeholder"): return
 	var meshes := Bounds.meshes(tank)
-	if not check(meshes.size() > 40,"Tank model meshes missing: %d" % meshes.size()): return
+	# The merged model (docs/PERFORMANCE.md) has 20 pieces; muzzle flashes are not counted.
+	if not check(meshes.size() >= 18,"Tank model meshes missing: %d" % meshes.size()): return
 	var low := INF; var high := -INF; var front := INF; var back := -INF; var left := INF; var right := -INF
 	for mesh in meshes:
 		for i in range(8):

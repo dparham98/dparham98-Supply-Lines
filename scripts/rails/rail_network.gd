@@ -13,6 +13,8 @@ signal changed
 @export var train_scene: PackedScene
 ## The ring drawn round each rail target while track is planned: amber, green once the plan touches it.
 @export var target_ring_scene: PackedScene = preload("res://scenes/ui/rail_target_ring.tscn")
+## Broken track a Derailer leaves (docs/DERAILER.md).
+@export var wreck_scene: PackedScene = preload("res://scenes/gameplay/track_wreck.tscn")
 ## Snap distance from the cursor to a free end of an existing piece.
 @export var snap_distance := 4.0
 const SAMPLE := 0.5
@@ -185,6 +187,9 @@ func register(piece: Node3D) -> bool:
 	piece.cells = cells
 	for cell in cells: ground.tiles[cell.y*500+cell.x]["rail"] = piece
 	pieces.append(piece)
+	# Track laid over a wreck, rebuilt or not, clears it.
+	for wreck in get_tree().get_nodes_in_group("rail_wrecks"):
+		if not wreck.is_queued_for_deletion() and cells.any(func(cell): return wreck.covers(cell)): wreck.queue_free()
 	var id: int = piece.assigned_depot.get_instance_id()
 	if not subscribed.has(id):
 		subscribed[id] = true
@@ -199,13 +204,62 @@ func unregister(piece: Node3D, quiet := false) -> void:
 		for cell in piece.cells:
 			if ground.is_tile_in_bounds(cell) and ground.tiles[cell.y*500+cell.x].get("rail") == piece: ground.tiles[cell.y*500+cell.x].erase("rail")
 	if not quiet: _announce()
-## A train derailed on this piece (docs/DERAILER.md): the piece is wrecked and goes, splitting its line. Rebuild it
-## from the track either side.
-func wreck(piece: Node3D) -> void:
-	if not is_instance_valid(piece) or not pieces.has(piece): return
-	game.notify("A train derailed: the track there is wrecked. Rebuild it from the track either side.")
+# ---- derailing (docs/DERAILER.md)
+## The side a piece belongs to: the side with a Depot on its line, else the side whose Depot paid for it, or "".
+func piece_team(piece: Node3D) -> String:
+	for team in ["player","enemy"]:
+		if friendly_piece(piece,team): return team
+	return piece.assigned_depot.team if is_instance_valid(piece.assigned_depot) else ""
+## A Derailer of `by_team` destroys a piece: a train on it derails, the piece goes, splitting its line, and a wreck is
+## left that the piece's side can rebuild (`rebuild`). Returns the wreck, or null.
+func destroy(piece: Node3D, by_team: String) -> Node3D:
+	if not is_instance_valid(piece) or not pieces.has(piece): return null
+	var team := piece_team(piece)
+	var wrecked := 0
+	for train in get_tree().get_nodes_in_group("rail_trains"):
+		if is_instance_valid(train) and train.piece == piece and not train.derailed:
+			train.derail()
+			wrecked += 1
+	var wreck: Node3D = wreck_scene.instantiate()
+	wreck.kind = piece.kind
+	wreck.team = team
+	wreck.assigned_depot = piece.assigned_depot
+	wreck.transform = piece.transform
+	piece.get_parent().add_child(wreck,true)
 	unregister(piece)
 	piece.queue_free()
+	var trains := " A train derailed." if wrecked == 1 else (" %d trains derailed." % wrecked if wrecked > 1 else "")
+	if team == "player":
+		game.notify("Track destroyed.%s Rebuild: Rail (R), click the wreck." % trains)
+		if game.has_method("alert"): game.alert("Track destroyed",piece.point_at(piece.length()*0.5),"","rail")
+	elif by_team == "player": game.notify("Enemy track destroyed.%s" % trains)
+	return wreck
+## The wreck of `team`'s track under a ground point, or null.
+func wreck_at(point, team := "player") -> Node3D:
+	if point == null or not is_instance_valid(ground): return null
+	var cell = ground.get_tile_at_position(point)
+	if cell == null: return null
+	for wreck in get_tree().get_nodes_in_group("rail_wrecks"):
+		if wreck.team == team and not wreck.is_queued_for_deletion() and wreck.covers(cell): return wreck
+	return null
+## The Depot that pays to rebuild a wreck: the pin when it can; else the Depot that paid for the piece, when it still
+## belongs to the wreck's side and can; else the nearest of that side's Depots that can.
+func wreck_payer(wreck: Node3D, pinned = null) -> Node3D:
+	var need := cost(wreck.kind)
+	var affords := func(depot) -> bool: return is_instance_valid(depot) and depot.is_in_group("depots") and depot.team == wreck.team and depot.health > 0 and depot.iron >= need and depot.energy >= rules.rail_energy_cost
+	if pinned != null: return pinned if affords.call(pinned) else null
+	if affords.call(wreck.assigned_depot): return wreck.assigned_depot
+	var best: Node3D = null
+	for depot in _depots():
+		if affords.call(depot) and (best == null or depot.global_position.distance_squared_to(wreck.global_position) < best.global_position.distance_squared_to(wreck.global_position)): best = depot
+	return best
+## Lays the wrecked piece again, in the same place, paid like new track. Returns the piece, or null.
+func rebuild(wreck: Node3D, pinned = null) -> Node3D:
+	if not is_instance_valid(wreck) or wreck.is_queued_for_deletion(): return null
+	var payer := wreck_payer(wreck,pinned)
+	if payer == null: game.notify("No Depot has the %d iron to rebuild this track." % cost(wreck.kind)); return null
+	if not ground_clear(cells_for(wreck.kind,wreck.global_transform)): game.notify("The wreck can't be rebuilt: something stands in the way."); return null
+	return lay(wreck.kind,wreck.global_transform,payer)
 func _owner_changed() -> void:
 	for piece in pieces:
 		if is_instance_valid(piece): piece.update_color()
@@ -471,8 +525,25 @@ func loading_pieces(depot: Node3D, team: String) -> Array[Node3D]:
 	return result
 ## The shortest line from a train at `from_piece`/`from_d` to a stop in `depot`'s loading area, or {}.
 func line_to_depot(from_piece: Node3D, from_d: float, depot: Node3D, team: String, tail := 0.0, from_lane := 0) -> Dictionary:
+	return _line_to_stops(loading_stops(depot,team),from_piece,from_d,team,tail,from_lane)
+## Every lane of friendly track inside a mine's ring (target_reach, where planned track connects to it): where a
+## mining train stops to dig (docs/TEMPLE_OF_SCIENCE.md). {piece, lane, distance}.
+func mine_stops(mine: Node3D, team: String) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if not is_instance_valid(mine) or not mine.is_inside_tree(): return result
+	var reach := target_reach(mine)
+	for piece in pieces:
+		if not friendly_piece(piece,team): continue
+		for lane in range(piece.lane_count()):
+			var hit: Dictionary = piece.nearest(mine.global_position,lane)
+			if hit.gap <= reach+piece.half_width(): result.append({piece = piece, lane = lane, distance = hit.distance})
+	return result
+## The shortest line from a train to a stop at `mine`, or {}.
+func line_to_mine(from_piece: Node3D, from_d: float, mine: Node3D, team: String, tail := 0.0, from_lane := 0) -> Dictionary:
+	return _line_to_stops(mine_stops(mine,team),from_piece,from_d,team,tail,from_lane)
+func _line_to_stops(stops: Array[Dictionary], from_piece: Node3D, from_d: float, team: String, tail: float, from_lane: int) -> Dictionary:
 	var best := {}
-	for stop in loading_stops(depot,team):
+	for stop in stops:
 		var route := chain(from_piece,stop.piece,team,from_lane,stop.lane)
 		if route.is_empty(): continue
 		var track := line(route,from_d,stop.distance,tail)
@@ -626,6 +697,10 @@ func _process(delta: float) -> void:
 	if is_instance_valid(route_from) and is_instance_valid(route_to) and cursor != null: follow_cursor(cursor,delta)
 ## The guide's line while connecting buildings (docs/PLACEMENT_GUIDE.md).
 func route_status() -> String:
+	var wreck := wreck_at(cursor) if pending.is_empty() else null
+	if wreck != null:
+		var hud = game.get_node("Interface")
+		return "WRECKED TRACK · %d IRON · %s" % [cost(wreck.kind),"CLICK REBUILDS IT" if wreck_payer(wreck,hud.global_payer if hud.global_pinned else null) != null else "NOT ENOUGH IRON"]
 	if not is_instance_valid(route_from): return "RAIL · click a Depot, mine, build site or track"
 	if not is_instance_valid(route_to): return "FROM %s · click a building or track to connect" % target_name(route_from).to_upper()
 	if pending.is_empty(): return "NO OPEN PATH · click another building"

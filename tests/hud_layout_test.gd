@@ -49,10 +49,10 @@ func run() -> void:
 	# Compact bar: shorter than the former fixed 300 px for ordinary selections.
 	await select([])
 	# The HUD has one fixed height for every selection.
-	if not check(is_equal_approx(bottom.size.y,272),"Empty HUD %.0f px tall" % bottom.size.y): return
-	# The bronze frame sits over the panel, ignores the mouse and only stretches its plain rails.
-	var frame_left: NinePatchRect = hud.get_node("HudFrame/Left")
-	if not check(hud.get_node("HudFrame").mouse_filter == Control.MOUSE_FILTER_IGNORE and frame_left.mouse_filter == Control.MOUSE_FILTER_IGNORE and frame_left.texture != null and hud.get_node("HudFrame").get_index() > bottom.get_index(),"HUD frame missing, or catching clicks"): return
+	if not check(is_equal_approx(bottom.size.y,296),"Empty HUD %.0f px tall" % bottom.size.y): return
+	# The painted panel art draws behind the controls, ignores the mouse and only stretches its plain strips.
+	var frame_left: NinePatchRect = hud.get_node("HudFrame/Panel")
+	if not check(hud.get_node("HudFrame").mouse_filter == Control.MOUSE_FILTER_IGNORE and frame_left.mouse_filter == Control.MOUSE_FILTER_IGNORE and frame_left.texture != null and hud.get_node("HudFrame").get_index() < bottom.get_index(),"HUD panel art missing, in front of the controls, or catching clicks"): return
 	await select([worker])
 	if not check(bottom.size.y < 300 and hud.info.get_node("Details").get_global_rect().end.y <= root.size.y,"Infantry HUD %.0f px tall or overflowing" % bottom.size.y): return
 	# Status bars: Infantry shows cargo only; a Tank shows fuel coloured by level.
@@ -108,7 +108,7 @@ func run() -> void:
 	for i in 240: tank._process(1.0/60)
 	if not check(game.alerts[0].text == "Tank out of fuel","Out of fuel alert missing: %s" % [game.alerts[0].text]): return
 	second.take_damage(second.health+10); await process_frame
-	if not check(game.alerts[0].text == "Infantry lost","Unit lost alert missing"): return
+	if not check(game.alerts[0].text == "Deforester lost","Unit lost alert missing"): return
 	var hostile = game.get_node("Entities/Units/Hostile")
 	hostile.global_position = game.depot.global_position+Vector3(0,0,6)
 	var before: int = game.alerts.size()

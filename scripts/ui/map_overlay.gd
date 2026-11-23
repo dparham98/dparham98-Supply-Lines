@@ -32,6 +32,13 @@ var hovered: Node3D
 var popups: Array[Dictionary] = []
 var pings: Array[Dictionary] = []
 var _labels_hidden := {}
+var _labels_prune_at := 2048
+## Hover is found again when the pointer moves, and otherwise every this many frames (units move under it).
+const HOVER_EVERY := 6
+var _hover_mouse := Vector2.INF
+var _hover_frame := -HOVER_EVERY
+## How far off the screen an actor may stand and still have its bars drawn, in pixels: its top may be on screen.
+const SCREEN_MARGIN := 160.0
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	if game != null:
@@ -43,7 +50,11 @@ func _process(_delta: float) -> void:
 	if game == null: return
 	hide_actor_labels()
 	var mouse := get_viewport().get_mouse_position()
-	hovered = null if get_viewport().gui_get_hovered_control() != null else hover_target(mouse)
+	if get_viewport().gui_get_hovered_control() != null: hovered = null; _hover_mouse = Vector2.INF
+	elif mouse != _hover_mouse or Engine.get_process_frames()-_hover_frame >= HOVER_EVERY or (hovered != null and not is_instance_valid(hovered)):
+		hovered = hover_target(mouse)
+		_hover_mouse = mouse
+		_hover_frame = Engine.get_process_frames()
 	update_hover_card(mouse)
 	var now := Time.get_ticks_msec()/1000.0
 	popups = popups.filter(func(p): return now-p.time < POPUP_SECONDS and is_instance_valid(p.node))
@@ -57,7 +68,12 @@ func hide_actor_labels() -> void:
 			for label in LABEL_NAMES:
 				if node.has_node(label) and node.get_node(label) is Label3D: node.get_node(label).visible = false
 			_labels_hidden[node.get_instance_id()] = true
-	if _labels_hidden.size() > 512: _labels_hidden.clear()
+	# Forget actors that are gone; clearing everything instead had every label hidden again each frame once a
+	# battle passed a few hundred actors.
+	if _labels_hidden.size() > _labels_prune_at:
+		for id in _labels_hidden.keys():
+			if not is_instance_id_valid(id): _labels_hidden.erase(id)
+		_labels_prune_at = maxi(2048,_labels_hidden.size()*2)
 func hover_target(screen: Vector2) -> Node3D:
 	var camera := get_viewport().get_camera_3d()
 	if camera == null: return null
@@ -99,6 +115,8 @@ func status_for(node: Node3D) -> Dictionary:
 	if node.is_in_group("depots"):
 		if node.queue > 0: entry.progress = node.progress/node.current_seconds()
 		if node.capture_progress > 0: entry.capture = node.capture_progress/node.rules.capture_seconds
+	elif node.is_in_group("research_buildings"):
+		if node.researching != null: entry.progress = node.fraction()
 	elif node.is_in_group("production_buildings"):
 		if node.queue > 0: entry.progress = node.fraction()
 		if node.exit_blocked: entry.icons.append(["cancel",AMBER])
@@ -141,10 +159,13 @@ func draw_readout(stockpile: ResourceStockpile, centre: Vector2, font: Font) -> 
 		draw_rect(Rect2(x,plate.position.y+6,8,8),RESOURCE_COLORS[part[0]])
 		draw_string(font,Vector2(x+12,plate.position.y+15),part[1],HORIZONTAL_ALIGNMENT_LEFT,-1,size,Color(0.96,0.94,0.83))
 		x += 12+part[2]+8
-func entries() -> Array[Dictionary]:
+## With a camera, only actors on or near the screen (SCREEN_MARGIN) are looked at.
+func entries(camera: Camera3D = null) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
+	var view := get_viewport_rect().grow(SCREEN_MARGIN)
 	for group in ["units","selectable_buildings","supply_crates"]:
 		for node in get_tree().get_nodes_in_group(group):
+			if camera != null and (camera.is_position_behind(node.global_position) or not view.has_point(camera.unproject_position(node.global_position))): continue
 			var entry := status_for(node)
 			if entry.health >= 0 or entry.progress >= 0 or not entry.icons.is_empty() or entry.capture >= 0 or not entry.carry.is_empty() or not entry.storage.is_empty() or not entry.crate.is_empty() or not entry.pips.is_empty() or not entry.readout.is_empty(): out.append(entry)
 	return out
@@ -278,7 +299,7 @@ func _draw() -> void:
 		var dir := (b-a).normalized()
 		var side := Vector2(-dir.y,dir.x)
 		draw_polyline(PackedVector2Array([mid-dir*7+side*6,mid+dir*3,mid-dir*7-side*6]),Color(0.91,0.96,0.98),2)
-	for entry in entries():
+	for entry in entries(camera):
 		var node: Node3D = entry.node
 		if camera.is_position_behind(node.global_position): continue
 		var top := top_of(node,camera)
@@ -376,7 +397,7 @@ func hud_name(node: Node) -> String:
 	if node.is_in_group("supply_crates"): return "Empty crate" if node.amount == 0 else "%s crate" % str(node.material_kind).capitalize()
 	if node.is_in_group("material_piles"): return "%s pile" % str(node.material_kind).capitalize()
 	if node.is_in_group("iron_deposits"): return "Iron deposit · build a mine to gather"
-	if node.is_in_group("coal_cells"): return "Coal deposit · Infantry dig it directly"
+	if node.is_in_group("coal_cells"): return "Coal deposit · Deforesters dig it directly"
 	if node.is_in_group("resources"): return str(node.get("resource_name")) if node.get("resource_name") != null else "Resource"
 	if node.is_in_group("construction_plans"): return node.spec.title+" plan"
 	return get_parent().object_name(node)

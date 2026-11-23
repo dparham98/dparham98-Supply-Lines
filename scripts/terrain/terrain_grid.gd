@@ -81,6 +81,33 @@ func get_tile_at_position(world_pos: Vector3) -> Variant:
 	var pos := Vector2i(floori(local.x / tile_size + grid_size.x * 0.5), floori(local.z / tile_size + grid_size.y * 0.5))
 	return pos if is_tile_in_bounds(pos) else null
 
+## Whether every cell the straight segment from `from` to `to` passes through is open to a unit on `layer` that
+## owns cells as `owner` (docs/PATHING.md). Each cell crossed is visited once, in order (a grid walk), rather than
+## sampling points along the line: movement asks this hundreds of times a frame in a big battle.
+func segment_open(from: Vector3, to: Vector3, layer: int, owner: String) -> bool:
+	var a := to_local(from)
+	var b := to_local(to)
+	var x0 := a.x/tile_size+grid_size.x*0.5
+	var z0 := a.z/tile_size+grid_size.y*0.5
+	var dx := b.x/tile_size+grid_size.x*0.5-x0
+	var dz := b.z/tile_size+grid_size.y*0.5-z0
+	var cell := Vector2i(floori(x0),floori(z0))
+	var end := Vector2i(floori(x0+dx),floori(z0+dz))
+	var step := Vector2i(1 if dx > 0.0 else -1,1 if dz > 0.0 else -1)
+	# How far along the segment (0 to 1) each step across a cell edge costs, and where the next edge is.
+	var t_dx := absf(1.0/dx) if dx != 0.0 else INF
+	var t_dz := absf(1.0/dz) if dz != 0.0 else INF
+	var next_x := ((cell.x+1-x0) if dx > 0.0 else (x0-cell.x))*t_dx if dx != 0.0 else INF
+	var next_z := ((cell.y+1-z0) if dz > 0.0 else (z0-cell.y))*t_dz if dz != 0.0 else INF
+	var left := absi(end.x-cell.x)+absi(end.y-cell.y)
+	while true:
+		if not can_traverse(cell,layer,owner): return false
+		if left <= 0: return true
+		left -= 1
+		if next_x < next_z: cell.x += step.x; next_x += t_dx
+		else: cell.y += step.y; next_z += t_dz
+	return true
+
 ## The cell under `world_pos`, or the nearest cell on the map when it lies off the edge.
 func clamped_tile_at(world_pos: Vector3) -> Vector2i:
 	var local := to_local(world_pos)
@@ -218,10 +245,32 @@ func actor_path(start: Vector2i, goal: Vector2i, layer: int, owner: String) -> A
 	var goal_solid := grid.is_point_solid(goal)
 	grid.set_point_solid(start,false)
 	grid.set_point_solid(goal,false)
-	var path: Array[Vector2i] = grid.get_id_path(start,goal)
+	# A search that cannot succeed floods every cell it can reach first, ten times the cost of a long route; a crowd
+	# of units walling in a free cell near a rally point or a target set that off for every unit headed there, each
+	# time it planned again. A goal or start sealed in a small pocket is turned down before the search.
+	var path: Array[Vector2i] = []
+	if not sealed(grid,goal,start) and not sealed(grid,start,goal): path = grid.get_id_path(start,goal)
 	grid.set_point_solid(start,start_solid)
 	grid.set_point_solid(goal,goal_solid)
 	return path
+## Pockets smaller than this are found by `sealed`; larger ones are left to the route search itself.
+const POCKET_CELLS := 256
+## Whether `from` lies in a pocket of open cells, smaller than POCKET_CELLS, that does not hold `other`. The
+## grid moves diagonally only past open corners, so side neighbours alone decide what is joined.
+func sealed(grid: AStarGrid2D, from: Vector2i, other: Vector2i) -> bool:
+	var seen := {from: true}
+	var queue: Array[Vector2i] = [from]
+	var head := 0
+	while head < queue.size():
+		var cell := queue[head]
+		head += 1
+		for next in [cell+Vector2i.RIGHT,cell+Vector2i.LEFT,cell+Vector2i.DOWN,cell+Vector2i.UP]:
+			if next == other: return false
+			if seen.has(next) or not grid.is_in_boundsv(next) or grid.is_point_solid(next): continue
+			if queue.size() >= POCKET_CELLS: return false
+			seen[next] = true
+			queue.append(next)
+	return true
 func nearest_actor_cell(origin: Vector2i, layer: int, owner: String = "") -> Vector2i:
 	if can_traverse(origin,layer,owner): return origin
 	for radius in range(1,maxi(grid_size.x,grid_size.y)):

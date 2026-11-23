@@ -88,6 +88,7 @@ func _ready() -> void:
 	apply_unit_stats()
 	health = max_health
 	add_to_group("units")
+	_units_changed()
 	if team == "enemy": add_to_group("enemies")
 	var cell = ground.get_tile_at_position(global_position)
 	grid_position = ground.nearest_actor_cell(cell if cell != null else Vector2i(250,250),mobility_layer(),_owner_key())
@@ -108,8 +109,11 @@ func set_selected(value: bool) -> void:
 	is_selected = value and team == "player"
 	var marker := get_node_or_null("Visuals/TeamMarker") as Node3D
 	if marker: marker.visible = is_selected
+## The name it claims cells under. Built once: movement asks for it hundreds of times a frame.
+var _owner_name := ""
 func _owner_key() -> String:
-	return "agent_%s" % get_instance_id()
+	if _owner_name.is_empty(): _owner_name = "agent_%s" % get_instance_id()
+	return _owner_name
 func _is_ours(cell: Vector2i) -> bool:
 	if mobility_layer() == MobilityRules.Layer.AIR: return ground.air_occupancy.get(cell) == _owner_key()
 	return ground.is_tile_in_bounds(cell) and ground.tiles[cell.y*500+cell.x].occupied_by == _owner_key()
@@ -257,7 +261,7 @@ func _fell(delta: float) -> void:
 func command_attack(node: Node3D, forced := false) -> void:
 	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or not CombatResolver.can_attack(self,node,forced): return
 	attack_forced = forced
-	if carrying() and is_instance_valid(game): game.notify("Infantry carrying cargo can't fire: drop it (X) first.")
+	if carrying() and is_instance_valid(game): game.notify("A Deforester carrying cargo can't fire: drop it (X) first.")
 	_stop_route()
 	order = "attack"
 	order_target = node
@@ -330,6 +334,7 @@ func _order_process(delta: float) -> void:
 	if order == "idle" and not order_queue.is_empty() and not out_of_fuel: _start_next_order()
 	_cooldown = maxf(0,_cooldown-delta)
 	_retry = maxf(0,_retry-delta)
+	_scan_wait -= delta
 	if order == "attack" and (not is_instance_valid(order_target) or not _may_hit(order_target)):
 		_stop_route()
 		order = "idle"
@@ -351,7 +356,7 @@ func _order_process(delta: float) -> void:
 		return
 	if order == "attack_move":
 		# A worker with its hands full keeps walking rather than stopping for a fight it cannot join.
-		var foe: Node3D = _nearest_opponent() if not carrying() else null
+		var foe: Node3D = _acquire() if not carrying() else null
 		if is_instance_valid(foe):
 			_stop_route()
 			state = "Attack-moving · engaging"
@@ -393,7 +398,7 @@ func _order_process(delta: float) -> void:
 			var unreachable := state == "Trees unreachable"
 			state = "Idle"
 			# Hold ground and defend even when deselected; working units keep working.
-			var enemy = _nearest_opponent()
+			var enemy = _acquire()
 			if enemy: _shoot(enemy)
 			elif fell_autocast and order_queue.is_empty() and not out_of_fuel:
 				if unreachable: _auto_wait = 10.0
@@ -564,6 +569,12 @@ func _walk(delta: float) -> void:
 			if fuel_rules.coal_per_movement_unit > 0: step = minf(step,fuel/fuel_rules.coal_per_movement_unit)
 	var before := global_position
 	var next := global_position.move_toward(point,step)
+	# An empty tank keeps a vehicle inside Depot power: it stops at the edge rather than drive out and be
+	# stranded (docs/FUEL_BATCH.md, Staying in range). The order waits until it has fuel.
+	if fuel_active() and powered_by != null and fuel <= 0 and _depot_power(next) == null:
+		if state != NO_FUEL_EDGE and team == "player" and game.has_method("alert"): game.alert("%s has no fuel to leave Depot range" % game.hud.object_name(self),global_position,"edge:%d" % get_instance_id(),"fuel")
+		state = NO_FUEL_EDGE
+		return
 	var cell = ground.get_tile_at_position(next)
 	if cell != null and not _is_ours(cell):
 		if not ground.can_traverse(cell,mobility_layer(),_owner_key()):
@@ -629,19 +640,10 @@ func _lane_clear(from: Vector3, to: Vector3) -> bool:
 	var run := Vector3(to.x-from.x,0,to.z-from.z)
 	var length := run.length()
 	if length < 0.01: return true
-	var along := run/length
-	var side := Vector3(-along.z,0,along.x)*LANE_HALF_WIDTH
-	var checked := {}
-	var steps := ceili(length/0.25)
-	for i in range(steps+1):
-		var at := from+along*(length*i/steps)
-		for offset in [Vector3.ZERO,side,-side]:
-			var cell = ground.get_tile_at_position(at+offset)
-			if cell == null: return false
-			if checked.has(cell): continue
-			checked[cell] = true
-			if not ground.can_traverse(cell,mobility_layer(),_owner_key()): return false
-	return true
+	var side := Vector3(-run.z,0,run.x)/length*LANE_HALF_WIDTH
+	var layer := mobility_layer()
+	var key := _owner_key()
+	return ground.segment_open(from,to,layer,key) and ground.segment_open(from+side,to+side,layer,key) and ground.segment_open(from-side,to-side,layer,key)
 ## Turn the body toward a point at turn_rate; returns how far it still is from facing it, in radians.
 func _turn_toward(point: Vector3, delta: float) -> float:
 	var offset := point-global_position
@@ -845,13 +847,33 @@ func _may_hit(target: Node3D) -> bool:
 func in_attack_range(target: Node3D) -> bool:
 	var d := global_position.distance_to(target.global_position)
 	return d <= attack_range and d >= min_attack_range
+## The nearest unit in range it may shoot. Only units near it are looked at (the skirmish's UnitGrid): asking every
+## unit on the map, as every unit does every frame, slowed big battles to a crawl.
+## How often, in seconds, a unit looks round for something to shoot when it has nothing in its sights (docs/COMBAT_BATCH.md,
+## Targeting in big battles). It keeps shooting what it last found while that stays in range, and looks again at once
+## when that target dies or leaves; a new enemy walking into range is noticed within this time.
+const TARGET_SCAN_SECONDS := 0.2
+var _scan_wait := 0.0
+var _sighted: Node3D
+var _had_sight := false
+func _acquire() -> Node3D:
+	if _had_sight and is_instance_valid(_sighted) and in_attack_range(_sighted) and CombatResolver.can_hit(self,_sighted): return _sighted
+	if _had_sight or _scan_wait <= 0.0:
+		_scan_wait = TARGET_SCAN_SECONDS
+		_sighted = _nearest_opponent()
+		_had_sight = _sighted != null
+		return _sighted
+	return null
 func _nearest_opponent() -> Node3D:
 	var closest: Node3D
 	var distance := attack_range
-	for unit in get_tree().get_nodes_in_group("units"):
-		if not CombatResolver.can_hit(self,unit): continue
+	var nearby: Array = game.units_near(global_position,attack_range) if is_instance_valid(game) and game.has_method("units_near") else get_tree().get_nodes_in_group("units")
+	for unit in nearby:
+		if not is_instance_valid(unit) or unit.team == team: continue
 		var d := global_position.distance_to(unit.global_position)
-		if d < distance and d >= min_attack_range: closest = unit; distance = d
+		if d >= distance or d < min_attack_range: continue
+		if not CombatResolver.can_hit(self,unit): continue
+		closest = unit; distance = d
 	return closest
 func _face(point: Vector3) -> void:
 	var offset := point-global_position
@@ -887,7 +909,12 @@ func _shoot(target: Node3D) -> void:
 	var model := $Visuals.get_node_or_null("Model")
 	var muzzle: Vector3 = model.muzzle_position() if model != null and model.has_method("muzzle_position") else global_position+Vector3.UP*1.7+$Visuals.position
 	if turret and turret.has_method("fire"): turret.fire()
-	var shot: Node3D = game.show_shot(muzzle,_shot_end(muzzle,target,target.global_position+Vector3.UP*1.7+target_height),team,projectile_scene)
+	var end := _shot_end(muzzle,target,target.global_position+Vector3.UP*1.7+target_height)
+	var shot: Node3D
+	if model != null and model.has_method("show_weapon_shot"):
+		shot = model.show_weapon_shot(game,end,team)
+	else:
+		shot = game.show_shot(muzzle,end,team,projectile_scene)
 	var forced := _forced_on(target)
 	# A shell or grenade hurts when it gets there; a shooter gone by then takes its shot with it.
 	if shot != null and shot.get("damage_on_impact") == true:
@@ -925,7 +952,7 @@ func _fire_during_movement() -> void:
 	if unit_stats == null or not unit_stats.fire_while_moving or not _attack_enabled: return
 	# Keep navigation/facing under the movement order; firing does not redirect the route.
 	var facing: float = $Visuals.rotation.y
-	var target = _nearest_opponent()
+	var target = _acquire()
 	if target: _shoot(target)
 	$Visuals.rotation.y = facing
 func take_damage(amount: int) -> void:
@@ -937,22 +964,41 @@ func take_damage(amount: int) -> void:
 		_dead = true
 		for cell in _claimed.duplicate(): _release(cell)
 		remove_from_group("units")
+		_units_changed()
 		remove_from_group("enemies")
 		died.emit(self)
 		game.unit_died(self)
 		_leave_corpse()
 		queue_free()
+## Unit death clips playing at once at most, and the group their models join while they play.
+const DEATH_CLIPS_MAX := 12
+const DYING := &"dying_models"
 ## A model with a death clip stays behind to play it out. The unit itself is gone at once, so a
 ## corpse cannot be selected, targeted or walked into.
 func _leave_corpse() -> void:
 	var model := $Visuals.get_node_or_null("Model")
 	if model == null or not model.has_method("has_death_clip") or not model.has_death_clip(): return
+	# Off screen nobody sees it: the model goes with the unit (skirmish.in_view).
+	if is_instance_valid(game) and game.has_method("in_view") and not game.in_view(global_position): return
+	# In a big fight only so many play at once (DEATH_CLIPS_MAX): each is tens to hundreds of animated pieces. The
+	# rest go at once, as off-screen deaths do (docs/PERFORMANCE.md).
+	if get_tree().get_node_count_in_group(DYING) >= DEATH_CLIPS_MAX: return
 	model.reparent(game)
+	model.add_to_group(DYING)
 	model.play_death()
+## Tell the skirmish's unit grid (units_near) that the "units" group changed.
+func _units_changed() -> void:
+	if is_instance_valid(game) and game.has_method("units_changed"): game.units_changed()
 func _exit_tree() -> void:
+	_units_changed()
 	if is_instance_valid(ground):
 		for cell in _claimed.duplicate(): _release(cell)
+## What the labels last showed, so a frame where nothing changed writes nothing (every unit asks every frame).
+var _displayed := []
 func _update_display() -> void:
+	var shown := [health,max_health,cargo,cargo_kind,is_depot_truck,team,unit_stats]
+	if shown == _displayed: return
+	_displayed = shown
 	$Status.text = ("DEPOT TRUCK" if is_depot_truck else (unit_stats.display_name.to_upper() if unit_stats != null else ("INFANTRY" if team == "player" else "HOSTILE")))+"  %d/%d" % [health,max_health]
 	$Cargo.visible = cargo > 0
 	$Cargo.text = "%d %s" % [cargo,str(cargo_kind)]
@@ -961,11 +1007,15 @@ func _update_display() -> void:
 ## (Iron, Wood, Coal); the one it carries shows while it carries anything.
 var _back_load: Node3D
 var _back_shown := ""
+## The Visuals child count when BackLoad was last looked for: most units have none, and searching the whole
+## model for it every time was a real cost in a big battle. A model added or swapped under Visuals looks again.
+var _back_searched := -1
 func _show_back_load() -> void:
-	if not is_instance_valid(_back_load):
+	if not is_instance_valid(_back_load) and _back_searched != $Visuals.get_child_count():
+		_back_searched = $Visuals.get_child_count()
 		_back_load = $Visuals.find_child("BackLoad",true,false)
 		_back_shown = "?"
-	if _back_load == null: return
+	if not is_instance_valid(_back_load): return
 	var kind := str(cargo_kind).capitalize() if cargo > 0 else ""
 	if kind == _back_shown: return
 	_back_shown = kind
@@ -1096,8 +1146,8 @@ func _capture_order() -> void:
 		if _retry <= 0 and not _route_near(order_target,radius): state = "Capture target unreachable"
 	else: state = "Capturing · stay uncontested"
 
-## Derail (docs/DERAILER.md): the unit goes to a piece of track and spikes it; the next train onto it derails.
-## Seconds until it can spike again.
+## Derail (docs/DERAILER.md): the unit goes to a piece of track and destroys it, derailing any train on it.
+## Seconds until it can derail again.
 var derail_cooldown := 0.0
 func command_derail(target: Node3D) -> void:
 	if not has_ability(&"derail") or not is_instance_valid(target) or not target.is_in_group("rails"): return
@@ -1108,12 +1158,12 @@ func command_derail(target: Node3D) -> void:
 	order = "derail"
 	_work_timer = 0.0
 	state = "To the track"
-## Where on the piece the spike goes: its middle.
+## Where on the piece the Derailer works: its middle.
 func derail_spot() -> Vector3:
 	return order_target.point_at(order_target.length()*0.5)
 func _derail_order(delta: float) -> void:
-	if not is_instance_valid(order_target) or not order_target.is_inside_tree() or order_target.is_spiked():
-		order = "idle"; state = "Track gone" if not is_instance_valid(order_target) or not order_target.is_inside_tree() else "Track already spiked"; return
+	if not is_instance_valid(order_target) or not order_target.is_inside_tree() or order_target.is_queued_for_deletion():
+		order = "idle"; state = "Track gone"; return
 	var spot := derail_spot()
 	var reach: float = order_target.half_width()+2.5
 	if Vector2(global_position.x,global_position.z).distance_to(Vector2(spot.x,spot.z)) > reach:
@@ -1124,13 +1174,12 @@ func _derail_order(delta: float) -> void:
 	_stop_route()
 	var rules = game.get_node("RailNetwork").rules
 	_work_timer += delta
-	state = "Spiking track · %d%%" % roundi(minf(1.0,_work_timer/maxf(0.01,rules.derail_seconds))*100)
+	state = "Breaking track · %d%%" % roundi(minf(1.0,_work_timer/maxf(0.01,rules.derail_seconds))*100)
 	if _work_timer < rules.derail_seconds: return
-	order_target.spike(team)
+	game.get_node("RailNetwork").destroy(order_target,team)
 	derail_cooldown = rules.derail_cooldown
 	order = "idle"
-	state = "Track spiked"
-	if team == "player": game.notify("Track spiked: the next train onto it derails.")
+	state = "Track destroyed"
 func mobility_layer() -> int:
 	return unit_stats.mobility.layer if unit_stats != null and unit_stats.mobility != null else MobilityRules.Layer.GROUND
 func selection_point() -> Vector3:
@@ -1143,11 +1192,13 @@ func fuel_active() -> bool:
 ## fuel_rules.depot_energy_per_metre, instead of its tank. A Depot with no energy left powers nothing.
 var powered_by: Node3D
 var _depot_power_owed := 0.0
-func _depot_power() -> Node3D:
+func _depot_power(at = null) -> Node3D:
 	if fuel_rules.depot_energy_per_metre <= 0: return null
+	var point: Vector3 = global_position if at == null else at
 	for depot in get_tree().get_nodes_in_group("depots"):
-		if depot.energy > 0 and SupplySource.covers(depot,global_position,team): return depot
+		if depot.energy > 0 and SupplySource.covers(depot,point,team): return depot
 	return null
+const NO_FUEL_EDGE := "No fuel · can't leave Depot range"
 func _pay_for_move(distance: float) -> void:
 	if not is_instance_valid(powered_by):
 		burn_fuel(distance)

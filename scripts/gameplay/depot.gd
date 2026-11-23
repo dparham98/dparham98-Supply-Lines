@@ -76,6 +76,10 @@ var cells: Array[Vector2i] = []
 @onready var game = get_tree().get_first_node_in_group("skirmish")
 @onready var ground = get_tree().get_first_node_in_group("terrain_grid")
 func _ready() -> void:
+	# The model's team_color surfaces (the Depot and its parked truck) take the side's paint, and change with it
+	# when the Depot is captured (docs/TEAM_MARKERS.md).
+	paint_team()
+	ownership_changed.connect(paint_team)
 	construction_infantry_pending = grant_construction_infantry and SupplySource.plays(team)
 	if construction_infantry_pending: call_deferred("try_construction_infantry")
 	stockpile = ResourceStockpile.new(storage_capacity_override if storage_capacity_override > 0 else rules.storage_capacity)
@@ -118,7 +122,7 @@ func testing_iron_granted() -> bool:
 	return rules.testing_starting_iron >= 0 and (not is_instance_valid(game) or game.get("testing_iron_grant") != false)
 func request_infantry() -> bool:
 	# Compatibility rejection: repeatable infantry production belongs to Barracks.
-	game.notify("Depots grant one Infantry on establishment. Produce additional Infantry at Barracks.",team)
+	game.notify("Depots grant one Deforester on establishment. Produce more at Barracks.",team)
 	return false
 func _process(delta: float) -> void:
 	update_capture(delta)
@@ -342,7 +346,7 @@ func try_construction_infantry() -> bool:
 	Rally.send(self,unit)
 	construction_infantry_pending = false
 	construction_infantry_spawned = true
-	game.notify("Construction infantry ready at %s." % name,team)
+	game.notify("Deforester ready at %s." % name,team)
 	return true
 
 ## `line`: a piece of the line the train starts on, when the Depot has more than one (docs/RAIL_PLANNING.md).
@@ -354,3 +358,5 @@ func request_train(line: Node3D = null) -> bool:
 	train_lines.append(line)
 	game.notify("Train queued%s; needs friendly track in this Depot loading area." % (" on the chosen line" if line != null else ""),team)
 	return true
+func paint_team() -> void:
+	preload("res://scripts/components/team_paint.gd").apply(get_node_or_null("Visuals/Model"),team)

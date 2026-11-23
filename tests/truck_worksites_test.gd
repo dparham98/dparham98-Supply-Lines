@@ -118,7 +118,7 @@ func run() -> void:
 	if not check(tile.visible and hud.hotkey_text(tile) == "W","Worksite tile missing"): return
 	tile.pressed.emit(); hud._process(0)
 	if not check(hud.worksite_open and hud.build_menu.visible and not hud.card.visible and not hud.build_menu.get_node("Actions/Rail").visible and not hud.build_menu.get_node("Actions/Pin").visible,"Worksite page not shown"): return
-	if not check(hud.build_menu.get_node("Bank").text == "DELIVERS: EXACT MATERIALS","Worksite page text wrong"): return
+	if not check(hud.info.get_node("HealthText").text.ends_with("Delivers exact materials"),"Worksite page text wrong"): return
 	hud.build_menu.get_node("Actions/Generator").pressed.emit()
 	if not check(game.global_plan_kind == &"generator","Worksite tile did not arm placement"): return
 	var site: Node3D

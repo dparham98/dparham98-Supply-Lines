@@ -222,6 +222,12 @@ func manifest_add(kind: StringName) -> bool:
 	if not ResourceStockpile.CRATED.has(kind) or manifest_total() >= crate_slots(): return false
 	manifest[kind] = manifest.get(kind,0)+1
 	return true
+## Takes one crate of this resource off the manifest (all of them with `every`); false when it had none.
+func manifest_remove(kind: StringName, every := false) -> bool:
+	if manifest.get(kind,0) <= 0: return false
+	manifest[kind] = 0 if every else manifest[kind]-1
+	if manifest[kind] <= 0: manifest.erase(kind)
+	return true
 ## Gives every free slot to this resource; false when there are none.
 func manifest_fill(kind: StringName) -> bool:
 	var free := crate_slots()-manifest_total()
@@ -434,6 +440,8 @@ func unload_crates(node: Node3D, point: Vector3) -> int:
 			var cell = CrateYard.free_cell(get_tree(),point)
 			if cell == null: break
 			var crate: Dictionary = crates.pop_front()
+			# An empty crate is not set down: emptied crates leave the map.
+			if crate.amount <= 0: continue
 			CrateYard.spawn(get_tree(),cell,crate.kind,crate.amount,team)
 			count += 1
 	_sync_reserved()
