@@ -88,11 +88,31 @@ Pieces per unit model now (each MeshInstance3D is a transform to update and at l
 
 The Ubermech, one skinned mesh, shows what the others could be.
 
+## Merged models
+
+Added 2026-11-22, starting with the Tank.
+
+- **Why.** Each piece of a unit model is a node the engine moves every frame the unit moves, and at least one draw call per pass. Most of a model's pieces never move on their own, so they can be one mesh with the part they ride on.
+- **The tool.** `scripts/tools/merge_model_parts.gd` reads a model scene and writes a merged one.
+  - Each entry in its `MODELS` names the pieces to keep as their own nodes: the ones a script or a death clip moves, hides, recolours or looks up by name.
+  - Every other piece is folded into the kept piece it hangs from, one surface per material. `team_color` surfaces keep their material, so team paint still finds them.
+  - Muzzle-flash scenes inside the model stay as they are.
+  - The meshes go to `assets/models/units/merged/` and the scene to `scenes/models/<id>_model_merged.tscn`.
+  - The source model scene, the GLB and the Blender files are not changed. **Run the tool again after any change to the model:**
+    `Godot --headless --path . --script res://scripts/tools/merge_model_parts.gd -- tank`
+- **The Tank.** `scenes/gameplay/tank.tscn` now uses `tank_model_merged.tscn`.
+  - It went from 59 pieces and 144 surfaces to 20 pieces and 52 surfaces.
+  - Kept as their own pieces: the hull, turret, barrel mount and barrel, the roof hatch and roof gun, the driver's hatch, the tracks, road wheels, return rollers, sprockets and idlers, and the three neon lamps.
+  - Folded in: the aprons, skirts, axle caps, headlamp housings, rear deck and turret ring into the hull; the visor, optics, service housing, vents and shoulder plates into the turret; the muzzle brake into the barrel; the roof gun's bearing into the hatch; its barrel into the roof gun.
+- **Looks.** Rendered from four sides in both teams' paint, the merged Tank matches the original pixel for pixel.
+- **Measured.** About 200 Tanks fighting, camera on them: 21.5 fps unmerged, 30.9 fps merged (mean from 10 s on).
+
 ## Still to do
 
 The remaining cost is mostly the unit models: their pieces, and drawing them.
 
-- **Fewer draw calls per unit:** merge each model's pieces that share a material and move together. The Tank's 144 surfaces would become at most 18 per pass, and similarly for the others. This is work on the Blender files. It shouldn't change how the units look, but each model needs checking by eye.
+- **Merge the other models** with `merge_model_parts.gd`: the Motorcycle (38 pieces), Scout (25), Deforester (24), Grenadier (18) and Drone (15). The skinned figures need their own handling: their pieces follow bones. Each needs its kept pieces worked out and a check that it looks the same.
+- **Fewer materials:** the merged Tank still has 52 surfaces, one per material in each kept piece. Fewer, shared materials (a texture atlas) would cut that further, but that is work on the Blender files.
 - **Shadows:**
   - The sun's shadows reach 340 m with 4 cascades, and units off screen are drawn into them.
   - Fewer cascades or a shorter reach would cut drawing a lot, but it changes the look. A graphics-quality setting may be the right home for it.

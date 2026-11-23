@@ -11,7 +11,7 @@ func drive(model: Node3D, frames: int, speed: float, turn := 0.0) -> void:
 		model.set_drive(speed,turn,1.0/60)
 		model._process(1.0/60)
 func run() -> void:
-	var model = load("res://scenes/models/tank_model.tscn").instantiate()
+	var model = load("res://scenes/models/tank_model_merged.tscn").instantiate()
 	root.add_child(model)
 	await process_frame
 	var hull: Node3D = model.get_node("Tank/Tank_Root/Tank_Hull")
