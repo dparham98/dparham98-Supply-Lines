@@ -27,13 +27,13 @@ func run() -> void:
 	var info: Control = hud.info
 	var context: Control = hud.context
 	if not check(context.visible and context.global_position.x > info.global_position.x+info.size.x-1 and is_equal_approx(context.global_position.y,info.global_position.y),"Info and Context are not side by side"): return
-	if not check(info.size.x >= 280 and context.size.x >= 224,"Info or Context too narrow: %.0f / %.0f" % [info.size.x,context.size.x]): return
+	if not check(info.size.x >= 280 and context.size.x >= 240,"Info or Context too narrow: %.0f / %.0f" % [info.size.x,context.size.x]): return
 	# Fixed slots: every visible tile sits on its own slot inside the grid, with no overlaps.
 	var used := {}
 	for button in hud.card.get_children():
 		if not button is Button or not button.visible: continue
 		var slot: int = hud.SLOTS[str(button.name)]
-		if not check(not used.has(slot) and button.position == Vector2((slot%4)*(hud.TILE+hud.TILE_GAP),(slot/4)*(hud.TILE+hud.TILE_GAP)) and button.text.is_empty(),"%s not on its own fixed slot" % button.name): return
+		if not check(not used.has(slot) and button.position == Vector2((slot%4)*50,(slot/4)*50) and button.text.is_empty(),"%s not on its own fixed slot" % button.name): return
 		used[slot] = true
 	if not check(hud.card.get_node("Slots").get_child_count() == 12,"Grid lacks 12 slots"): return
 	# Tiles stay put between selections: Move and Stop never move.
@@ -41,7 +41,7 @@ func run() -> void:
 	tank.position = game.depot.global_position+Vector3(14,0,14)
 	game.get_node("Entities/Units").add_child(tank); tank.set_process(false)
 	await select(tank)
-	if not check(hud.card.get_node("Move").position == Vector2.ZERO and hud.card.get_node("Stop").position == Vector2(46,0) and hud.card.get_node("ToggleRefuel").position == Vector2(138,0),"Tank tiles moved"): return
+	if not check(hud.card.get_node("Move").position == Vector2.ZERO and hud.card.get_node("Stop").position == Vector2(50,0) and hud.card.get_node("ToggleRefuel").position == Vector2(150,0),"Tank tiles moved"): return
 	# Tile names and keys are in tooltips; no hover line takes HUD space.
 	if not check(not hud.has_node("Bottom/Body/Row/Commands/Hover") and hud.card.get_node("Attack").tooltip_text.begins_with("Attack [A]"),"Tile tooltip missing, or the hover line is back"): return
 	# The hint is drawn by the HUD's own Tip panel (never Godot's popup, which can swallow a click in progress).
@@ -78,8 +78,8 @@ func run() -> void:
 	var map: Control = hud.get_node("Bottom/Body/Row/MapColumn/Map")
 	for case in [[null,null],[worker,null],[tank,null],[truck,null],[null,game.depot]]:
 		await select(case[0],case[1])
-		if not check(is_equal_approx(hud.get_node("Bottom").size.y,296) and map.size.x == map.size.y,"HUD height %.0f or map %s not fixed" % [hud.get_node("Bottom").size.y,map.size]): return
+		if not check(is_equal_approx(hud.get_node("Bottom").size.y,272) and map.size.x == map.size.y,"HUD height %.0f or map %s not fixed" % [hud.get_node("Bottom").size.y,map.size]): return
 	# Bars stay short: Info has a fixed width.
-	if not check(is_equal_approx(info.size.x,320) and hud.get_node("Bottom/Body/Row/Info/Health").size.x <= 320,"Info column not fixed at 320 px (the middle window's share at 1280 px)"): return
+	if not check(is_equal_approx(info.size.x,300) and hud.get_node("Bottom/Body/Row/Info/Health").size.x <= 300,"Info column not fixed at 300 px"): return
 	print("COMPACT_GRID_TEST_PASSED")
 	quit(0)

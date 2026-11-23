@@ -332,6 +332,26 @@ func _process(_delta: float) -> void:
 func forest_amount(cell: Vector2i) -> int:
 	if get_terrain(cell) != Terrain.FOREST: return 0
 	return forest_reserves.get(cell,harvesting_rules.forest_wood_per_tile)
+## The joined Forest round `cell` (edges touching), for inspecting it (docs/CURSORS.md): {tiles, wood, capped}. The
+## search stops at `limit` tiles, and `capped` says so.
+func forest_patch(cell: Vector2i, limit := 4000) -> Dictionary:
+	var result := {tiles = 0, wood = 0, capped = false}
+	if forest_amount(cell) <= 0: return result
+	var seen := {cell: true}
+	var queue: Array[Vector2i] = [cell]
+	while not queue.is_empty():
+		var at: Vector2i = queue.pop_back()
+		result.tiles += 1
+		result.wood += forest_amount(at)
+		if result.tiles >= limit:
+			result.capped = true
+			break
+		for step in [Vector2i.LEFT,Vector2i.RIGHT,Vector2i.UP,Vector2i.DOWN]:
+			var next: Vector2i = at+step
+			if seen.has(next) or not is_tile_in_bounds(next) or forest_amount(next) <= 0: continue
+			seen[next] = true
+			queue.append(next)
+	return result
 func harvest_forest(cell: Vector2i, requested: int) -> int:
 	var taken := mini(maxi(0,requested),forest_amount(cell))
 	if taken <= 0: return 0

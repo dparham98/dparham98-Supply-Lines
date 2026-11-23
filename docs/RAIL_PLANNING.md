@@ -72,6 +72,7 @@ A fork's branch only leads one way along the line: a train off the branch comes 
 
 - **Clearance:** a train reverses only where there is at least 24 m (`REVERSE_ROOM`) of track straight on past the fork's entry, longer than any train.
 - **Routes:** the route search (`_search`) allows the reversal, and the chain marks it (`reverse`).
+- **Starting on a fork:** a train standing on either lane of a fork can reverse the same way. It runs out through the entry, then backs into the other lane. Before 2026-11-22 it could not: a train stopped on a fork could not reach the fork's other lane or anything beyond it, so its orders and supply routes were refused.
 - **Legs:** the line is built in legs. The first ends 24 m past the fork, and its `then` is the next leg, back into the other lane.
 - **Driving:** the train finishes one leg and starts the next, driving backwards as it does at the end of a trip (docs/MAGLEV_TRACKS.md). `RailNetwork.travel` measures a line over all its legs.
 

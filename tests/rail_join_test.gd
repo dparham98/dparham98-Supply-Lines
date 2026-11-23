@@ -2,7 +2,8 @@ extends SceneTree
 # Headless: joining track (docs/RAIL_PLANNING.md). A click on laid track picks it: new track to a building then
 # leaves from a fork laid in place of three straights, which keeps the line running as it did, or from the line's
 # free end. The suggested track follows the cursor, costs only what the fork adds, and when laid the fork replaces
-# the straights, the line stays one line, and a train can run from the Depot out along the branch.
+# the straights, the line stays one line, and a train can run from the Depot out along the branch. A train standing on
+# the fork can leave it by either lane.
 var game: Node3D
 var rails: Node
 var network: Node
@@ -131,6 +132,23 @@ func run() -> void:
 	var needs_reverse: bool = into.any(func(step): return step.get("reverse",false)) or out.any(func(step): return step.get("reverse",false))
 	if not check(not needs_reverse or reversals > 0,"Where the fork faces away the train should reverse at it"): return
 	print("  fork faces %s: %d reversal%s on the round trip" % ["away (reversing)" if needs_reverse else "the Depot",reversals,"" if reversals == 1 else "s"])
+	# A train standing on the fork itself gets onto the other lane: it runs out through the entry, reverses and
+	# backs in. From the straight lane to the branch's end, and from the branch to the line beyond the straight exit.
+	var beyond_exit: Node3D = rails.connection(fork_piece,1).piece
+	for trip in [[0,branch_end.point_at(branch_end.length()*0.5)],[1,beyond_exit.point_at(beyond_exit.length()*0.5)]]:
+		var from_lane: int = trip[0]
+		var goal: Vector3 = trip[1]
+		train.piece = fork_piece; train.lane = from_lane; train.along = fork_piece.length(from_lane)*0.6
+		train.global_position = fork_piece.point_at(train.along,from_lane)
+		train._line = {}
+		train._rest_line = rails.line([{piece = fork_piece, enter = -1, lane = from_lane}],train.along,-1.0,train.consist_length()+2.0)
+		train._s = train._rest_line.start
+		if not check(train._route_to_point(goal),"A train on the fork's lane %d should find a way off it" % from_lane): return
+		if not check(train._line.has("then"),"Off the fork's lane %d the train reverses at the fork" % from_lane): return
+		for i in range(60*120):
+			if train._line.is_empty(): break
+			train._walk(1.0/60)
+		if not check(train._line.is_empty() and train.global_position.distance_to(goal) < 3.0,"The train from the fork's lane %d should arrive (%.1f m off)" % [from_lane,train.global_position.distance_to(goal)]): return
 	train.queue_free()
 	# Extending from the line's free end: a click near the end of the line by the far site, to a site beyond it.
 	var tip: Dictionary = {}

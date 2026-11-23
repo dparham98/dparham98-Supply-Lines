@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bfytw4gob7503"
-path="res://.godot/imported/hud_panel.png-ca249e952423f7cb813dbde7ea61fd75.ctex"
+uid="uid://baab27p8e6rxy"
+path="res://.godot/imported/attack.png-0f4d64a4ee564a48d6a6631e521cc55f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/hud_panel.png"
-dest_files=["res://.godot/imported/hud_panel.png-ca249e952423f7cb813dbde7ea61fd75.ctex"]
+source_file="res://assets/ui/cursors/attack.png"
+dest_files=["res://.godot/imported/attack.png-0f4d64a4ee564a48d6a6631e521cc55f.ctex"]
 
 [params]
 

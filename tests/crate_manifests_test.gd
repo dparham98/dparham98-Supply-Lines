@@ -144,7 +144,7 @@ func run() -> void:
 	if not check("full" in game.message and truck.manifest_total() == 4,"Full manifest not explained"): return
 	hud.load_tiles.get_node("Clear").pressed.emit(); hud._process(0)
 	if not check(truck.manifest.is_empty() and hud.manifest_panel.get_node("Head/Value").text == "0 / 4 crates","Clear did not empty the manifest"): return
-	if not check(is_equal_approx(hud.get_node("Bottom").size.y,296) and hud.context.size.x <= 250.5,"Load page broke the fixed HUD size"): return
+	if not check(is_equal_approx(hud.get_node("Bottom").size.y,272) and hud.context.size.x <= 250.5,"Load page broke the fixed HUD size"): return
 	game.cancel_armed(); hud._process(0)
 	if not check(not hud.manifest_panel.visible and hud.card.visible and not hud.pick.visible,"Load page stayed open after cancelling"): return
 	truck.manifest[&"iron"] = 1; select(truck)

@@ -45,14 +45,13 @@ const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 
 	"PrintInfantry": 0, "ProduceScout": 1, "ProduceGrenadier": 2, "ProduceTank": 3, "ProduceMotorcycle": 4, "ProduceDrone": 5, "ProduceUbermech": 6,
 	"ToggleGenerator": 0, "FocusAssigned": 1,
 	"Research": 0, "MineIron": 7}
-## A command tile, sized to the cells painted on the HUD panel (assets/ui/hud_panel.png).
-const TILE := 41
+const TILE := 46
 const TRIP_LABELS := {"once": "once", "all": "all available", "repeat": "repeat"}
 ## One icon per stat row (assets/ui/icons).
 const STAT_ICONS := {"Speed": "speed", "Range": "focus", "Damage": "damage", "Vision": "scout", "Vs buildings": "depot", "Splash": "splash",
 	"Cost": "cost", "Deploys": "deploy", "Output": "generator", "Burning": "refuel", "Cycle": "cycle", "Mode": "mode",
 	"Energy": "generator", "Iron": "mine", "Queue": "queue", "Fuel left": "cargo", "Energy ceiling": "generator", "Coal kept": "refuel"}
-const TILE_GAP := 5
+const TILE_GAP := 4
 @onready var state_label: Label = $Bottom/Body/Row/Info/Head/Text/State
 const RESOURCE_KINDS := [&"energy",&"iron",&"wood",&"coal"]
 var _icons := {}
@@ -193,17 +192,17 @@ func toggle_refuel() -> void:
 	for unit in selected_units():
 		if unit.fuel_active(): unit.auto_refuel = enable
 func selected_units() -> Array[Node3D]:
-	var units: Array[Node3D] = []
-	for unit in get_tree().get_nodes_in_group("units"):
-		if unit.team == "player" and unit.is_selected: units.append(unit)
-	return units
+	return get_node("/root/SelectionManager").selected_units()
 func selected_object() -> Node3D:
 	var units := selected_units()
-	if not units.is_empty(): return units[0]
+	# The primary unit (Tab steps it through the types, docs/HUD_HOTKEYS.md).
+	if not units.is_empty(): return get_node("/root/SelectionManager").primary_of(units)
 	var node = game.selected_building
 	if not is_instance_valid(node) or not node.is_inside_tree(): return null
 	# An enemy unit is shown read-only (docs/SELECTION_INSPECT.md).
 	if node.is_in_group("units"): return node if node.team != "player" and node.health > 0 else null
+	# So is a Forest or Coal tile, until it is cut or dug out (docs/CURSORS.md).
+	if node.is_in_group("forest_cells") or node.is_in_group("coal_cells"): return node if node.remaining > 0 else null
 	return node if node.is_in_group("selectable_buildings") or node.is_in_group("construction_plans") else null
 ## Your selected buildings of the shown building's type (docs/SELECTION_INSPECT.md), the shown one first.
 func same_buildings() -> Array[Node3D]:
@@ -257,7 +256,7 @@ func _process(_delta: float) -> void:
 	var units := selected_units()
 	if units.size() > 1 and not global_build_open:
 		commands.get_node("Title").text = "%d FRIENDLY UNITS SELECTED" % units.size()
-		hint_text = "Right-click moves the group. Commands apply where each unit supports them; the card and stats show the outlined unit. Click a portrait to select only that unit, Shift-click to remove it. Ctrl-click keeps only that type, Ctrl+Shift-click removes that type."
+		hint_text = "Right-click moves the group. Commands apply where each unit supports them; the card and stats show the outlined unit. Click a portrait to select only that unit, Shift-click to remove it. Ctrl-click keeps only that type, Ctrl+Shift-click removes that type. Tab and Shift+Tab step the card through the types."
 	var group: Array[Node3D] = []
 	if units.is_empty() and not global_build_open: group = same_buildings()
 	if group.size() > 1:
@@ -564,7 +563,8 @@ func update_unit_sections(node: Node3D, inspect := false) -> void:
 			route.get_node("Bar").value = to_origin/maxf(0.001,to_origin+to_destination)
 # One button per unit type in a mixed selection.
 ## Portraits replace the single unit's health, bars and details. Units are grouped by type, in the order the
-## types were first selected, so the unit the card shows (the first) is always the first portrait.
+## types were first selected. The unit the card shows (the primary, first of its type) is outlined; Tab moves it to
+## the next type.
 func update_portraits(units: Array[Node3D]) -> void:
 	var many := units.size() > 1 and not global_build_open
 	portraits.visible = many
@@ -575,15 +575,15 @@ func update_portraits(units: Array[Node3D]) -> void:
 		for id in ["HealthText","Bars","Details"]: info.get_node(id).visible = true
 		return
 	for id in ["Health","HealthText","Bars","Storage","Warning","Details"]: info.get_node(id).visible = false
-	var types: Array[String] = []
-	for unit in units:
-		if not types.has(unit.scene_file_path): types.append(unit.scene_file_path)
+	var manager = get_node("/root/SelectionManager")
+	var types: Array[String] = manager.types_of(units)
+	var primary: Node3D = manager.primary_of(units) if units[0].is_in_group("units") else units[0]
 	for type in types:
 		for unit in units:
 			if unit.scene_file_path == type: portrait_units.append(unit)
 	var slots := portraits.get_child_count()
 	var more := portrait_units.size()-slots
-	state_label.text = "Card shows %s (outlined)%s" % [object_name(units[0])," · %d more not shown" % more if more > 0 else ""]
+	state_label.text = "Card shows %s (outlined)%s%s" % [object_name(primary)," · Tab: next type" if types.size() > 1 and primary.is_in_group("units") else ""," · %d more not shown" % more if more > 0 else ""]
 	for i in slots:
 		var button: Button = portraits.get_child(i)
 		button.visible = i < portrait_units.size()
@@ -610,7 +610,7 @@ func update_portraits(units: Array[Node3D]) -> void:
 		# The health as a number too (docs/SELECTION_PORTRAITS.md).
 		var number := str(unit.health)
 		if button.get_node("HealthText").text != number: button.get_node("HealthText").text = number
-		button.get_node("Primary").visible = unit == units[0]
+		button.get_node("Primary").visible = unit == primary
 		var tip := "%s · Health %d / %d · %s\nClick: only this unit · Shift: remove it · Ctrl: only this type · Ctrl+Shift: remove this type" % [object_name(unit),unit.health,unit.max_health,unit.state] if unit.is_in_group("units") else "%s · Health %d / %d\nClick: only this building · Shift: remove it" % [object_name(unit),unit.health,unit.max_health]
 		if button.tooltip_text != tip: button.tooltip_text = tip
 ## Click keeps only that unit selected; Shift-click drops it. With Ctrl the same goes for its whole type.
@@ -730,13 +730,39 @@ func hotkey_text(button: Button) -> String:
 	for event in InputMap.action_get_events(action):
 		if event is InputEventKey: return event.as_text_physical_keycode()
 	return ""
+## A Forest or Coal tile selected to inspect (docs/CURSORS.md): its size, what it holds, and what it is part of.
+var _patch := {}
+var _patch_at := -INF
+var _patch_cell := Vector2i(-1,-1)
+func show_cell(node: Node3D) -> void:
+	var wood: bool = node.is_in_group("forest_cells")
+	var ground = game.ground
+	var side: float = ground.tile_size
+	info.get_node("Health").visible = false
+	name_label.text = "Forest tile" if wood else "Coal tile"
+	commands.get_node("Title").text = "FOREST" if wood else "COAL DEPOSIT"
+	info.get_node("HealthText").text = "%d / %d %s left" % [node.remaining,node.amount,"wood" if wood else "coal"]
+	var whole := ""
+	if wood:
+		# The patch is counted again at most once a second, as felling changes it.
+		var now := Time.get_ticks_msec()/1000.0
+		if node.cell != _patch_cell or now-_patch_at > 1.0:
+			_patch = ground.forest_patch(node.cell)
+			_patch_at = now
+			_patch_cell = node.cell
+		whole = "This wood: %s%d tiles · %s%d wood" % ["over " if _patch.capped else "",_patch.tiles,"over " if _patch.capped else "",_patch.wood]
+	else:
+		whole = "This seam: %d coal left" % node.field_remaining()
+	info.get_node("Details").text = "Tile %s × %s m · cell %d, %d\n%s" % [_metres(side),_metres(side),node.cell.x,node.cell.y,whole]
+	hint_text = "Right-click with Deforesters to gather its wood, or Fell (F) to clear it without carrying the wood home." if wood else ("Build a Coal Mine on the seam, then Deforesters gather from the mine." if ground.harvesting_rules.coal_needs_mine else "Right-click with Deforesters to dig coal here.")
+func _metres(value: float) -> String:
+	return str(int(value)) if is_equal_approx(value,roundf(value)) else "%.1f" % value
 func update_contents() -> void:
 	var node = selected_object()
 	if node != shown:
 		close_build()
 		shown = node
 	for bar in bars.get_children(): bar.visible = false
-	info.get_node("HealthText").tooltip_text = ""
 	bars.get_node("Fuel/Need").visible = false
 	for section in ["Production","Route","Stats","Abilities"]: context.get_node(section).visible = false
 	info.get_node("Storage").visible = false
@@ -761,7 +787,7 @@ func update_contents() -> void:
 		info.get_node("Health").visible = false
 		name_label.text = "Worksite"
 		var trucks := worksite_trucks()
-		info.get_node("HealthText").text = "%d truck%s will fetch · %s" % [trucks.size(),"" if trucks.size() == 1 else "s",build_pay_text]
+		info.get_node("HealthText").text = "%d truck%s will fetch" % [trucks.size(),"" if trucks.size() == 1 else "s"]
 		info.get_node("Details").text = "Place a building. The selected trucks\nbring exactly its materials from the\nnearest Depot, then Deforesters build it.\nShift places more and queues them."
 		hint_text = "Each tile's key places that building. The trucks load exact amounts, deliver them to the footprint and go back until it is covered. Esc stops placing; Back returns to the truck."
 		return
@@ -770,9 +796,12 @@ func update_contents() -> void:
 		refresh_global_menu()
 		info.get_node("Health").visible = false
 		name_label.text = "Construction plans"
-		info.get_node("HealthText").text = "%d pending · %s" % [get_tree().get_nodes_in_group("construction_plans").filter(func(p): return p.team == "player").size(),build_pay_text]
+		info.get_node("HealthText").text = "%d pending" % get_tree().get_nodes_in_group("construction_plans").filter(func(p): return p.team == "player").size()
 		info.get_node("Details").text = "Place on valid terrain, or on a pile.\nDeliver iron to the footprint, then\norder Deforesters to construct; a covering\nstockpile pays the energy as they build."
 		hint_text = "B opens this page; each tile's key places that plan. Pin (P) makes new plans pay only from one Depot or deployed Cargo truck you pick on the map or minimap."
+		return
+	if is_instance_valid(node) and (node.is_in_group("forest_cells") or node.is_in_group("coal_cells")):
+		show_cell(node)
 		return
 	if is_instance_valid(node) and node.is_in_group("construction_plans"):
 		info.get_node("Health").visible = false
@@ -1156,15 +1185,12 @@ func begin_global_placement(kind: StringName) -> void:
 		return
 	game.global_plan_kind = kind
 	game.notify("Click valid terrain to place an unpaid %s plan. Esc cancels placement; existing plans remain." % network.plan_spec(kind).title)
-## Who pays for new plans, or what a worksite's trucks bring: shown in the info column beside the plan count, so
-## the build page's three rows of tiles fill the painted grid (docs/HUD_LAYOUT.md).
-var build_pay_text := ""
 func refresh_global_menu() -> void:
 	build_menu.get_node("Actions/Pin").visible = not worksite_open
 	build_menu.get_node("Actions/Rail").visible = not worksite_open
 	if worksite_open:
-		build_pay_text = "Delivers exact materials"
-		info.get_node("HealthText").tooltip_text = "The selected trucks load exactly what the building needs and unload it on the footprint. A covering stockpile pays the energy as Deforesters build."
+		build_menu.get_node("Bank").text = "DELIVERS: EXACT MATERIALS"
+		build_menu.get_node("Bank").tooltip_text = "The selected trucks load exactly what the building needs and unload it on the footprint. A covering stockpile pays the energy as Deforesters build."
 		for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"]]:
 			var spec: Dictionary = network.plan_spec(pair[0])
 			var button: Button = build_menu.get_node("Actions/"+pair[1])
@@ -1172,10 +1198,10 @@ func refresh_global_menu() -> void:
 			set_tile(button,spec.title+" worksite","%d E · %d I · the trucks bring the %d iron; energy is paid as Deforesters build" % [spec.energy,spec.iron,spec.iron])
 		return
 	var pin_name := str(global_payer.name) if global_pinned and SupplySource.available(global_payer,"player") else ""
-	if not global_pinned: build_pay_text = "Pays: auto (nearest)"
-	elif pin_name.is_empty(): build_pay_text = "Pin lost: plans wait"
-	else: build_pay_text = "Pays: %s only" % pin_name
-	info.get_node("HealthText").tooltip_text = "One covering Depot or deployed Cargo truck pays each plan's energy as Deforesters build it. Iron must be delivered to the footprint first. Rails pay fully from Depots. No pooled resources."
+	if not global_pinned: build_menu.get_node("Bank").text = "PAYS: AUTO (NEAREST)"
+	elif pin_name.is_empty(): build_menu.get_node("Bank").text = "PAYS: PIN LOST · PLANS WAIT"
+	else: build_menu.get_node("Bank").text = "PAYS: %s ONLY" % pin_name.to_upper()
+	build_menu.get_node("Bank").tooltip_text = "One covering Depot or deployed Cargo truck pays each plan's energy as Deforesters build it. Iron must be delivered to the footprint first. Rails pay fully from Depots. No pooled resources."
 	set_card(build_menu.get_node("Actions/Pin"),"unpin_payer" if global_pinned else "pin_payer")
 	set_tile(build_menu.get_node("Actions/Pin"),"Unpin payer (back to Auto)" if global_pinned else "Pin payer","New plans pay from the nearest covering stockpile that can pay." if global_pinned else "Pick one Depot or deployed Cargo truck on the map or minimap; new plans pay only from it.")
 	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"],[&"rail","Rail"]]:
