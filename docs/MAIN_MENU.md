@@ -1,0 +1,96 @@
+# Main menu, match setup and pause menu
+
+Asked for on 2026-11-22:
+
+- a menu screen where you pick 0 or 1 AI opponents, or spectate a game between two AIs;
+- a menu that prepares the game for choosing a faction;
+- a pause menu in the HUD.
+
+Built on the enemy AI (docs/ENEMY_AI.md), which plays either side.
+
+## The main menu
+
+The game now opens on `scenes/ui/main_menu.tscn` (the project's main scene, so **F5** opens the menu). Two Lakes
+still runs straight from its scene with **F6**, playing as saved: you against the East AI.
+
+**Match:** one of three, on Two Lakes:
+
+| Choice | What you get |
+| --- | --- |
+| Play against 1 AI (the default) | You take the West start; the AI takes the East, with the same rules and fog. |
+| Play with no opponent (sandbox) | You take the West start alone. The East start's Depot and units are cleared and its AI is off. Neither side can win. |
+| Spectate: AI against AI | An AI plays each start. You see the whole map with no fog and can click anything to inspect it, but give no orders. |
+
+**Factions:** a faction for each side. The Cyborgs are the only playable faction and are chosen. The Arthurian
+Knights are listed as "coming later" and can't be picked (text only; no Knights art is in the game). With no
+opponent, only your faction shows. Spectating, the rows are the West AI and the East AI.
+
+**Start match** (Start watching, when spectating) loads the map; **Quit** closes the game. The menu remembers the
+last match when you come back to it.
+
+**Code:**
+
+- `scripts/ui/main_menu.gd` drives the menu.
+- `scripts/gameplay/match_setup.gd` is the `MatchSetup` autoload. It keeps the choice across scene changes and
+  restarts. When the map loads, the skirmish calls `MatchSetup.apply`.
+- A map run straight from its scene, or from a test, is not `configured`, and plays exactly as saved.
+
+**Factions are prepared, not used yet.** `MatchSetup.FACTIONS` lists them, and only playable ones can be started.
+Each side's choice is set on the game as `game.factions` ("player" and "enemy" to an id). Nothing reads it yet:
+rosters, models and buildings will be picked by faction once a second faction exists.
+
+## Spectating
+
+- **The West AI:** Two Lakes has a second copy of the enemy AI, `PlayerAI`, set to play the West start (`team =
+  "player"`, `opponent = "enemy"`). It is saved switched off (`process_mode` Disabled), and spectating switches it
+  on. Each AI still plays under its own side's fog.
+- **The view:** the fog's `viewer` is set to "spectator", a name on neither side, so nothing is hidden and the map
+  isn't dimmed.
+- **Read-only:** `game.spectating` keeps the HUD read-only:
+  - no command buttons, no Build button, no Depot or production sliders;
+  - right-clicks on the map and minimap give no orders.
+
+  Selecting and inspecting work as usual.
+- **The winner:** the header says which AI won, "WEST AI WINS" or "EAST AI WINS", once the other has nothing left.
+
+## The pause menu
+
+**Opening it:**
+
+- **Esc** opens it, as does the HUD's **Menu (Esc)** button beside Restart.
+- If a command or placement is armed, Esc cancels that first, as before. The next Esc opens the menu.
+- The playtest panel's spawning also keeps its own Esc.
+
+**While it is open:**
+
+- The game is paused.
+- The menu takes every click and key. Esc closes it.
+- Enter, Space and the arrow keys work its buttons.
+- It shows the match: the map, who plays and their factions.
+
+**Its buttons:**
+
+- **Resume (Esc).** A game that was already paused from the playtest panel stays paused.
+- **Restart match:** the same match again.
+- **Main menu.**
+- **Quit game.**
+
+**Code:** `scripts/ui/pause_menu.gd`. The `PauseMenu` node is saved in `scenes/ui/skirmish_hud.tscn`.
+
+## Checks
+
+`tests/main_menu_test.gd` (headless) checks:
+
+- the menu is the main scene and lists the factions, with the Knights locked, and a locked faction can't be
+  started;
+- the rows follow the mode;
+- Start match loads Two Lakes with the East AI on and the West AI off;
+- Esc pauses into the pause menu, keys stop there, and Esc resumes; an armed command takes Esc first;
+- the Menu button opens the menu, and Resume keeps an earlier pause;
+- Main menu goes back to the menu, which remembers the match;
+- the sandbox clears the East start and leaves its AI off;
+- spectating runs both AIs, has no fog, gives the HUD no commands, ignores right-click orders, sets the West AI's
+  workers going, and names the winner.
+
+A 14-minute spectated game was run headless (`--fixed-fps 30`). Both AIs built up and fought, and the West won,
+with no script errors.

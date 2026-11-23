@@ -12,7 +12,7 @@ extends Node3D
 @export_range(0,200,1) var depot_vision := 36.0
 @export_range(0,200,1) var building_vision := 24.0
 @export_range(0,200,1) var site_vision := 12.0
-## The side whose view is drawn.
+## The side whose view is drawn. Any other name (a spectator, docs/MAIN_MENU.md) sees everything.
 @export var viewer := "player"
 const TEAMS := ["player","enemy"]
 const HIDDEN_GROUPS := ["units","selectable_buildings","supply_crates","construction_plans","rails"]
@@ -22,6 +22,8 @@ var _origin := Vector2.ZERO
 var _shade := {}
 var _explored := {}
 var _texture: ImageTexture
+## No fog anywhere, for a viewer who is on neither side.
+var _clear: Image
 var _left := 0.0
 @onready var ground = get_tree().get_first_node_in_group("terrain_grid")
 @onready var overlay: MeshInstance3D = $Overlay
@@ -34,7 +36,9 @@ func _ready() -> void:
 	for team in TEAMS:
 		_shade[team] = Image.create(_size.x,_size.y,false,Image.FORMAT_RGBA8)
 		_explored[team] = Image.create(_size.x,_size.y,false,Image.FORMAT_L8)
-	_texture = ImageTexture.create_from_image(_shade[viewer])
+	_clear = Image.create(_size.x,_size.y,false,Image.FORMAT_RGBA8)
+	_clear.fill(Color(0,0,0,0))
+	_texture = ImageTexture.create_from_image(_shade.get(viewer,_clear))
 	var material := overlay.material_override as ShaderMaterial
 	material.set_shader_parameter("shade",_texture)
 	material.set_shader_parameter("map_rect",Vector4(_origin.x,_origin.y,_size.x*cell_metres,_size.y*cell_metres))
@@ -53,7 +57,7 @@ func update_now() -> void:
 			if not team in TEAMS or node.is_queued_for_deletion(): continue
 			if node.get("health") != null and node.health <= 0: continue
 			_stamp(team,node.global_position,sight(node))
-	_texture.update(_shade[viewer])
+	_texture.update(_shade.get(viewer,_clear))
 	for group in HIDDEN_GROUPS:
 		for node in get_tree().get_nodes_in_group(group):
 			var team = _team_of(node)
