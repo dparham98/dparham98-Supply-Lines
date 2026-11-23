@@ -81,6 +81,36 @@ func run() -> void:
 		if unfit.is_empty(): break
 		forbidden.merge(unfit)
 	if not check(not path.is_empty() and rails.unfit_moves(path).is_empty(),"The enemy should find track from its Depot to %s that can all be laid" % mine.name): return
+	# An unfinished build site is no place for its track: a piece over it is unfit, and a fresh search goes round.
+	var crossed = null
+	for entry in path:
+		var at: Vector3 = (entry.transform as Transform3D).origin
+		crossed = network.queue_plan(at,&"generator",depot,true,false,"enemy")
+		if crossed != null: break
+	if not check(crossed != null,"A Generator site should fit somewhere along the found track"): return
+	if not check(not rails.unfit_moves(path).is_empty(),"Track across an unfinished build site should be unfit"): return
+	var around: Array = []
+	forbidden = {}
+	for tries in range(6):
+		var job: Dictionary = rails.begin_link(depot,mine,forbidden)
+		while not rails.advance_link(job,5000): pass
+		around = job.found.get("path",[])
+		var unfit: Dictionary = rails.unfit_moves(around)
+		if unfit.is_empty(): break
+		forbidden.merge(unfit)
+	var sites: Dictionary = rails.site_cells()
+	if not check(not around.is_empty() and around.all(func(entry): return not rails.cells_for(entry.kind,entry.transform).any(func(cell): return sites.has(cell))),"The enemy's track should go round its unfinished build site"): return
+	# A site track has crossed anyway (the player's, say) is given up and planned again, without skipping the step.
+	var ground = game.ground
+	var marked := Vector2i(crossed.start.x+1,crossed.start.y+1)
+	ground.tiles[marked.y*ground.grid_size.x+marked.x]["rail"] = depot
+	if not check(ai.track_on(crossed),"Track on a site's footprint should be seen"): return
+	ai.plan = crossed
+	var step: int = ai.build_step
+	ai.build(depot)
+	await process_frame
+	ground.tiles[marked.y*ground.grid_size.x+marked.x].erase("rail")
+	if not check(not is_instance_valid(crossed) and ai.plan == null and ai.build_step == step,"A site with track across it should be given up and planned again (step %d -> %d)" % [step,ai.build_step]): return
 	var iron: int = depot.iron
 	game.message = ""
 	var laid: Array[Node3D] = rails.lay_link(path,depot)

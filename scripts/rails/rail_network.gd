@@ -1241,6 +1241,7 @@ var _side_router
 func begin_link(from: Node3D, to: Node3D, forbidden := {}) -> Dictionary:
 	if _side_router == null: _side_router = preload("res://scripts/rails/rail_router.gd").new(self)
 	_side_router.forbidden = forbidden
+	_side_router.blocked = site_cells()
 	var width: float = probe("straight").half_width()
 	var ring: Array = _side_router.ring_starts(from.global_position,target_reach(from)+width)
 	return _side_router.begin(ring,{centre = to.global_position, reach = target_reach(to)+width})
@@ -1251,9 +1252,24 @@ func advance_link(job: Dictionary, usec: int) -> bool:
 ## the ones lay_link() would leave out. Empty when every piece can be laid.
 func unfit_moves(path: Array) -> Dictionary:
 	var result := {}
+	var sites := site_cells()
 	for entry in path:
-		if not ground_clear(cells_for(entry.kind,entry.transform)): result[entry.move] = true
+		if not _link_clear(cells_for(entry.kind,entry.transform),sites): result[entry.move] = true
 	return result
+## The cells of every unfinished build site, and the strip a planned Depot keeps clear, {Vector2i: true}. Track the
+## enemy player lays stays off them: a piece there would leave the site waiting for its footprint to clear for good.
+func site_cells() -> Dictionary:
+	var result := {}
+	var depots = game.get_node_or_null("DepotNetwork")
+	for plan in get_tree().get_nodes_in_group("construction_plans"):
+		if plan.finished or plan.kind == &"rail": continue
+		for z in range(plan.start.y,plan.start.y+plan.spec.size.y):
+			for x in range(plan.start.x,plan.start.x+plan.spec.size.x): result[Vector2i(x,z)] = true
+		if plan.kind == &"depot" and depots != null:
+			for cell in depots.strip_cells(plan.global_position): result[cell] = true
+	return result
+func _link_clear(cells: Array[Vector2i], sites: Dictionary) -> bool:
+	return ground_clear(cells) and not cells.any(func(cell): return sites.has(cell))
 ## The iron a found path costs.
 func link_cost(path: Array) -> int:
 	var total := 0
@@ -1268,8 +1284,9 @@ func lay_link(path: Array, payer: Node3D) -> Array[Node3D]:
 	if not payer.spend_local(rules.rail_energy_cost*path.size(),need): return laid
 	var parent: Node = game.get_node("Entities/Rails") if game.has_node("Entities/Rails") else game
 	var refund := 0
+	var sites := site_cells()
 	for entry in path:
-		if not ground_clear(cells_for(entry.kind,entry.transform)): refund += cost(entry.kind); continue
+		if not _link_clear(cells_for(entry.kind,entry.transform),sites): refund += cost(entry.kind); continue
 		var piece = scene_for(entry.kind).instantiate()
 		piece.assigned_depot = payer
 		piece.transform = entry.transform
