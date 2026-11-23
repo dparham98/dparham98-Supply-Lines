@@ -59,6 +59,6 @@ The bottom HUD is drawn by one painted panel, `assets/ui/hud_panel.png` (1100 x 
   - the header message and buttons on the header band, either side of the crest;
   - the minimap (154 px) in the left window;
   - selection info and the stats column in the middle window; the info column takes all extra width;
-  - the portrait window is left empty (`Ornament`, with its filler off);
+  - the selected unit's or building's portrait in the portrait window (`Ornament/Portrait`, 97 × 173 px; the filler is off);
   - the command tiles (41 px, 5 px apart) on the painted 4 x 3 grid.
-  - the build page's nine tiles (with the Coal Mine) fill three rows of that grid. Who pays for new plans ("Pays: auto (nearest)", a pinned payer, or a worksite's "Delivers exact materials") moved from a label over the tiles to the info column, beside the plan count.
+  - the build page's ten tiles (with the Coal Mine and the Temple of Science) fill three rows of that grid; the Temple's Research and Mine Iron tiles use the same 41 px size. Who pays for new plans ("Pays: auto (nearest)", a pinned payer, or a worksite's "Delivers exact materials") moved from a label over the tiles to the info column, beside the plan count.
