@@ -196,7 +196,8 @@ loading two mines takes 20 iron from the covering Depot; an unresearched Deraile
 
 ### 10. Drone fuel (small)
 
-A Drone burns 0.1 coal a second in the air (`assets/economy/fuel_drone.tres`), about five minutes aloft. Out of
+A Drone burns 0.1 coal a second while in the air, about five minutes on its 30 tank. `assets/economy/fuel_drone.tres`
+charges by the metre today and is switched off, so this needs a new per-second field on `FuelRules`. Out of
 coal, it lands where it is and can be refuelled as a vehicle is. **Under review:** the owner wants Drones and
 Derailers clearly more fuel-efficient than Tanks and trucks; expect the rate to change.
 

@@ -2,7 +2,7 @@
 # Runs one investigation in the scratch copy made by setup.sh, at a fixed 1/30 s step.
 # usage: SIM=/path/to/scratch GODOT=/path/to/godot run.sh arena <spec.json> <out.jsonl>
 #        ... run.sh match <spec.json> <out.json>
-#        ... run.sh rates <cyborg|knights|knights_keep>      (RATES_SPEED=1.3 tries a road bonus)
+#        ... run.sh rates <cyborg|knights|knights_keep>      (RATES_SPEED=1.3 tries a road bonus; RATES_MINE=far uses the expansion mine)
 #        ... run.sh pace
 set -euo pipefail
 SIM="${SIM:?scratch copy made by setup.sh}"

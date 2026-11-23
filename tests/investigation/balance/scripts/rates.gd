@@ -54,6 +54,11 @@ func run() -> void:
 	print("%s start: %s at %s · stock E %d I %d W %d C %d F %d · workers %d (%s, speed %.1f, carry %d, %d per %.1f s)" % [mode,depot.name,depot.global_position,depot.energy,depot.iron,depot.wood,depot.coal,depot.food,workers.size(),workers[0].unit_stats.display_name,workers[0].move_speed,workers[0].carry_capacity,workers[0].harvest_amount,workers[0].harvest_interval])
 	var mine := nearest_mine(depot.global_position,&"iron")
 	print("home mine %s, %.1f m from the %s centre" % [mine.name,mine.global_position.distance_to(depot.global_position),depot.name])
+	if OS.get_environment("RATES_MINE") == "far":
+		var far: Array = get_nodes_in_group("mines").filter(func(m): return m.resource_kind == &"iron" and m.global_position.distance_to(depot.global_position) > 55.0)
+		far.sort_custom(func(a,b): return a.global_position.distance_to(depot.global_position) < b.global_position.distance_to(depot.global_position))
+		mine = far[0]
+		print("far mine %s, %.1f m from the %s centre" % [mine.name,mine.global_position.distance_to(depot.global_position),depot.name])
 	var worker: Node3D = workers[0]
 	if OS.has_environment("RATES_SPEED"):
 		for unit in workers: unit.move_speed *= float(OS.get_environment("RATES_SPEED"))
@@ -66,6 +71,8 @@ func run() -> void:
 	var from := t
 	await wait(240)
 	print(rate("iron",from,t))
+	if OS.get_environment("RATES_MINE") == "far":
+		print("RATES_DONE"); quit(); return
 	# Wood, one worker, 4 minutes.
 	var tree := forest_near(depot.global_position)
 	print("nearest forest %.1f m from the %s centre" % [tree.global_position.distance_to(depot.global_position),depot.name])

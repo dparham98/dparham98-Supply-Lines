@@ -54,6 +54,9 @@ An arena batch takes seconds to a few minutes. An 18-minute match takes three to
 - **Names:** `c_std` is the AI's default build (tech first), `c_2rax` and `c_3rax` two and three Barracks, `c_rush`
   the rush, `k` the Knights. `f_` matches use the game's combat as it is, `n_` the proposed changes. The first name
   is the West side. `k1_46f_12farms` and `k2_92f_8farms` were run before the Knights AI could found a second Keep.
+- **Round 2:** `specs/haste.json` is the 56-against-57 battle with Knights infantry attacking and moving 25%
+  faster. `results/r2_*.log` are worker rates at other speeds (`RATES_SPEED`) and from the far mine
+  (`RATES_MINE=far`), with and without the road's 30%.
 - **Kiting batches:** `kite` tries each Tank rule alone. `kite_proposed` is the whole proposed Tank (sight 20,
   speed 5, 12 every 1.5 s, 2 m splash at half damage), alone and with a Drone. `kite_proposed2` adds no moving fire
   and a forward-arc limit to it. `kite_proposed3` has the lone proposed Tank retreat sooner, at 18.5 m and 19.5 m.
