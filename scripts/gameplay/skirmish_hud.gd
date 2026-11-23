@@ -192,13 +192,11 @@ func toggle_refuel() -> void:
 	for unit in selected_units():
 		if unit.fuel_active(): unit.auto_refuel = enable
 func selected_units() -> Array[Node3D]:
-	var units: Array[Node3D] = []
-	for unit in get_tree().get_nodes_in_group("units"):
-		if unit.team == "player" and unit.is_selected: units.append(unit)
-	return units
+	return get_node("/root/SelectionManager").selected_units()
 func selected_object() -> Node3D:
 	var units := selected_units()
-	if not units.is_empty(): return units[0]
+	# The primary unit (Tab steps it through the types, docs/HUD_HOTKEYS.md).
+	if not units.is_empty(): return get_node("/root/SelectionManager").primary_of(units)
 	var node = game.selected_building
 	if not is_instance_valid(node) or not node.is_inside_tree(): return null
 	# An enemy unit is shown read-only (docs/SELECTION_INSPECT.md).
@@ -256,7 +254,7 @@ func _process(_delta: float) -> void:
 	var units := selected_units()
 	if units.size() > 1 and not global_build_open:
 		commands.get_node("Title").text = "%d FRIENDLY UNITS SELECTED" % units.size()
-		hint_text = "Right-click moves the group. Commands apply where each unit supports them; the card and stats show the outlined unit. Click a portrait to select only that unit, Shift-click to remove it. Ctrl-click keeps only that type, Ctrl+Shift-click removes that type."
+		hint_text = "Right-click moves the group. Commands apply where each unit supports them; the card and stats show the outlined unit. Click a portrait to select only that unit, Shift-click to remove it. Ctrl-click keeps only that type, Ctrl+Shift-click removes that type. Tab and Shift+Tab step the card through the types."
 	var group: Array[Node3D] = []
 	if units.is_empty() and not global_build_open: group = same_buildings()
 	if group.size() > 1:
@@ -563,7 +561,8 @@ func update_unit_sections(node: Node3D, inspect := false) -> void:
 			route.get_node("Bar").value = to_origin/maxf(0.001,to_origin+to_destination)
 # One button per unit type in a mixed selection.
 ## Portraits replace the single unit's health, bars and details. Units are grouped by type, in the order the
-## types were first selected, so the unit the card shows (the first) is always the first portrait.
+## types were first selected. The unit the card shows (the primary, first of its type) is outlined; Tab moves it to
+## the next type.
 func update_portraits(units: Array[Node3D]) -> void:
 	var many := units.size() > 1 and not global_build_open
 	portraits.visible = many
@@ -574,15 +573,15 @@ func update_portraits(units: Array[Node3D]) -> void:
 		for id in ["HealthText","Bars","Details"]: info.get_node(id).visible = true
 		return
 	for id in ["Health","HealthText","Bars","Storage","Warning","Details"]: info.get_node(id).visible = false
-	var types: Array[String] = []
-	for unit in units:
-		if not types.has(unit.scene_file_path): types.append(unit.scene_file_path)
+	var manager = get_node("/root/SelectionManager")
+	var types: Array[String] = manager.types_of(units)
+	var primary: Node3D = manager.primary_of(units) if units[0].is_in_group("units") else units[0]
 	for type in types:
 		for unit in units:
 			if unit.scene_file_path == type: portrait_units.append(unit)
 	var slots := portraits.get_child_count()
 	var more := portrait_units.size()-slots
-	state_label.text = "Card shows %s (outlined)%s" % [object_name(units[0])," · %d more not shown" % more if more > 0 else ""]
+	state_label.text = "Card shows %s (outlined)%s%s" % [object_name(primary)," · Tab: next type" if types.size() > 1 and primary.is_in_group("units") else ""," · %d more not shown" % more if more > 0 else ""]
 	for i in slots:
 		var button: Button = portraits.get_child(i)
 		button.visible = i < portrait_units.size()
@@ -609,7 +608,7 @@ func update_portraits(units: Array[Node3D]) -> void:
 		# The health as a number too (docs/SELECTION_PORTRAITS.md).
 		var number := str(unit.health)
 		if button.get_node("HealthText").text != number: button.get_node("HealthText").text = number
-		button.get_node("Primary").visible = unit == units[0]
+		button.get_node("Primary").visible = unit == primary
 		var tip := "%s · Health %d / %d · %s\nClick: only this unit · Shift: remove it · Ctrl: only this type · Ctrl+Shift: remove this type" % [object_name(unit),unit.health,unit.max_health,unit.state] if unit.is_in_group("units") else "%s · Health %d / %d\nClick: only this building · Shift: remove it" % [object_name(unit),unit.health,unit.max_health]
 		if button.tooltip_text != tip: button.tooltip_text = tip
 ## Click keeps only that unit selected; Shift-click drops it. With Ctrl the same goes for its whole type.

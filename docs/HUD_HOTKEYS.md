@@ -36,13 +36,15 @@ Camera: arrows pan (Shift for fast), wheel zooms, **O** overview, **Space** focu
 - **Shift-click** a unit to add it to the selection or remove it. Shift-click on empty ground keeps the selection. Shift-click on a building selects the building as usual.
 - **Shift-drag** adds the boxed units. Shift may be pressed before or during the drag (`docs/SELECTION_PORTRAITS.md`).
 - **Portraits** of a multiple selection: click keeps one unit, Shift-click removes it, Ctrl-click keeps its type, Ctrl+Shift-click removes its type.
-- **Double-click** a unit to select every friendly unit of the same type that is on screen.
+- **Double-click** or **Ctrl-click** a unit to select every friendly unit of the same type that is on screen (Ctrl-click asked for on 2026-11-22). On a building, both select your buildings of its type on screen.
+- **Ctrl+Shift-click** a unit to add every friendly unit of its type on screen to the selection; that type becomes the primary.
+- **Tab** steps the primary through the types of a mixed selection, in portrait order, and **Shift+Tab** steps back (2026-11-22). The primary is the unit whose command card and stats show and whose portrait is outlined: the first selected unit of its type. Each new selection or recalled group starts from its first unit. With one type selected, or a command or placement armed, Tab does nothing. Tab is read before the HUD, so a focused button never takes it.
 - **Ctrl+1–9** saves the selected units as a group. **1–9** recalls it. Pressing the same number again within 0.4 s centres the camera on the group. Dead units drop out of groups, and recalling an empty group leaves the selection alone.
 
 ## Not included
 
 - Build menu buttons (Depot, Generator, structures) have no keys yet.
-- Mixed selections still show the first unit's card.
+- Mixed selections show the primary type's card only; Tab changes which.
 - The Supply panel still replaces the command card. Merging them is part of the Phase 4 layout work.
 - Command queuing (Phase 3) and playtest tools (Phase 2).
 
@@ -54,7 +56,8 @@ Camera: arrows pan (Shift for fast), wheel zooms, **O** overview, **Space** focu
   - key labels;
   - M arming Move and S stopping a unit;
   - a hidden button's key doing nothing, T on the Tank card and the Supply panel, and a focused text field blocking D;
-  - Shift toggle and add, double-click same-type selection, and control group save, recall and pruning.
+  - Shift toggle and add, double-click and Ctrl-click same-type selection, Ctrl+Shift-click adding a type, and control group save, recall and pruning;
+  - Tab and Shift+Tab stepping the primary through three types in portrait order, the outline and card following it, and Tab doing nothing with one type.
 - `tests/hud_hotkeys_runtime_check.gd` (rendered) uses real window clicks and key presses. Its screenshots are `infantry_keys`, `group_recalled` and `tank_keys`.
 - Needs a human playtest for feel and key choices.
 - All 29 headless suites passed through `ci/run_headless_checks.sh` on Windows, and every rendered check passed except the known `mobile_supply_runtime_check` failure that predates this branch.
