@@ -18,7 +18,7 @@ var _line := {}
 var _s := 0.0
 var _goal := 0.0
 var _rest_line := {}
-## Off the track after running onto a spiked piece (docs/DERAILER.md): it stays where it fell, tipped over.
+## Off the track after a Derailer destroyed the piece under it (docs/DERAILER.md): it stays where it fell, tipped over.
 var derailed := false
 const DERAIL_SLEW := 22.0
 const DERAIL_ROLL := 30.0
@@ -214,9 +214,6 @@ func _walk(delta: float) -> void:
 	$Visuals.rotation.y = atan2(-here[1].x,-here[1].z)
 	var hit: Dictionary = rail_network.locate(_line,_s)
 	if not hit.is_empty(): piece = hit.piece; along = hit.distance; lane = hit.lane
-	if not hit.is_empty() and hit.piece.is_spiked():
-		derail(hit.piece)
-		return
 	if _s >= _goal-0.001:
 		# A line that reverses at a fork goes on with its next leg, the train backing into the other lane.
 		var then: Dictionary = _line.get("then",{})
@@ -226,9 +223,9 @@ func _walk(delta: float) -> void:
 		_rest_line = _line
 		_line = {}
 		_route.clear()
-## Runs onto a spiked piece: the train leaves the track, tips over where it is and loses a share of its health; the
-## piece is wrecked. Its cargo stays aboard. Re-railing is not in yet.
-func derail(at: Node3D) -> void:
+## The piece under it is destroyed (`RailNetwork.destroy`): the train leaves the track, tips over where it is and loses
+## a share of its health. Its cargo stays aboard. Re-railing is not in yet.
+func derail() -> void:
 	if derailed: return
 	derailed = true
 	_place_consist()
@@ -241,7 +238,6 @@ func derail(at: Node3D) -> void:
 	$Visuals.rotation.y += deg_to_rad(DERAIL_SLEW)
 	$Visuals.rotation.z = deg_to_rad(DERAIL_ROLL)
 	$Visuals.position.y -= 0.6
-	rail_network.wreck(at)
 	take_damage(roundi(max_health*rail_network.rules.derail_damage))
 # ---- mining (docs/TEMPLE_OF_SCIENCE.md)
 func is_mining() -> bool:

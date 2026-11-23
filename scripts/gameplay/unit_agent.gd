@@ -1145,8 +1145,8 @@ func _capture_order() -> void:
 		if _retry <= 0 and not _route_near(order_target,radius): state = "Capture target unreachable"
 	else: state = "Capturing · stay uncontested"
 
-## Derail (docs/DERAILER.md): the unit goes to a piece of track and spikes it; the next train onto it derails.
-## Seconds until it can spike again.
+## Derail (docs/DERAILER.md): the unit goes to a piece of track and destroys it, derailing any train on it.
+## Seconds until it can derail again.
 var derail_cooldown := 0.0
 func command_derail(target: Node3D) -> void:
 	if not has_ability(&"derail") or not is_instance_valid(target) or not target.is_in_group("rails"): return
@@ -1157,12 +1157,12 @@ func command_derail(target: Node3D) -> void:
 	order = "derail"
 	_work_timer = 0.0
 	state = "To the track"
-## Where on the piece the spike goes: its middle.
+## Where on the piece the Derailer works: its middle.
 func derail_spot() -> Vector3:
 	return order_target.point_at(order_target.length()*0.5)
 func _derail_order(delta: float) -> void:
-	if not is_instance_valid(order_target) or not order_target.is_inside_tree() or order_target.is_spiked():
-		order = "idle"; state = "Track gone" if not is_instance_valid(order_target) or not order_target.is_inside_tree() else "Track already spiked"; return
+	if not is_instance_valid(order_target) or not order_target.is_inside_tree() or order_target.is_queued_for_deletion():
+		order = "idle"; state = "Track gone"; return
 	var spot := derail_spot()
 	var reach: float = order_target.half_width()+2.5
 	if Vector2(global_position.x,global_position.z).distance_to(Vector2(spot.x,spot.z)) > reach:
@@ -1173,13 +1173,12 @@ func _derail_order(delta: float) -> void:
 	_stop_route()
 	var rules = game.get_node("RailNetwork").rules
 	_work_timer += delta
-	state = "Spiking track · %d%%" % roundi(minf(1.0,_work_timer/maxf(0.01,rules.derail_seconds))*100)
+	state = "Breaking track · %d%%" % roundi(minf(1.0,_work_timer/maxf(0.01,rules.derail_seconds))*100)
 	if _work_timer < rules.derail_seconds: return
-	order_target.spike(team)
+	game.get_node("RailNetwork").destroy(order_target,team)
 	derail_cooldown = rules.derail_cooldown
 	order = "idle"
-	state = "Track spiked"
-	if team == "player": game.notify("Track spiked: the next train onto it derails.")
+	state = "Track destroyed"
 func mobility_layer() -> int:
 	return unit_stats.mobility.layer if unit_stats != null and unit_stats.mobility != null else MobilityRules.Layer.GROUND
 func selection_point() -> Vector3:

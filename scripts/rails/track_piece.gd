@@ -20,8 +20,6 @@ var assigned_depot: Node3D
 var cells: Array[Vector2i] = []
 ## Which lane a fork's switch is set to.
 var route_lane := 0
-## The team whose Derailer spiked this piece (docs/DERAILER.md), or "". The next train onto it derails.
-var spiked_by := ""
 @onready var network = get_tree().get_first_node_in_group("rail_network")
 @onready var blade_straight: Node3D = find_child("*_blade_straight",true,false)
 @onready var blade_branch: Node3D = find_child("*_blade_branch",true,false)
@@ -33,14 +31,6 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	if is_instance_valid(network): network.unregister(self)
 func is_fork() -> bool: return kind.begins_with("fork")
-func is_spiked() -> bool: return not spiked_by.is_empty()
-## A Derailer drives a spike into the middle of the piece; the saved Visuals/Spike shows it.
-func spike(by_team: String) -> void:
-	spiked_by = by_team
-	var mark := get_node_or_null("Visuals/Spike") as Node3D
-	if mark == null: return
-	mark.position = local_point(length()*0.5)+Vector3.UP*0.4
-	mark.visible = true
 func lane_count() -> int: return 2 if is_fork() else 1
 func end_count() -> int: return 3 if is_fork() else 2
 ## The two ends a lane runs between, start first.
