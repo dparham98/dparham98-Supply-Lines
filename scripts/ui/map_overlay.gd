@@ -3,6 +3,7 @@ extends Control
 # progress, status icons, capture rings, carried cargo, route lines, queue paths and delivery pop-ups above
 # actors, replacing their always-on text labels at runtime. Hold Alt to show everything.
 const Bounds = preload("res://scripts/units/selection_bounds.gd")
+const Cursor = preload("res://scripts/ui/game_cursor.gd")
 const TEAM_COLORS := preload("res://scripts/units/team_colors.gd").COLORS
 const RESOURCE_COLORS := {&"energy": Color(0.818,0.771,0.652), &"iron": Color(0.604,0.655,0.678), &"wood": Color(0.435,0.682,0.353), &"coal": Color(0.788,0.541,0.29)}
 const AMBER := Color(0.941,0.698,0.29)
@@ -41,6 +42,7 @@ var _hover_frame := -HOVER_EVERY
 const SCREEN_MARGIN := 160.0
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	Cursor.use("pointer")
 	if game != null:
 		game.resources_delivered.connect(_on_delivered)
 		game.order_given.connect(_on_order)
@@ -55,6 +57,7 @@ func _process(_delta: float) -> void:
 		hovered = hover_target(mouse)
 		_hover_mouse = mouse
 		_hover_frame = Engine.get_process_frames()
+	Cursor.use(Cursor.kind_for(hovered,game))
 	update_hover_card(mouse)
 	var now := Time.get_ticks_msec()/1000.0
 	popups = popups.filter(func(p): return now-p.time < POPUP_SECONDS and is_instance_valid(p.node))
@@ -86,12 +89,20 @@ func hover_target(screen: Vector2) -> Node3D:
 	# Crates are small and sit right beside Depots: a hit on one wins over the larger box behind it.
 	for crate in get_tree().get_nodes_in_group("supply_crates"):
 		if Bounds.hit_distance(crate,camera,screen) < INF: return crate
-	# Nothing else under the pointer: a Coal cell answers with what it and its field still hold.
-	if best == null:
-		var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(screen),camera.project_ray_normal(screen))
-		var cell = game.ground.get_tile_at_position(point) if point != null else null
-		if cell != null and game.ground.get_terrain(cell) == 6: return game.ground.coal_source(cell)
+	# Nothing else under the pointer: a Coal or Forest cell answers with what it still holds (docs/CURSORS.md).
+	if best == null: return terrain_source_at(screen)
 	return best
+## The Coal or Forest cell under a screen point, as its harvest handle, or null.
+func terrain_source_at(screen: Vector2) -> Node3D:
+	var camera := get_viewport().get_camera_3d()
+	if camera == null or game == null: return null
+	var point = Plane(Vector3.UP,0).intersects_ray(camera.project_ray_origin(screen),camera.project_ray_normal(screen))
+	var cell = game.ground.get_tile_at_position(point) if point != null else null
+	if cell == null: return null
+	match game.ground.get_terrain(cell):
+		6: return game.ground.coal_source(cell)
+		3: return game.ground.forest_source(cell)
+	return null
 func is_selected(node: Node) -> bool:
 	return node.get("is_selected") == true or node == game.selected_building or game.selected_buildings.has(node)
 func team_color(node: Node) -> Color:
@@ -216,6 +227,16 @@ func coal_rings() -> Array[Dictionary]:
 			for cell in field.cells: radius = maxf(radius,game.ground.tile_to_world(cell).distance_to(field.center))
 			_coal_rings.append({"field": field, "center": field.center, "radius": radius+COAL_RING_MARGIN})
 	return _coal_rings.filter(func(ring): return game.ground.coal_field_remaining(ring.field) > 0)
+## Outlines a resource cell's tile on the ground: amber when selected, white when only hovered.
+func draw_tile(node: Node3D, camera: Camera3D, selected: bool) -> void:
+	var half: float = game.ground.tile_size*0.5
+	var corners := PackedVector2Array()
+	for offset in [Vector3(-half,0,-half),Vector3(half,0,-half),Vector3(half,0,half),Vector3(-half,0,half),Vector3(-half,0,-half)]:
+		var at: Vector3 = node.global_position+offset+Vector3.UP*0.05
+		if camera.is_position_behind(at): return
+		corners.append(camera.unproject_position(at))
+	draw_polyline(corners,Color(0.06,0.05,0.04,0.7),4.0,true)
+	draw_polyline(corners,AMBER if selected else Color(1,1,1,0.85),2.0,true)
 func draw_coal_rings(camera: Camera3D) -> void:
 	for ring in coal_rings():
 		var points := PackedVector2Array()
@@ -250,6 +271,9 @@ func _draw() -> void:
 	if camera == null or game == null: return
 	var font := get_theme_default_font()
 	draw_coal_rings(camera)
+	# The tile under the pointer when it is wood or coal, and the one selected to inspect.
+	for node in [hovered,game.selected_building]:
+		if is_instance_valid(node) and (node.is_in_group("forest_cells") or node.is_in_group("coal_cells")): draw_tile(node,camera,node == game.selected_building)
 	for plan in get_tree().get_nodes_in_group("construction_plans"):
 		var corners := plan_outline(plan,camera)
 		var ready: bool = plan.kind != &"rail" and plan.materials_covered()
@@ -397,6 +421,7 @@ func hud_name(node: Node) -> String:
 	if node.is_in_group("material_piles"): return "%s pile" % str(node.material_kind).capitalize()
 	if node.is_in_group("iron_deposits"): return "Iron deposit · build a mine to gather"
 	if node.is_in_group("coal_cells"): return "Coal deposit · Deforesters dig it directly"
+	if node.is_in_group("forest_cells"): return "Forest"
 	if node.is_in_group("resources"): return str(node.get("resource_name")) if node.get("resource_name") != null else "Resource"
 	if node.is_in_group("construction_plans"): return node.spec.title+" plan"
 	return get_parent().object_name(node)
@@ -413,6 +438,9 @@ func update_hover_card(mouse: Vector2) -> void:
 		ratio = float(node.amount)/node.CAPACITY
 	elif node.is_in_group("coal_cells"):
 		line = "%d left here · %d in this field" % [node.remaining,node.field_remaining()]
+		ratio = float(node.remaining)/node.amount
+	elif node.is_in_group("forest_cells"):
+		line = "%d / %d wood on this tile · click for more" % [node.remaining,node.amount]
 		ratio = float(node.remaining)/node.amount
 	elif node.is_in_group("resources") or node.is_in_group("material_piles") or node.is_in_group("iron_deposits"):
 		line = "%d left" % node.remaining

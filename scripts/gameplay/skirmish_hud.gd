@@ -204,6 +204,8 @@ func selected_object() -> Node3D:
 	if not is_instance_valid(node) or not node.is_inside_tree(): return null
 	# An enemy unit is shown read-only (docs/SELECTION_INSPECT.md).
 	if node.is_in_group("units"): return node if node.team != "player" and node.health > 0 else null
+	# So is a Forest or Coal tile, until it is cut or dug out (docs/CURSORS.md).
+	if node.is_in_group("forest_cells") or node.is_in_group("coal_cells"): return node if node.remaining > 0 else null
 	return node if node.is_in_group("selectable_buildings") or node.is_in_group("construction_plans") else null
 ## Your selected buildings of the shown building's type (docs/SELECTION_INSPECT.md), the shown one first.
 func same_buildings() -> Array[Node3D]:
@@ -730,6 +732,33 @@ func hotkey_text(button: Button) -> String:
 	for event in InputMap.action_get_events(action):
 		if event is InputEventKey: return event.as_text_physical_keycode()
 	return ""
+## A Forest or Coal tile selected to inspect (docs/CURSORS.md): its size, what it holds, and what it is part of.
+var _patch := {}
+var _patch_at := -INF
+var _patch_cell := Vector2i(-1,-1)
+func show_cell(node: Node3D) -> void:
+	var wood: bool = node.is_in_group("forest_cells")
+	var ground = game.ground
+	var side: float = ground.tile_size
+	info.get_node("Health").visible = false
+	name_label.text = "Forest tile" if wood else "Coal tile"
+	commands.get_node("Title").text = "FOREST" if wood else "COAL DEPOSIT"
+	info.get_node("HealthText").text = "%d / %d %s left" % [node.remaining,node.amount,"wood" if wood else "coal"]
+	var whole := ""
+	if wood:
+		# The patch is counted again at most once a second, as felling changes it.
+		var now := Time.get_ticks_msec()/1000.0
+		if node.cell != _patch_cell or now-_patch_at > 1.0:
+			_patch = ground.forest_patch(node.cell)
+			_patch_at = now
+			_patch_cell = node.cell
+		whole = "This wood: %s%d tiles · %s%d wood" % ["over " if _patch.capped else "",_patch.tiles,"over " if _patch.capped else "",_patch.wood]
+	else:
+		whole = "This seam: %d coal left" % node.field_remaining()
+	info.get_node("Details").text = "Tile %s × %s m · cell %d, %d\n%s" % [_metres(side),_metres(side),node.cell.x,node.cell.y,whole]
+	hint_text = "Right-click with Deforesters to gather its wood, or Fell (F) to clear it without carrying the wood home." if wood else ("Build a Coal Mine on the seam, then Deforesters gather from the mine." if ground.harvesting_rules.coal_needs_mine else "Right-click with Deforesters to dig coal here.")
+func _metres(value: float) -> String:
+	return str(int(value)) if is_equal_approx(value,roundf(value)) else "%.1f" % value
 func update_contents() -> void:
 	var node = selected_object()
 	if node != shown:
@@ -773,6 +802,9 @@ func update_contents() -> void:
 		info.get_node("HealthText").text = "%d pending · %s" % [get_tree().get_nodes_in_group("construction_plans").size(),build_pay_text]
 		info.get_node("Details").text = "Place on valid terrain, or on a pile.\nDeliver iron to the footprint, then\norder Deforesters to construct; a covering\nstockpile pays the energy as they build."
 		hint_text = "B opens this page; each tile's key places that plan. Pin (P) makes new plans pay only from one Depot or deployed Cargo truck you pick on the map or minimap."
+		return
+	if is_instance_valid(node) and (node.is_in_group("forest_cells") or node.is_in_group("coal_cells")):
+		show_cell(node)
 		return
 	if is_instance_valid(node) and node.is_in_group("construction_plans"):
 		info.get_node("Health").visible = false

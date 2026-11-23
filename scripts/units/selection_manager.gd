@@ -54,6 +54,11 @@ func pick_object(pos: Vector2) -> Node3D:
 			var d: float = Bounds.hit_distance(actor,camera,pos)
 			if d < distance: distance = d; closest = actor
 	return closest
+## The Forest or Coal cell under a screen point, as its harvest handle, or null.
+func terrain_source_at(pos: Vector2) -> Node3D:
+	var game = get_tree().get_first_node_in_group("skirmish")
+	var overlay = game.get_node_or_null("Interface/MapOverlay") if game != null else null
+	return overlay.terrain_source_at(pos) if overlay != null else null
 func switch_at(pos: Vector2) -> bool:
 	if pick_object(pos) == null: return false
 	selecting = true
@@ -87,6 +92,8 @@ func end_selection(pos: Vector2, _unit: Node3D = null, additive := false) -> voi
 	if camera == null: return
 	var point_selection := maxf(drag_distance,start_pos.distance_to(end_pos)) < 6.0
 	var closest: Node3D = pick_object(pos) if point_selection else null
+	# A click on open Forest or Coal, with nothing else there, selects the tile to inspect (docs/CURSORS.md).
+	if closest == null and point_selection and not additive: closest = terrain_source_at(pos)
 	var closest_unit: bool = closest != null and closest.is_in_group("units") and closest.team == "player"
 	var screen := get_viewport().get_visible_rect()
 	var game = get_tree().get_first_node_in_group("skirmish")
@@ -174,7 +181,8 @@ func selection_changed(closest: Node3D, buildings: Array[Node3D] = []) -> void:
 		game.pending_unit_command = ""
 		game.get_node("DepotNetwork").clear_builder()
 		var enemy_unit: bool = closest != null and closest.is_in_group("units") and closest.team != "player"
-		var building = closest if closest != null and (closest.is_in_group("selectable_buildings") or closest.is_in_group("construction_plans") or enemy_unit) else null
+		var cell: bool = closest != null and (closest.is_in_group("forest_cells") or closest.is_in_group("coal_cells"))
+		var building = closest if closest != null and (closest.is_in_group("selectable_buildings") or closest.is_in_group("construction_plans") or enemy_unit or cell) else null
 		game.get_node("DepotNetwork").select_depot(building if building != null and building.is_in_group("depots") else null)
 		if buildings.size() > 1: game.select_buildings(buildings)
 		else: game.selected_building = building
