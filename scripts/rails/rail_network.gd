@@ -303,8 +303,9 @@ func _search(start: Node3D, team: String, start_lane := 0) -> Dictionary:
 		var state: Dictionary = seen[key]
 		var ends: Array = state.piece.lane_ends(state.lane)
 		var exits: Array = ends if state.enter == -1 else ([ends[1]] if state.enter == ends[0] else [ends[0]])
-		# Out of a fork by its entry: the train can run on past it, reverse and come back into the other lane.
-		if state.piece.is_fork() and state.enter > 0 and _room_past(state.piece) >= REVERSE_ROOM-0.01:
+		# Out of a fork by its entry: the train can run on past it, reverse and come back into the other lane. So can a
+		# train that starts on the fork, on either lane.
+		if state.piece.is_fork() and state.enter != 0 and _room_past(state.piece) >= REVERSE_ROOM-0.01:
 			var other: int = 1-state.lane
 			var back := _state(state.piece,other,0)
 			if not seen.has(back):
