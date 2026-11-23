@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ProductionBuildingStats" format=3]
+
+[ext_resource type="Script" path="res://scripts/production/production_building_stats.gd" id="stats"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/round_table_marine.tscn" id="round_table"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/grail_sentinel.tscn" id="sentinel"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/questing_marine.tscn" id="questing"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/azure_dragon.tscn" id="dragon"]
+
+[resource]
+script = ExtResource("stats")
+building_id = &"chapterhouse"
+display_name = "Chapterhouse"
+energy_cost = 0
+iron_cost = 40
+food_cost = 40
+wood_cost = 30
+footprint = Vector2i(6, 6)
+unit_scenes = Array[PackedScene]([ExtResource("round_table"), ExtResource("sentinel"), ExtResource("questing"), ExtResource("dragon")])

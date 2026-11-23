@@ -155,9 +155,13 @@ func _process(delta: float) -> void:
 		return
 	var clip := _clip_for(kind)
 	if not player.has_animation(clip): clip = idle_clip
-	if player.has_animation(clip) and (player.current_animation != String(clip) or not player.is_playing()):
-		player.play(clip,blend_time)
-	player.speed_scale = _pace(kind,clip)
+	if player.has_animation(clip):
+		if player.current_animation != String(clip) or not player.is_playing():
+			player.play(clip,blend_time)
+		player.speed_scale = _pace(kind,clip)
+	else:
+		if player.is_playing(): player.stop()
+		if skeleton != null and kind == &"idle": skeleton.reset_bone_poses()
 	_run_teeth(kind == &"work")
 ## Run strides with ground speed; work fits `work_swings_per_cycle` swings into the reported cycle.
 func _pace(kind: StringName, clip: StringName) -> float:

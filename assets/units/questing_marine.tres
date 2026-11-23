@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/units/unit_stats.gd" id="stats"]
+
+[resource]
+script = ExtResource("stats")
+unit_id = &"questing_marine"
+display_name = "Questing Marine"
+energy_cost = 0
+iron_cost = 35
+food_cost = 75
+wood_cost = 0
+build_seconds = 14.0
+max_health = 65
+movement_speed = 3.8
+attack_range = 19.0
+vision = 34.0
+turn_rate = 540.0
+combat_notation = "14/2"
+damage = 14
+attack_interval = 2.0
+heavy_target_damage = 38
+heavy_target_interval = 2.5
+abilities = Array[StringName]([])

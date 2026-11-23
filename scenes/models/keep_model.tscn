@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/keep_rig.gd" id="rig_script"]
+[ext_resource type="PackedScene" path="res://assets/models/buildings/keep.glb" id="rig"]
+[ext_resource type="PackedScene" path="res://scenes/models/keep_death_fx.tscn" id="death_fx"]
+
+[node name="KeepModel" type="Node3D"]
+script = ExtResource("rig_script")
+print_clip = &"Train"
+print_spawn_seconds = 1.67
+death_fx_scene = ExtResource("death_fx")
+
+[node name="Rig" parent="." instance=ExtResource("rig")]

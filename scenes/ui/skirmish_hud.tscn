@@ -473,6 +473,46 @@ events = [SubResource("key_command_make_crates")]
 action = &"command_burn_either"
 [sub_resource type="Shortcut" id="shortcut_command_burn_either"]
 events = [SubResource("key_command_burn_either")]
+[sub_resource type="InputEventAction" id="key_build_keep"]
+action = &"build_keep"
+[sub_resource type="Shortcut" id="shortcut_build_keep"]
+events = [SubResource("key_build_keep")]
+[sub_resource type="InputEventAction" id="key_build_chapterhouse"]
+action = &"build_chapterhouse"
+[sub_resource type="Shortcut" id="shortcut_build_chapterhouse"]
+events = [SubResource("key_build_chapterhouse")]
+[sub_resource type="InputEventAction" id="key_command_heal"]
+action = &"command_heal"
+[sub_resource type="Shortcut" id="shortcut_command_heal"]
+events = [SubResource("key_command_heal")]
+[sub_resource type="InputEventAction" id="key_produce_forester_maiden"]
+action = &"produce_forester_maiden"
+[sub_resource type="Shortcut" id="shortcut_produce_forester_maiden"]
+events = [SubResource("key_produce_forester_maiden")]
+[sub_resource type="InputEventAction" id="key_produce_warhound"]
+action = &"produce_warhound"
+[sub_resource type="Shortcut" id="shortcut_produce_warhound"]
+events = [SubResource("key_produce_warhound")]
+[sub_resource type="InputEventAction" id="key_produce_round_table_marine"]
+action = &"produce_round_table_marine"
+[sub_resource type="Shortcut" id="shortcut_produce_round_table_marine"]
+events = [SubResource("key_produce_round_table_marine")]
+[sub_resource type="InputEventAction" id="key_produce_grail_sentinel"]
+action = &"produce_grail_sentinel"
+[sub_resource type="Shortcut" id="shortcut_produce_grail_sentinel"]
+events = [SubResource("key_produce_grail_sentinel")]
+[sub_resource type="InputEventAction" id="key_produce_questing_marine"]
+action = &"produce_questing_marine"
+[sub_resource type="Shortcut" id="shortcut_produce_questing_marine"]
+events = [SubResource("key_produce_questing_marine")]
+[sub_resource type="InputEventAction" id="key_produce_azure_dragon"]
+action = &"produce_azure_dragon"
+[sub_resource type="Shortcut" id="shortcut_produce_azure_dragon"]
+events = [SubResource("key_produce_azure_dragon")]
+[sub_resource type="InputEventAction" id="key_resource_food"]
+action = &"resource_food"
+[sub_resource type="Shortcut" id="shortcut_resource_food"]
+events = [SubResource("key_resource_food")]
 [node name="Interface" type="CanvasLayer"]
 process_mode = 3
 script = ExtResource("hud")
@@ -701,6 +741,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 color = Color(0.788,0.541,0.29,1)
+[node name="Food" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+color = Color(0.9,0.72,0.24,1)
 [node name="Crates" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Track/Segments"]
 visible = false
 layout_mode = 2
@@ -765,6 +811,20 @@ color = Color(0.788,0.541,0.29,1)
 [node name="Amount" type="Label" parent="Bottom/Body/Row/Info/Storage/Legend/Coal"]
 layout_mode = 2
 text = "Coal 0"
+theme_override_font_sizes/font_size = 12
+[node name="Food" type="HBoxContainer" parent="Bottom/Body/Row/Info/Storage/Legend"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 4
+[node name="Swatch" type="ColorRect" parent="Bottom/Body/Row/Info/Storage/Legend/Food"]
+custom_minimum_size = Vector2(8,8)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.9,0.72,0.24,1)
+[node name="Amount" type="Label" parent="Bottom/Body/Row/Info/Storage/Legend/Food"]
+layout_mode = 2
+text = "Food 0"
 theme_override_font_sizes/font_size = 12
 [node name="Aboard" parent="Bottom/Body/Row/Info/Storage" instance=ExtResource("crate_pips")]
 visible = false
@@ -3235,6 +3295,174 @@ horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
+[node name="Heal" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_command_heal")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_repair")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Heal"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="TrainForester" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_produce_forester_maiden")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_produce_infantry")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/TrainForester"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="TrainWarhound" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_produce_warhound")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_produce_scout")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/TrainWarhound"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="ProduceRoundTableMarine" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_produce_round_table_marine")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_produce_infantry")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ProduceRoundTableMarine"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="ProduceGrailSentinel" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_produce_grail_sentinel")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_repair")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ProduceGrailSentinel"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="ProduceQuestingMarine" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_produce_questing_marine")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_produce_grenadier")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ProduceQuestingMarine"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="ProduceAzureDragon" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_produce_azure_dragon")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_produce_ubermech")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ProduceAzureDragon"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="Capture" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
 tooltip_text = "Click a neutral or enemy Depot and stay uncontested."
@@ -4017,6 +4245,30 @@ horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
+[node name="Food" type="Button" parent="Bottom/Body/Row/Commands/Pick/LoadTiles"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_resource_food")
+layout_mode = 2
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("card_crate_resource_wood")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Pick/LoadTiles/Food"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -34.0
+offset_top = 1.0
+offset_right = -4.0
+offset_bottom = 15.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="Clear" type="Button" parent="Bottom/Body/Row/Commands/Pick/LoadTiles"]
 theme_type_variation = &"CommandCard"
 shortcut = SubResource("shortcut_command_cancel")
@@ -4259,6 +4511,56 @@ icon = ExtResource("card_build_rail")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/Rail"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -34.0
+offset_top = 1.0
+offset_right = -4.0
+offset_bottom = 15.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="Keep" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
+visible = false
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_build_keep")
+layout_mode = 2
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("card_build_depot")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/Keep"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -34.0
+offset_top = 1.0
+offset_right = -4.0
+offset_bottom = 15.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="Chapterhouse" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
+visible = false
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_build_chapterhouse")
+layout_mode = 2
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("card_build_barracks")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/Chapterhouse"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -4560,6 +4862,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 color = Color(0.788,0.541,0.29,1)
+[node name="Food" type="ColorRect" parent="StoragePanel/Storage/Track/Segments"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+color = Color(0.9,0.72,0.24,1)
 [node name="Crates" type="ColorRect" parent="StoragePanel/Storage/Track/Segments"]
 visible = false
 layout_mode = 2
@@ -4624,6 +4932,20 @@ color = Color(0.788,0.541,0.29,1)
 [node name="Amount" type="Label" parent="StoragePanel/Storage/Legend/Coal"]
 layout_mode = 2
 text = "Coal 0"
+theme_override_font_sizes/font_size = 12
+[node name="Food" type="HBoxContainer" parent="StoragePanel/Storage/Legend"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 4
+[node name="Swatch" type="ColorRect" parent="StoragePanel/Storage/Legend/Food"]
+custom_minimum_size = Vector2(8,8)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.9,0.72,0.24,1)
+[node name="Amount" type="Label" parent="StoragePanel/Storage/Legend/Food"]
+layout_mode = 2
+text = "Food 0"
 theme_override_font_sizes/font_size = 12
 [node name="Feed" type="VBoxContainer" parent="."]
 theme = ExtResource("ui_theme")
@@ -4724,6 +5046,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 color = Color(0.788,0.541,0.29,1)
+[node name="Food" type="ColorRect" parent="HoverCard/Body/Storage/Segments"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+color = Color(0.9,0.72,0.24,1)
 [node name="Free" type="Control" parent="HoverCard/Body/Storage/Segments"]
 layout_mode = 2
 size_flags_horizontal = 3

@@ -8,8 +8,15 @@ const PAINTS := {
 	"enemy": preload("res://assets/materials/units/team_paint_enemy.tres"),
 	"neutral": preload("res://assets/materials/units/team_paint_neutral.tres"),
 }
+const SHADOW_PAINTS := {
+	"player": preload("res://assets/materials/units/team_paint_player_shadow.tres"),
+	"enemy": preload("res://assets/materials/units/team_paint_enemy_shadow.tres"),
+	"neutral": preload("res://assets/materials/units/team_paint_neutral_shadow.tres"),
+}
 static func paint_for(team: String) -> Material:
 	return PAINTS.get(team,PAINTS["neutral"])
+static func shadow_paint_for(team: String) -> Material:
+	return SHADOW_PAINTS.get(team,SHADOW_PAINTS["neutral"])
 static func material_names(model: Node) -> Array:
 	var names: Array = DEFAULT_MATERIALS.duplicate()
 	names.append_array(Array(model.get_meta(&"team_materials",PackedStringArray())))
@@ -19,6 +26,7 @@ static func apply(model: Node, team: String) -> int:
 	if model == null: return 0
 	var names := material_names(model)
 	var paint := paint_for(team)
+	var shadow_paint := shadow_paint_for(team)
 	var painted := 0
 	for node in model.find_children("*","MeshInstance3D",true,false):
 		var mesh_node := node as MeshInstance3D
@@ -27,5 +35,8 @@ static func apply(model: Node, team: String) -> int:
 			var base := mesh_node.mesh.surface_get_material(i)
 			if base != null and base.resource_name in names:
 				mesh_node.set_surface_override_material(i,paint)
+				painted += 1
+			elif base != null and base.resource_name == "team_color_shadow":
+				mesh_node.set_surface_override_material(i,shadow_paint)
 				painted += 1
 	return painted

@@ -1,0 +1,7 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "team_paint_enemy_shadow"
+albedo_color = Color(0.35, 0.09, 0.07, 1)
+metallic = 0.1
+roughness = 0.68

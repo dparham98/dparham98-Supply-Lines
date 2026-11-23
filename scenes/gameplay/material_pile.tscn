@@ -8,7 +8,8 @@ script = ExtResource("script")
 models = Dictionary[String, PackedScene]({
 "iron": ExtResource("iron"),
 "wood": ExtResource("wood"),
-"coal": ExtResource("coal")
+"coal": ExtResource("coal"),
+"food": ExtResource("wood")
 })
 [node name="Visuals" type="Node3D" parent="."]
 [node name="Label" type="Label3D" parent="."]

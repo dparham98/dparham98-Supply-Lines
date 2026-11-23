@@ -43,6 +43,7 @@ func _ready() -> void:
 	add_to_group("production_buildings")
 	add_to_group("selectable_buildings")
 	if is_instance_valid(assigned_depot) and not assigned_depot.ownership_changed.is_connected(_source_changed): assigned_depot.ownership_changed.connect(_source_changed)
+	preload("res://scripts/components/team_paint.gd").apply(get_node_or_null("Visuals/Model"),team)
 ## Production picks its paying Depot itself (docs/HUD_POLISH.md, Production picks its Depot): it keeps the one it
 ## has while that stays friendly; otherwise it takes the nearest friendly Depot whose range covers the building.
 func source_friendly() -> bool:
@@ -66,12 +67,15 @@ func _set_source(depot: Node3D) -> void:
 	assigned_depot = depot
 	if is_instance_valid(assigned_depot) and not assigned_depot.ownership_changed.is_connected(_source_changed): assigned_depot.ownership_changed.connect(_source_changed)
 ## The Depot to pay `energy` and `iron` now: the current one if it can, else the nearest covering one that can.
-func payer_for(energy: int, iron: int) -> Node3D:
+func payer_for(energy: int, iron: int, food := 0, wood := 0) -> Node3D:
 	if not source_friendly(): return null
-	if assigned_depot.energy >= energy and assigned_depot.iron >= iron: return assigned_depot
+	if _can_pay(assigned_depot,energy,iron,food,wood): return assigned_depot
 	for depot in covering_depots():
-		if depot.energy >= energy and depot.iron >= iron: return depot
+		if _can_pay(depot,energy,iron,food,wood): return depot
 	return null
+## Whether a Depot (or Keep, which pays in Food) holds the whole cost.
+func _can_pay(depot: Node3D, energy: int, iron: int, food: int, wood: int) -> bool:
+	return depot.energy >= energy and depot.iron >= iron and depot.food >= food and depot.wood >= wood
 func _source_changed() -> void:
 	# Preserve the existing Depot policy: paid queue cancellation without refund on source capture.
 	pending.clear()
@@ -108,10 +112,22 @@ func request_unit(id: StringName) -> bool:
 	for scene in stats.unit_scenes:
 		var resource := unit_stats_for(scene)
 		if resource.unit_id != id: continue
-		var payer := payer_for(resource.energy_cost,resource.iron_cost)
-		if payer == null: game.notify("No Depot in range has %d E and %d I for a %s." % [resource.energy_cost,resource.iron_cost,resource.display_name],team); return false
+		var payer := payer_for(resource.energy_cost,resource.iron_cost,resource.food_cost,resource.wood_cost)
+		if payer == null:
+			if resource.food_cost > 0 or resource.wood_cost > 0: game.notify("No Keep in range has %d F, %d W and %d I for a %s." % [resource.food_cost,resource.wood_cost,resource.iron_cost,resource.display_name],team)
+			else: game.notify("No Depot in range has %d E and %d I for a %s." % [resource.energy_cost,resource.iron_cost,resource.display_name],team)
+			return false
 		_set_source(payer)
-		if not assigned_depot.spend_local(resource.energy_cost,resource.iron_cost): game.notify("%s lacks local production resources." % assigned_depot.name,team); return false
+		var paid := false
+		if resource.food_cost > 0 or resource.wood_cost > 0:
+			var costs := {}
+			if resource.energy_cost > 0: costs[&"energy"] = resource.energy_cost
+			if resource.iron_cost > 0: costs[&"iron"] = resource.iron_cost
+			if resource.food_cost > 0: costs[&"food"] = resource.food_cost
+			if resource.wood_cost > 0: costs[&"wood"] = resource.wood_cost
+			paid = assigned_depot.spend_resources(costs)
+		else: paid = assigned_depot.spend_local(resource.energy_cost,resource.iron_cost)
+		if not paid: game.notify("%s lacks local production resources." % assigned_depot.name,team); return false
 		pending.append(scene)
 		game.notify("%s queued at %s; paid by %s." % [resource.display_name,name,assigned_depot.name],team)
 		return true
@@ -165,7 +181,7 @@ func _process(delta: float) -> void:
 		unit.position = ground.tile_to_world(cell)
 		game.get_node("Entities/Units").add_child(unit,true)
 		Rally.send(self,unit)
-		if unit.unit_stats.unit_id == &"infantry" and team == "player": game.units_printed += 1
+		if unit.unit_stats.unit_id in [&"infantry",&"forester_maiden",&"round_table_marine"] and team == "player": game.units_printed += 1
 		progress = 0
 		_show_model(&"unit_left")
 		game.notify("%s ready at %s." % [unit.unit_stats.display_name,name],team)

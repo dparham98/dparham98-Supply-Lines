@@ -11,6 +11,14 @@ signal died(unit: Node3D)
 @export var can_repair := false
 @export var engineering_rules: EngineeringRules
 var repair_payer: Node3D
+@export var can_heal := false
+@export var heal_range := 7.0
+@export var heal_hp := 5
+@export var heal_interval := 1.0
+@export var heal_food_cost := 1
+@export var med_reserve_capacity := 120
+var med_reserve := 0
+var _med_refill_timer := 0.0
 @export var can_gather := true
 @export var can_capture_depots := true
 @export var deployment_rules: DepotRules
@@ -37,6 +45,8 @@ var _refuel_credit := 0.0
 var vision := 0.0
 var energy_cost := 0
 var iron_cost := 0
+var food_cost := 0
+var wood_cost := 0
 var abilities: Array[StringName] = []
 var _attack_enabled := true
 @export var max_health := 100
@@ -87,6 +97,7 @@ var _dead := false
 func _ready() -> void:
 	apply_unit_stats()
 	health = max_health
+	med_reserve = med_reserve_capacity if can_heal else 0
 	add_to_group("units")
 	_units_changed()
 	if team == "enemy": add_to_group("enemies")
@@ -293,6 +304,7 @@ func _process(delta: float) -> void:
 	if _dead: return
 	if derail_cooldown > 0.0: derail_cooldown = maxf(0.0,derail_cooldown-delta)
 	fuel_tick(delta)
+	if can_heal: MedicalWork.refill_tick(self,delta)
 	_order_process(delta)
 	_animate(delta)
 ## The Visuals model when it carries a character animator (scripts/components/character_animator.gd).
@@ -346,6 +358,11 @@ func _order_process(delta: float) -> void:
 		_repair(delta)
 		_update_display()
 		return
+	if order == "heal" and not MedicalWork.can_heal(order_target,team):
+		_stop_route()
+		_heal(delta)
+		_update_display()
+		return
 	if order == "return" and return_explicit and not _crate_receiver(return_depot) and not SupplySource.can_receive(return_depot,team):
 		_stop_route(); state = "Delivery paused · selected supply source unavailable"; _update_display(); return
 	if order == "gather": _source_left()
@@ -364,7 +381,7 @@ func _order_process(delta: float) -> void:
 			_update_display()
 			return
 	if not _route.is_empty() or _moving_to.x >= 0:
-		if is_instance_valid(order_target) and ((order == "attack" and in_attack_range(order_target)) or (order == "repair" and global_position.distance_to(order_target.global_position) <= engineering_rules.repair_range)):
+		if is_instance_valid(order_target) and ((order == "attack" and in_attack_range(order_target)) or (order == "repair" and global_position.distance_to(order_target.global_position) <= engineering_rules.repair_range) or (order == "heal" and global_position.distance_to(order_target.global_position) <= heal_range)):
 			_stop_route()
 		else:
 			_walk(delta)
@@ -391,6 +408,7 @@ func _order_process(delta: float) -> void:
 		"return": _return_cargo()
 		"attack": _attack_order()
 		"repair": _repair(delta)
+		"heal": _heal(delta)
 		"capture": _capture_order()
 		"construct": _construct(delta)
 		"derail": _derail_order(delta)
@@ -421,6 +439,7 @@ func run_order(entry: Dictionary) -> void:
 		"fell": command_fell(entry.cell,entry.get("area",Rect2i()))
 		"return": command_return(entry.get("target"))
 		"repair": command_repair(entry.target)
+		"heal": command_heal(entry.target)
 		"capture": command_capture(entry.target)
 		"construct": command_construct(entry.target)
 		"derail": command_derail(entry.target)
@@ -434,7 +453,7 @@ func _start_next_order() -> void:
 	# Skip entries whose target is gone or that the unit refuses, such as an unreachable attack.
 	while order == "idle" and not order_queue.is_empty():
 		var entry: Dictionary = order_queue.pop_front()
-		if entry.kind in ["attack","gather","repair","capture","construct","fetch","load","unload","derail"] and not is_instance_valid(entry.get("target")) and not (entry.kind in ["load","unload"] and entry.get("point") != null): continue
+		if entry.kind in ["attack","gather","repair","heal","capture","construct","fetch","load","unload","derail"] and not is_instance_valid(entry.get("target")) and not (entry.kind in ["load","unload"] and entry.get("point") != null): continue
 		run_order(entry)
 func order_point(entry: Dictionary) -> Variant:
 	if entry.kind in ["move","attack_move","deploy"]: return entry.point
@@ -1050,6 +1069,8 @@ func apply_unit_stats() -> void:
 	vision = unit_stats.vision
 	energy_cost = unit_stats.energy_cost
 	iron_cost = unit_stats.iron_cost
+	food_cost = unit_stats.food_cost
+	wood_cost = unit_stats.wood_cost
 	abilities = unit_stats.abilities.duplicate()
 	if unit_stats.attack_range >= 0: attack_range = unit_stats.attack_range
 	min_attack_range = unit_stats.min_attack_range
@@ -1096,6 +1117,36 @@ func _repair(delta: float) -> void:
 	if _work_timer >= engineering_rules.repair_interval:
 		_work_timer = 0
 		if not EngineeringWork.tick(self,order_target,repair_payer): state = "Repair paused · local funds unavailable"
+func command_heal(target: Node3D) -> void:
+	if not can_heal or target == self or not MedicalWork.can_heal(target,team): return
+	_stop_route()
+	order_target = target
+	source = null
+	_work_timer = 0.0
+	order = "heal"
+	state = "Healing ordered"
+func _heal(delta: float) -> void:
+	if not is_instance_valid(order_target) or not order_target.is_in_group("units") or order_target.get("team") != team or order_target.health <= 0:
+		order = "idle"; state = "Patient lost"; return
+	if order_target.health >= order_target.max_health:
+		order = "idle"; state = "Patient at full health"; return
+	if EngineeringWork.is_vehicle(order_target):
+		order = "idle"; state = "Cannot heal vehicles"; return
+	if global_position.distance_to(order_target.global_position) > heal_range:
+		_work_timer = 0.0
+		if _retry <= 0:
+			state = "To patient"
+			if not _route_near(order_target,heal_range): state = "Patient unreachable"
+		return
+	_face(order_target.global_position)
+	_work_timer += delta
+	if _work_timer < heal_interval:
+		if not state.begins_with("Healing"): state = "Healing %s" % order_target.name
+		return
+	_work_timer = 0.0
+	var note := MedicalWork.tick(self,order_target)
+	if note.is_empty(): state = "Healing %s" % order_target.name
+	else: state = note
 ## Build at a queued site (docs/SITE_CONSTRUCTION.md): carried materials the site needs go onto its
 ## pile first, then the worker builds them in at its work pace, 5 per saw blow.
 func command_construct(plan: Node3D) -> void:

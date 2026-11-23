@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/units/unit_stats.gd" id="stats"]
+[ext_resource type="Resource" path="res://assets/movement/scout.tres" id="mobility"]
+
+[resource]
+script = ExtResource("stats")
+unit_id = &"azure_dragon"
+display_name = "Azure Dragon"
+energy_cost = 0
+iron_cost = 60
+food_cost = 160
+wood_cost = 0
+build_seconds = 26.0
+max_health = 180
+movement_speed = 5.5
+attack_range = 8.0
+vision = 40.0
+turn_rate = 240.0
+combat_notation = "28/3"
+damage = 28
+attack_interval = 3.0
+splash_radius = 3.3
+heavy_target_damage = 45
+heavy_target_interval = 3.0
+abilities = Array[StringName]([])
+mobility = ExtResource("mobility")
