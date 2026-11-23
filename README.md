@@ -8,6 +8,8 @@ Latest building/production batch: [Barracks, Tank Factory, original Depot cost a
 
 Implementation priority: [explicit original design backlog](docs/EXPLICIT_DESIGN_BACKLOG.md). This separates confirmed requirements from tentative abilities and prototype decisions.
 
+Second faction, designed but not implemented: [Arthurian Knights](docs/ARTHURIAN_FACTION.md).
+
 The bottom selection HUD, minimap and infantry Build menu are described in [BOTTOM_HUD.md](docs/BOTTOM_HUD.md).
 
 For Milestone 3 power and cargo deliveries, open **scenes/maps/supply_routes.tscn** and press **F6**. See [supply exercise and editable rules](docs/MILESTONE_3.md). F5 retains the original skirmish.
