@@ -1,0 +1,78 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="stone_mat"]
+resource_name = "Ivory_Armor"
+albedo_color = Color(0.76, 0.72, 0.63, 1)
+roughness = 0.78
+
+[sub_resource type="StandardMaterial3D" id="slate_mat"]
+resource_name = "Recessed_Steel"
+albedo_color = Color(0.22, 0.24, 0.27, 1)
+metallic = 0.6
+roughness = 0.52
+
+[sub_resource type="StandardMaterial3D" id="brass_mat"]
+resource_name = "Heraldic_Brass"
+albedo_color = Color(0.76, 0.60, 0.25, 1)
+metallic = 0.8
+roughness = 0.35
+
+[sub_resource type="StandardMaterial3D" id="team_mat"]
+resource_name = "team_color"
+albedo_color = Color(0.24, 0.55, 0.36, 1)
+metallic = 0.1
+roughness = 0.6
+
+[sub_resource type="BoxMesh" id="plinth_mesh"]
+size = Vector3(5.8, 0.35, 5.8)
+material = SubResource("slate_mat")
+
+[sub_resource type="BoxMesh" id="hall_mesh"]
+size = Vector3(5.0, 2.8, 5.2)
+material = SubResource("stone_mat")
+
+[sub_resource type="PrismMesh" id="roof_mesh"]
+size = Vector3(5.4, 1.8, 5.5)
+material = SubResource("team_mat")
+
+[sub_resource type="BoxMesh" id="porch_mesh"]
+size = Vector3(2.4, 2.4, 0.8)
+material = SubResource("stone_mat")
+
+[sub_resource type="BoxMesh" id="arch_trim_mesh"]
+size = Vector3(2.55, 0.28, 0.9)
+material = SubResource("brass_mat")
+
+[sub_resource type="BoxMesh" id="banner_mesh"]
+size = Vector3(0.55, 1.5, 0.14)
+material = SubResource("team_mat")
+
+[node name="ChapterhousePlaceholder" type="Node3D"]
+
+[node name="Plinth" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.175, 0)
+mesh = SubResource("plinth_mesh")
+
+[node name="Hall" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.75, 0)
+mesh = SubResource("hall_mesh")
+
+[node name="Roof" type="MeshInstance3D" parent="."]
+position = Vector3(0, 4.05, 0)
+mesh = SubResource("roof_mesh")
+
+[node name="Porch" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.55, 2.75)
+mesh = SubResource("porch_mesh")
+
+[node name="ArchTrim" type="MeshInstance3D" parent="."]
+position = Vector3(0, 2.82, 2.75)
+mesh = SubResource("arch_trim_mesh")
+
+[node name="BannerL" type="MeshInstance3D" parent="."]
+position = Vector3(-1.8, 2.1, 2.66)
+mesh = SubResource("banner_mesh")
+
+[node name="BannerR" type="MeshInstance3D" parent="."]
+position = Vector3(1.8, 2.1, 2.66)
+mesh = SubResource("banner_mesh")

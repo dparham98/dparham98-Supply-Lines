@@ -5,7 +5,7 @@ extends Control
 const Bounds = preload("res://scripts/units/selection_bounds.gd")
 const Cursor = preload("res://scripts/ui/game_cursor.gd")
 const TEAM_COLORS := preload("res://scripts/units/team_colors.gd").COLORS
-const RESOURCE_COLORS := {&"energy": Color(0.818,0.771,0.652), &"iron": Color(0.604,0.655,0.678), &"wood": Color(0.435,0.682,0.353), &"coal": Color(0.788,0.541,0.29)}
+const RESOURCE_COLORS := {&"energy": Color(0.818,0.771,0.652), &"iron": Color(0.604,0.655,0.678), &"wood": Color(0.435,0.682,0.353), &"coal": Color(0.788,0.541,0.29), &"food": Color(0.9,0.72,0.24)}
 const AMBER := Color(0.941,0.698,0.29)
 ## The dashed path through a selected unit's queued orders.
 const QUEUE_COLOR := Color(1,0.82,0.25,0.9)
@@ -17,9 +17,9 @@ const STORAGE_WARNING := 0.9
 const POPUP_SECONDS := 1.5
 const PING_SECONDS := 0.6
 const HIGHLIGHT_SECONDS := 0.8
-const ORDER_COLORS := {"move": Color(0.498,0.827,0.902), "attack": Color(0.89,0.35,0.31), "attack_move": Color(0.89,0.35,0.31), "gather": Color(0.435,0.682,0.353), "fell": Color(0.435,0.682,0.353), "return": Color(0.941,0.698,0.29), "repair": Color(0.941,0.698,0.29), "capture": Color(0.91,0.96,0.98), "construct": Color(0.941,0.698,0.29), "load": Color(0.498,0.827,0.902), "unload": Color(0.941,0.698,0.29), "deploy": Color(0.941,0.698,0.29)}
+const ORDER_COLORS := {"move": Color(0.498,0.827,0.902), "attack": Color(0.89,0.35,0.31), "attack_move": Color(0.89,0.35,0.31), "gather": Color(0.435,0.682,0.353), "fell": Color(0.435,0.682,0.353), "return": Color(0.941,0.698,0.29), "repair": Color(0.941,0.698,0.29), "heal": Color(0.37,0.82,0.54), "capture": Color(0.91,0.96,0.98), "construct": Color(0.941,0.698,0.29), "load": Color(0.498,0.827,0.902), "unload": Color(0.941,0.698,0.29), "deploy": Color(0.941,0.698,0.29)}
 ## Icon shown beside the pointer while a command or placement is armed.
-const ARMED_ICONS := {"move": "move", "attack": "attack", "gather": "gather", "fell": "gather", "repair": "repair", "capture": "capture", "construct": "build", "load": "load", "unload": "unload", "deploy": "deploy", "build": "build", "pin": "depot", "train_line": "train"}
+const ARMED_ICONS := {"move": "move", "attack": "attack", "gather": "gather", "fell": "gather", "repair": "repair", "heal": "repair", "capture": "capture", "construct": "build", "load": "load", "unload": "unload", "deploy": "deploy", "build": "build", "pin": "depot", "train_line": "train"}
 var _armed_icons := {}
 ## Groups whose authored text labels this overlay replaces. Placement ghosts and waypoints keep theirs.
 const LABELLED_GROUPS := ["units","selectable_buildings","resources","material_piles","supply_crates","iron_deposits","construction_plans"]
@@ -150,13 +150,15 @@ func status_for(node: Node3D) -> Dictionary:
 	elif node.has_method("fuel_low") and node.fuel_low(): entry.icons.append(["refuel",AMBER])
 	return entry
 const READOUT_KINDS: Array[StringName] = [&"energy",&"iron",&"wood",&"coal"]
-const READOUT_LETTERS := {&"energy": "E", &"iron": "I", &"wood": "W", &"coal": "C"}
+const READOUT_LETTERS := {&"energy": "E", &"iron": "I", &"wood": "W", &"coal": "C", &"food": "F"}
 ## A Depot's stock as one line above it: a swatch and amount per resource, on a dark plate.
 func draw_readout(stockpile: ResourceStockpile, centre: Vector2, font: Font) -> void:
 	var size := 13
 	var parts: Array = []
 	var width := 0.0
-	for kind in READOUT_KINDS:
+	var kinds := READOUT_KINDS.duplicate()
+	if stockpile.amount(&"food") > 0: kinds.append(&"food")
+	for kind in kinds:
 		var text := "%s %d" % [READOUT_LETTERS[kind],stockpile.amount(kind)]
 		var w := font.get_string_size(text,HORIZONTAL_ALIGNMENT_LEFT,-1,size).x
 		parts.append([kind,text,w])

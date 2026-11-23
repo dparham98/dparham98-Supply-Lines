@@ -15,7 +15,7 @@ extends Node3D
 ## tank (FuelRules.full_tanks_for). The balanced map turns it off: they start empty and fill from Depot coal.
 @export var testing_full_tanks := true
 func drop_material(unit: Node3D) -> Node3D:
-	if not unit.can_gather or unit.cargo <= 0 or unit.cargo_kind not in [&"iron",&"wood",&"coal"]: return null
+	if not unit.can_gather or unit.cargo <= 0 or unit.cargo_kind not in [&"iron",&"wood",&"coal",&"food"]: return null
 	var pile = pile_scene.instantiate()
 	pile.material_kind = str(unit.cargo_kind); pile.amount = unit.cargo
 	pile.position = unit.global_position
@@ -71,19 +71,19 @@ var units_printed := 0
 var enemies_killed := 0
 var outcome := ""
 @export var message := "Select your Deforester, then right-click the marked iron deposit."
-@onready var depot = $Entities/Buildings/Depot
+@onready var depot: Node3D = get_node_or_null("Entities/Buildings/Depot") if has_node("Entities/Buildings/Depot") else get_node_or_null("Entities/Buildings/Keep")
 @onready var ground = $Terrain/Ground
 @onready var hud = $Interface
 func _ready() -> void:
 	message_time = Time.get_ticks_msec()/1000.0
-	if depot.rules.testing_starting_iron < 0: ore = starting_ore
+	if is_instance_valid(depot) and not depot.is_in_group("keeps") and depot.rules.testing_starting_iron < 0: ore = starting_ore
 	if testing_coal_amount > 0 and has_node("Entities/Resources/TestingCoalPoint"):
 		var pile = pile_scene.instantiate()
 		pile.name = "TestingCoalPile"
 		pile.material_kind = "coal"; pile.amount = testing_coal_amount
 		pile.position = get_node("Entities/Resources/TestingCoalPoint").position
 		get_node("Entities/Resources").add_child(pile)
-	$DepotNetwork.select_depot(depot)
+	if is_instance_valid(depot): $DepotNetwork.select_depot(depot)
 func armed() -> bool:
 	return not global_plan_kind.is_empty() or placing_rail or placing_depot or placing_generator or not placing_structure.is_empty() or not pending_unit_command.is_empty()
 # Esc, pausing and paused clicks drop any armed command or placement.
@@ -143,7 +143,10 @@ func _process(_delta: float) -> void:
 		if unit.team == "player": players += 1
 	var recovery := false
 	for local in get_tree().get_nodes_in_group("depots"):
-		if local.team == "player" and (local.queue > 0 or ((local.energy >= local.rules.depot_energy_cost or local.generation_rate() > 0) and local.iron >= local.rules.depot_iron_cost)): recovery = true
+		if local.team != "player": continue
+		if local.is_in_group("keeps"):
+			if local.queue > 0 or local.food >= 30: recovery = true
+		elif local.queue > 0 or ((local.energy >= local.rules.depot_energy_cost or local.generation_rate() > 0) and local.iron >= local.rules.depot_iron_cost): recovery = true
 	for local in get_tree().get_nodes_in_group("depots"):
 		if local.team == "player" and local.construction_infantry_pending: recovery = true
 	for building in get_tree().get_nodes_in_group("production_buildings"):
@@ -151,7 +154,8 @@ func _process(_delta: float) -> void:
 		if building.queue > 0: recovery = true
 		for scene in building.stats.unit_scenes:
 			var stats = building.unit_stats_for(scene)
-			if (building.assigned_depot.energy >= stats.energy_cost or building.assigned_depot.generation_rate() > 0) and building.assigned_depot.iron >= stats.iron_cost: recovery = true
+			var labor_ok: bool = building.assigned_depot.food >= stats.food_cost if stats.food_cost > 0 else (building.assigned_depot.energy >= stats.energy_cost or building.assigned_depot.generation_rate() > 0)
+			if labor_ok and building.assigned_depot.iron >= stats.iron_cost: recovery = true
 	if players == 0 and not recovery: outcome = "DEFEAT — no units or local production funds remaining."
 ## The track piece type being laid, and which of its ends joins the track.
 ## Track-laying keys (docs/RAIL_PLANNING.md): Enter lays the suggested path and Backspace takes back the second
@@ -330,6 +334,16 @@ func pick_vehicle_to_repair(screen) -> Node3D:
 		var d: float = pick_distance(node,camera,screen)
 		if d < distance: distance = d; closest = node
 	return closest
+## A damaged friendly non-vehicle unit under the pointer, for Grail Sentinels to heal.
+func pick_unit_to_heal(screen) -> Node3D:
+	var camera := get_viewport().get_camera_3d()
+	var closest: Node3D
+	var distance := INF
+	for node in get_tree().get_nodes_in_group("units"):
+		if not MedicalWork.can_heal(node,"player"): continue
+		var d: float = pick_distance(node,camera,screen)
+		if d < distance: distance = d; closest = node
+	return closest
 ## A friendly unit or building under the pointer, for forced fire with the Attack command.
 func pick_friendly(screen: Vector2) -> Node3D:
 	var camera := get_viewport().get_camera_3d()
@@ -397,6 +411,7 @@ func issue_order(screen, queued := false) -> void:
 	if is_instance_valid(plan) and (plan.finished or plan.kind == &"rail"): plan = null
 	var crate := pick_crate(screen)
 	var vehicle := pick_vehicle_to_repair(screen)
+	var patient := pick_unit_to_heal(screen)
 	var point = ground_at(screen)
 	if plan == null and point != null:
 		var coal_cell = ground.get_tile_at_position(point)
@@ -416,6 +431,7 @@ func issue_order(screen, queued := false) -> void:
 		elif crate and unit.can_gather and unit.cargo > 0 and crate.accepts(unit.cargo_kind): give_order(unit,{kind = "return", target = crate},queued)
 		# A damaged vehicle of yours: workers repair it, unless they are bringing cargo to it.
 		elif vehicle and vehicle != unit and unit.can_repair and not (unit.cargo > 0 and vehicle == dropoff): give_order(unit,{kind = "repair", target = vehicle},queued)
+		elif patient and patient != unit and unit.can_heal: give_order(unit,{kind = "heal", target = patient},queued)
 		elif point != null and ground.get_tile_at_position(point) != null and ground.get_terrain(ground.get_tile_at_position(point)) == 3 and unit.can_gather:
 			give_order(unit,{kind = "gather", target = ground.forest_source(ground.get_tile_at_position(point))},queued)
 			forest_ordered = true
@@ -579,6 +595,8 @@ func issue_card_order(screen, queued := false) -> void:
 	elif pending_unit_command == "repair":
 		target = pick_vehicle_to_repair(screen)
 		if target == null: target = pick_target(screen,"selectable_buildings",50)
+	elif pending_unit_command == "heal":
+		target = pick_unit_to_heal(screen)
 	elif pending_unit_command == "capture": target = pick_target(screen,"capturable_buildings",50)
 	elif pending_unit_command == "mine_rail":
 		# Mine iron (docs/TEMPLE_OF_SCIENCE.md) takes an Iron Mine; trains only.
@@ -649,6 +667,7 @@ func issue_card_order(screen, queued := false) -> void:
 		elif pending_unit_command == "attack" and target.get("team") == unit.team: give_order(unit,{kind = "attack", target = target, forced = true},queued)
 		elif pending_unit_command == "derail" and not unit.has_ability(&"derail"): continue
 		elif pending_unit_command == "mine_rail" and not unit.is_in_group("rail_trains"): continue
+		elif pending_unit_command == "heal" and not unit.can_heal: continue
 		else: give_order(unit,{kind = pending_unit_command, target = target},queued)
 	# Shift keeps the command armed so several targets can be queued.
 	notify(pending_unit_command.capitalize()+(" order queued. Shift-click adds more; Esc stops." if queued else " order issued."))

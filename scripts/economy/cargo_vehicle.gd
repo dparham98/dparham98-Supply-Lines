@@ -686,9 +686,9 @@ func _vehicle_process(delta: float) -> void:
 		if transfer_timer >= supply_rules.transfer_seconds:
 			transfer_timer = 0
 			if stage == "loading":
-				var maxima := [requested_energy,requested_iron,requested_wood,requested_coal]
-				for i in range(ResourceStockpile.KINDS.size()):
-					ResourceStockpile.transfer(origin_depot.stockpile,stockpile,ResourceStockpile.KINDS[i],maxima[i])
+				var maxima := {&"energy": requested_energy, &"iron": requested_iron, &"wood": requested_wood, &"coal": requested_coal}
+				for kind in ResourceStockpile.KINDS:
+					ResourceStockpile.transfer(origin_depot.stockpile,stockpile,kind,maxima.get(kind,0))
 				if stockpile.total() > 0: stage = "unloading"
 				else: state = "Waiting for source stock"
 			else:

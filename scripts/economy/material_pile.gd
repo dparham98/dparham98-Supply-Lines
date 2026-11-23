@@ -1,5 +1,5 @@
 extends Node3D
-@export_enum("iron","wood","coal") var material_kind := "iron"
+@export_enum("iron","wood","coal","food") var material_kind := "iron"
 @export_range(1,100000) var amount := 10
 var remaining := 0
 ## The saved model for each material (docs/MATERIAL_PILE_MODELS.md); it shows more of its stack the more the

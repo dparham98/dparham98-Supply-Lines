@@ -4,6 +4,8 @@ extends Resource
 @export var display_name := "Production building"
 @export var energy_cost := 0
 @export var iron_cost := 0
+@export var food_cost := 0
+@export var wood_cost := 0
 ## Provisional dimensions, HP and queue cap, not historical balance.
 @export var footprint := Vector2i(6,6)
 @export var max_health := 1000

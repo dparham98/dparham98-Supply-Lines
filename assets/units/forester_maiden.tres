@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/units/unit_stats.gd" id="stats"]
+
+[resource]
+script = ExtResource("stats")
+unit_id = &"forester_maiden"
+display_name = "Forester Maiden"
+energy_cost = 0
+iron_cost = 0
+food_cost = 45
+wood_cost = 0
+build_seconds = 8.0
+max_health = 45
+movement_speed = 4.2
+attack_range = -1.0
+vision = 30.0
+turn_rate = 540.0
+combat_notation = ""
+damage = -1
+attack_interval = -1.0
+abilities = Array[StringName]([])

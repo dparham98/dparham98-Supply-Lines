@@ -40,6 +40,10 @@ var iron: int:
 var coal: int:
 	get: return stockpile.amount(&"coal")
 	set(value): stockpile.set_amount(&"coal",value)
+@export var initial_food := 0
+var food: int:
+	get: return stockpile.amount(&"food")
+	set(value): stockpile.set_amount(&"food",value)
 var capture_team := ""
 var capture_progress := 0.0
 const Rally = preload("res://scripts/production/rally.gd")
@@ -89,6 +93,7 @@ func _ready() -> void:
 	iron = rules.testing_starting_iron if testing_iron_granted() else (rules.initial_iron if initial_iron < 0 else initial_iron)
 	wood = initial_wood
 	coal = initial_coal
+	food = initial_food
 	energy = rules.initial_energy if initial_energy < 0 else initial_energy
 	$Territory.scale = Vector3.ONE * rules.construction_radius
 	add_to_group("depots")
@@ -255,6 +260,8 @@ func _job_cost(kind: String) -> Vector2i:
 	return Vector2i.ZERO
 func spend_local(energy_cost: int, iron_cost: int) -> bool:
 	return stockpile.spend({&"energy":energy_cost,&"iron":iron_cost})
+func spend_resources(costs: Dictionary) -> bool:
+	return stockpile.spend(costs)
 func request_truck() -> bool:
 	if not SupplySource.plays(team) or queue >= queue_limit: return false
 	if not spend_local(rules.truck_energy_cost,rules.truck_iron_cost): return false

@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/forester_animator.gd" id="animator"]
+[ext_resource type="PackedScene" path="res://assets/models/units/forester_maiden.glb" id="rig"]
+
+[node name="ForesterMaidenModel" type="Node3D"]
+script = ExtResource("animator")
+player_path = NodePath("Rig/AnimationPlayer")
+idle_clip = &"Rest"
+run_clip = &"Walk"
+work_clip = &"Chop"
+run_reference_speed = 1.16
+
+[node name="Rig" parent="." instance=ExtResource("rig")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)

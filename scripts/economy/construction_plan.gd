@@ -135,18 +135,24 @@ func take(material: StringName, amount: int) -> int:
 		if got >= amount: break
 		if node.resource_kind == material: got += node.extract(amount-got)
 	return got
-## Energy owed once `step` more materials are built in: the share of the energy cost that keeps
-## pace with the materials, so the last step settles the whole cost.
+## Primary labor resource spent tick-by-tick by the covering stockpile (Food for Knights, Energy for Cyborgs).
+func labor_kind() -> StringName:
+	return &"food" if spec.get("food",0) > 0 else &"energy"
+func labor_cost() -> int:
+	return int(spec.get("food",0)) if spec.get("food",0) > 0 else int(spec.get("energy",0))
+## Energy (or Food) owed once `step` more materials are built in: the share that keeps pace with
+## the materials, so the last step settles the whole cost.
 func energy_due(step: int) -> int:
 	var total := 0
 	var done := 0
 	for material in materials():
 		total += materials()[material]
 		done += added.get(material,0)
-	if total == 0: return spec.energy-energy_paid
-	return maxi(0,ceili(spec.energy*float(done+step)/total)-energy_paid)
+	var cost := labor_cost()
+	if total == 0: return cost-energy_paid
+	return maxi(0,ceili(cost*float(done+step)/total)-energy_paid)
 ## One construction tick by a worker: builds in up to `amount` materials from the site and charges
-## the energy share. Returns "" on progress, else the reason it waited (also set as the state).
+## the labor share. Returns "" on progress, else the reason it waited (also set as the state).
 func work(_unit: Node3D, amount: int) -> String:
 	if finished: return "Built"
 	if not network.plan_terrain_valid(start,spec.size,kind,self):
@@ -159,23 +165,25 @@ func work(_unit: Node3D, amount: int) -> String:
 		state = "Waiting for %s on site" % material; refresh_label(); return state
 	var due := energy_due(step)
 	var source := energy_payer(due)
+	var pay_kind := labor_kind()
 	if due > 0 and source == null:
-		state = "Waiting for energy from %s" % (payer.name if is_instance_valid(payer) else "a covering stockpile"); refresh_label(); return state
+		state = "Waiting for %s from %s" % [str(pay_kind),payer.name if is_instance_valid(payer) else "a covering stockpile"]; refresh_label(); return state
 	if due > 0:
-		if not source.spend_local(due,0): state = "Waiting for energy"; refresh_label(); return state
+		var paid: bool = source.spend_resources({pay_kind: due}) if pay_kind == &"food" else source.spend_local(due,0)
+		if not paid: state = "Waiting for "+str(pay_kind); refresh_label(); return state
 		energy_paid += due
 	if step > 0:
 		take(material,step)
 		added[material] = added.get(material,0)+step
 	state = "Constructing · %d%%" % progress_percent()
 	refresh_label()
-	if all_added() and energy_paid >= spec.energy: finish()
+	if all_added() and energy_paid >= labor_cost(): finish()
 	return ""
 func progress_percent() -> int:
 	return int(100.0*progress_fraction())
-## Share of the build done, 0..1: materials built in and energy paid.
+## Share of the build done, 0..1: materials built in and labor paid.
 func progress_fraction() -> float:
-	var total: int = spec.energy
+	var total := labor_cost()
 	var done := energy_paid
 	for material in materials():
 		total += materials()[material]; done += added.get(material,0)
@@ -208,21 +216,26 @@ func site_state() -> StringName:
 ## The stockpile paying energy: the pinned one, or the first covering one able to pay the whole
 ## remaining energy, latched so one payer sees the build through.
 func energy_payer(due: int) -> Node3D:
+	var cost := labor_cost()
+	if cost <= 0: return null
 	if pinned or is_instance_valid(payer):
 		return payer if network.plan_energy_source_valid(self,payer,due) else null
 	for source in SupplySource.candidates(get_tree(),global_position,team):
-		if network.plan_energy_source_valid(self,source,spec.energy-energy_paid):
+		if network.plan_energy_source_valid(self,source,cost-energy_paid):
 			payer = source
 			return source
 	return null
 ## Periodic state refresh while nobody is working on the site.
 func refresh_state() -> void:
 	if finished or state.begins_with("Constructing"): return
+	var cost := labor_cost()
+	var pay_kind := labor_kind()
 	if not network.plan_terrain_valid(start,spec.size,kind,self): state = "Waiting for footprint to clear"
 	elif not network.plan_spacing_ok(self): state = spacing_state()
 	elif not materials_covered(): state = "Waiting for materials on site"
-	elif energy_payer(energy_due(0) if spec.energy > 0 else 0) == null and spec.energy > energy_paid: state = "Waiting for energy · needs a Depot whose range covers its centre, with %d E" % (spec.energy-energy_paid)
-	else: state = "Materials on site · order Deforesters to construct"
+	elif cost > energy_paid and energy_payer(energy_due(0)) == null:
+		state = "Waiting for %s · needs a %s whose range covers its centre, with %d %s" % [str(pay_kind),"Keep or Depot" if pay_kind == &"food" else "Depot",cost-energy_paid,"F" if pay_kind == &"food" else "E"]
+	else: state = "Materials on site · order %s to construct" % ("workers" if kind in [&"keep",&"chapterhouse"] else "Deforesters")
 	refresh_label()
 func finish() -> Node3D:
 	var building = network.finish_plan(self)
@@ -233,7 +246,7 @@ func finish() -> Node3D:
 	_hand_over(building)
 	if network.game.selected_building == self:
 		network.game.selected_building = building if kind != &"rail" else null
-		if kind == &"depot": network.select_depot(building)
+		if kind in [&"depot",&"keep"]: network.select_depot(building)
 	network.game.notify("%s built." % spec.title,team)
 	queue_free()
 	return building
@@ -261,24 +274,32 @@ func complete_from_stock() -> Node3D:
 		_hand_over(building)
 		if network.game.selected_building == self:
 			network.game.selected_building = building if kind != &"rail" else null
-			if kind == &"depot": network.select_depot(building)
+			if kind in [&"depot",&"keep"]: network.select_depot(building)
 		network.game.notify("%s built from %s local stock." % [spec.title,source.name],team)
 		queue_free()
 	return building
 ## A Depot site now too close to a friendly Depot, for example one captured nearby: it waits, and can be cancelled.
 func spacing_state() -> String:
-	return "Blocked · a new Depot must stand "+network.spacing_reason()
+	return "Blocked · a new %s must stand %s" % ["Keep" if kind == &"keep" else "Depot",network.spacing_reason()]
 ## Site line for labels and panels, for example "Iron on site 25/45 · built 0/45".
 func site_text() -> String:
 	var parts: PackedStringArray = []
 	for material in materials():
 		parts.append("%s on site %d/%d · built %d/%d" % [str(material).capitalize(),on_site(material),needed(material),added.get(material,0),materials()[material]])
 	return " · ".join(parts) if not parts.is_empty() else "No materials needed"
+func _cost_summary() -> String:
+	var parts := PackedStringArray()
+	if spec.get("energy",0) > 0: parts.append("%d E" % spec.energy)
+	if spec.get("food",0) > 0: parts.append("%d F" % spec.food)
+	if spec.get("wood",0) > 0: parts.append("%d W" % spec.wood)
+	if spec.get("iron",0) > 0: parts.append("%d I" % spec.iron)
+	return " / ".join(parts) if not parts.is_empty() else "0 I"
 func refresh_label() -> void:
 	if kind == &"rail":
 		$Label.text = "PLAN · %s · %d E / %d I\n%s" % [spec.title,spec.energy,spec.iron,state]
 		return
-	$Label.text = "PLAN · %s · %d E / %d I\n%s\n%s" % [spec.title,spec.energy,spec.iron,site_text(),state]
+	var cost_line := "%d E / %d I" % [spec.energy,spec.iron] if spec.get("food",0) == 0 and spec.get("wood",0) == 0 else _cost_summary()
+	$Label.text = "PLAN · %s · %s\n%s\n%s" % [spec.title,cost_line,site_text(),state]
 	var model := get_node_or_null("Visuals/Model")
 	if model != null: model.show_construction(progress_fraction())
 	var shown := site_state()

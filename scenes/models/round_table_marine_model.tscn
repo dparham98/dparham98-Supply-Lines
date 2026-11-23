@@ -1,0 +1,18 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/character_animator.gd" id="animator"]
+[ext_resource type="PackedScene" path="res://assets/models/units/round_table_marine.glb" id="rig"]
+
+[node name="RoundTableMarineModel" type="Node3D"]
+script = ExtResource("animator")
+player_path = NodePath("Rig/AnimationPlayer")
+idle_clip = &"Rest"
+run_clip = &"Run"
+shoot_clip = &"Shoot"
+run_reference_speed = 2.8
+muzzle_bone = &"muzzle"
+gun_sample_time = 0.25
+shot_lead_time = 0.21
+
+[node name="Rig" parent="." instance=ExtResource("rig")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)

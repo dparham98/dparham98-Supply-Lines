@@ -24,6 +24,8 @@ extends Resource
 @export var heavy_target_interval: float = -1.0
 @export_range(0, 100000, 1) var energy_cost: int = 0
 @export_range(0, 100000, 1) var iron_cost: int = 0
+@export_range(0, 100000, 1) var food_cost: int = 0
+@export_range(0, 100000, 1) var wood_cost: int = 0
 ## Seconds a production building takes to print this unit at its base energy cost (1x power;
 ## docs/PRODUCTION_POWER.md). More power divides it.
 @export_range(0.5, 600, 0.5) var build_seconds: float = 10.0
@@ -38,7 +40,7 @@ func validation_errors() -> PackedStringArray:
 	var errors := PackedStringArray()
 	if unit_id == &"": errors.append("Unit ID is required")
 	if max_health <= 0 or movement_speed < 0 or vision < 0: errors.append("Invalid health, movement or vision")
-	if energy_cost < 0 or iron_cost < 0: errors.append("Costs cannot be negative")
+	if energy_cost < 0 or iron_cost < 0 or food_cost < 0 or wood_cost < 0: errors.append("Costs cannot be negative")
 	if build_seconds <= 0: errors.append("Build time must be positive")
 	if attack_range < 0 and attack_range != -1: errors.append("Unknown range must be -1")
 	if damage < 0 and damage != -1: errors.append("Unknown damage must be -1")

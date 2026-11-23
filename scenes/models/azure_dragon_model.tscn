@@ -1,0 +1,29 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/character_animator.gd" id="animator"]
+[ext_resource type="PackedScene" path="res://assets/models/units/azure_dragon.glb" id="rig"]
+
+[node name="AzureDragonModel" type="Node3D"]
+script = ExtResource("animator")
+player_path = NodePath("Rig/AnimationPlayer")
+idle_clip = &"Rest"
+run_clip = &"Walk"
+shoot_clip = &"FireBreath"
+run_reference_speed = 0.76
+muzzle_bone = &"breath_muzzle"
+gun_sample_time = 0.9
+shot_lead_time = 0.75
+flash_bone = &"breath_origin"
+flash_light_path = NodePath("Rig/Azure_Dragon_Rig/Skeleton3D/breath_origin/Breath_Light")
+flash_light_energy = 2.5
+
+[node name="Rig" parent="." instance=ExtResource("rig")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
+
+[node name="Breath_Light" parent="Rig/Azure_Dragon_Rig/Skeleton3D/breath_origin" index="0"]
+visible = false
+light_energy = 0.0
+omni_range = 8.0
+omni_attenuation = 1.0
+
+[editable path="Rig"]
