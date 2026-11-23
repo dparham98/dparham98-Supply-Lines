@@ -1,6 +1,6 @@
 # Scout model
 
-The Scout is the cyborg skater from `Blender/Characters/Scout/ScoutCyborg.blend` (rig `ScoutCyborg_Rig`, 35 bones): a figure in steel armour over a charcoal suit, on inline skates, with a pump shotgun. It replaced the earlier skater (`Scout.blend`, `assets/models/units/scout.glb`, rig "Skater rig") on 2026-11-19. Its clips are `idle`, `run`, `shoot` and `die`; the first three came with the art, carried over from the earlier Scout.
+The Scout is the cyborg skater from `Blender/Characters/Scout/ScoutCyborg.blend` (rig `ScoutCyborg_Rig`, 35 bones): a figure in steel armour over a charcoal suit, on inline skates, with a pump shotgun. It replaced the earlier skater (`Scout.blend`, `assets/models/units/scout.glb`, rig "Skater rig") on 2026-11-19. Its clips are `idle`, `run`, `shoot` and `die`; the first three came with the art, carried over from the earlier Scout. Since 2026-11-22 its shots fly as the infantry bullet (`scenes/gameplay/infantry_bullet.tscn`), not the plain tracer, after a playtest found its attack hard to see. The `shoot` clip itself is only a raise and one small flash; a stronger kick needs the Blender clip reworked.
 
 ## The look
 

@@ -857,7 +857,14 @@ var _scan_wait := 0.0
 var _sighted: Node3D
 var _had_sight := false
 func _acquire() -> Node3D:
-	if _had_sight and is_instance_valid(_sighted) and in_attack_range(_sighted) and CombatResolver.can_hit(self,_sighted): return _sighted
+	if _had_sight and is_instance_valid(_sighted) and in_attack_range(_sighted) and CombatResolver.can_hit(self,_sighted):
+		# A building in its sights gives way to a unit that comes into range (docs/COMBAT_BATCH.md, Buildings as targets).
+		if not _sighted.is_in_group("selectable_buildings"): return _sighted
+		if _scan_wait > 0.0: return _sighted
+		_scan_wait = TARGET_SCAN_SECONDS
+		var nearer := _nearest_opponent()
+		if nearer != null: _sighted = nearer
+		return _sighted
 	if _had_sight or _scan_wait <= 0.0:
 		_scan_wait = TARGET_SCAN_SECONDS
 		_sighted = _nearest_opponent()
@@ -874,6 +881,15 @@ func _nearest_opponent() -> Node3D:
 		if d >= distance or d < min_attack_range: continue
 		if not CombatResolver.can_hit(self,unit): continue
 		closest = unit; distance = d
+	if closest != null: return closest
+	# With no unit in range it turns on the nearest hostile building, as an attack order on it would (docs/COMBAT_BATCH.md,
+	# Buildings as targets). Shared mines are left alone; units come first.
+	for building in get_tree().get_nodes_in_group("selectable_buildings"):
+		if not is_instance_valid(building) or building.is_in_group("mines") or building.get("team") in [null,team,"neutral"]: continue
+		var d := global_position.distance_to(building.global_position)
+		if d >= distance or d < min_attack_range: continue
+		if not CombatResolver.can_hit(self,building): continue
+		closest = building; distance = d
 	return closest
 func _face(point: Vector3) -> void:
 	var offset := point-global_position

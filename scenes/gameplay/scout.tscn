@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" path="res://scenes/models/scout_model.tscn" id="model"]
 
 [ext_resource type="Resource" path="res://assets/units/scout.tres" id="stats"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/infantry_bullet.tscn" id="bullet"]
 
 [ext_resource type="Material" path="res://assets/materials/units/team_marker.tres" id="team_marker"]
 
@@ -19,6 +20,7 @@ can_construct = false
 can_gather = false
 can_capture_depots = false
 use_prototype_combat_for_unresolved_stats = false
+projectile_scene = ExtResource("bullet")
 
 [node name="Visuals" type="Node3D" parent="."]
 script = ExtResource("slot")
