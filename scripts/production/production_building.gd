@@ -113,7 +113,10 @@ func request_unit(id: StringName) -> bool:
 		var resource := unit_stats_for(scene)
 		if resource.unit_id != id: continue
 		var payer := payer_for(resource.energy_cost,resource.iron_cost,resource.food_cost,resource.wood_cost)
-		if payer == null: game.notify("No Depot or Keep in range can pay for a %s." % resource.display_name,team); return false
+		if payer == null:
+			if resource.food_cost > 0 or resource.wood_cost > 0: game.notify("No Keep in range has %d F, %d W and %d I for a %s." % [resource.food_cost,resource.wood_cost,resource.iron_cost,resource.display_name],team)
+			else: game.notify("No Depot in range has %d E and %d I for a %s." % [resource.energy_cost,resource.iron_cost,resource.display_name],team)
+			return false
 		_set_source(payer)
 		var paid := false
 		if resource.food_cost > 0 or resource.wood_cost > 0:

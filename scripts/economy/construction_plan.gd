@@ -216,8 +216,8 @@ func site_state() -> StringName:
 ## The stockpile paying energy: the pinned one, or the first covering one able to pay the whole
 ## remaining energy, latched so one payer sees the build through.
 func energy_payer(due: int) -> Node3D:
+	# A site that owes nothing still takes a covering payer: a finished Generator is assigned to it.
 	var cost := labor_cost()
-	if cost <= 0: return null
 	if pinned or is_instance_valid(payer):
 		return payer if network.plan_energy_source_valid(self,payer,due) else null
 	for source in SupplySource.candidates(get_tree(),global_position,team):

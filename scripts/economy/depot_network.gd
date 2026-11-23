@@ -602,7 +602,7 @@ func update_global_preview(point: Vector3) -> bool:
 	var pinned = hud.global_payer if hud != null and hud.global_pinned and SupplySource.available(hud.global_payer,"player") else null
 	var labor_ok: bool = labor_cost <= 0
 	for source in sources:
-		if (pinned == null or source == pinned) and source.stockpile.amount(labor_kind) >= labor_cost: labor_ok = true
+		if (pinned == null or source == pinned) and labor_stock(source,labor_kind) >= labor_cost: labor_ok = true
 	var iron_ok: bool = on_site.get(&"iron",0)+stock[&"iron"] >= iron_cost
 	var wood_ok: bool = on_site.get(&"wood",0)+stock[&"wood"] >= wood_cost
 	var affordable := labor_ok and iron_ok and wood_ok
@@ -616,11 +616,11 @@ func update_global_preview(point: Vector3) -> bool:
 	if not spaced: site_line = " · "+spacing_reason()
 	elif not seen: site_line = " · out of sight: plans need vision of the whole site"
 	elif not valid and not strip_notice(point,spec.size,game.global_plan_kind).is_empty(): site_line = " · keep the Depot Truck strip clear"
-	elif valid and labor_cost > 0 and sources.is_empty(): site_line += " · no Depot/Keep range covers it: nothing pays %s yet" % str(labor_kind)
+	elif valid and labor_cost > 0 and sources.is_empty(): site_line += " · no Keep range covers it: nothing pays its food yet" if labor_kind == &"food" else " · no Depot range covers it: nothing pays its energy yet"
 	elif valid and not labor_ok: site_line += " · no %s in range has %d %s" % ["pinned payer" if pinned != null else "stockpile",labor_cost,"F" if labor_kind == &"food" else "E"]
 	elif valid and not iron_ok: site_line += " · %d iron short in range" % (iron_cost-on_site.get(&"iron",0)-stock[&"iron"])
 	elif valid and not wood_ok: site_line += " · %d wood short in range" % (wood_cost-on_site.get(&"wood",0)-stock[&"wood"])
-	var area := stock_line(stock) if not sources.is_empty() else "No Depot/Keep range here"
+	var area := stock_line(stock) if not sources.is_empty() else ("No Keep range here" if labor_kind == &"food" else "No Depot range here")
 	var cost_str := "%d E / %d I" % [energy_cost,iron_cost] if wood_cost == 0 and food_cost == 0 else "%d F / %d W / %d I" % [food_cost,wood_cost,iron_cost]
 	_set_placement("PLAN "+str(spec.title).to_upper(),"%s · %s · %s%s\n%s" % [placement_word(valid,affordable),spec.title,cost_str,site_line,area],valid,affordable)
 	return valid
@@ -649,7 +649,11 @@ func covering_sources(start: Vector2i, size: Vector2i, team := "player") -> Arra
 	return result
 ## Energy (or Food) comes from one covering Depot, Keep, or deployed Cargo vehicle; materials never do.
 func plan_energy_source_valid(plan: Node3D, source, due: int) -> bool:
-	return source_covers_plan(source,plan) and source.stockpile.amount(plan.labor_kind()) >= due
+	return source_covers_plan(source,plan) and labor_stock(source,plan.labor_kind()) >= due
+## What a stockpile can pay toward a site's labour. Energy counts what a deployed truck can burn coal for
+## (`source.energy`), not only the energy it holds.
+static func labor_stock(source, kind: StringName) -> int:
+	return source.energy if kind == &"energy" else source.stockpile.amount(kind)
 ## Stands the building up once a site's work is done. Nothing is spent here: the materials came off
 ## the site and the labor cost was charged tick by tick.
 func finish_plan(plan: Node3D) -> Node3D:
