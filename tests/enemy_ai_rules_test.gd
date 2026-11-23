@@ -111,6 +111,19 @@ func run() -> void:
 	await process_frame
 	ground.tiles[marked.y*ground.grid_size.x+marked.x].erase("rail")
 	if not check(not is_instance_valid(crossed) and ai.plan == null and ai.build_step == step,"A site with track across it should be given up and planned again (step %d -> %d)" % [step,ai.build_step]): return
+	# With its Cargo truck lost, a site still short of iron gets a new truck printed at home.
+	for unit in ai.own_units():
+		if unit.is_cargo_vehicle and not unit.is_in_group("rail_trains"): unit.free()
+	var short = network.queue_plan(around[around.size()/2].transform.origin+Vector3(0,0,30),&"generator",depot,true,false,"enemy")
+	if short == null: short = network.queue_plan(depot.global_position+Vector3(-20,0,0),&"generator",depot,true,false,"enemy")
+	if not check(short != null and short.shortfall(&"iron") > 0,"A Generator site short of iron should be planned"): return
+	depot.stockpile.deposit(&"energy",500)
+	depot.stockpile.deposit(&"iron",200)
+	ai.plan = short
+	ai.build(depot)
+	if not check(depot.pending.has("cargo"),"With no Cargo truck, a site short of iron should get one printed"): return
+	ai.plan = null
+	short.cancel()
 	var iron: int = depot.iron
 	game.message = ""
 	var laid: Array[Node3D] = rails.lay_link(path,depot)

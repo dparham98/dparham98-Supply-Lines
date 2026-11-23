@@ -267,6 +267,9 @@ func build(depot: Node3D) -> void:
 		_given_up.cancel()
 		return
 	var truck := _cargo_truck()
+	# Only the Cargo truck takes iron out to a site: one that is lost (shot on the way, say) is replaced, or the site
+	# would wait for its iron for good (docs/ENEMY_AI.md).
+	if truck == null and plan.shortfall(&"iron") > 0: _replace_truck(depot)
 	if truck != null and plan.shortfall(&"iron") > 0 and _idle(truck) and truck.get("fetch_plan") == null: truck.command_fetch(plan)
 	# Builders go once the iron is on site; a mine out in the woods gets one early, to fell its way in.
 	var home_workers := _workers_at(depot)
@@ -278,6 +281,11 @@ func build(depot: Node3D) -> void:
 		if unit.cargo > 0 and unit.cargo_kind != &"iron": continue
 		unit.command_construct(plan)
 		builders += 1
+## Prints a Cargo truck at home when none is on its way, saving up for it first (held_back).
+func _replace_truck(depot: Node3D) -> void:
+	if depot.pending.has("cargo"): return
+	if depot.request_cargo(): return
+	wants["cargo"] = true
 ## What it builds next: the next step of `build_order`, then more Generators while iron piles up; &"" for none.
 func next_building() -> StringName:
 	if build_step < build_order.size(): return build_order[build_step]
@@ -662,6 +670,7 @@ func held_back() -> Vector2i:
 	var depot := home()
 	if wants.get("truck",false) and depot != null: held += Vector2i(depot.rules.truck_energy_cost,depot.rules.truck_iron_cost)
 	if wants.get("train",false) and rails != null: held += Vector2i(rails.rules.cargo_energy_cost,rails.rules.cargo_iron_cost)
+	if wants.get("cargo",false): held += Vector2i(network.supply_rules.cargo_energy_cost,network.supply_rules.cargo_iron_cost)
 	if wants.has("research"): held += wants.research
 	held.y += int(wants.get("rail",0))
 	return held

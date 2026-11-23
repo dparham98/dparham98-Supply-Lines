@@ -1232,22 +1232,28 @@ func commit_plan(pinned = null) -> Array[Node3D]:
 	return laid
 # ---- track for the enemy player (docs/ENEMY_AI.md)
 ## The computer player connects its buildings with the same track the player is suggested: the shortest open
-## path of straights and curves touching both rings (suggest_route). It searches with a router of its own, so the
-## player's plan, picks and cursor search are never touched.
-var _side_router
+## path of straights and curves touching both rings (suggest_route). Each side searches with a router of its own,
+## keyed by `from`'s team, so the player's plan, picks and cursor search are never touched, and with an AI on each
+## side (spectating, docs/MAIN_MENU.md) one side's new search never resets the other's.
+var _side_routers := {}
 ## Begins the search from `from` to `to`. Work on it with advance_link(); once `job.done`, `job.found.path` is
 ## the track ({kind, transform, cells, move} pieces), empty when there is no open path. `forbidden` lists the
 ## `move`s of pieces an earlier search found that unfit_moves() turned down.
 func begin_link(from: Node3D, to: Node3D, forbidden := {}) -> Dictionary:
-	if _side_router == null: _side_router = preload("res://scripts/rails/rail_router.gd").new(self)
-	_side_router.forbidden = forbidden
-	_side_router.blocked = site_cells()
+	var side: String = str(from.get("team"))
+	if not _side_routers.has(side): _side_routers[side] = preload("res://scripts/rails/rail_router.gd").new(self)
+	var router = _side_routers[side]
+	router.forbidden = forbidden
+	router.blocked = site_cells()
 	var width: float = probe("straight").half_width()
-	var ring: Array = _side_router.ring_starts(from.global_position,target_reach(from)+width)
-	return _side_router.begin(ring,{centre = to.global_position, reach = target_reach(to)+width})
+	var ring: Array = router.ring_starts(from.global_position,target_reach(from)+width)
+	var job: Dictionary = router.begin(ring,{centre = to.global_position, reach = target_reach(to)+width})
+	job["router"] = router
+	return job
 ## Works on a search from begin_link() for about `usec` microseconds. Returns whether it is done.
 func advance_link(job: Dictionary, usec: int) -> bool:
-	return _side_router.advance(job,usec) if _side_router != null else true
+	var router = job.get("router")
+	return router.advance(job,usec) if router != null else true
 ## The `move`s of a found path's pieces whose ground, worked out as the laid piece works it out, is not clear:
 ## the ones lay_link() would leave out. Empty when every piece can be laid.
 func unfit_moves(path: Array) -> Dictionary:
