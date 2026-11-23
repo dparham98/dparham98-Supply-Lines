@@ -54,11 +54,17 @@ An arena batch takes seconds to a few minutes. An 18-minute match takes three to
 - **Names:** `c_std` is the AI's default build (tech first), `c_2rax` and `c_3rax` two and three Barracks, `c_rush`
   the rush, `k` the Knights. `f_` matches use the game's combat as it is, `n_` the proposed changes. The first name
   is the West side. `k1_46f_12farms` and `k2_92f_8farms` were run before the Knights AI could found a second Keep.
+- **Kiting batches:** `kite` tries each Tank rule alone. `kite_proposed` is the whole proposed Tank (sight 20,
+  speed 5, 12 every 1.5 s, 2 m splash at half damage), alone and with a Drone. `kite_proposed2` adds no moving fire
+  and a forward-arc limit to it. `kite_proposed3` has the lone proposed Tank retreat sooner, at 18.5 m and 19.5 m.
+  In a result, `a_taken` includes a lost Drone's 30 health, and `a_moved` is 0 when side `a` lost.
 
 ## Limits
 
 - One run each; the AI's rally scatter is random, so a rerun differs a little.
 - AIs mass and attack-move. They do not retreat, micro, or use abilities.
+- The Cyborg AI's build order stalled in some matches, for a reason not found: the default order stopped after its
+  second Generator in 4 runs of 12, and the three-Barracks order stopped at two Barracks in all 3 runs from the East.
 - The arena is flat open ground. Units start in blocks 2 m apart (4 m for Tanks, Ubermechs and Dragons).
 - Mist, Slow, mines, roads and the balloon are not implemented here. The road and balloon figures come from
   stand-ins: a worker speed multiplier, and stock moved between Keeps after a delay.
