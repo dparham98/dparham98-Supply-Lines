@@ -7,6 +7,8 @@ var amount: int:
 	get: return ground.harvesting_rules.forest_wood_per_tile
 var remaining: int:
 	get: return ground.forest_amount(cell)
+func _ready() -> void:
+	add_to_group("forest_cells")
 func can_extract(_team: String) -> bool: return remaining > 0
 func extract(requested: int, _team: String = "") -> int: return ground.harvest_forest(cell,requested)
 ## The handle a worker moves on to when this cell is cut out: the nearest Forest cell near it with wood left.
