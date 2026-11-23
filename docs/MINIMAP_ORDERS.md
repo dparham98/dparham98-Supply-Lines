@@ -28,3 +28,10 @@ The playtest of 2026-11-17 found that queueing on the minimap and its Attack com
 - Markers are a few pixels across, and units in a group overlap, so a right-click near a crowd targets whichever marker is nearest.
 - The minimap shows everything, with no fog of war, so hostiles can be targeted anywhere on the map.
 - `tests/minimap_orders_test.gd` covers the orders above with synthetic clicks sent to the minimap. Nobody has tried it with a real mouse.
+
+## Deposits (2026-11-19)
+
+- **Coal** is a black diamond in an amber rim: each coal field still holding coal, and each mine on a seam.
+- **Iron** is a steel-blue peak: each mine site, mine and iron ore field.
+- A selected mine is ringed in white.
+- `tactical_minimap.gd` `draw_coal`, `draw_iron`. See `HUD_POLISH.md`.

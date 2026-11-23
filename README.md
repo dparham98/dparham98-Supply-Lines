@@ -95,6 +95,8 @@ Sculpted mountains: [mountains](docs/MOUNTAINS.md).
 Grass, desert, water and forest tiles: [ground tiles](docs/GROUND_TILES.md).
 Depot rails and explicit train supply routes: [rail batch and editor exercise](docs/RAIL_BATCH.md).
 
+Research: the [Temple of Science](docs/TEMPLE_OF_SCIENCE.md) researches Mining Trains, which lets your maglev trains dig iron at a mine joined by track and bring it to a Depot. Try it on **scenes/maps/temple_exercise.tscn**.
+
 Latest economy plan and proposed balance: [economy plan](docs/ECONOMY_PLAN.md). [Depot production correction](docs/DEPOT_PRODUCTION_CORRECTION.md).
 
 Bounded storage, coal transport and the capacity test scene: [storage foundation](docs/STORAGE_BATCH.md).
@@ -106,3 +108,5 @@ Mobile supply deployment, Infantry delivery and physical material piles: [guide 
 Wood/coal-powered generators: [rules and editor exercise](docs/GENERATOR_BATCH.md).
 
 Coal deposits, the balanced map and per-map terrain data: [balanced map](docs/BALANCED_MAP.md).
+
+Warnings that fade, rendered HUD pictures, plans that need sight and the Deforester: [HUD polish](docs/HUD_POLISH.md), [HUD renders](docs/HUD_RENDERS.md).

@@ -1,0 +1,54 @@
+[gd_scene format=3]
+[ext_resource type="PackedScene" path="res://scenes/maps/lakes_skirmish.tscn" id="base"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/track_straight.tscn" id="straight"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/track_curve.tscn" id="curve"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/temple_of_science.tscn" id="temple"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/train.tscn" id="train"]
+
+[node name="TempleExercise" instance=ExtResource("base")]
+editor_description = "Built by scripts/tools/build_temple_exercise.gd (docs/TEMPLE_OF_SCIENCE.md): Two Lakes with track from the Depot to Mine07, a train at the Depot and a Temple of Science."
+[node name="Depot" parent="Entities/Buildings"]
+initial_energy = 600
+initial_iron = 300
+[node name="TempleOfScience" parent="Entities/Buildings" instance=ExtResource("temple")]
+position = Vector3(-185, 0, 1)
+assigned_depot_path = NodePath("../Depot")
+[node name="Rails" type="Node3D" parent="Entities" index="2"]
+[node name="Track0" parent="Entities/Rails" instance=ExtResource("straight")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -175.2, 0, -19.2)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Track1" parent="Entities/Rails" instance=ExtResource("straight")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -170.4, 0, -19.2)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Track2" parent="Entities/Rails" instance=ExtResource("straight")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -165.6, 0, -19.2)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Track3" parent="Entities/Rails" instance=ExtResource("straight")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -160.8, 0, -19.2)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Track4" parent="Entities/Rails" instance=ExtResource("straight")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -156, 0, -19.2)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Track5" parent="Entities/Rails" instance=ExtResource("curve")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -151.2, 0, -19.2)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Track6" parent="Entities/Rails" instance=ExtResource("straight")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -139.2, 0, -31.2)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Track7" parent="Entities/Rails" instance=ExtResource("straight")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -139.2, 0, -36)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Track8" parent="Entities/Rails" instance=ExtResource("straight")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -139.2, 0, -40.8)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Track9" parent="Entities/Rails" instance=ExtResource("straight")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -139.2, 0, -45.6)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Track10" parent="Entities/Rails" instance=ExtResource("straight")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -139.2, 0, -50.4)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Track11" parent="Entities/Rails" instance=ExtResource("curve")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -127.2, 0, -67.2)
+assigned_depot_path = NodePath("../../Buildings/Depot")
+[node name="Train" parent="Entities/Units" instance=ExtResource("train")]
+position = Vector3(-175.2, 0, -19.2)

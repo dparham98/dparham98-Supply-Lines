@@ -22,7 +22,7 @@ These replace the crate reservation described in `CRATE_SHIPMENTS.md`. The user 
 - **Refill on pickup** (replaces Keep stocked): when on, records the crates beside the stockpile, and packing or unpacking updates the counts. It repacks up to those counts as vehicles collect crates. Off leaves the gap empty.
 - **Workers:**
   - **Delivering:** right-click a crate while carrying cargo it accepts (empty, or the same resource) to deliver into it. When it fills, the worker moves on to the next crate within 4 units that fits. If none fits, it waits with "Crate full".
-  - **Gathering:** right-click a filled crate while carrying nothing to gather from it, like a dropped pile. An emptied crate stays as an empty container.
+  - **Gathering:** right-click a filled crate while carrying nothing to gather from it, like a dropped pile. An emptied crate leaves the map (2026-11-19, `HUD_POLISH.md`).
   - **Gather loop:** after delivering into a crate, a worker goes back to its gather source.
 - **Load (E)** on a Cargo truck:
   - **Crate:** click one to drive to it and take it (even when empty), plus any filled crates within 4 units of it, until the 4 slots are full.

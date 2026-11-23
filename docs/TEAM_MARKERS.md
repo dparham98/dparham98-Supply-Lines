@@ -27,7 +27,8 @@ Buildings have a marker too, shown while the building is selected, in its side's
 | --- | --- | --- |
 | Infantry | 1.7 × 1.7 | |
 | Scout, Grenadier | 1.5 × 1.5 | |
-| Hostile, Ubermech | 2.0 × 2.0 | |
+| Hostile | 2.0 × 2.0 | |
+| Ubermech | 5.3 × 2.7 | Encloses the emitter and launcher at rest. |
 | Motorcycle | 1.4 × 3.0 | |
 | Drone | 2.6 × 2.6 | Just under the drone at 12 m, not on the ground: on the ground it showed well below the drone on screen, on top of other units' markers |
 | Tank | 4.0 × 6.8 | Centred 0.4 m forward of the unit's origin |
@@ -66,7 +67,9 @@ Some surfaces of the models are painted in the unit's side colour too. The paint
 | Drone | `team_color` (faction fang) and `Oxide red` (arms and ducts) |
 | Scout | `team_color` (stripes on the armour, skates, goggles and gun) |
 | Grenadier | `Oxblood trim` |
-| Infantry, Tank, Ubermech, Hostile | None: there is no team surface to paint |
+| Ubermech | `team_color` on the shoulder, forearm and leg armor. The optic and power lights stay red. |
+| Infantry, Tank | `team_color` on their painted armor surfaces |
+| Hostile | No team surface |
 
 At play zoom the paint reads clearly on the Cargo vehicle, Depot Truck and Motorcycle, and less on the Drone. On the Scout and Grenadier the trims are too small to tell apart at play zoom.
 
@@ -94,6 +97,11 @@ Health bars already exist in `MapOverlay` (`docs/UI_PHASE_C.md`) and are drawn i
 
 ## Not yet done
 
-- Infantry and the Tank carry no team paint. The Infantry has no accent material to give it, and the Tank's look is one baked texture. Both need team surfaces made in Blender: a separate `team_color` material for the Infantry, and a team mask for the Tank.
-- The Scout's and Grenadier's trims could be made larger in Blender to read at play zoom. With the markers now hidden, the Infantry, Tank, Ubermech and Hostile have nothing on them that shows their side.
+- The Scout's and Grenadier's trims could be made larger in Blender to read at play zoom. The Hostile relies on its marker to show its side.
 - Markers are hidden under trees and rock like everything else at ground level.
+
+## Depot paint (2026-11-19)
+
+- The Depot model, with its parked truck, has `team_color` surfaces that were never painted, since only units called `team_paint.gd`.
+- `depot.gd` `paint_team` now paints them when the Depot is ready and again when it is captured.
+- The other buildings have no `team_color` surfaces yet.

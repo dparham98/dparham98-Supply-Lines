@@ -44,7 +44,8 @@ func run() -> void:
 	assert(not network.construct(first.global_position+Vector3(20,0,20)))
 	assert(first.energy == 380 and first.iron == 60)
 	network.select_depot(first)
-	assert(first.get_node("Territory").visible and not second.get_node("Territory").visible)
+	# A selected building shows every friendly Depot's range (docs/HUD_POLISH.md).
+	assert(first.get_node("Territory").visible and second.get_node("Territory").visible == (second.team == "player"))
 	assert(first.request_truck())
 	assert(first.energy == 230 and first.iron == 30)
 	# Complete both prepaid jobs through the original printer exit logic.

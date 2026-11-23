@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="ResearchStats" format=3]
+[ext_resource type="Script" path="res://scripts/research/research_stats.gd" id="stats"]
+[resource]
+script = ExtResource("stats")
+research_id = &"mining_trains"
+display_name = "Mining Trains"
+energy_cost = 150
+iron_cost = 100
+seconds = 60.0
+summary = "Every maglev train of yours can mine iron: order it to an Iron Mine joined by track. It fills at the mine and unloads at the nearest connected Depot, over and over."

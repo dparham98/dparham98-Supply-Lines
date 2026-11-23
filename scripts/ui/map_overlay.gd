@@ -115,6 +115,8 @@ func status_for(node: Node3D) -> Dictionary:
 	if node.is_in_group("depots"):
 		if node.queue > 0: entry.progress = node.progress/node.current_seconds()
 		if node.capture_progress > 0: entry.capture = node.capture_progress/node.rules.capture_seconds
+	elif node.is_in_group("research_buildings"):
+		if node.researching != null: entry.progress = node.fraction()
 	elif node.is_in_group("production_buildings"):
 		if node.queue > 0: entry.progress = node.fraction()
 		if node.exit_blocked: entry.icons.append(["cancel",AMBER])
@@ -394,7 +396,7 @@ func hud_name(node: Node) -> String:
 	if node.is_in_group("supply_crates"): return "Empty crate" if node.amount == 0 else "%s crate" % str(node.material_kind).capitalize()
 	if node.is_in_group("material_piles"): return "%s pile" % str(node.material_kind).capitalize()
 	if node.is_in_group("iron_deposits"): return "Iron deposit · build a mine to gather"
-	if node.is_in_group("coal_cells"): return "Coal deposit · Infantry dig it directly"
+	if node.is_in_group("coal_cells"): return "Coal deposit · Deforesters dig it directly"
 	if node.is_in_group("resources"): return str(node.get("resource_name")) if node.get("resource_name") != null else "Resource"
 	if node.is_in_group("construction_plans"): return node.spec.title+" plan"
 	return get_parent().object_name(node)

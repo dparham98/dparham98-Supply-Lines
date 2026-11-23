@@ -220,7 +220,7 @@ func refresh_state() -> void:
 	elif not network.plan_spacing_ok(self): state = spacing_state()
 	elif not materials_covered(): state = "Waiting for materials on site"
 	elif energy_payer(energy_due(0) if spec.energy > 0 else 0) == null and spec.energy > energy_paid: state = "Waiting for energy · needs a Depot whose range covers its centre, with %d E" % (spec.energy-energy_paid)
-	else: state = "Materials on site · order Infantry to construct"
+	else: state = "Materials on site · order Deforesters to construct"
 	refresh_label()
 func finish() -> Node3D:
 	var building = network.finish_plan(self)
@@ -228,12 +228,17 @@ func finish() -> Node3D:
 	finished = true
 	remove_from_group("construction_plans")
 	network.clear_site(self)
+	_hand_over(building)
 	if network.game.selected_building == self:
 		network.game.selected_building = building if kind != &"rail" else null
 		if kind == &"depot": network.select_depot(building)
 	network.game.notify("%s built." % spec.title)
 	queue_free()
 	return building
+## Control groups holding this plan hold the finished building instead (rail pieces leave the group).
+func _hand_over(building: Node3D) -> void:
+	var manager = get_node_or_null("/root/SelectionManager")
+	if manager != null: manager.replace_member(self,building if kind != &"rail" else null)
 ## Instant completion paid in full from one covering stockpile: the rail rule, and the shortcut the
 ## tests and playtest tools use to stand buildings up. Buildings in play go through work().
 func complete_from_stock() -> Node3D:
@@ -251,6 +256,7 @@ func complete_from_stock() -> Node3D:
 		finished = true
 		remove_from_group("construction_plans")
 		network.clear_site(self)
+		_hand_over(building)
 		if network.game.selected_building == self:
 			network.game.selected_building = building if kind != &"rail" else null
 			if kind == &"depot": network.select_depot(building)

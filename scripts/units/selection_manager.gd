@@ -127,14 +127,28 @@ func save_group(index: int) -> void:
 	var members: Array[Node3D] = []
 	for unit in get_tree().get_nodes_in_group("units"):
 		if unit.team == "player" and unit.is_selected: members.append(unit)
-	# With no units selected, a selected friendly building becomes the group.
+	# With no units selected, a selected friendly building becomes the group. So does a building still being
+	# built (a construction plan): the group takes the finished building when it stands (replace_member).
 	var game = get_tree().get_first_node_in_group("skirmish")
 	if members.is_empty() and game:
 		for building in game.building_selection():
 			if building.get("team") == "player": members.append(building)
+		if members.is_empty() and _in_group_ok(game.selected_building): members.append(game.selected_building)
 	groups[index] = members
+## Whether a node can stay in a control group: your units and buildings, and construction plans (only yours exist).
+static func _in_group_ok(node) -> bool:
+	if not is_instance_valid(node) or not node.is_inside_tree(): return false
+	if node.is_in_group("construction_plans"): return not node.finished
+	return node.get("team") == "player"
+## A construction plan became `building`: every control group holding the plan holds the building instead.
+func replace_member(old: Node, building: Node) -> void:
+	for index in groups:
+		var at: int = groups[index].find(old)
+		if at < 0: continue
+		if is_instance_valid(building) and not groups[index].has(building): groups[index][at] = building
+		else: groups[index].remove_at(at)
 func recall_group(index: int) -> void:
-	var members: Array = groups.get(index,[]).filter(func(unit): return is_instance_valid(unit) and unit.is_inside_tree() and unit.team == "player")
+	var members: Array = groups.get(index,[]).filter(func(unit): return _in_group_ok(unit))
 	groups[index] = members
 	if members.is_empty(): return
 	selecting = false
