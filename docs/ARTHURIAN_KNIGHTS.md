@@ -5,8 +5,11 @@ The second faction, alongside the Cyborgs.
 **Origin:** made on 2026-11-22 with another tool, directly in the local checkout, where it was left uncommitted. The
 same day it was moved onto its own branch from main and merged onto main's newer code.
 
-**Where it plays:** only on its showcase map, `scenes/maps/arthurian_skirmish.tscn` (open it and press F6). The
-Cyborg maps don't place any of it. The main menu's faction choice (docs/MAIN_MENU.md) doesn't use it yet.
+**Where it plays:**
+
+- **Two Lakes, from the main menu:** choose Arthurian Knights for You, against the AI or with no opponent. Your West
+  start becomes a Keep with two Forester Maidens (docs/MAIN_MENU.md). The AI can't play the Knights.
+- **The showcase map,** `scenes/maps/arthurian_skirmish.tscn` (open it and press F6).
 
 ## Buildings
 

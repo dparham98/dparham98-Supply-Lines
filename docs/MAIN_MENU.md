@@ -21,9 +21,18 @@ still runs straight from its scene with **F6**, playing as saved: you against th
 | Play with no opponent (sandbox) | You take the West start alone. The East start's Depot and units are cleared and its AI is off. Neither side can win. |
 | Spectate: AI against AI | An AI plays each start. You see the whole map with no fog and can click anything to inspect it, but give no orders. |
 
-**Factions:** a faction for each side. The Cyborgs are the only playable faction and are chosen. The Arthurian
-Knights are listed as "coming later" and can't be picked (text only; no Knights art is in the game). With no
-opponent, only your faction shows. Spectating, the rows are the West AI and the East AI.
+**Factions:** a faction for each side; the Cyborgs are chosen to start with. With no opponent, only your faction
+shows. Spectating, the rows are the West AI and the East AI.
+
+- **Arthurian Knights** (docs/ARTHURIAN_KNIGHTS.md; selectable from 2026-11-23) are for You only, against the AI or with no
+  opponent. The AI only knows the Cyborgs, so on an AI's row (the opponent's, and yours while spectating) they show
+  as "Arthurian Knights · You only" and are locked. Switching to spectate moves a Knights choice back to the
+  Cyborgs.
+- **The Knights' start:** the West start's Cyborg Depot, Deforester and Cargo truck are replaced by a Keep on the
+  same spot, two Forester Maidens and a 25 Food crate. The start is saved as `scenes/maps/starts/knights_start.tscn`
+  (positions from the start marker). The Keep keeps its own stock: 150 iron, 150 wood, 300 Food. The rest of Two
+  Lakes, the mines and the East start are unchanged.
+- **Food:** Two Lakes has no Food source yet (no Farm), so a Knights player has only the starting Food.
 
 **Start match** (Start watching, when spectating) loads the map; **Quit** closes the game. The menu remembers the
 last match when you come back to it.
@@ -35,9 +44,10 @@ last match when you come back to it.
   restarts. When the map loads, the skirmish calls `MatchSetup.apply`.
 - A map run straight from its scene, or from a test, is not `configured`, and plays exactly as saved.
 
-**Factions are prepared, not used yet.** `MatchSetup.FACTIONS` lists them, and only playable ones can be started.
-Each side's choice is set on the game as `game.factions` ("player" and "enemy" to an id). Nothing reads it yet:
-rosters, models and buildings will be picked by faction once a second faction exists.
+**Factions:** `MatchSetup.FACTIONS` lists them, with `playable` and `ai` (whether an AI can play it). `start()`
+refuses a side that can't be played by whoever plays it. Each side's choice is set on the game as `game.factions`
+("player" and "enemy" to an id). `MatchSetup.apply` swaps in the Knights' start (`_knights_start`). The Build page
+still offers both factions' buildings.
 
 ## Spectating
 
@@ -81,8 +91,8 @@ rosters, models and buildings will be picked by faction once a second faction ex
 
 `tests/main_menu_test.gd` (headless) checks:
 
-- the menu is the main scene and lists the factions, with the Knights locked, and a locked faction can't be
-  started;
+- the menu is the main scene and lists the factions; the Knights are open on your row and locked on the AI's
+  (and on yours while spectating), and no AI side can be started as the Knights;
 - the rows follow the mode;
 - Start match loads Two Lakes with the East AI on and the West AI off;
 - Esc pauses into the pause menu, keys stop there, and Esc resumes; an armed command takes Esc first;
@@ -90,7 +100,9 @@ rosters, models and buildings will be picked by faction once a second faction ex
 - Main menu goes back to the menu, which remembers the match;
 - the sandbox clears the East start and leaves its AI off;
 - spectating runs both AIs, has no fog, gives the HUD no commands, ignores right-click orders, sets the West AI's
-  workers going, and names the winner.
+  workers going, and names the winner;
+- the Knights against the AI put a Keep on the West start with two Forester Maidens, remove the Cyborg start, and
+  leave the East AI playing.
 
 A 14-minute spectated game was run headless (`--fixed-fps 30`). Both AIs built up and fought, and the West won,
 with no script errors.

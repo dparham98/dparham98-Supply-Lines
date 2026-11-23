@@ -162,9 +162,8 @@ selected = 0
 item_count = 2
 popup/item_0/text = "Cyborgs"
 popup/item_0/id = 0
-popup/item_1/text = "Arthurian Knights · coming later"
+popup/item_1/text = "Arthurian Knights"
 popup/item_1/id = 1
-popup/item_1/disabled = true
 [node name="EnemyRow" type="HBoxContainer" parent="Center/Panel/Body/Factions"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -184,7 +183,7 @@ selected = 0
 item_count = 2
 popup/item_0/text = "Cyborgs"
 popup/item_0/id = 0
-popup/item_1/text = "Arthurian Knights · coming later"
+popup/item_1/text = "Arthurian Knights · You only"
 popup/item_1/id = 1
 popup/item_1/disabled = true
 [node name="Gap3" type="Control" parent="Center/Panel/Body"]
