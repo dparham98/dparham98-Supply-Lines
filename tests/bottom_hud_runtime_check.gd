@@ -35,5 +35,7 @@ func run() -> void:
 	await shot("bottom_hud_cargo")
 	root.size = Vector2i(1440,960)
 	await shot("bottom_hud_wide")
+	root.size = Vector2i(1920,1080)
+	await shot("bottom_hud_full_hd")
 	print("BOTTOM_HUD_RENDER_CHECK_PASSED")
 	quit(TestOutput.exit_code())

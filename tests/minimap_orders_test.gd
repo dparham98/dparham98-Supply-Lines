@@ -32,6 +32,22 @@ func open_point_near(unit: Node3D, from: Vector3, reach: float) -> Vector3:
 			var cell = ground.get_tile_at_position(from+offset)
 			if cell != null and ground.can_traverse(cell,unit.mobility_layer(),unit._owner_key()): return ground.tile_to_world(cell)
 	return Vector3.INF
+## Open land beside `building` for `unit` with no other marker (allowing 6 m for a vehicle's body) an order could target within the minimap's pick radius, so a
+## minimap click there can only mean the building.
+func open_point_beside(unit: Node3D, building: Node3D) -> Vector3:
+	var ground = game.ground
+	var reach: float = building.footprint.x*0.5+1
+	for radius in range(int(ceil(reach)),int(reach)+12):
+		for offset in [Vector3(radius,0,0),Vector3(0,0,radius),Vector3(-radius,0,0),Vector3(0,0,-radius)]:
+			var cell = ground.get_tile_at_position(building.global_position+offset)
+			if cell == null or not ground.can_traverse(cell,unit.mobility_layer(),unit._owner_key()): continue
+			var point: Vector3 = ground.tile_to_world(cell)
+			var clear := true
+			for group in ["resources","mobile_supplies","supply_crates","construction_plans"]:
+				for node in get_nodes_in_group(group):
+					if Vector2(node.global_position.x-point.x,node.global_position.z-point.z).length() <= minimap.order_radius()+6: clear = false
+			if clear: return point
+	return Vector3.INF
 ## Whether no marker an order could target lies within the minimap's pick radius of `point`.
 func clear_of_markers(point: Vector3) -> bool:
 	for group in ["units","resources","selectable_buildings","depots","mobile_supplies","construction_plans","supply_crates"]:
@@ -92,7 +108,7 @@ func run() -> void:
 	if not check(worker.order == "attack_move" and worker.order_target != mine,"A minimap Attack by your own mine should attack-move: %s" % worker.order): return
 	# A right-click by your own Depot moves there; with no cargo it is not a Return.
 	var depot: Node3D = game.depot
-	var home := open_point_near(worker,depot.global_position,depot.footprint.x*0.5+1)
+	var home := open_point_beside(worker,depot)
 	if not check(home != Vector3.INF,"No open land beside the Depot"): return
 	worker.cargo = 0
 	click(home,MOUSE_BUTTON_RIGHT)

@@ -47,7 +47,7 @@ func run() -> void:
 	assert(not hud.has_node("Bottom/Body/Row/Context/Hint") and "nearest stockpile" in hud.info.tooltip_text and hud.context.tooltip_text == hud.info.tooltip_text)
 	hud.get_node("Bottom/Body/Header/GlobalBuild").pressed.emit()
 	hud._process(0)
-	assert(hud.build_menu.visible and hud.get_node("Bottom/Body/Header/GlobalBuild").disabled and hud.build_menu.get_node("Bank").text.contains("AUTO"))
+	assert(hud.build_menu.visible and hud.get_node("Bottom/Body/Header/GlobalBuild").disabled and "auto" in hud.info.get_node("HealthText").text)
 	var payer = game.depot
 	var point := Vector3.ZERO
 	for x in range(-25,26,5):
@@ -79,7 +79,7 @@ func run() -> void:
 	assert(game.pending_unit_command == "pin" and hud.pick.visible and not hud.build_menu.visible and hud.pick_stops().has(outpost))
 	hud.pick_stop(outpost)
 	hud._process(0)
-	assert(hud.global_pinned and hud.global_payer == outpost and game.pending_unit_command.is_empty() and hud.build_menu.visible and "OUTPOST" in hud.build_menu.get_node("Bank").text.to_upper())
+	assert(hud.global_pinned and hud.global_payer == outpost and game.pending_unit_command.is_empty() and hud.build_menu.visible and "OUTPOST" in hud.info.get_node("HealthText").text.to_upper())
 	energy = payer.energy
 	var pinned = network.queue_plan(outpost.global_position+Vector3(12,0,12),&"generator",hud.global_payer,hud.global_pinned)
 	assert(pinned != null and pinned.complete_from_stock() == null and payer.energy == energy)
