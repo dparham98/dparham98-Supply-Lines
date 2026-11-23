@@ -940,6 +940,11 @@ func _shoot(target: Node3D) -> void:
 	_cooldown = CombatResolver.interval_for(self,target)
 	if animator and (lead <= 0.0 or not animator.acting()): animator.play_action(&"shoot",lead)
 	_aim_body(target,turret,animator)
+	_release_shot(target, turret)
+
+## Send one projectile down the current gun line. Follow-up rounds of a visual
+## salvo share the first round's combat resolution.
+func _release_shot(target: Node3D, turret: Node3D = null, resolves_attack := true) -> void:
 	var target_height: Vector3 = target.get_node("Visuals").position if target.has_node("Visuals") else Vector3.ZERO
 	var model := $Visuals.get_node_or_null("Model")
 	var muzzle: Vector3 = model.muzzle_position() if model != null and model.has_method("muzzle_position") else global_position+Vector3.UP*1.7+$Visuals.position
@@ -950,6 +955,7 @@ func _shoot(target: Node3D) -> void:
 		shot = model.show_weapon_shot(game,end,team)
 	else:
 		shot = game.show_shot(muzzle,end,team,projectile_scene)
+	if not resolves_attack: return
 	var forced := _forced_on(target)
 	# A shell or grenade hurts when it gets there; a shooter gone by then takes its shot with it.
 	if shot != null and shot.get("damage_on_impact") == true:
