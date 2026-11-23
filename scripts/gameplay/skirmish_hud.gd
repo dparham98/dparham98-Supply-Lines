@@ -186,6 +186,7 @@ func _ready() -> void:
 	$Bottom/Body/Header/Focus.pressed.connect(func():
 		if is_instance_valid(shown): game.get_node("CameraRig").focus_position(shown.global_position))
 	$Bottom/Body/Header/Restart.pressed.connect(func(): get_tree().reload_current_scene())
+	$Bottom/Body/Header/Menu.pressed.connect(func(): $PauseMenu.open())
 func toggle_refuel() -> void:
 	if not is_instance_valid(shown) or not shown.is_in_group("units"): return
 	var enable: bool = not shown.auto_refuel
@@ -264,6 +265,11 @@ func _process(_delta: float) -> void:
 		hint_text = "Production goes to the selected building with the shortest queue. Power, rally points and generator settings apply to all of them. Click a portrait to keep only that building, Shift-click to remove it. Double-click a building selects your others of its type on screen; Shift-click adds or removes one."
 		update_portraits(group)
 	else: update_portraits(units)
+	# A spectator only inspects (docs/MAIN_MENU.md): no commands, no Build page.
+	if game.spectating:
+		desired_buttons.clear()
+		hint_text = "Spectating: click anything to inspect it. Esc opens the menu."
+	$Bottom/Body/Header/GlobalBuild.visible = not game.spectating
 	# Apply final visibility once. Hiding a pressed button cancels its GUI gesture.
 	for button in card.get_children():
 		if button is Button: button.visible = desired_buttons.has(str(button.name))
@@ -292,6 +298,9 @@ func _process(_delta: float) -> void:
 	place_tiles()
 	update_tip()
 	update_depot_panels()
+	if game.spectating:
+		depot_panel.visible = false
+		production_panel.visible = false
 	update_feed()
 	update_guide()
 ## The player's Depot whose panels show for the selected object: the Depot itself, the Depot a Generator or

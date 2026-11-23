@@ -70,6 +70,12 @@ var wood_delivered := 0
 var units_printed := 0
 var enemies_killed := 0
 var outcome := ""
+## Set by the main menu's match (docs/MAIN_MENU.md, MatchSetup.apply). Spectating: an AI plays each side and the HUD
+## only inspects. Sandbox: no opponent, so neither side can win.
+var spectating := false
+var sandbox := false
+## Each side's faction. Only the Cyborgs exist yet; rosters will be picked by faction later.
+var factions := {"player": &"cyborgs", "enemy": &"cyborgs"}
 @export var message := "Select your Deforester, then right-click the marked iron deposit."
 @onready var depot = $Entities/Buildings/Depot
 @onready var ground = $Terrain/Ground
@@ -84,6 +90,12 @@ func _ready() -> void:
 		pile.position = get_node("Entities/Resources/TestingCoalPoint").position
 		get_node("Entities/Resources").add_child(pile)
 	$DepotNetwork.select_depot(depot)
+	var setup = get_node_or_null("/root/MatchSetup")
+	if setup != null: setup.apply(self)
+## The AI playing the West start while spectating, or null.
+func player_ai() -> Node:
+	var node = get_node_or_null("PlayerAI")
+	return node if node != null and node.process_mode != Node.PROCESS_MODE_DISABLED else null
 func armed() -> bool:
 	return not global_plan_kind.is_empty() or placing_rail or placing_depot or placing_generator or not placing_structure.is_empty() or not pending_unit_command.is_empty()
 # Esc, pausing and paused clicks drop any armed command or placement.
@@ -137,7 +149,14 @@ func unit_died(unit: Node3D) -> void:
 	elif unit.team == "player": alert("%s lost" % hud.object_name(unit),unit.global_position,"","lost")
 func _process(_delta: float) -> void:
 	# First Contact's goal; a map with an enemy player is won by beating it (docs/ENEMY_AI.md).
-	if enemy_player() == null and ore_delivered > 0 and units_printed > 0 and enemies_killed > 0: outcome = "VICTORY — gather, print, fight complete!"
+	if enemy_player() == null and not sandbox and ore_delivered > 0 and units_printed > 0 and enemies_killed > 0: outcome = "VICTORY — gather, print, fight complete!"
+	# Spectating, the side whose AI has nothing left loses; the AIs' own messages are written for a player.
+	if spectating:
+		var west := player_ai()
+		var east := enemy_player()
+		if west != null and west.defeated: outcome = "EAST AI WINS — the West has nothing left."
+		elif east != null and east.defeated: outcome = "WEST AI WINS — the East has nothing left."
+		return
 	var players := 0
 	for unit in get_tree().get_nodes_in_group("units"):
 		if unit.team == "player": players += 1
@@ -245,6 +264,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if not event is InputEventMouseButton or not event.pressed or event.button_index != MOUSE_BUTTON_RIGHT: return
+	# A spectator gives no orders.
+	if spectating: return
 	# Right-click cancels an armed command or placement instead of giving an order.
 	if armed():
 		cancel_armed(); notify("Command cancelled.")
