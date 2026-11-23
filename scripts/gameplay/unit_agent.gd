@@ -808,7 +808,8 @@ func _return_cargo() -> void:
 	if cargo > 0:
 		var accepted: int = depot.stockpile.deposit(cargo_kind,cargo)
 		if accepted > 0 and game.has_method("delivered"): game.delivered(depot,cargo_kind,accepted)
-		if cargo_kind == &"wood": game.wood_delivered += accepted
+		if team != "player": pass
+		elif cargo_kind == &"wood": game.wood_delivered += accepted
 		elif cargo_kind == &"iron": game.ore_delivered += accepted
 		cargo -= accepted
 		if cargo > 0: state = "Stockpile full · carrying remainder"; return
@@ -856,7 +857,14 @@ var _scan_wait := 0.0
 var _sighted: Node3D
 var _had_sight := false
 func _acquire() -> Node3D:
-	if _had_sight and is_instance_valid(_sighted) and in_attack_range(_sighted) and CombatResolver.can_hit(self,_sighted): return _sighted
+	if _had_sight and is_instance_valid(_sighted) and in_attack_range(_sighted) and CombatResolver.can_hit(self,_sighted):
+		# A building in its sights gives way to a unit that comes into range (docs/COMBAT_BATCH.md, Buildings as targets).
+		if not _sighted.is_in_group("selectable_buildings"): return _sighted
+		if _scan_wait > 0.0: return _sighted
+		_scan_wait = TARGET_SCAN_SECONDS
+		var nearer := _nearest_opponent()
+		if nearer != null: _sighted = nearer
+		return _sighted
 	if _had_sight or _scan_wait <= 0.0:
 		_scan_wait = TARGET_SCAN_SECONDS
 		_sighted = _nearest_opponent()
@@ -873,6 +881,15 @@ func _nearest_opponent() -> Node3D:
 		if d >= distance or d < min_attack_range: continue
 		if not CombatResolver.can_hit(self,unit): continue
 		closest = unit; distance = d
+	if closest != null: return closest
+	# With no unit in range it turns on the nearest hostile building, as an attack order on it would (docs/COMBAT_BATCH.md,
+	# Buildings as targets). Shared mines are left alone; units come first.
+	for building in get_tree().get_nodes_in_group("selectable_buildings"):
+		if not is_instance_valid(building) or building.is_in_group("mines") or building.get("team") in [null,team,"neutral"]: continue
+		var d := global_position.distance_to(building.global_position)
+		if d >= distance or d < min_attack_range: continue
+		if not CombatResolver.can_hit(self,building): continue
+		closest = building; distance = d
 	return closest
 func _face(point: Vector3) -> void:
 	var offset := point-global_position
@@ -1060,7 +1077,7 @@ func command_repair(target: Node3D, payer: Node3D = null) -> void:
 	_work_timer = 0
 	order = "repair"
 	state = "Repair ordered"
-	game.notify("Repair %s; payer %s only." % [target.name,repair_payer.name if is_instance_valid(repair_payer) else "unavailable"])
+	game.notify("Repair %s; payer %s only." % [target.name,repair_payer.name if is_instance_valid(repair_payer) else "unavailable"],team)
 func _repair(delta: float) -> void:
 	if not EngineeringWork.repairable(order_target,team):
 		order = "idle"; state = "Repair target lost"; return

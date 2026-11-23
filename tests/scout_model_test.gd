@@ -36,7 +36,7 @@ func run() -> void:
 	for clip in ["idle","run"]:
 		if not check(player.has_animation(clip) and player.get_animation(clip).loop_mode == Animation.LOOP_LINEAR,"%s should loop" % clip): return
 	if not check(player.has_animation("shoot") and player.get_animation("shoot").loop_mode == Animation.LOOP_NONE,"Shoot should play once"): return
-	if not check(model.skeleton.get_bone_count() == 35 and model.flash_light != null and not model.flash_light.shadow_enabled and model.flash_light.omni_range <= 4.0 and model.get_node("Rig/ScoutCyborg_Rig/Skeleton3D/Muzzle_Flash").material_override != null,"Scout rig, muzzle light or flash material missing"): return
+	if not check(model.skeleton.get_bone_count() == 35 and model.flash_light != null and not model.flash_light.shadow_enabled and model.flash_light.omni_range <= 8.0 and model.get_node("Rig/ScoutCyborg_Rig/Skeleton3D/Muzzle_Flash").material_override != null and model.has_node("Rig/ScoutCyborg_Rig/Skeleton3D/Flash/Muzzle burst"),"Scout rig, muzzle light or flash material or burst missing"): return
 	# One head: the helmet or the bare head with its face, hair, cyber jaw and goggles, never both or neither.
 	var parts: Node3D = model.get_node("Rig/ScoutCyborg_Rig/Skeleton3D")
 	for look in [0,1,model.get_node("HeadLook").look]:

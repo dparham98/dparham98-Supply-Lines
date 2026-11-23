@@ -98,5 +98,5 @@ Godot --headless --path . --script res://scripts/tools/build_temple_exercise.gd
 - There is no art for the Temple and no distinct research card.
 - The costs, the 60 s and the dig rate are first guesses.
 - Nobody has played it.
-- The enemy AI neither builds Temples nor researches.
+- The enemy AI builds one Temple, researches Mining Trains and runs one Mining Train (`docs/ENEMY_AI.md`).
 - One Temple researches one thing. A research queue and other research are left for when there is more to research.

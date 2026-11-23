@@ -46,7 +46,7 @@ func _ready() -> void:
 ## Production picks its paying Depot itself (docs/HUD_POLISH.md, Production picks its Depot): it keeps the one it
 ## has while that stays friendly; otherwise it takes the nearest friendly Depot whose range covers the building.
 func source_friendly() -> bool:
-	if team != "player": return false
+	if not SupplySource.plays(team): return false
 	if not _depot_ok(assigned_depot):
 		var options := covering_depots()
 		_set_source(options[0] if not options.is_empty() else null)
@@ -103,19 +103,19 @@ func unit_stats_for(scene: PackedScene) -> UnitStats:
 		unit.free()
 	return _stats_cache[key]
 func request_unit(id: StringName) -> bool:
-	if not source_friendly(): game.notify("No friendly Depot's range covers %s." % name); return false
-	if queue >= stats.queue_limit: game.notify("Production queue is full."); return false
+	if not source_friendly(): game.notify("No friendly Depot's range covers %s." % name,team); return false
+	if queue >= stats.queue_limit: game.notify("Production queue is full.",team); return false
 	for scene in stats.unit_scenes:
 		var resource := unit_stats_for(scene)
 		if resource.unit_id != id: continue
 		var payer := payer_for(resource.energy_cost,resource.iron_cost)
-		if payer == null: game.notify("No Depot in range has %d E and %d I for a %s." % [resource.energy_cost,resource.iron_cost,resource.display_name]); return false
+		if payer == null: game.notify("No Depot in range has %d E and %d I for a %s." % [resource.energy_cost,resource.iron_cost,resource.display_name],team); return false
 		_set_source(payer)
-		if not assigned_depot.spend_local(resource.energy_cost,resource.iron_cost): game.notify("%s lacks local production resources." % assigned_depot.name); return false
+		if not assigned_depot.spend_local(resource.energy_cost,resource.iron_cost): game.notify("%s lacks local production resources." % assigned_depot.name,team); return false
 		pending.append(scene)
-		game.notify("%s queued at %s; paid by %s." % [resource.display_name,name,assigned_depot.name])
+		game.notify("%s queued at %s; paid by %s." % [resource.display_name,name,assigned_depot.name],team)
 		return true
-	game.notify("That unit is not produced by this building.")
+	game.notify("That unit is not produced by this building.",team)
 	return false
 func _process(delta: float) -> void:
 	if not source_friendly():
@@ -165,10 +165,10 @@ func _process(delta: float) -> void:
 		unit.position = ground.tile_to_world(cell)
 		game.get_node("Entities/Units").add_child(unit,true)
 		Rally.send(self,unit)
-		if unit.unit_stats.unit_id == &"infantry": game.units_printed += 1
+		if unit.unit_stats.unit_id == &"infantry" and team == "player": game.units_printed += 1
 		progress = 0
 		_show_model(&"unit_left")
-		game.notify("%s ready at %s." % [unit.unit_stats.display_name,name])
+		game.notify("%s ready at %s." % [unit.unit_stats.display_name,name],team)
 	$Status.text = "%s · %d queued · %d%%" % [stats.display_name,queue,roundi(fraction()*100)]
 ## The model a unit scene wears (its Visuals slot's model_scene), read from the packed scene without building
 ## the unit, so a factory can show the unit being made.

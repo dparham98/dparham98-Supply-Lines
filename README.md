@@ -14,7 +14,7 @@ For Milestone 3 power and cargo deliveries, open **scenes/maps/supply_routes.tsc
 
 **Authoritative source:** GitHub repository dparham98/dparham98-Supply-Lines. **Primary local Windows checkout:** C:\Dev\Supply-Lines for Godot editor, rendering and gameplay acceptance. Cloud development uses fresh clones, feature branches and pull requests; the OneDrive project is an older preserved copy. CI/headless tests do not replace human visual/input verification.
 
-Press **F5** to play Two Lakes, **scenes/maps/lakes_skirmish.tscn** ([layout](docs/TWO_LAKES_MAP.md)): gather iron, print units, defeat a hostile. The original First Contact map, **scenes/maps/resource_skirmish.tscn**, is still playable with **F6**. [Play instructions and edit guide](docs/FIRST_CONTACT.md).
+Press **F5** to play Two Lakes, **scenes/maps/lakes_skirmish.tscn** ([layout](docs/TWO_LAKES_MAP.md)): build up against an enemy player on the East start ([docs/ENEMY_AI.md](docs/ENEMY_AI.md)) under fog of war ([docs/FOG_OF_WAR.md](docs/FOG_OF_WAR.md)), and beat it. The original First Contact map, **scenes/maps/resource_skirmish.tscn**, is still playable with **F6**. [Play instructions and edit guide](docs/FIRST_CONTACT.md).
 
 Open **scenes/maps/supply_lines_world.tscn** for the preserved terrain/legacy combat review. Terrain, trees, mountains, ore, lighting and actor models are saved scenes and are visible without running the game. If the 3D view is too close, select Terrain and press F to frame it, or use the CameraRig camera preview for the saved central-lake view.
 

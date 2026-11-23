@@ -3,6 +3,25 @@
 [ext_resource type="PackedScene" path="res://assets/models/units/scout_cyborg.glb" id="rig"]
 [ext_resource type="PackedScene" path="res://scenes/models/scout_death_fx.tscn" id="death_fx"]
 [ext_resource type="Script" path="res://scripts/components/model_look.gd" id="look"]
+[sub_resource type="Gradient" id="burst_gradient"]
+offsets = PackedFloat32Array(0, 0.25, 1)
+colors = PackedColorArray(1, 1, 0.85, 1, 1, 0.6, 0.15, 0.9, 1, 0.35, 0.05, 0)
+[sub_resource type="GradientTexture2D" id="burst_texture"]
+gradient = SubResource("burst_gradient")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+[sub_resource type="StandardMaterial3D" id="burst_material"]
+transparency = 1
+no_depth_test = true
+shading_mode = 0
+billboard_mode = 1
+billboard_keep_scale = true
+albedo_texture = SubResource("burst_texture")
+disable_receive_shadows = true
+[sub_resource type="QuadMesh" id="burst_mesh"]
+material = SubResource("burst_material")
+size = Vector2(1.4, 1.4)
 [sub_resource type="StandardMaterial3D" id="flash_hot"]
 shading_mode = 0
 albedo_color = Color(1,0.8,0.4,1)
@@ -20,7 +39,7 @@ gun_sample_time = 0.39
 shot_lead_time = 0.4375
 flash_bone = &"flash"
 flash_light_path = NodePath("Rig/ScoutCyborg_Rig/Skeleton3D/Gun/Muzzle light")
-flash_light_energy = 2.0
+flash_light_energy = 6.0
 death_clip = &"die"
 death_fx_scene = ExtResource("death_fx")
 [node name="Rig" parent="." instance=ExtResource("rig")]
@@ -31,8 +50,13 @@ bone_name = "gun"
 transform = Transform3D(1,0,0,0,1,0,0,0,1,0.03,0.63,0.03)
 visible = false
 light_color = Color(1,0.75,0.4,1)
-omni_range = 3.0
+omni_range = 7.0
 omni_attenuation = 1.0
+[node name="Flash" type="BoneAttachment3D" parent="Rig/ScoutCyborg_Rig/Skeleton3D"]
+bone_name = "flash"
+[node name="Muzzle burst" type="MeshInstance3D" parent="Rig/ScoutCyborg_Rig/Skeleton3D/Flash"]
+mesh = SubResource("burst_mesh")
+cast_shadow = 0
 [node name="Muzzle_Flash" parent="Rig/ScoutCyborg_Rig/Skeleton3D"]
 material_override = SubResource("flash_hot")
 cast_shadow = 0

@@ -262,7 +262,7 @@ func mine_blocker(mine) -> String:
 func command_mine(mine: Node3D) -> bool:
 	var blocker := mine_blocker(mine)
 	if not blocker.is_empty():
-		game.notify(blocker)
+		game.notify(blocker,team)
 		return false
 	order_queue.clear()
 	_clear_fetch()

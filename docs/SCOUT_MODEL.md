@@ -1,6 +1,6 @@
 # Scout model
 
-The Scout is the cyborg skater from `Blender/Characters/Scout/ScoutCyborg.blend` (rig `ScoutCyborg_Rig`, 35 bones): a figure in steel armour over a charcoal suit, on inline skates, with a pump shotgun. It replaced the earlier skater (`Scout.blend`, `assets/models/units/scout.glb`, rig "Skater rig") on 2026-11-19. Its clips are `idle`, `run`, `shoot` and `die`; the first three came with the art, carried over from the earlier Scout.
+The Scout is the cyborg skater from `Blender/Characters/Scout/ScoutCyborg.blend` (rig `ScoutCyborg_Rig`, 35 bones): a figure in steel armour over a charcoal suit, on inline skates, with a pump shotgun. It replaced the earlier skater (`Scout.blend`, `assets/models/units/scout.glb`, rig "Skater rig") on 2026-11-19. Its clips are `idle`, `run`, `shoot` and `die`; the first three came with the art, carried over from the earlier Scout. Since 2026-11-22 its shot is a shotgun blast (`scenes/gameplay/shotgun_blast.tscn`, `scripts/gameplay/shotgun_blast.gd`), not the plain tracer, after a playtest found its attack hard to see. A hot orange flash cone opens at the muzzle and shrinks away in 0.12 s, and nine pellets spray out within 7° of the aim line, each stopping between 85% and 110% of the way to the target. The pellets take the side's colour. Damage still lands when she fires. The `shoot` clip itself is only a raise and the flash; a stronger kick needs the Blender clip reworked.
 
 ## The look
 
@@ -21,8 +21,9 @@ The art came as two GLBs, one per head (`scout_cyborg.glb` and `scout_cyborg_hel
 
 ## What is rebuilt in Godot
 
-- The GLB has no lights or bone attachments. `scenes/models/scout_model.tscn` adds a `Gun` bone attachment with the muzzle light at the barrel's tip, and `character_animator.gd` sets its energy every frame from the `flash` bone's scale: `flash_light_energy * max(0, scale - 0.001)`. The light is off between shots. `flash_light_energy` is 2.0 and `omni_range` 3 m, as on the earlier Scout. No shadows.
+- The GLB has no lights or bone attachments. `scenes/models/scout_model.tscn` adds a `Gun` bone attachment with the muzzle light at the barrel's tip, and `character_animator.gd` sets its energy every frame from the `flash` bone's scale: `flash_light_energy * max(0, scale - 0.001)`. The light is off between shots. No shadows. On 2026-11-22, after a playtest found the shot hard to see from the game camera, `flash_light_energy` went from 2.0 to 6.0 and `omni_range` from 3 m to 7 m, so the flare lights the ground round her.
 - The flash mesh is overridden with an unshaded hot orange, as before.
+- A `Flash` bone attachment carries `Muzzle burst`: a 1.4 m camera-facing quad that keeps the bone's scale (`billboard_keep_scale`) with a soft white-to-orange radial gradient, unshaded and drawn over everything. It scales with the `flash` bone, so it shows only on the firing frames, as a blast big enough to see at play distance.
 - `gun_rest_axis` is the barrel's direction in the skeleton at the first frame of `idle`, from the `gun` bone to the `flash` bone at the muzzle: (0.428, -0.255, 0.867).
 
 ## Shot timing

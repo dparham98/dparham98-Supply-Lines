@@ -35,15 +35,15 @@ func research_blocker(id: StringName) -> String:
 	return ""
 func request_research(id: StringName) -> bool:
 	var blocker := research_blocker(id)
-	if not blocker.is_empty(): game.notify(blocker); return false
+	if not blocker.is_empty(): game.notify(blocker,team); return false
 	var entry := research_by_id(id)
 	var payer := payer_for(entry.energy_cost,entry.iron_cost)
 	_set_source(payer)
-	if not payer.spend_local(entry.energy_cost,entry.iron_cost): game.notify("%s lacks local resources for research." % payer.name); return false
+	if not payer.spend_local(entry.energy_cost,entry.iron_cost): game.notify("%s lacks local resources for research." % payer.name,team); return false
 	researching = entry
 	research_progress = 0.0
 	_research_payer = payer
-	game.notify("%s research started at %s; paid by %s." % [entry.display_name,name,payer.name])
+	game.notify("%s research started at %s; paid by %s." % [entry.display_name,name,payer.name],team)
 	return true
 ## Stops the research under way and gives its cost back to the Depot that paid, while that Depot is still yours.
 func cancel_research() -> bool:
@@ -54,8 +54,8 @@ func cancel_research() -> bool:
 	if _depot_ok(_research_payer):
 		_research_payer.stockpile.deposit(&"energy",entry.energy_cost)
 		_research_payer.stockpile.deposit(&"iron",entry.iron_cost)
-		game.notify("%s research cancelled; %d E and %d I went back to %s." % [entry.display_name,entry.energy_cost,entry.iron_cost,_research_payer.name])
-	else: game.notify("%s research cancelled." % entry.display_name)
+		game.notify("%s research cancelled; %d E and %d I went back to %s." % [entry.display_name,entry.energy_cost,entry.iron_cost,_research_payer.name],team)
+	else: game.notify("%s research cancelled." % entry.display_name,team)
 	_research_payer = null
 	return true
 func fraction() -> float:
@@ -85,7 +85,7 @@ func _process(delta: float) -> void:
 		research_progress = 0.0
 		_research_payer = null
 		Research.complete(self,team,entry.research_id)
-		game.notify("%s researched at %s." % [entry.display_name,name])
+		game.notify("%s researched at %s." % [entry.display_name,name],team)
 		$Status.text = "%s → %s" % [stats.display_name,assigned_depot.name]
 		return
 	$Status.text = "%s · %s · %d%%" % [stats.display_name,researching.display_name,roundi(fraction()*100)]

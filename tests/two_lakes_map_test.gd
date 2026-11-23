@@ -82,7 +82,9 @@ func run() -> void:
 		if cells[250*SIZE+x] == 3: forest_on_road += 1
 	if not check(forest_on_road >= 40,"The straight road should be shut by forest: %d cells" % forest_on_road): return
 	# Scouts cross it from the start.
-	var scout = game.get_node("Entities/Units/EnemyScout")
+	var scout = load("res://scenes/gameplay/scout.tscn").instantiate()
+	scout.team = "enemy"
 	if not check(ground.can_traverse(Vector2i(250,250),scout.mobility_layer(),scout._owner_key()),"A Scout cannot enter the Crossing's forest"): return
+	scout.free()
 	print("Open way West to East: %d cells; forest across the straight road: %d cells" % [round_lake.size(),forest_on_road])
 	print("TWO_LAKES_MAP_TEST_PASSED"); quit()

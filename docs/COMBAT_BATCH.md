@@ -21,6 +21,15 @@ Armed units look for the nearest opponent in range (`unit_agent.gd` `_nearest_op
 - **On a timer:** a unit with nothing in its sights looks round every 0.2 s (`TARGET_SCAN_SECONDS`), not every frame. It keeps shooting what it found while that stays in range and can be hit, and looks again at once when that target dies or leaves. So an enemy walking into range is noticed within 0.2 s, and a unit no longer switches to a nearer enemy in the middle of a fight.
 - **Checks:** `tests/battle_lookup_test.gd` checks that the buckets miss nobody the whole group would find, that 60 mixed units each pick the opponent the old way picks, and the timer rules above.
 
+## Buildings as targets
+
+Asked for on 2026-11-22, after a playtest where units ignored enemy buildings unless ordered to attack them.
+
+- An armed unit with no opponent unit in range now fires at the nearest hostile building in range, whether it is idle, attack-moving or firing on the move. Units in range always come first: a unit firing at a building still looks round every 0.2 s and switches to an opponent unit that comes into range.
+- Range is measured to the building's centre, the same as an Attack order on it.
+- Shared mines and neutral buildings are never picked on their own.
+- `tests/building_aggro_test.gd` checks this.
+
 ## Editor checks
 
 Run the main resource_skirmish scene. Build Barracks/Tank Factory using Infantry's Build card and their assigned local Depot; select the building to produce its roster. Select each unit to see base attack and special attack/moving-fire details in the HUD. Existing hostile combat is unchanged; the corrected Infantry attack is weaker than the previous fallback, so send supporting infantry rather than expecting one infantry to win alone.

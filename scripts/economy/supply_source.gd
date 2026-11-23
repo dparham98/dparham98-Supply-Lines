@@ -1,5 +1,7 @@
 class_name SupplySource
 extends RefCounted
+## The sides that play: the player and the enemy player (docs/ENEMY_AI.md). "neutral" holds shared things.
+static func plays(team) -> bool: return team == "player" or team == "enemy"
 static func available(node, team: String) -> bool:
 	if not is_instance_valid(node) or node.is_queued_for_deletion(): return false
 	if not node.is_in_group("depots") and not node.is_in_group("mobile_supplies"): return false

@@ -105,7 +105,13 @@ func _move_offsets(phase: Vector2i, key: int, id: int) -> void:
 	_indices[id] = [indices,offsets,low,high]
 ## Per move from each lattice phase: [grid index offsets, cell offsets, lowest offset, highest offset].
 var _indices := {}
+## Moves the search may not make, {Vector3i(point.x, point.y, move key): true}. A tile centre exactly on a piece's
+## edge can round either way, so a move's cells worked out once per lattice phase can differ by a tile from the
+## laid piece's own: a path can then hold a piece that can't be laid. The enemy player checks each found piece
+## against the laid piece's cells and forbids the ones that fail before searching again (docs/ENEMY_AI.md).
+var forbidden := {}
 func _move_clear(point: Vector2i, key: int) -> bool:
+	if not forbidden.is_empty() and forbidden.has(Vector3i(point.x,point.y,key)): return false
 	var phase := Vector2i(posmod(point.x,period),posmod(point.y,period))
 	var id := (phase.x*period+phase.y)*12+key
 	if not _indices.has(id): _move_offsets(phase,key,id)
@@ -351,7 +357,7 @@ func _path(came: Dictionary, last: int) -> Array[Dictionary]:
 		var base := _cell(world(point))
 		var cells: Array[Vector2i] = []
 		for offset in _move_cells(point,move_key): cells.append(base+offset)
-		reversed.append({kind = MOVES[move_key%3].kind, transform = xf, cells = cells})
+		reversed.append({kind = MOVES[move_key%3].kind, transform = xf, cells = cells, move = Vector3i(point.x,point.y,move_key)})
 		key = link[0]
 	reversed.reverse()
 	return reversed
