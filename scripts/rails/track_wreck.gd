@@ -18,7 +18,13 @@ func _ready() -> void:
 	cells = network.cells_for(kind,global_transform)
 	# The spike that broke it stands in the middle of the piece.
 	var probe: Node3D = network.probe(kind)
-	$Visuals/Spike.position = probe.local_point(probe.length()*0.5)+Vector3.UP*0.3
+	var middle: Vector3 = probe.local_point(probe.length()*0.5)
+	$Visuals/Spike.position = middle+Vector3.UP*0.3
+	# Only the side that can rebuild it sees what to do (docs/DERAILER.md, Rebuilding).
+	$RebuildMarker.position = Vector3(middle.x,$RebuildMarker.position.y,middle.z)
+	$RebuildMarker.visible = team == "player"
+	$RebuildMarker/Label.text = "TRACK DESTROYED
+Rail (R), click here to rebuild · %d iron" % network.cost(kind)
 ## Whether the ground cell is under the wreck.
 func covers(cell: Vector2i) -> bool:
 	return cells.has(cell)

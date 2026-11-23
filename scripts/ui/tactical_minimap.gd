@@ -92,6 +92,14 @@ func _draw() -> void:
 		var line := PackedVector2Array()
 		for i in range(steps+1): line.append(world_to_map(rail.point_at(total*i/steps)))
 		draw_polyline(line,colour,1.5)
+	# Your wrecked track (docs/DERAILER.md): an amber cross, pulsing, until it is rebuilt.
+	var beat := 0.6+0.4*absf(sin(Time.get_ticks_msec()/1000.0*3.0))
+	for wreck in get_tree().get_nodes_in_group("rail_wrecks"):
+		if wreck.team != "player" or wreck.is_queued_for_deletion(): continue
+		var at := world_to_map(wreck.global_position)
+		for arm in [Vector2(4,4),Vector2(4,-4)]:
+			draw_line(at-arm,at+arm,EDGE,3.5)
+			draw_line(at-arm,at+arm,Color(1,0.75,0.2,beat),2.0)
 	# Markers share the map overlay's team colours, with a dark edge so they read on any terrain.
 	for group in ["resources","selectable_buildings","units"]:
 		for node in get_tree().get_nodes_in_group(group):

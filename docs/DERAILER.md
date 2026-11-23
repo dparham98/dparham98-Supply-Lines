@@ -40,6 +40,13 @@ playtest of that day it destroys the piece outright.
 
 ## Rebuilding
 
+**What to do is shown** to the wreck's owner only (2026-11-22 playtest: the owner needed a visual indicator):
+
+- **Over the wreck:** a pulsing marker, the Rail tile's icon above amber "TRACK DESTROYED / Rail (R), click here to
+  rebuild · N iron" (`RebuildMarker` in `track_wreck.tscn`, with its `Pulse` animation).
+- **Alert feed:** a "Track destroyed" alert at the wreck; clicking it moves the camera there.
+- **Minimap:** an amber cross, pulsing, on each of your wrecks until it is rebuilt (`tactical_minimap.gd`).
+
 Arm the Rail tile (R) and move the cursor over a wreck of your track. The cursor label shows "WRECKED TRACK", the
 piece's iron, and "CLICK REBUILDS IT" or "NOT ENOUGH IRON". A click lays the same piece again, in the same place, and
 leaves track laying, as laying any track does.
@@ -88,5 +95,6 @@ leaves track laying, as laying any track does.
 - the piece removed and the line split;
 - a train standing on it derailing: stops, tips, loses its share of health, and stays put;
 - the wreck left, the player's, showing the right model;
+- the rebuild marker over it (and none on another side's wreck) and the alert;
 - the Rail tile's label over the wreck, and a click rebuilding the same piece for its iron, joining the line and
   clearing the wreck.

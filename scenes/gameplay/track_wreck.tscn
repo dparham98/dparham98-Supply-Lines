@@ -5,10 +5,27 @@
 [ext_resource type="PackedScene" path="res://assets/models/rails/maglev_track_fork_left.glb" id="fork_left"]
 [ext_resource type="PackedScene" path="res://assets/models/rails/maglev_track_fork_right.glb" id="fork_right"]
 [ext_resource type="PackedScene" path="res://assets/models/projectiles/rail_spike.glb" id="spike"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_rail.png" id="rail_card"]
 [sub_resource type="StandardMaterial3D" id="wreck_mat"]
 albedo_color = Color(0.42,0.27,0.17,1)
 metallic = 0.5
 roughness = 0.85
+[sub_resource type="Animation" id="pulse"]
+resource_name = "Pulse"
+length = 1.2
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/path = NodePath("RebuildMarker:position:y")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {"times": PackedFloat32Array(0,0.6,1.2), "transitions": PackedFloat32Array(1,1,1), "update": 0, "values": [2.6,3.0,2.6]}
+tracks/1/type = "value"
+tracks/1/path = NodePath("RebuildMarker/Icon:modulate")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {"times": PackedFloat32Array(0,0.6,1.2), "transitions": PackedFloat32Array(1,1,1), "update": 0, "values": [Color(1,0.8,0.2,1),Color(1,1,1,1),Color(1,0.8,0.2,1)]}
+[sub_resource type="AnimationLibrary" id="anims"]
+_data = {&"Pulse": SubResource("pulse")}
 [node name="TrackWreck" type="Node3D"]
 script = ExtResource("wreck")
 [node name="Visuals" type="Node3D" parent="."]
@@ -44,3 +61,24 @@ material_override = SubResource("wreck_mat")
 transform = Transform3D(3.830,0.000,-3.214,-0.993,4.755,-1.184,3.057,1.545,3.643,0,0.3,0)
 [node name="rail_spike_trail" parent="Visuals/Spike/rail_spike"]
 visible = false
+[node name="RebuildMarker" type="Node3D" parent="."]
+position = Vector3(0,2.6,0)
+[node name="Icon" type="Sprite3D" parent="RebuildMarker"]
+position = Vector3(0,1.95,0)
+billboard = 1
+no_depth_test = true
+pixel_size = 0.012
+modulate = Color(1,0.8,0.2,1)
+texture = ExtResource("rail_card")
+[node name="Label" type="Label3D" parent="RebuildMarker"]
+billboard = 1
+font_size = 30
+pixel_size = 0.022
+no_depth_test = true
+outline_size = 8
+modulate = Color(1,0.8,0.2,1)
+text = "TRACK DESTROYED
+Rail (R), click here to rebuild"
+[node name="Pulse" type="AnimationPlayer" parent="."]
+libraries = {&"": SubResource("anims")}
+autoplay = &"Pulse"

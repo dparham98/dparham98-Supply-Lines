@@ -126,6 +126,17 @@ func run() -> void:
 	if not check(wreck.kind == kind and wreck.team == "player" and wreck.global_transform.origin.is_equal_approx(xf.origin),"The wreck is the player's %s where it was" % kind): return
 	if not check(wreck.get_node("Visuals/Straight").visible and not wreck.get_node("Visuals/Curve").visible and wreck.get_node("Visuals/Spike").visible,"The wreck shows the broken straight and the spike"): return
 	if not check(rails.wreck_at(spot) == wreck and rails.wreck_at(spot,"enemy") == null,"The wreck is found under its middle, for its own side only"): return
+	# Its owner is shown what to do: a pulsing marker over it, an alert in the feed, and a cross on the minimap.
+	var marker: Node3D = wreck.get_node("RebuildMarker")
+	if not check(marker.visible and wreck.get_node("Pulse").is_playing() and marker.get_node("Label").text.contains("Rail (R)") and marker.get_node("Label").text.contains("%d iron" % rails.cost(kind)),"The owner's wreck shows the rebuild marker: %s" % marker.get_node("Label").text): return
+	if not check(Vector2(marker.global_position.x,marker.global_position.z).distance_to(Vector2(spot.x,spot.z)) < 1.0,"The marker stands over the wreck's middle"): return
+	if not check(game.alerts.any(func(a): return a.kind == "rail" and a.point.distance_to(spot) < 1.0),"An alert points at the broken track"): return
+	var enemy_wreck: Node3D = rails.wreck_scene.instantiate()
+	enemy_wreck.team = "enemy"
+	enemy_wreck.transform = wreck.transform.translated(Vector3(0,0,-40))
+	wreck.get_parent().add_child(enemy_wreck)
+	if not check(not enemy_wreck.get_node("RebuildMarker").visible,"Another side's wreck shows no marker to the player"): return
+	enemy_wreck.free()
 	# With the Rail tile armed, the cursor over the wreck offers to rebuild it, and a click does.
 	game.placing_rail = true
 	rails.cursor = spot

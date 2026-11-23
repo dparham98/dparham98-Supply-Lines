@@ -229,7 +229,9 @@ func destroy(piece: Node3D, by_team: String) -> Node3D:
 	unregister(piece)
 	piece.queue_free()
 	var trains := " A train derailed." if wrecked == 1 else (" %d trains derailed." % wrecked if wrecked > 1 else "")
-	if team == "player": game.notify("Track destroyed.%s Rebuild: Rail (R), click the wreck." % trains)
+	if team == "player":
+		game.notify("Track destroyed.%s Rebuild: Rail (R), click the wreck." % trains)
+		if game.has_method("alert"): game.alert("Track destroyed",piece.point_at(piece.length()*0.5),"","rail")
 	elif by_team == "player": game.notify("Enemy track destroyed.%s" % trains)
 	return wreck
 ## The wreck of `team`'s track under a ground point, or null.
