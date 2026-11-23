@@ -1,0 +1,1 @@
+{"name": "k1_46f_12farms", "minutes": 10, "west": {"faction": "knights", "ai": {"farms_wanted": 12, "chapterhouses_wanted": 3, "foresters_wanted": 18, "second_hall_farms": 5, "first_wave_seconds": 3000}}, "east": {"faction": "cyborgs", "ai": {"first_wave_seconds": 3000}}, "rules": {"farm_per_beat": 1}, "stats": {}}

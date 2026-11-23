@@ -1,0 +1,284 @@
+--- a/scripts/gameplay/unit_agent.gd
++++ b/scripts/gameplay/unit_agent.gd
+@@ -66,6 +66,8 @@
+ @export var harvest_amount := 5
+ @export var interaction_range := 4.0
+ var health := 100
++var shots_fired := 0
++var damage_taken := 0
+ var is_selected := false
+ var cargo := 0
+ var cargo_kind: StringName = &"iron"
+@@ -353,12 +355,12 @@
+ 		state = "Attack target lost"
+ 		_update_display()
+ 		return
+-	if order == "repair" and (not EngineeringWork.repairable(order_target,team) or not SupplySource.available(repair_payer,team)):
++	if order == "repair" and (not is_instance_valid(order_target) or not EngineeringWork.repairable(order_target,team) or not SupplySource.available(repair_payer,team)):
+ 		_stop_route()
+ 		_repair(delta)
+ 		_update_display()
+ 		return
+-	if order == "heal" and not MedicalWork.can_heal(order_target,team):
++	if order == "heal" and (not is_instance_valid(order_target) or not MedicalWork.can_heal(order_target,team)):
+ 		_stop_route()
+ 		_heal(delta)
+ 		_update_display()
+@@ -381,7 +383,7 @@
+ 			_update_display()
+ 			return
+ 	if not _route.is_empty() or _moving_to.x >= 0:
+-		if is_instance_valid(order_target) and ((order == "attack" and in_attack_range(order_target)) or (order == "repair" and global_position.distance_to(order_target.global_position) <= engineering_rules.repair_range) or (order == "heal" and global_position.distance_to(order_target.global_position) <= heal_range)):
++		if is_instance_valid(order_target) and ((order == "attack" and in_attack_range(order_target) and _team_sees(order_target)) or (order == "repair" and global_position.distance_to(order_target.global_position) <= engineering_rules.repair_range) or (order == "heal" and global_position.distance_to(order_target.global_position) <= heal_range)):
+ 			_stop_route()
+ 		else:
+ 			_walk(delta)
+@@ -842,11 +844,11 @@
+ 		order = "idle"
+ 		state = "Idle"
+ 		return
+-	if in_attack_range(order_target):
++	if in_attack_range(order_target) and _team_sees(order_target):
+ 		if carrying(): state = "Carrying cargo · drop it (X) to fire"; return
+ 		state = "Firing"
+ 		_shoot(order_target)
+-	elif global_position.distance_to(order_target.global_position) < min_attack_range:
++	elif global_position.distance_to(order_target.global_position) < min_attack_range and _team_sees(order_target):
+ 		# Too close for the main gun: back off until the target is at its minimum range.
+ 		if _retry <= 0:
+ 			state = "Backing off · too close for main gun"
+@@ -876,7 +878,7 @@
+ var _sighted: Node3D
+ var _had_sight := false
+ func _acquire() -> Node3D:
+-	if _had_sight and is_instance_valid(_sighted) and in_attack_range(_sighted) and CombatResolver.can_hit(self,_sighted):
++	if _had_sight and is_instance_valid(_sighted) and in_attack_range(_sighted) and CombatResolver.can_hit(self,_sighted) and _team_sees(_sighted):
+ 		# A building in its sights gives way to a unit that comes into range (docs/COMBAT_BATCH.md, Buildings as targets).
+ 		if not _sighted.is_in_group("selectable_buildings"): return _sighted
+ 		if _scan_wait > 0.0: return _sighted
+@@ -890,6 +892,17 @@
+ 		_had_sight = _sighted != null
+ 		return _sighted
+ 	return null
++## BALANCE SIM ONLY: with this on, a unit fires only at what its side sees (any friendly unit within its own vision
++## of the target).
++static var sim_require_sight := false
++static var sim_sight_bonus := {}
++func _team_sees(target: Node3D) -> bool:
++	if not sim_require_sight or not is_instance_valid(target): return true
++	if global_position.distance_to(target.global_position) <= vision: return true
++	for unit in game.units_near(target.global_position,64.0):
++		if is_instance_valid(unit) and unit.team == team and unit.health > 0 and unit.global_position.distance_to(target.global_position) <= unit.vision: return true
++	return false
++var _moving_shot := false
+ func _nearest_opponent() -> Node3D:
+ 	var closest: Node3D
+ 	var distance := attack_range
+@@ -899,6 +912,7 @@
+ 		var d := global_position.distance_to(unit.global_position)
+ 		if d >= distance or d < min_attack_range: continue
+ 		if not CombatResolver.can_hit(self,unit): continue
++		if not _team_sees(unit): continue
+ 		closest = unit; distance = d
+ 	if closest != null: return closest
+ 	# With no unit in range it turns on the nearest hostile building, as an attack order on it would (docs/COMBAT_BATCH.md,
+@@ -908,6 +922,7 @@
+ 		var d := global_position.distance_to(building.global_position)
+ 		if d >= distance or d < min_attack_range: continue
+ 		if not CombatResolver.can_hit(self,building): continue
++		if not _team_sees(building): continue
+ 		closest = building; distance = d
+ 	return closest
+ func _face(point: Vector3) -> void:
+@@ -922,7 +937,7 @@
+ func carrying() -> bool:
+ 	return can_gather and not is_cargo_vehicle and not is_depot_truck and cargo > 0
+ func _shoot(target: Node3D) -> void:
+-	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or carrying() or not _may_hit(target) or not in_attack_range(target): return
++	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or carrying() or not _may_hit(target) or not in_attack_range(target) or not _team_sees(target): return
+ 	# A turret tracks the target between shots; a unit without one turns its whole body as it fires.
+ 	var turret := _turret()
+ 	if turret: turret.aim_at(target.global_position)
+@@ -937,7 +952,8 @@
+ 		return
+ 	# A turret fires only once it is round on the target (docs/TURRET_AIM.md); the reload is done meanwhile.
+ 	if turret and turret.has_method("on_target") and not turret.on_target(): return
+-	_cooldown = CombatResolver.interval_for(self,target)
++	_cooldown = CombatResolver.interval_for(self,target)*(unit_stats.moving_fire_interval_scale if _moving_shot and unit_stats != null else 1.0)
++	shots_fired += 1
+ 	if animator and (lead <= 0.0 or not animator.acting()): animator.play_action(&"shoot",lead)
+ 	_aim_body(target,turret,animator)
+ 	var target_height: Vector3 = target.get_node("Visuals").position if target.has_node("Visuals") else Vector3.ZERO
+@@ -988,10 +1004,19 @@
+ 	# Keep navigation/facing under the movement order; firing does not redirect the route.
+ 	var facing: float = $Visuals.rotation.y
+ 	var target = _acquire()
+-	if target: _shoot(target)
++	if target:
++		var allowed := true
++		if unit_stats.moving_fire_arc < 360.0:
++			var to: Vector3 = target.global_position-global_position
++			allowed = absf(angle_difference(facing,atan2(-to.x,-to.z))) <= deg_to_rad(unit_stats.moving_fire_arc*0.5)
++		if allowed:
++			_moving_shot = true
++			_shoot(target)
++			_moving_shot = false
+ 	$Visuals.rotation.y = facing
+ func take_damage(amount: int) -> void:
+ 	if _dead: return
++	damage_taken += mini(health,maxi(0,amount))
+ 	health = maxi(0,health-maxi(0,amount))
+ 	_update_display()
+ 	if health <= 0:
+@@ -1100,7 +1125,7 @@
+ 	state = "Repair ordered"
+ 	game.notify("Repair %s; payer %s only." % [target.name,repair_payer.name if is_instance_valid(repair_payer) else "unavailable"],team)
+ func _repair(delta: float) -> void:
+-	if not EngineeringWork.repairable(order_target,team):
++	if not is_instance_valid(order_target) or not EngineeringWork.repairable(order_target,team):
+ 		order = "idle"; state = "Repair target lost"; return
+ 	if order_target.health >= order_target.max_health: order = "idle"; state = "Repair complete"; return
+ 	if not SupplySource.available(repair_payer,team):
+--- a/scripts/units/unit_stats.gd
++++ b/scripts/units/unit_stats.gd
+@@ -29,6 +29,14 @@
+ ## Seconds a production building takes to print this unit at its base energy cost (1x power;
+ ## docs/PRODUCTION_POWER.md). More power divides it.
+ @export_range(0.5, 600, 0.5) var build_seconds: float = 10.0
++## BALANCE SIM ONLY: the arc, centred on the hull's heading, inside which a moving unit may fire (360 = any way),
++## and how much longer the reload is for a shot fired on the move.
++@export var moving_fire_arc := 360.0
++@export var moving_fire_interval_scale := 1.0
++## BALANCE SIM ONLY: share of the damage that units caught in the splash (not the one aimed at) take.
++@export var splash_scale := 1.0
++## BALANCE SIM ONLY: armoured units take heavy_target_damage, as Tanks and buildings do.
++@export var armoured := false
+ ## Identifiers only; no ability behavior is inferred from this list.
+ @export var abilities: Array[StringName] = []
+ @export var mobility: MobilityRules
+--- a/scripts/combat/combat_resolver.gd
++++ b/scripts/combat/combat_resolver.gd
+@@ -9,7 +9,7 @@
+ static func can_attack(attacker: Node3D, target: Node3D, forced := false) -> bool:
+ 	return can_force(attacker,target) if forced else can_hit(attacker,target)
+ static func is_heavy(target: Node3D) -> bool:
+-	return target.is_in_group("selectable_buildings") or (target.get("unit_stats") != null and target.unit_stats.unit_id == &"tank")
++	return target.is_in_group("selectable_buildings") or (target.get("unit_stats") != null and (target.unit_stats.unit_id == &"tank" or target.unit_stats.armoured))
+ static func damage_for(attacker: Node3D, target: Node3D) -> int:
+ 	var stats: UnitStats = attacker.unit_stats
+ 	return stats.heavy_target_damage if stats != null and stats.heavy_target_damage >= 0 and is_heavy(target) else attacker.attack_damage
+@@ -30,7 +30,9 @@
+ 		for target in targets(attacker):
+ 			if target != primary and target.global_position.distance_to(primary.global_position) <= radius: victims.append(target)
+ 	for victim in victims:
+-		if can_hit(attacker,victim) or (forced and victim == primary and can_force(attacker,victim)): victim.take_damage(damage_for(attacker,victim))
++		if can_hit(attacker,victim) or (forced and victim == primary and can_force(attacker,victim)):
++			var scale: float = attacker.unit_stats.splash_scale if attacker.unit_stats != null and victim != primary else 1.0
++			victim.take_damage(roundi(damage_for(attacker,victim)*scale))
+ ## A shell or grenade bursting at `point`: the target it was fired at, when still there (`primary`, may be null),
+ ## and every hostile within the splash radius of the burst, measured across the ground. Friendlies are spared.
+ static func strike_at(attacker: Node3D, primary, point: Vector3, forced := false) -> void:
+@@ -41,4 +43,6 @@
+ 		for target in targets(attacker):
+ 			if target != primary and Vector2(target.global_position.x-point.x,target.global_position.z-point.z).length() <= radius: victims.append(target)
+ 	for victim in victims:
+-		if can_hit(attacker,victim) or (forced and victim == primary and can_force(attacker,victim)): victim.take_damage(damage_for(attacker,victim))
++		if can_hit(attacker,victim) or (forced and victim == primary and can_force(attacker,victim)):
++			var scale: float = attacker.unit_stats.splash_scale if attacker.unit_stats != null and victim != primary else 1.0
++			victim.take_damage(roundi(damage_for(attacker,victim)*scale))
+--- a/scripts/gameplay/keep.gd
++++ b/scripts/gameplay/keep.gd
+@@ -41,7 +41,8 @@
+ 	return _request_keep_unit("warhound")
+ 
+ func _request_keep_unit(kind: String) -> bool:
+-	if team != "player" or queue >= queue_limit: return false
++	if not SupplySource.plays(team) or queue >= queue_limit: return false
++	if not preload("res://balance/knight_supply.gd").room(get_tree(),team,StringName(kind)): return false
+ 	var stats := unit_stats_for_kind(kind)
+ 	var costs := {}
+ 	if stats.food_cost > 0: costs[&"food"] = stats.food_cost
+@@ -51,7 +52,7 @@
+ 	if not spend_resources(costs): return false
+ 	pending.append(kind)
+ 	queue += 1
+-	game.notify("%s queued at %s." % [stats.display_name, name])
++	game.notify("%s queued at %s." % [stats.display_name, name],team)
+ 	return true
+ 
+ func request_truck() -> bool:
+@@ -93,7 +94,7 @@
+ 		if model != null and model.has_method("show_idle"): model.show_idle()
+ 		$Progress.text = "%s KEEP · F %d / W %d / I %d · capture %d%%" % [team, food, wood, iron, roundi(capture_progress / rules.capture_seconds * 100)]
+ 		return
+-	if team != "player": return
++	if not SupplySource.plays(team): return
+ 	var kind: String = pending[0]
+ 	var stats := unit_stats_for_kind(kind)
+ 	var seconds := maxf(0.1, stats.build_seconds)
+@@ -117,4 +118,4 @@
+ 		progress = 0.0
+ 		if model != null and model.has_method("unit_left"): model.unit_left()
+ 		if kind == "forester_maiden": game.units_printed += 1
+-		game.notify("%s ready at %s." % [stats.display_name, name])
++		game.notify("%s ready at %s." % [stats.display_name, name],team)
+--- a/scripts/production/production_building.gd
++++ b/scripts/production/production_building.gd
+@@ -112,6 +112,7 @@
+ 	for scene in stats.unit_scenes:
+ 		var resource := unit_stats_for(scene)
+ 		if resource.unit_id != id: continue
++		if resource.food_cost > 0 and not preload("res://balance/knight_supply.gd").room(get_tree(),team,resource.unit_id): game.notify("No housing for a %s: build a House." % resource.display_name,team); return false
+ 		var payer := payer_for(resource.energy_cost,resource.iron_cost,resource.food_cost,resource.wood_cost)
+ 		if payer == null:
+ 			if resource.food_cost > 0 or resource.wood_cost > 0: game.notify("No Keep in range has %d F, %d W and %d I for a %s." % [resource.food_cost,resource.wood_cost,resource.iron_cost,resource.display_name],team)
+--- a/scripts/economy/depot_network.gd
++++ b/scripts/economy/depot_network.gd
+@@ -453,6 +453,8 @@
+ 		var size: Vector2i = preview.footprint
+ 		preview.free()
+ 		return {"title":"Keep","size":size,"energy":0,"food":0,"wood":50,"iron":50,"scene":_keep_scene(),"model":_model_scene(_keep_scene())}
++	if kind == &"farm": return {"title":"Farm","size":Vector2i(4,4),"energy":0,"food":0,"wood":30,"iron":0,"scene":load("res://balance/farm.tscn"),"wire":true}
++	if kind == &"house": return {"title":"House","size":Vector2i(3,3),"energy":0,"food":0,"wood":40,"iron":0,"scene":load("res://balance/house.tscn"),"wire":true}
+ 	if kind == &"generator": return {"title":"Generator","size":supply_rules.generator_footprint,"energy":supply_rules.generator_energy_cost,"iron":supply_rules.generator_iron_cost,"scene":generator_scene,"model":_model_scene(generator_scene)}
+ 	if kind == &"coal_mine": return {"title":"Coal Mine","size":engineering_rules.mine_footprint,"energy":engineering_rules.mine_energy_cost,"iron":engineering_rules.mine_iron_cost,"scene":mine_scene,"model":_model_scene(mine_scene)}
+ 	if kind == &"iron_mine": return {"title":"Iron Mine","size":engineering_rules.mine_footprint,"energy":engineering_rules.mine_energy_cost,"iron":engineering_rules.mine_iron_cost,"scene":mine_scene,"model":_model_scene(mine_scene)}
+@@ -467,7 +469,7 @@
+ 	var visuals = preview.get_node_or_null("Visuals")
+ 	var model: PackedScene = visuals.model_scene if visuals != null and "model_scene" in visuals else null
+ 	preview.free()
+-	return {"title":stats.display_name,"size":stats.footprint,"energy":stats.energy_cost,"food":stats.food_cost,"wood":stats.wood_cost,"iron":stats.iron_cost,"scene":scene,"model":model}
++	return {"title":stats.display_name,"size":stats.footprint,"energy":stats.energy_cost,"food":stats.food_cost,"wood":stats.wood_cost,"iron":stats.iron_cost,"scene":scene,"model":model,"wire":kind == &"chapterhouse"}
+ var _model_scenes := {}
+ ## The model a building scene shows in its Visuals slot, so its construction site can stand it up.
+ func _model_scene(scene: PackedScene) -> PackedScene:
+--- a/scripts/economy/construction_plan.gd
++++ b/scripts/economy/construction_plan.gd
+@@ -82,10 +82,18 @@
+ ## Piles and crates inside the footprint that still hold something.
+ func site_stores() -> Array[Node3D]:
+ 	return network.stores_inside(footprint())
++## BALANCE PROTOTYPE: a Knights plan inside a friendly Keep's range builds from that Keep's stock.
++func wire_keep() -> Node3D:
++	if not spec.get("wire",false): return null
++	for source in SupplySource.candidates(get_tree(),global_position,team):
++		if source.is_in_group("keeps") and network.source_covers_plan(source,self): return source
++	return null
+ func on_site(material: StringName) -> int:
+ 	var total := 0
+ 	for node in site_stores():
+ 		if node.resource_kind == material: total += node.remaining
++	var keep := wire_keep()
++	if keep != null: total += keep.stockpile.amount(material)
+ 	return total
+ ## Whether the piles on the site hold everything the build still needs.
+ func materials_covered() -> bool:
+@@ -134,6 +142,8 @@
+ 	for node in site_stores():
+ 		if got >= amount: break
+ 		if node.resource_kind == material: got += node.extract(amount-got)
++	var keep := wire_keep()
++	if got < amount and keep != null: got += keep.stockpile.withdraw(material,amount-got)
+ 	return got
+ ## Primary labor resource spent tick-by-tick by the covering stockpile (Food for Knights, Energy for Cyborgs).
+ func labor_kind() -> StringName:

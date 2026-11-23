@@ -1,0 +1,12 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+Terrain grid ready: 250000 cells
+knights start: Keep at (-184.0, 0.0, -8.0) · stock E 0 I 150 W 150 C 0 F 300 · workers 2 (Forester Maiden, speed 4.2, carry 10, 5 per 1.2 s)
+home mine IronMine, 18.9 m from the Keep centre
+iron: 350 delivered, first at 10.5 s, then 6.7 s a load, 89.1 a minute
+nearest forest 16.3 m from the Keep centre
+wood: 490 delivered, first at 4.0 s, then 4.8 s a load, 124.6 a minute
+two workers · iron: 530 delivered, first at 0.6 s, then 3.4 s a load, 177.4 a minute
+RATES_DONE
+
+exit 0

@@ -1,0 +1,1 @@
+{"name": "eco_c_std_c_2rax", "minutes": 10, "west": {"faction": "cyborgs", "ai": {"first_wave_seconds": 3000}}, "east": {"faction": "cyborgs", "ai": {"build_order": ["generator", "barracks", "generator", "barracks", "generator", "coal_mine", "tank_factory", "generator"], "workers_wanted": 6, "queue_depth": 3, "first_wave_seconds": 3000}}}

@@ -1,0 +1,10 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+Terrain grid ready: 250000 cells
+cyborg start: Depot at (-184.0, 0.0, -8.0) · stock E 200 I 60 W 40 C 60 F 0 · workers 1 (Deforester, speed 4.0, carry 10, 5 per 1.2 s)
+home mine IronMine, 18.9 m from the Depot centre
+iron: 340 delivered, first at 11.2 s, then 6.9 s a load, 87.0 a minute
+nearest forest 16.3 m from the Depot centre
+wood: 490 delivered, first at 4.3 s, then 4.9 s a load, 122.3 a minute
+RATES_DONE
+exit 0
