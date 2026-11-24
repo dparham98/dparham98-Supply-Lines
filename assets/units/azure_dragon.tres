@@ -21,6 +21,7 @@ combat_notation = "28/3"
 damage = 28
 attack_interval = 3.0
 splash_radius = 3.3
+splash_share = 0.5
 heavy_target_damage = 45
 heavy_target_interval = 3.0
 abilities = Array[StringName]([])

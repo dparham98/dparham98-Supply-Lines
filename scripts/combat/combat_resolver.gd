@@ -30,7 +30,12 @@ static func strike(attacker: Node3D, primary: Node3D, forced := false) -> void:
 		for target in targets(attacker):
 			if target != primary and target.global_position.distance_to(primary.global_position) <= radius: victims.append(target)
 	for victim in victims:
-		if can_hit(attacker,victim) or (forced and victim == primary and can_force(attacker,victim)): victim.take_damage(damage_for(attacker,victim))
+		if can_hit(attacker,victim) or (forced and victim == primary and can_force(attacker,victim)): victim.take_damage(splash_damage(attacker,victim,primary))
+## Damage to `victim`: the full hit for the target aimed at, the attacker's splash share of it for other units.
+static func splash_damage(attacker: Node3D, victim: Node3D, primary) -> int:
+	var damage := damage_for(attacker,victim)
+	if victim == primary or not victim.is_in_group("units") or attacker.unit_stats == null: return damage
+	return roundi(damage*attacker.unit_stats.splash_share)
 ## A shell or grenade bursting at `point`: the target it was fired at, when still there (`primary`, may be null),
 ## and every hostile within the splash radius of the burst, measured across the ground. Friendlies are spared.
 static func strike_at(attacker: Node3D, primary, point: Vector3, forced := false) -> void:
@@ -41,4 +46,4 @@ static func strike_at(attacker: Node3D, primary, point: Vector3, forced := false
 		for target in targets(attacker):
 			if target != primary and Vector2(target.global_position.x-point.x,target.global_position.z-point.z).length() <= radius: victims.append(target)
 	for victim in victims:
-		if can_hit(attacker,victim) or (forced and victim == primary and can_force(attacker,victim)): victim.take_damage(damage_for(attacker,victim))
+		if can_hit(attacker,victim) or (forced and victim == primary and can_force(attacker,victim)): victim.take_damage(splash_damage(attacker,victim,primary))

@@ -22,6 +22,11 @@ extends Resource
 ## -1 uses the base attack. Heavy targets are Tanks and selectable buildings.
 @export var heavy_target_damage: int = -1
 @export var heavy_target_interval: float = -1.0
+## Share of the damage that units caught in the splash take, other than the one aimed at (docs/SEE_TO_SHOOT.md).
+@export_range(0, 1, 0.05) var splash_share: float = 1.0
+## The arc, centred on the hull's heading, inside which a unit on the move may fire; 360 lets it fire any way.
+## Held in reserve against kiting (docs/SEE_TO_SHOOT.md); every unit has it at 360 for now.
+@export_range(0, 360, 5) var moving_fire_arc: float = 360.0
 @export_range(0, 100000, 1) var energy_cost: int = 0
 @export_range(0, 100000, 1) var iron_cost: int = 0
 @export_range(0, 100000, 1) var food_cost: int = 0
