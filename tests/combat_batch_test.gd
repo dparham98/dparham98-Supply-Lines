@@ -67,7 +67,8 @@ func run() -> void:
 	# The grenade hurts when it lands, not when it is fired (docs/TURRET_AIM.md).
 	if not check(target.health == 55 and mine.health == mine_hp,"A grenade should not hurt before it lands"): return
 	land()
-	if not check(target.health == 35 and tank.health == 110 and friend.health == 55 and outside.health == 55 and mine.health == mine_hp-40,"Splash class damage, radius, no friendly fire, or dedup failed"): return
+	# The Tank is caught in the splash, not aimed at: half its 40 (docs/SEE_TO_SHOOT.md). The mine, a building, takes all.
+	if not check(target.health == 35 and tank.health == 130 and friend.health == 55 and outside.health == 55 and mine.health == mine_hp-40,"Splash class damage, radius, no friendly fire, or dedup failed"): return
 	if not check(grenadier._cooldown == 3,"Grenadier interval incorrect"): return
 	fire(grenadier,target)
 	if not check(target.health == 35,"Cooldown allowed duplicate shot"): return
@@ -78,14 +79,15 @@ func run() -> void:
 	# Ten metres back, so the enemy Tank and the near target are past its minimum range (docs/BASTION_TANK.md).
 	var shooter = actor("tank","player",origin+Vector3(-10,0,0))
 	fire(shooter,tank)
-	if not check(tank.health == 20 and shooter._cooldown == 3,"Tank heavy attack/cadence incorrect"): return
+	# 150, less two Grenadier splashes at half (20 each), less the 50 heavy shell.
+	if not check(tank.health == 60 and shooter._cooldown == 3,"Tank heavy attack/cadence incorrect: %d" % tank.health): return
 	shooter._cooldown = 0
 	outside.global_position = origin+Vector3(0,0,shooter.attack_range+1)
 	fire(shooter,outside)
 	if not check(outside.health == 55,"Out-of-range shot accepted"): return
 	outside.global_position = origin+Vector3(-24,0,0)
 	fire(shooter,outside)
-	if not check(outside.health == 43 and shooter._cooldown == 1,"Tank base attack incorrect"): return
+	if not check(outside.health == 43 and is_equal_approx(shooter._cooldown,1.5),"Tank base attack incorrect"): return
 	shooter.command_attack(friend)
 	if not check(shooter.order != "attack","Friendly attack command accepted"): return
 	for unit in [target,tank,friend,outside]: unit.free()

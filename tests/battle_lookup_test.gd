@@ -21,6 +21,8 @@ func slow_nearest(unit: Node3D) -> Node3D:
 	var distance: float = unit.attack_range
 	for other in get_nodes_in_group("units"):
 		if not CombatResolver.can_hit(unit,other): continue
+		# A unit fires only at what its side sees (docs/SEE_TO_SHOOT.md).
+		if not unit.team_sees(other): continue
 		var d: float = unit.global_position.distance_to(other.global_position)
 		if d < distance and d >= unit.min_attack_range: closest = other; distance = d
 	return closest
@@ -66,6 +68,8 @@ func run() -> void:
 	if not check(not game.units_near(centre,40.0).has(mover),"A moved unit should no longer be found where it was"): return
 	mover.global_position = centre
 	await process_frame
+	# What each side sees now, since a unit fires only at what its side sees (docs/SEE_TO_SHOOT.md).
+	game.fog_of_war().update_now()
 	# Every unit picks the opponent the slow way picks.
 	var compared := 0
 	for unit in units:
@@ -111,6 +115,7 @@ func run() -> void:
 	if not check(shooter._acquire() == null,"Nothing in range: nothing found"): return
 	var near := spawn("hostile","enemy",spot+Vector3(4,0,0))
 	await process_frame
+	game.fog_of_war().update_now()
 	if not check(shooter._acquire() == null,"A new enemy should wait for the next scan"): return
 	shooter._scan_wait -= shooter.TARGET_SCAN_SECONDS
 	if not check(shooter._acquire() == near,"The next scan should find the enemy in range"): return
