@@ -40,6 +40,8 @@ func run() -> void:
 			if faction == &"cyborgs" and OS.has_environment("SUPPLY_LINES_AI_DEBUG") and is_instance_valid(ai.plan):
 				print("     waiting on %s at %s · %s · iron short %d · builders %d" % [ai.plan.kind,ai.plan.global_position,ai.plan.state,ai.plan.shortfall(&"iron"),ai.workers.filter(func(u): return u.order == "construct" and u.order_target == ai.plan).size()])
 				if ai.plan.state.contains("footprint"): print("     on the footprint: %s" % _blockers(ai.plan))
+				var truck = ai._cargo_truck()
+				print("     truck: %s" % ("none" if truck == null else "%s at %s · %s · %s · fetching %s · cargo %s" % [truck.name,truck.global_position,truck.order,truck.state,truck.get("fetch_plan"),truck.get("manifest")]))
 			if minute == 8: army_at_8[team] = ai.army.size()
 	print("Match ran %d game minutes in %.1f s" % [minutes,(Time.get_ticks_msec()-started)/1000.0])
 	var failures := 0
