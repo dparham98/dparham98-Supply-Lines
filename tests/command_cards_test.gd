@@ -33,8 +33,8 @@ func run() -> void:
 			if not check(button.expand_icon and button.theme_type_variation == &"CommandCard" and button.text.is_empty() and button.has_node("Key"),"%s is not set up as a card" % button.name): return
 	# 52 since the Temple of Science (docs/TEMPLE_OF_SCIENCE.md): its Build tile, its Research card and the train's Mine iron.
 	# 62 with the Arthurian Knights (docs/ARTHURIAN_KNIGHTS.md): Keep and Chapterhouse build tiles, the Food crate, Heal,
-	# the Keep's two units and the Chapterhouse's four.
-	if not check(tiles == 62,"Expected 62 card tiles, found %d" % tiles): return
+	# the Keep's two units and the Chapterhouse's four. 64 with the Farm and House build tiles (docs/KNIGHTS_ECONOMY.md).
+	if not check(tiles == 64,"Expected 64 card tiles, found %d" % tiles): return
 	# Commands with their own art.
 	var names := {"Return":"sl_deliver.png","DropMaterials":"sl_drop.png","DeployTruck":"sl_deploy_depot.png","ProduceUbermech":"sl_produce_ubermech.png","PrintTruck":"sl_produce_truck.png","Derail":"sl_derail.png","Research":"sl_research_mining_trains.png","MineIron":"sl_mine_iron.png"}
 	for id in names:
