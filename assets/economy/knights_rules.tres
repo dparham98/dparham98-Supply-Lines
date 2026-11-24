@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="KnightsRules" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/economy/knights_rules.gd" id="rules"]
+
+[resource]
+script = ExtResource("rules")
+farm_wood_cost = 30
+farm_footprint = Vector2i(4, 4)
+farm_food_per_beat = 2
+farm_health = 300
+house_wood_cost = 40
+house_footprint = Vector2i(3, 3)
+house_room = 8
+house_health = 300
+keep_room = 10
+housing = {
+&"azure_dragon": 4,
+&"forester_maiden": 1,
+&"grail_sentinel": 2,
+&"questing_marine": 2,
+&"round_table_marine": 2,
+&"warhound": 1
+}

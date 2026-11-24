@@ -52,7 +52,8 @@ const TRIP_LABELS := {"once": "once", "all": "all available", "repeat": "repeat"
 ## One icon per stat row (assets/ui/icons).
 const STAT_ICONS := {"Speed": "speed", "Range": "focus", "Damage": "damage", "Vision": "scout", "Vs buildings": "depot", "Splash": "splash",
 	"Cost": "cost", "Deploys": "deploy", "Output": "generator", "Burning": "refuel", "Cycle": "cycle", "Mode": "mode",
-	"Energy": "generator", "Food": "crate", "Iron": "mine", "Queue": "queue", "Fuel left": "cargo", "Energy ceiling": "generator", "Coal kept": "refuel"}
+	"Energy": "generator", "Food": "crate", "Iron": "mine", "Queue": "queue", "Fuel left": "cargo", "Energy ceiling": "generator", "Coal kept": "refuel",
+	"Housing": "depot", "Food a beat": "crate", "Workers": "queue"}
 const TILE_GAP := 4
 @onready var state_label: Label = $Bottom/Body/Row/Info/Head/Text/State
 const RESOURCE_KINDS := [&"energy",&"iron",&"wood",&"coal",&"food"]
@@ -208,7 +209,7 @@ func _ready() -> void:
 		var btn_id := production_button_id(StringName(id))
 		card.get_node(btn_id).pressed.connect(func():
 			if is_instance_valid(shown) and shown.is_in_group("production_buildings"): least_busy().request_unit(StringName(id)))
-	for pair in [["Depot",&"depot"],["Generator",&"generator"],["Barracks",&"barracks"],["TankFactory",&"tank_factory"],["Temple",&"temple_of_science"],["Mine",&"iron_mine"],["CoalMine",&"coal_mine"],["Rail",&"rail"],["Keep",&"keep"],["Chapterhouse",&"chapterhouse"]]:
+	for pair in [["Depot",&"depot"],["Generator",&"generator"],["Barracks",&"barracks"],["TankFactory",&"tank_factory"],["Temple",&"temple_of_science"],["Mine",&"iron_mine"],["CoalMine",&"coal_mine"],["Rail",&"rail"],["Keep",&"keep"],["Chapterhouse",&"chapterhouse"],["Farm",&"farm"],["House",&"house"]]:
 		build_menu.get_node("Actions/"+pair[0]).pressed.connect(begin_global_placement.bind(pair[1]))
 	build_menu.get_node("Actions/Pin").pressed.connect(toggle_pin)
 	card.get_node("DeployTruck").pressed.connect(func(): game.pending_unit_command = "deploy"; game.notify("Click a site for the Depot. Only an empty Depot footprint is accepted; Shift queues."))
@@ -265,6 +266,8 @@ func object_name(node: Node3D) -> String:
 	if node.is_in_group("depots"): return "Depot" if node.name == "Depot" else "%s · Depot" % node.name
 	if node.is_in_group("energy_generators"): return "%s · Generator" % node.name
 	if node.is_in_group("rail_trains"): return "Train"
+	if node.is_in_group("farms"): return "Farm" if node.name == "Farm" else "%s · Farm" % node.name
+	if node.is_in_group("houses"): return "House" if node.name == "House" else "%s · House" % node.name
 	if node.is_cargo_vehicle: return "Cargo Vehicle"
 	if node.is_depot_truck: return "Depot Truck"
 	return node.unit_stats.display_name if node.unit_stats != null else "Deforester"
@@ -483,6 +486,9 @@ func update_portrait(node) -> void:
 	frame.visible = true
 func icon_name(node: Node) -> String:
 	if node.is_in_group("depots"): return "depot"
+	# Placeholder portraits until the Farm and House have art (docs/KNIGHTS_ECONOMY.md).
+	if node.is_in_group("farms"): return "generator"
+	if node.is_in_group("houses"): return "depot"
 	if node.is_in_group("mines"): return "mine" if str(node.scene_file_path).ends_with("site_mine.tscn") else "pithead"
 	if node.is_in_group("research_buildings"): return "temple"
 	if node.is_in_group("production_buildings"): return "barracks" if str(node.scene_file_path).ends_with("barracks.tscn") else "tank_factory"
@@ -897,7 +903,7 @@ func update_contents() -> void:
 	if node.is_in_group("depots"):
 		if node.is_in_group("keeps"):
 			commands.get_node("Title").text = "KEEP · PRODUCTION"
-			state_label.text = "%s · territory %.0f · %d Food" % [team_label(node),node.rules.construction_radius,node.food]
+			state_label.text = "%s · territory %.0f · %d Food · housing %s" % [team_label(node),node.rules.construction_radius,node.food,KnightHousing.text(get_tree(),node.team)]
 			if node.team != "player": show_storage("Loose storage",node.stockpile)
 			if node.queue > 0:
 				var kind: String = node.pending[0] if not node.pending.is_empty() else ""
@@ -908,9 +914,9 @@ func update_contents() -> void:
 				show_button("MakeCrates","Make crates")
 				if node.can_cancel(): show_button("CancelPlan","Cancel production")
 				var forester_stats: UnitStats = node.unit_stats_for_kind("forester_maiden")
-				show_production("TrainForester",forester_stats.display_name,forester_stats.energy_cost,forester_stats.iron_cost,node,forester_stats.food_cost,forester_stats.wood_cost)
+				show_production("TrainForester",forester_stats.display_name,forester_stats.energy_cost,forester_stats.iron_cost,node,forester_stats.food_cost,forester_stats.wood_cost,forester_stats.unit_id)
 				var hound_stats: UnitStats = node.unit_stats_for_kind("warhound")
-				show_production("TrainWarhound",hound_stats.display_name,hound_stats.energy_cost,hound_stats.iron_cost,node,hound_stats.food_cost,hound_stats.wood_cost)
+				show_production("TrainWarhound",hound_stats.display_name,hound_stats.energy_cost,hound_stats.iron_cost,node,hound_stats.food_cost,hound_stats.wood_cost,hound_stats.unit_id)
 				hint_text = "Keep stores Food, Wood and Iron locally and trains Forester Maidens and Warhounds. Found forward Keeps anywhere from 50 Wood and 50 Iron on site (B → K)."
 		else:
 			commands.get_node("Title").text = "DEPOT · PRODUCTION"
@@ -945,7 +951,9 @@ func update_contents() -> void:
 		if is_instance_valid(payer):
 			# A Keep pays in Food (docs/ARTHURIAN_KNIGHTS.md); a Depot in energy.
 			var primary := ["Food",grouped(payer.food)] if payer.is_in_group("keeps") else ["Energy",grouped(payer.energy)]
-			set_stats([primary,["Iron",grouped(payer.iron)],["Queue","%d / %d" % [node.queue,node.stats.queue_limit]]])
+			var rows := [primary,["Iron",grouped(payer.iron)],["Queue","%d / %d" % [node.queue,node.stats.queue_limit]]]
+			if payer.is_in_group("keeps"): rows.append(["Housing",KnightHousing.text(get_tree(),node.team)])
+			set_stats(rows)
 		info.get_node("Details").text = "Pays from a friendly Depot or Keep whose range covers it:
 the one shown while it can, else another that can."
 		if node.source_friendly():
@@ -953,7 +961,7 @@ the one shown while it can, else another that can."
 				var stats = node.unit_stats_for(scene)
 				# The tile names the Depot that would pay: the current one, or another covering one that can.
 				var pays = node.payer_for(stats.energy_cost,stats.iron_cost,stats.food_cost,stats.wood_cost)
-				show_production(production_button_id(stats.unit_id),stats.display_name,stats.energy_cost,stats.iron_cost,pays if pays != null else node.assigned_depot,stats.food_cost,stats.wood_cost)
+				show_production(production_button_id(stats.unit_id),stats.display_name,stats.energy_cost,stats.iron_cost,pays if pays != null else node.assigned_depot,stats.food_cost,stats.wood_cost,stats.unit_id)
 		hint_text = "Production pays from a friendly Depot (or Keep) whose range covers this building, picked for you: the one it has while that one can pay, otherwise the nearest covering one that can. Drone attacks and tentative abilities remain unspecified."
 	elif node.is_in_group("energy_generators"):
 		commands.get_node("Title").text = "GENERATOR · LOCAL POWER"
@@ -970,6 +978,19 @@ the one shown while it can, else another that can."
 			show_fuel_tile("BurnCoal","Burn coal","coal",node.fuel_preference)
 			show_fuel_tile("BurnEither","Burn either (wood first)","either",node.fuel_preference)
 		if is_instance_valid(node.assigned_depot): show_button("FocusAssigned","Focus Depot")
+	elif node.is_in_group("farms"):
+		commands.get_node("Title").text = "FARM · FOOD"
+		var tiller = node.worker if node.worker_busy() else null
+		state_label.text = "%s · %s" % [team_label(node),("tilled by "+str(tiller.name)) if tiller != null else "no worker"]
+		set_stats([["Food a beat","%d / 1.2 s" % KnightHousing.rules().farm_food_per_beat],["Workers","%d / 1" % (1 if tiller != null else 0)]])
+		info.get_node("Details").text = "One Forester Maiden tills it and carries the Food to a Keep."
+		hint_text = "Right-click the Farm with one Forester Maiden to till it; a Farm takes one worker. The Food goes to the nearest Keep."
+	elif node.is_in_group("houses"):
+		commands.get_node("Title").text = "HOUSE · HOUSING"
+		state_label.text = "%s · %s" % [team_label(node),"+%d housing" % KnightHousing.rules().house_room if node.housed() else "outside every Keep's range: no housing"]
+		set_stats([["Housing",KnightHousing.text(get_tree(),node.team)]])
+		info.get_node("Details").text = "Housing counts for the whole side while the House stands inside one of its Keeps' range."
+		hint_text = "Knights units take housing: Forester and Warhound 1, Marines and Sentinel 2, Azure Dragon 4. Each Keep gives %d, each House in a Keep's range %d." % [KnightHousing.rules().keep_room,KnightHousing.rules().house_room]
 	elif node.team != "player":
 		# An enemy unit shows only its health and stats: no state, orders, fuel or cargo (docs/SELECTION_INSPECT.md).
 		state_label.text = team_label(node)
@@ -1124,7 +1145,7 @@ Researching now."
 func show_mine_tile(node: Node3D) -> void:
 	show_button("MineIron","Mine iron")
 	explain(card.get_node("MineIron"),not node.can_mine(),"Research Mining Trains at a Temple of Science first.")
-func show_production(id: String, title: String, energy_cost: int, iron_cost: int, payer: Node, food_cost := 0, wood_cost := 0) -> void:
+func show_production(id: String, title: String, energy_cost: int, iron_cost: int, payer: Node, food_cost := 0, wood_cost := 0, unit_id: StringName = &"") -> void:
 	desired_buttons.append(id)
 	var button: Button = card.get_node(id)
 	var missing := []
@@ -1133,6 +1154,8 @@ func show_production(id: String, title: String, energy_cost: int, iron_cost: int
 		if payer.stockpile.amount(&"food") < food_cost: missing.append("%d more food" % (food_cost-payer.stockpile.amount(&"food")))
 		if payer.stockpile.amount(&"wood") < wood_cost: missing.append("%d more wood" % (wood_cost-payer.stockpile.amount(&"wood")))
 		if payer.iron < iron_cost: missing.append("%d more iron" % (iron_cost-payer.iron))
+	# Knights training waits for housing (docs/KNIGHTS_ECONOMY.md).
+	if not unit_id.is_empty() and not KnightHousing.room(get_tree(),"player",unit_id): missing.append("housing (%s used): build a House in a Keep's range" % KnightHousing.text(get_tree(),"player"))
 	var cost_text := "%d E · %d I" % [energy_cost,iron_cost]
 	if food_cost > 0 or wood_cost > 0:
 		var parts := PackedStringArray()
@@ -1289,6 +1312,8 @@ func refresh_global_menu() -> void:
 	var arthurian := has_arthurian_faction() and not worksite_open
 	build_menu.get_node("Actions/Keep").visible = arthurian
 	build_menu.get_node("Actions/Chapterhouse").visible = arthurian
+	build_menu.get_node("Actions/Farm").visible = arthurian
+	build_menu.get_node("Actions/House").visible = arthurian
 	if worksite_open:
 		build_menu.get_node("Bank").text = "DELIVERS: EXACT MATERIALS"
 		build_menu.get_node("Bank").tooltip_text = "The selected trucks load exactly what the building needs and unload it on the footprint. A covering stockpile pays the energy as Deforesters build."
@@ -1305,7 +1330,7 @@ func refresh_global_menu() -> void:
 	build_menu.get_node("Bank").tooltip_text = "One covering Depot or deployed Cargo truck pays each plan's energy as Deforesters build it. Iron must be delivered to the footprint first. Rails pay fully from Depots. No pooled resources."
 	set_card(build_menu.get_node("Actions/Pin"),"unpin_payer" if global_pinned else "pin_payer")
 	set_tile(build_menu.get_node("Actions/Pin"),"Unpin payer (back to Auto)" if global_pinned else "Pin payer","New plans pay from the nearest covering stockpile that can pay." if global_pinned else "Pick one Depot or deployed Cargo truck on the map or minimap; new plans pay only from it.")
-	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"],[&"rail","Rail"],[&"keep","Keep"],[&"chapterhouse","Chapterhouse"]]:
+	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"],[&"rail","Rail"],[&"keep","Keep"],[&"chapterhouse","Chapterhouse"],[&"farm","Farm"],[&"house","House"]]:
 		var spec: Dictionary = network.plan_spec(pair[0])
 		var button: Button = build_menu.get_node("Actions/"+pair[1])
 		button.disabled = false
@@ -1315,7 +1340,11 @@ func refresh_global_menu() -> void:
 		elif pair[0] == &"keep":
 			set_tile(button,spec.title,"%d W · %d I · site materials only, no Keep range needed" % [spec.wood,spec.iron])
 		elif pair[0] == &"chapterhouse":
-			set_tile(button,spec.title,"%d F · %d W · %d I · Wood & Iron on site, Food from Keep" % [spec.food,spec.wood,spec.iron])
+			set_tile(button,spec.title,"%d F · %d W · %d I · from a covering Keep's stock, else Wood & Iron on site" % [spec.food,spec.wood,spec.iron])
+		elif pair[0] == &"farm":
+			set_tile(button,spec.title,"%d W · inside a Keep's range, from its stock · one Forester tills it for Food" % spec.wood)
+		elif pair[0] == &"house":
+			set_tile(button,spec.title,"%d W · +%d housing while inside a Keep's range" % [spec.wood,KnightHousing.rules().house_room])
 		else: set_tile(button,spec.title,"%d E · %d I · iron delivered to the site, energy as built" % [spec.energy,spec.iron])
 func toggle_pin() -> void:
 	if not global_pinned:

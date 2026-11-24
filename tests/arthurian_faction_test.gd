@@ -108,7 +108,7 @@ func run() -> void:
 	var dragon := game.get_node("Entities/Units/AzureDragon")
 	var tank := game.get_node("Entities/Units/EnemyTank")
 
-	if not check(keep.is_in_group("keeps") and keep.is_in_group("depots") and keep.food == 300, "Keep missing group or initial Food"): return
+	if not check(keep.is_in_group("keeps") and keep.is_in_group("depots") and keep.food == 150, "Keep missing group or initial Food (150, docs/KNIGHTS_ECONOMY.md)"): return
 	if not check(chapterhouse.assigned_depot == keep and chapterhouse.source_friendly(), "Chapterhouse should be assigned to Keep"): return
 	if not check(forester.can_gather and forester.can_construct and not forester._attack_enabled, "Forester Maiden should be unarmed gather/builder worker"): return
 	if not check(warhound.mobility_layer() == MobilityRules.Layer.FOREST, "Warhound should use FOREST mobility"): return
@@ -160,6 +160,12 @@ func run() -> void:
 
 	# 6. Keep training (Forester Maiden + Warhound) & Chapterhouse training (all 4 units) with Food + Iron.
 	keep.food = 600; keep.iron = 400
+	# Housing (docs/KNIGHTS_ECONOMY.md): the scene's units already fill the Keep's 10, so stand Houses in its range.
+	for offset in [Vector3(16, 0, -14), Vector3(-16, 0, -14), Vector3(16, 0, 14)]:
+		var house: Node3D = load("res://scenes/gameplay/house.tscn").instantiate()
+		house.position = keep.global_position + offset
+		game.get_node("Entities/Buildings").add_child(house)
+		house.set_process(false)
 	var food_0: int = keep.food; var iron_0: int = keep.iron
 	if not check(keep.request_forester(), "Keep refused Forester Maiden"): return
 	if not check(keep.food == food_0 - 45 and keep.iron == iron_0, "Forester cost wrong: F=%d I=%d" % [keep.food, keep.iron]): return

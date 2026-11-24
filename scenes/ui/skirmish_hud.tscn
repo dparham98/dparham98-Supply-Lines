@@ -481,6 +481,14 @@ events = [SubResource("key_build_keep")]
 action = &"build_chapterhouse"
 [sub_resource type="Shortcut" id="shortcut_build_chapterhouse"]
 events = [SubResource("key_build_chapterhouse")]
+[sub_resource type="InputEventAction" id="key_build_farm"]
+action = &"build_farm"
+[sub_resource type="Shortcut" id="shortcut_build_farm"]
+events = [SubResource("key_build_farm")]
+[sub_resource type="InputEventAction" id="key_build_house"]
+action = &"build_house"
+[sub_resource type="Shortcut" id="shortcut_build_house"]
+events = [SubResource("key_build_house")]
 [sub_resource type="InputEventAction" id="key_command_heal"]
 action = &"command_heal"
 [sub_resource type="Shortcut" id="shortcut_command_heal"]
@@ -4561,6 +4569,56 @@ icon = ExtResource("card_build_barracks")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/Chapterhouse"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -34.0
+offset_top = 1.0
+offset_right = -4.0
+offset_bottom = 15.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="Farm" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
+visible = false
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_build_farm")
+layout_mode = 2
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("card_build_generator")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/Farm"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -34.0
+offset_top = 1.0
+offset_right = -4.0
+offset_bottom = 15.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="House" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
+visible = false
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_build_house")
+layout_mode = 2
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("card_build_depot")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/House"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0

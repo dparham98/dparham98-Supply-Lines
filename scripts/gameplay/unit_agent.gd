@@ -156,6 +156,11 @@ func command_move(point: Vector3) -> void:
 	state = "Moving"
 func command_gather(node: Node3D) -> void:
 	if not can_gather or is_depot_truck or is_cargo_vehicle or not is_instance_valid(node): return
+	# A Farm takes one worker (docs/KNIGHTS_ECONOMY.md).
+	if node.has_method("take_worker") and not node.take_worker(self):
+		state = "Farm already has a worker"
+		game.notify("%s already has a worker: a Farm takes one." % node.name,team)
+		return
 	_stop_route()
 	order = "gather"
 	source = node
@@ -336,7 +341,7 @@ func _animate(delta: float = 1.0/60) -> void:
 	var value := 0.0
 	if _animated_from != Vector3.INF and here != _animated_from: kind = &"run"; value = move_speed
 	elif _aimed_frame == Engine.get_process_frames(): kind = &"aim"
-	elif state in ["Gathering","Felling"] or state.begins_with("Constructing"): kind = &"work"; value = harvest_interval
+	elif state in ["Gathering","Felling","Farming"] or state.begins_with("Constructing"): kind = &"work"; value = harvest_interval
 	elif state.begins_with("Repairing"): kind = &"work"; value = engineering_rules.repair_interval if engineering_rules else 0.0
 	model.set_motion(kind,value)
 	if kind == &"work" and _work_timer == 0.0 and model.has_method("sync_work"): model.sync_work()
@@ -722,7 +727,7 @@ func _gather(delta: float) -> void:
 			state = "Felling a way to the coal" if is_instance_valid(_dig_source) else "To "+str(source.resource_kind)
 			if not _route_to_interaction(source,interaction_range) and not _cut_way_in(): state = "Coal unreachable" if is_instance_valid(_dig_source) else str(source.resource_kind).capitalize()+" unreachable"
 		return
-	state = "Gathering"
+	state = "Farming" if source.is_in_group("farms") else "Gathering"
 	_face(source.global_position)
 	_work_timer += delta
 	if _work_timer >= harvest_interval:

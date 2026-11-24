@@ -41,8 +41,11 @@ func request_warhound() -> bool:
 	return _request_keep_unit("warhound")
 
 func _request_keep_unit(kind: String) -> bool:
-	if team != "player" or queue >= queue_limit: return false
+	if not SupplySource.plays(team) or queue >= queue_limit: return false
 	var stats := unit_stats_for_kind(kind)
+	if not KnightHousing.room(get_tree(), team, stats.unit_id):
+		game.notify("No housing for a %s (%s used): build a House inside a Keep's range." % [stats.display_name, KnightHousing.text(get_tree(), team)], team)
+		return false
 	var costs := {}
 	if stats.food_cost > 0: costs[&"food"] = stats.food_cost
 	if stats.iron_cost > 0: costs[&"iron"] = stats.iron_cost
@@ -51,7 +54,7 @@ func _request_keep_unit(kind: String) -> bool:
 	if not spend_resources(costs): return false
 	pending.append(kind)
 	queue += 1
-	game.notify("%s queued at %s." % [stats.display_name, name])
+	game.notify("%s queued at %s." % [stats.display_name, name], team)
 	return true
 
 func request_truck() -> bool:
@@ -93,7 +96,7 @@ func _process(delta: float) -> void:
 		if model != null and model.has_method("show_idle"): model.show_idle()
 		$Progress.text = "%s KEEP · F %d / W %d / I %d · capture %d%%" % [team, food, wood, iron, roundi(capture_progress / rules.capture_seconds * 100)]
 		return
-	if team != "player": return
+	if not SupplySource.plays(team): return
 	var kind: String = pending[0]
 	var stats := unit_stats_for_kind(kind)
 	var seconds := maxf(0.1, stats.build_seconds)
@@ -117,4 +120,4 @@ func _process(delta: float) -> void:
 		progress = 0.0
 		if model != null and model.has_method("unit_left"): model.unit_left()
 		if kind == "forester_maiden": game.units_printed += 1
-		game.notify("%s ready at %s." % [stats.display_name, name])
+		game.notify("%s ready at %s." % [stats.display_name, name], team)

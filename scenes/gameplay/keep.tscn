@@ -26,9 +26,9 @@ size = Vector2(10.8, 10.8)
 script = ExtResource("keep")
 rules = ExtResource("rules")
 initial_energy = 0
-initial_iron = 150
-initial_wood = 150
-initial_food = 300
+initial_iron = 50
+initial_wood = 100
+initial_food = 150
 
 [node name="Territory" type="MeshInstance3D" parent="."]
 visible = false

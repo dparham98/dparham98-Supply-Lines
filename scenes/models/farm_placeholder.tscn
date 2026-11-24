@@ -1,0 +1,55 @@
+[gd_scene load_steps=7 format=3]
+
+[sub_resource type="StandardMaterial3D" id="soil"]
+albedo_color = Color(0.42, 0.29, 0.17, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="crop"]
+albedo_color = Color(0.55, 0.68, 0.24, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="fence"]
+albedo_color = Color(0.36, 0.25, 0.16, 1)
+
+[sub_resource type="BoxMesh" id="field"]
+material = SubResource("soil")
+size = Vector3(3.9, 0.08, 3.9)
+
+[sub_resource type="BoxMesh" id="row"]
+material = SubResource("crop")
+size = Vector3(3.4, 0.28, 0.32)
+
+[sub_resource type="BoxMesh" id="rail"]
+material = SubResource("fence")
+size = Vector3(3.9, 0.12, 0.08)
+
+[node name="FarmPlaceholder" type="Node3D"]
+editor_description = "Placeholder Farm model (docs/KNIGHTS_ECONOMY.md): a 4 x 4 m tilled field with four crop rows and a low fence. The owner will supply art; replace this scene in the Farm's Visuals slot."
+
+[node name="Field" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0)
+mesh = SubResource("field")
+
+[node name="Row1" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, -1.2)
+mesh = SubResource("row")
+
+[node name="Row2" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, -0.4)
+mesh = SubResource("row")
+
+[node name="Row3" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0.4)
+mesh = SubResource("row")
+
+[node name="Row4" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 1.2)
+mesh = SubResource("row")
+
+[node name="FenceNorth" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, -1.95)
+mesh = SubResource("rail")
+
+[node name="FenceSouth" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 1.95)
+mesh = SubResource("rail")
