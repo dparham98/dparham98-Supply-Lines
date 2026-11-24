@@ -1232,28 +1232,50 @@ func commit_plan(pinned = null) -> Array[Node3D]:
 	return laid
 # ---- track for the enemy player (docs/ENEMY_AI.md)
 ## The computer player connects its buildings with the same track the player is suggested: the shortest open
-## path of straights and curves touching both rings (suggest_route). It searches with a router of its own, so the
-## player's plan, picks and cursor search are never touched.
-var _side_router
+## path of straights and curves touching both rings (suggest_route). Each side searches with a router of its own,
+## keyed by `from`'s team, so the player's plan, picks and cursor search are never touched, and with an AI on each
+## side (spectating, docs/MAIN_MENU.md) one side's new search never resets the other's.
+var _side_routers := {}
 ## Begins the search from `from` to `to`. Work on it with advance_link(); once `job.done`, `job.found.path` is
 ## the track ({kind, transform, cells, move} pieces), empty when there is no open path. `forbidden` lists the
 ## `move`s of pieces an earlier search found that unfit_moves() turned down.
 func begin_link(from: Node3D, to: Node3D, forbidden := {}) -> Dictionary:
-	if _side_router == null: _side_router = preload("res://scripts/rails/rail_router.gd").new(self)
-	_side_router.forbidden = forbidden
+	var side: String = str(from.get("team"))
+	if not _side_routers.has(side): _side_routers[side] = preload("res://scripts/rails/rail_router.gd").new(self)
+	var router = _side_routers[side]
+	router.forbidden = forbidden
+	router.blocked = site_cells()
 	var width: float = probe("straight").half_width()
-	var ring: Array = _side_router.ring_starts(from.global_position,target_reach(from)+width)
-	return _side_router.begin(ring,{centre = to.global_position, reach = target_reach(to)+width})
+	var ring: Array = router.ring_starts(from.global_position,target_reach(from)+width)
+	var job: Dictionary = router.begin(ring,{centre = to.global_position, reach = target_reach(to)+width})
+	job["router"] = router
+	return job
 ## Works on a search from begin_link() for about `usec` microseconds. Returns whether it is done.
 func advance_link(job: Dictionary, usec: int) -> bool:
-	return _side_router.advance(job,usec) if _side_router != null else true
+	var router = job.get("router")
+	return router.advance(job,usec) if router != null else true
 ## The `move`s of a found path's pieces whose ground, worked out as the laid piece works it out, is not clear:
 ## the ones lay_link() would leave out. Empty when every piece can be laid.
 func unfit_moves(path: Array) -> Dictionary:
 	var result := {}
+	var sites := site_cells()
 	for entry in path:
-		if not ground_clear(cells_for(entry.kind,entry.transform)): result[entry.move] = true
+		if not _link_clear(cells_for(entry.kind,entry.transform),sites): result[entry.move] = true
 	return result
+## The cells of every unfinished build site, and the strip a planned Depot keeps clear, {Vector2i: true}. Track the
+## enemy player lays stays off them: a piece there would leave the site waiting for its footprint to clear for good.
+func site_cells() -> Dictionary:
+	var result := {}
+	var depots = game.get_node_or_null("DepotNetwork")
+	for plan in get_tree().get_nodes_in_group("construction_plans"):
+		if plan.finished or plan.kind == &"rail": continue
+		for z in range(plan.start.y,plan.start.y+plan.spec.size.y):
+			for x in range(plan.start.x,plan.start.x+plan.spec.size.x): result[Vector2i(x,z)] = true
+		if plan.kind == &"depot" and depots != null:
+			for cell in depots.strip_cells(plan.global_position): result[cell] = true
+	return result
+func _link_clear(cells: Array[Vector2i], sites: Dictionary) -> bool:
+	return ground_clear(cells) and not cells.any(func(cell): return sites.has(cell))
 ## The iron a found path costs.
 func link_cost(path: Array) -> int:
 	var total := 0
@@ -1268,8 +1290,9 @@ func lay_link(path: Array, payer: Node3D) -> Array[Node3D]:
 	if not payer.spend_local(rules.rail_energy_cost*path.size(),need): return laid
 	var parent: Node = game.get_node("Entities/Rails") if game.has_node("Entities/Rails") else game
 	var refund := 0
+	var sites := site_cells()
 	for entry in path:
-		if not ground_clear(cells_for(entry.kind,entry.transform)): refund += cost(entry.kind); continue
+		if not _link_clear(cells_for(entry.kind,entry.transform),sites): refund += cost(entry.kind); continue
 		var piece = scene_for(entry.kind).instantiate()
 		piece.assigned_depot = payer
 		piece.transform = entry.transform

@@ -260,7 +260,17 @@ func build(depot: Node3D) -> void:
 		plan = network.queue_plan(point,kind,null if mine else payer,not mine,seen,team)
 		if plan == null: build_step += 1; return
 		plan.tree_exiting.connect(_plan_gone.bind(plan))
+	# Track laid across the site after it was planned (the other side's, say) would leave it waiting for good: it is
+	# given up and planned again elsewhere. Iron already on the site stays there as piles (docs/ENEMY_AI.md).
+	if track_on(plan):
+		_given_up = plan
+		plan = null
+		_given_up.cancel()
+		return
 	var truck := _cargo_truck()
+	# Only the Cargo truck takes iron out to a site: one that is lost (shot on the way, say) is replaced, or the site
+	# would wait for its iron for good (docs/ENEMY_AI.md).
+	if truck == null and plan.shortfall(&"iron") > 0: _replace_truck(depot)
 	if truck != null and plan.shortfall(&"iron") > 0 and _idle(truck) and truck.get("fetch_plan") == null: truck.command_fetch(plan)
 	# Builders go once the iron is on site; a mine out in the woods gets one early, to fell its way in.
 	var home_workers := _workers_at(depot)
@@ -272,6 +282,11 @@ func build(depot: Node3D) -> void:
 		if unit.cargo > 0 and unit.cargo_kind != &"iron": continue
 		unit.command_construct(plan)
 		builders += 1
+## Prints a Cargo truck at home when none is on its way, saving up for it first (held_back).
+func _replace_truck(depot: Node3D) -> void:
+	if depot.pending.has("cargo"): return
+	if depot.request_cargo(): return
+	wants["cargo"] = true
 ## What it builds next: the next step of `build_order`, then more Generators while iron piles up; &"" for none.
 func next_building() -> StringName:
 	if build_step < build_order.size(): return build_order[build_step]
@@ -287,9 +302,18 @@ func _park_truck(depot: Node3D) -> void:
 	var spot := depot.global_position+Vector3(-10.0*signf(depot.global_position.x),0,4)
 	if truck.global_position.distance_to(spot) > 8.0: truck.command_move(spot)
 ## A finished plan moves on to the next step; one that is lost (cancelled, destroyed) is tried again.
+var _given_up: Node3D
 func _plan_gone(gone: Node3D) -> void:
-	if gone.finished: build_step += 1
+	if gone.finished and gone != _given_up: build_step += 1
 	if plan == gone: plan = null
+## Whether any track lies on the plan's footprint.
+func track_on(site: Node3D) -> bool:
+	var ground = game.ground
+	for z in range(site.start.y,site.start.y+site.spec.size.y):
+		for x in range(site.start.x,site.start.x+site.spec.size.x):
+			var cell := Vector2i(x,z)
+			if ground.is_tile_in_bounds(cell) and ground.tiles[z*ground.grid_size.x+x].has("rail"): return true
+	return false
 ## A spot in the Depot's range for a building of `size`, with room round it to walk, off the way to its home mine.
 func building_site(depot: Node3D, size: Vector2i) -> Variant:
 	var centre := depot.global_position
@@ -647,6 +671,7 @@ func held_back() -> Vector2i:
 	var depot := home()
 	if wants.get("truck",false) and depot != null: held += Vector2i(depot.rules.truck_energy_cost,depot.rules.truck_iron_cost)
 	if wants.get("train",false) and rails != null: held += Vector2i(rails.rules.cargo_energy_cost,rails.rules.cargo_iron_cost)
+	if wants.get("cargo",false): held += Vector2i(network.supply_rules.cargo_energy_cost,network.supply_rules.cargo_iron_cost)
 	if wants.has("research"): held += wants.research
 	held.y += int(wants.get("rail",0))
 	return held
