@@ -80,6 +80,28 @@ func has_arthurian_faction() -> bool:
 	for unit in get_tree().get_nodes_in_group("units"):
 		if unit.get("team") == "player" and unit.get("unit_stats") != null and unit.unit_stats.unit_id in ARTHURIAN_UNIT_IDS: return true
 	return false
+## Build-page buildings only the Cyborgs see; Keep and Chapterhouse are the Knights'. Mines are for both.
+const CYBORG_BUILDINGS := [&"depot",&"generator",&"barracks",&"tank_factory",&"temple_of_science",&"rail"]
+const KNIGHT_BUILDINGS := [&"keep",&"chapterhouse",&"farm",&"house"]
+## True when the player builds as the Cyborgs: the match setup's faction, or, in a scene run straight from the
+## editor or a test, any Depot of the player's that is not a Keep, or no Knights presence at all.
+func has_cyborg_faction() -> bool:
+	var setup = get_node_or_null("/root/MatchSetup")
+	if setup != null and setup.configured: return setup.factions.get("player",&"cyborgs") == &"cyborgs"
+	if not is_inside_tree(): return true
+	for node in get_tree().get_nodes_in_group("depots"):
+		if node.get("team") == "player" and not node.is_in_group("keeps"): return true
+	return not has_arthurian_faction()
+## Whether the player's Build page offers this building kind.
+func build_kind_offered(kind: StringName) -> bool:
+	if kind in CYBORG_BUILDINGS: return has_cyborg_faction()
+	if kind in KNIGHT_BUILDINGS: return knights_build()
+	return true
+## True when the player builds as the Knights (see has_cyborg_faction).
+func knights_build() -> bool:
+	var setup = get_node_or_null("/root/MatchSetup")
+	if setup != null and setup.configured: return setup.factions.get("player",&"cyborgs") == &"arthurian_knights"
+	return has_arthurian_faction()
 var _icons := {}
 # Cargo vehicles open on their delivery route page; Orders shows the ordinary command card.
 var feed_points: Array[Vector3] = []
@@ -400,7 +422,7 @@ func update_depot_panels() -> void:
 	show_storage("%s storage" % depot.name,depot.stockpile,storage_panel.get_node("Storage"))
 ## Your production building's power slider, under the Depot panel (docs/PRODUCTION_POWER.md).
 func update_production_panel(depot: Node3D) -> void:
-	var building: Node3D = shown if is_instance_valid(shown) and shown.is_in_group("production_buildings") and shown.team == "player" and not shown.stats.unit_scenes.is_empty() else null
+	var building: Node3D = shown if is_instance_valid(shown) and shown.is_in_group("production_buildings") and shown.team == "player" and not shown.stats.unit_scenes.is_empty() and shown.stats.max_power > 1.0 else null
 	production_panel.visible = building != null
 	panel_building = building
 	if building == null: return
@@ -1308,12 +1330,14 @@ func begin_global_placement(kind: StringName) -> void:
 	game.notify("Click valid terrain to place an unpaid %s plan. Esc cancels placement; existing plans remain." % network.plan_spec(kind).title)
 func refresh_global_menu() -> void:
 	build_menu.get_node("Actions/Pin").visible = not worksite_open
-	build_menu.get_node("Actions/Rail").visible = not worksite_open
-	var arthurian := has_arthurian_faction() and not worksite_open
+	build_menu.get_node("Actions/Rail").visible = not worksite_open and build_kind_offered(&"rail")
+	var arthurian := knights_build() and not worksite_open
 	build_menu.get_node("Actions/Keep").visible = arthurian
 	build_menu.get_node("Actions/Chapterhouse").visible = arthurian
 	build_menu.get_node("Actions/Farm").visible = arthurian
 	build_menu.get_node("Actions/House").visible = arthurian
+	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"]]:
+		build_menu.get_node("Actions/"+pair[1]).visible = build_kind_offered(pair[0])
 	if worksite_open:
 		build_menu.get_node("Bank").text = "DELIVERS: EXACT MATERIALS"
 		build_menu.get_node("Bank").tooltip_text = "The selected trucks load exactly what the building needs and unload it on the footprint. A covering stockpile pays the energy as Deforesters build."

@@ -47,6 +47,9 @@ extends Node
 ## What each building makes, in turn, once there are workers enough.
 @export var barracks_mix: Array[StringName] = [&"scout",&"infantry",&"grenadier",&"infantry",&"grenadier"]
 @export var factory_mix: Array[StringName] = [&"tank",&"motorcycle",&"tank",&"drone",&"ubermech"]
+## A Drone is unarmed and outruns the army, so it is kept over the centre of the ground units it goes with,
+## moved back whenever it strays further than this (metres).
+@export_range(1,30) var drone_escort_radius := 6.0
 ## Units queued at once in each building.
 @export_range(1,5) var queue_depth := 3
 ## No wave goes before this many seconds of play, nor with fewer units than `first_wave_size`. Each later wave
@@ -728,6 +731,7 @@ func fight(depot: Node3D) -> void:
 			if unit.order == "attack": continue
 			if unit.order == "attack_move" and unit.move_goal.distance_to(threat.global_position) < 15.0: continue
 			unit.command_attack_move(threat.global_position)
+		_escort_drones()
 		return
 	# A wave presses on to the next target it knows of; one with nothing left to find, or down to its last unit,
 	# comes home and joins the next.
@@ -749,6 +753,18 @@ func fight(depot: Node3D) -> void:
 		if wave.size() < next_wave_size(): wave.clear(); return
 		last_wave = wave.size(); waves_sent += 1
 		for unit in wave: unit.command_attack_move(target)
+	_escort_drones()
+## Keeps each Drone over the centre of the ground units it goes with: the wave's if it is in the wave, else the
+## rest of the army's. A Drone with no ground units to go with is left alone.
+func _escort_drones() -> void:
+	for drone in army:
+		if not _is_drone(drone): continue
+		var group: Array[Node3D] = (wave if wave.has(drone) else army.filter(func(unit): return not wave.has(unit))).filter(func(unit): return not _is_drone(unit))
+		if group.is_empty(): continue
+		var centre := _centre(group)
+		if drone.global_position.distance_to(centre) > drone_escort_radius: drone.command_move(centre)
+func _is_drone(unit: Node3D) -> bool:
+	return unit.get("unit_stats") != null and unit.unit_stats.unit_id == &"drone"
 ## How many units the next wave needs.
 func next_wave_size() -> int:
 	return first_wave_size if waves_sent == 0 else maxi(first_wave_size,last_wave+wave_growth)
