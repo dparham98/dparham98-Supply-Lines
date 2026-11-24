@@ -39,6 +39,7 @@ func run() -> void:
 			print("%s %2d min · %s · %s" % [team.to_upper(),minute,faction,_line(ai,faction)])
 			if faction == &"cyborgs" and OS.has_environment("SUPPLY_LINES_AI_DEBUG") and is_instance_valid(ai.plan):
 				print("     waiting on %s at %s · %s · iron short %d · builders %d" % [ai.plan.kind,ai.plan.global_position,ai.plan.state,ai.plan.shortfall(&"iron"),ai.workers.filter(func(u): return u.order == "construct" and u.order_target == ai.plan).size()])
+				if ai.plan.state.contains("footprint"): print("     on the footprint: %s" % _blockers(ai.plan))
 			if minute == 8: army_at_8[team] = ai.army.size()
 	print("Match ran %d game minutes in %.1f s" % [minutes,(Time.get_ticks_msec()-started)/1000.0])
 	var failures := 0
@@ -62,3 +63,20 @@ func _line(ai: Node, faction: StringName) -> String:
 	var depot: Node3D = ai.home()
 	var count := func(id: StringName) -> int: return get_nodes_in_group("production_buildings").filter(func(b): return b.team == ai.team and b.stats.building_id == id).size()
 	return "step %d/%d (%s) · Gen %d Bar %d Fac %d · workers %d army %d wave %d · %s" % [ai.build_step,ai.build_order.size(),str(ai.plan.kind) if is_instance_valid(ai.plan) else "-",mine.call("energy_generators"),count.call(&"barracks"),count.call(&"tank_factory"),ai.workers.size(),ai.army.size(),ai.wave.size(),"%d E %d I" % [depot.energy,depot.iron] if depot != null else "no Depot"]
+## What stands on a plan's footprint: the claims on its cells, and the units whose cell is inside it.
+func _blockers(plan: Node3D) -> String:
+	var parts: Array[String] = []
+	var rect: Rect2i = plan.footprint()
+	for x in range(rect.position.x,rect.end.x):
+		for z in range(rect.position.y,rect.end.y):
+			var tile: Dictionary = game.ground.tiles[z*game.ground.grid_size.x+x]
+			for key in ["occupied_by","apron","rail","mine_front"]:
+				if tile.has(key) and tile.get(key) != null and not str(tile.get(key)).is_empty(): parts.append("%s=%s" % [key,tile.get(key)])
+			if not game.ground.is_tile_valid(Vector2i(x,z)): parts.append("invalid tile (terrain %s)" % game.ground.get_terrain(Vector2i(x,z)))
+	for unit in get_nodes_in_group("units"):
+		var cell = game.ground.get_tile_at_position(unit.global_position)
+		if cell != null and rect.has_point(cell): parts.append("%s(%s, %s, %s)" % [unit.name,unit.team,unit.order,unit.state])
+	var unique: Array[String] = []
+	for part in parts:
+		if not unique.has(part): unique.append(part)
+	return ", ".join(unique)
