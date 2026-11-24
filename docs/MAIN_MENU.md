@@ -24,10 +24,10 @@ still runs straight from its scene with **F6**, playing as saved: you against th
 **Factions:** a faction for each side; the Cyborgs are chosen to start with. With no opponent, only your faction
 shows. Spectating, the rows are the West AI and the East AI.
 
-- **Arthurian Knights** (docs/ARTHURIAN_KNIGHTS.md; selectable from 2026-11-23) are for You only, against the AI or with no
-  opponent. The AI only knows the Cyborgs, so on an AI's row (the opponent's, and yours while spectating) they show
-  as "Arthurian Knights · You only" and are locked. Switching to spectate moves a Knights choice back to the
-  Cyborgs.
+- **Arthurian Knights** (docs/ARTHURIAN_KNIGHTS.md; selectable from 2026-11-23) can be chosen on either row. Since
+  2026-11-24 an AI side can be the Knights: the Knights AI (docs/KNIGHTS_AI.md) plays them, and a Knights East start
+  gets the Keep and two Forester Maidens as the West does. A faction an AI cannot play would still show as
+  "· You only" and be locked on an AI's row.
 - **The Knights' start:** the West start's Cyborg Depot, Deforester and Cargo truck are replaced by a Keep on the
   same spot, two Forester Maidens and a 25 Food crate. The start is saved as `scenes/maps/starts/knights_start.tscn`
   (positions from the start marker). The Keep keeps its own stock: 150 iron, 150 wood, 300 Food. The rest of Two
@@ -91,8 +91,8 @@ still offers both factions' buildings.
 
 `tests/main_menu_test.gd` (headless) checks:
 
-- the menu is the main scene and lists the factions; the Knights are open on your row and locked on the AI's
-  (and on yours while spectating), and no AI side can be started as the Knights;
+- the menu is the main scene and lists the factions; the Knights are open on both rows, including yours while
+  spectating, and a match against the Knights puts a Keep at the East start played by the Knights AI;
 - the rows follow the mode;
 - Start match loads Two Lakes with the East AI on and the West AI off;
 - Esc pauses into the pause menu, keys stop there, and Esc resumes; an armed command takes Esc first;

@@ -12,7 +12,8 @@ extends Node
 ## Seconds between decisions.
 @export_range(0.2,5,0.1) var think_seconds := 1.0
 ## What it builds at home, in order. Each waits for the one before to be finished.
-@export var build_order: Array[StringName] = [&"generator",&"barracks",&"generator",&"coal_mine",&"tank_factory",&"temple_of_science",&"generator"]
+## Two Barracks before tech (docs/BALANCE_IMPLEMENTATION_HANDOFF.md, item 5): tech first lost to it.
+@export var build_order: Array[StringName] = [&"generator",&"barracks",&"generator",&"barracks",&"generator",&"coal_mine",&"tank_factory",&"generator"]
 ## Once `build_order` is done, it keeps adding Generators, up to this many in all, while it holds `iron_plenty`.
 ## Energy, not iron, is what holds it back once it has expanded.
 @export_range(0,20) var generators_wanted := 6
@@ -42,12 +43,12 @@ extends Node
 @export_range(0,10) var repairers := 2
 @export_group("")
 ## Infantry kept on gathering and building; the Barracks makes these before anything else.
-@export_range(0,20) var workers_wanted := 4
+@export_range(0,20) var workers_wanted := 6
 ## What each building makes, in turn, once there are workers enough.
 @export var barracks_mix: Array[StringName] = [&"scout",&"infantry",&"grenadier",&"infantry",&"grenadier"]
 @export var factory_mix: Array[StringName] = [&"tank",&"motorcycle",&"tank",&"drone",&"ubermech"]
 ## Units queued at once in each building.
-@export_range(1,5) var queue_depth := 2
+@export_range(1,5) var queue_depth := 3
 ## No wave goes before this many seconds of play, nor with fewer units than `first_wave_size`. Each later wave
 ## waits for `wave_growth` more units than the last one had.
 @export_range(0,3600,10) var first_wave_seconds := 480.0

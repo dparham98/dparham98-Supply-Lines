@@ -8,7 +8,7 @@ same day it was moved onto its own branch from main and merged onto main's newer
 **Where it plays:**
 
 - **Two Lakes, from the main menu:** choose Arthurian Knights for You, against the AI or with no opponent. Your West
-  start becomes a Keep with two Forester Maidens (docs/MAIN_MENU.md). The AI can't play the Knights.
+  start becomes a Keep with two Forester Maidens (docs/MAIN_MENU.md). The Knights AI (docs/KNIGHTS_AI.md) can play either start.
 - **The showcase map,** `scenes/maps/arthurian_skirmish.tscn` (open it and press F6).
 
 ## Buildings

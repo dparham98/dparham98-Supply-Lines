@@ -1,6 +1,6 @@
 extends SceneTree
 # Headless: the main menu, the match it sets up, and the pause menu (docs/MAIN_MENU.md). The game opens on the menu;
-# the factions list the Cyborgs and the Arthurian Knights, who are for You only (locked on an AI's row). Start match loads Two Lakes against the East
+# the factions list the Cyborgs and the Arthurian Knights, open on both rows (the Knights AI, docs/KNIGHTS_AI.md). Start match loads Two Lakes against the East
 # AI. Esc pauses into the pause menu, which holds the keyboard until Esc resumes, and an armed command takes Esc
 # first. The sandbox clears the East start and switches its AI off. Spectating switches on the West AI, lifts the
 # fog for the view and leaves the HUD only inspecting. The pause menu's Main menu goes back to the menu. Choosing the
@@ -48,22 +48,23 @@ func run() -> void:
 	var menu := await open_menu()
 	if not check(menu != null and menu.name == "MainMenu","The menu should open"): return
 	if not check(menu.mode == "ai" and menu.get_node("%ModeAI").button_pressed,"The menu starts on one AI opponent"): return
-	# The factions: Cyborgs first, chosen; the Knights open to You, locked on the AI's row.
+	# The factions: Cyborgs first, chosen; the Knights open on both rows, since the Knights AI plays them.
 	for name in ["PlayerFaction","EnemyFaction"]:
 		var option: OptionButton = menu.get_node("%"+name)
 		if not check(option.item_count == menu.FACTION_ORDER.size() and option.get_item_text(0) == "Cyborgs" and option.selected == 0,"%s lists the Cyborgs first, chosen" % name): return
 	var mine: OptionButton = menu.get_node("%PlayerFaction")
 	var theirs: OptionButton = menu.get_node("%EnemyFaction")
 	if not check(mine.get_item_text(1) == "Arthurian Knights" and not mine.is_item_disabled(1),"You can choose the Knights: %s" % mine.get_item_text(1)): return
-	if not check(theirs.get_item_text(1) == "Arthurian Knights · You only" and theirs.is_item_disabled(1),"The AI's row shows the Knights locked: %s" % theirs.get_item_text(1)): return
-	if not check(not setup.start("ai",&"cyborgs",&"arthurian_knights") and not setup.start("spectate",&"arthurian_knights"),"No AI side can be the Knights"): return
+	if not check(theirs.get_item_text(1) == "Arthurian Knights" and not theirs.is_item_disabled(1),"The AI's row offers the Knights: %s" % theirs.get_item_text(1)): return
+	if not check(setup.ai_playable(&"arthurian_knights") and setup.ai_playable(&"cyborgs"),"An AI side can be either faction"): return
 	if not check(not setup.start("ai",&"no_such_faction"),"An unknown faction cannot be started"): return
-	# Spectating locks the Knights on your row too, and moves a Knights choice back to the Cyborgs.
+	# Spectating, the West AI can be the Knights too, and the choice stays.
 	mine.select(1)
 	menu.get_node("%ModeSpectate").button_pressed = true
-	if not check(mine.is_item_disabled(1) and mine.selected == 0,"Spectating, the West AI can't be the Knights"): return
+	if not check(not mine.is_item_disabled(1) and mine.selected == 1,"Spectating, the West AI can be the Knights"): return
 	menu.get_node("%ModeAI").button_pressed = true
-	if not check(not mine.is_item_disabled(1) and mine.get_item_text(1) == "Arthurian Knights","Back to one AI, the Knights are open again"): return
+	mine.select(0)
+	if not check(not mine.is_item_disabled(1) and mine.get_item_text(1) == "Arthurian Knights","Back to one AI, the Knights are still open"): return
 	# The rows follow the mode.
 	menu.get_node("%ModeSandbox").button_pressed = true
 	if not check(menu.mode == "sandbox" and not menu.get_node("%EnemyRow").visible,"No opponent hides the opponent's faction"): return
@@ -175,6 +176,23 @@ func run() -> void:
 	if not check(player_depots == [keep],"The Cyborg Depot is gone: %s" % [player_depots.map(func(d): return d.name)]): return
 	if not check(team_nodes("enemy") > 0 and game.enemy_player().can_process(),"The East AI still plays its Cyborg start"): return
 	if not check(setup.summary().contains("You (Arthurian Knights)"),"The pause menu names your faction: %s" % setup.summary()): return
+	# The Cyborgs against the Knights AI: a Keep and two Forester Maidens at the East start, played by the Knights AI.
+	setup.to_menu()
+	for frame in range(10):
+		await process_frame
+		if current_scene != null and current_scene.name == "MainMenu": break
+	menu = current_scene as Control
+	menu.get_node("%PlayerFaction").select(0)
+	menu.get_node("%EnemyFaction").select(1)
+	game = await start_from_menu(menu,"ModeAI")
+	if not check(game != null and game.factions.enemy == &"arthurian_knights","The match against the Knights should load"): return
+	await process_frame
+	var east_ai: Node = game.enemy_player()
+	if not check(east_ai != null and str(east_ai.get_script().resource_path).ends_with("knights_player.gd") and east_ai.can_process(),"The Knights AI should play the East"): return
+	var east_keep: Node3D = east_ai.home()
+	if not check(is_instance_valid(east_keep) and east_keep.is_in_group("keeps") and east_keep.global_position.distance_to(game.get_node("Sites/EnemyStart").global_position) < 0.1,"A Keep should stand on the East start"): return
+	var east_units := get_nodes_in_group("units").filter(func(u): return u.team == "enemy" and not u.is_queued_for_deletion())
+	if not check(east_units.size() == 2 and east_units.all(func(u): return u.unit_stats != null and u.unit_stats.unit_id == &"forester_maiden"),"The East's units should be two Forester Maidens: %s" % [east_units.map(func(u): return u.name)]): return
 	setup.configured = false
 	print("MAIN_MENU_TEST_PASSED")
 	quit(0)
