@@ -1,6 +1,6 @@
 extends SceneTree
 # Headless integration test for the Arthurian Knights faction:
-# - All 6 UnitStats .tres resources and 7 possessed 3D models + TeamPaint (including team_color_shadow)
+# - All 6 UnitStats .tres resources and 8 possessed 3D models (the Chapterhouse included) + TeamPaint (including team_color_shadow)
 # - Keep model animations (Idle, Build, Train, LaunchBalloon, Die + KeepDeathFx)
 # - Keep founding from 50 Wood + 50 Iron site materials with zero covering stockpile/payer
 # - Keep training Forester Maiden & Warhound; Chapterhouse training all 4 units with Food + Iron
@@ -45,9 +45,10 @@ func run() -> void:
 		var stats: UnitStats = load("res://assets/units/%s.tres" % id)
 		if not check(stats != null and stats.validation_errors().is_empty(), "Invalid UnitStats %s: %s" % [id, stats.validation_errors() if stats else "null"]): return
 
-	# 2. All 7 Arthurian model wrappers load, animate, and accept TeamPaint.
+	# 2. All 8 Arthurian model wrappers load, animate, and accept TeamPaint.
 	var model_expectations := {
 		"keep_model": ["Idle", "Build", "Train", "LaunchBalloon", "Die"],
+		"chapterhouse_model": ["Idle", "Build", "Print", "Die"],
 		"forester_maiden_model": ["Walk", "Chop", "Gather", "Carry", "Build", "Till"],
 		"warhound_model": ["Rest", "Run", "Attack", "Die"],
 		"round_table_marine_model": ["Run", "Shoot"],
