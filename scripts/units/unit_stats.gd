@@ -37,6 +37,9 @@ extends Resource
 ## Identifiers only; no ability behavior is inferred from this list.
 @export var abilities: Array[StringName] = []
 @export var mobility: MobilityRules
+## Detects hidden things (armed mines) within this many metres for its side (Detection, docs/MINES.md). 0 for
+## none: only the Drone (20) and the Warhound (10) detect, besides Depots and Keeps at their range.
+@export_range(0, 200, 0.5) var detect_range: float = 0.0
 
 func has_resolved_attack() -> bool:
 	return attack_range >= 0.0 and damage >= 0 and attack_interval > 0.0

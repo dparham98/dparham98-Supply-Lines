@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="MineRules" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/mine_rules.gd" id="rules"]
+
+[resource]
+script = ExtResource("rules")
+capacity = 2
+iron_per_mine = 10
+load_seconds = 1.0
+lay_seconds = 2.0
+arm_seconds = 3.0
+trigger_radius = 2.0
+damage = 60
+splash_radius = 3.0
+splash_share = 0.5
+health = 20

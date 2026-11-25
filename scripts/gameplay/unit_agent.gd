@@ -332,6 +332,7 @@ func command_return(target: Node3D = null) -> void:
 func _process(delta: float) -> void:
 	if _dead: return
 	if derail_cooldown > 0.0: derail_cooldown = maxf(0.0,derail_cooldown-delta)
+	if mine_rules != null: _mine_load_tick(delta)
 	fuel_tick(delta)
 	if can_heal: MedicalWork.refill_tick(self,delta)
 	_order_process(delta)
@@ -452,6 +453,7 @@ func _order_process(delta: float) -> void:
 		"capture": _capture_order()
 		"construct": _construct(delta)
 		"derail": _derail_order(delta)
+		"lay_mine": _lay_mine_order(delta)
 		_:
 			var unreachable := state == "Trees unreachable"
 			state = "Idle"
@@ -483,6 +485,7 @@ func run_order(entry: Dictionary) -> void:
 		"capture": command_capture(entry.target)
 		"construct": command_construct(entry.target)
 		"derail": command_derail(entry.target)
+		"lay_mine": command_lay_mine(entry.point)
 		"attack_move": command_attack_move(entry.point)
 		"deploy": command_deploy_at(entry.point)
 		"load", "unload":
@@ -952,6 +955,8 @@ var _fog: Node
 var _fog_looked := false
 func team_sees(target: Node3D) -> bool:
 	if not is_instance_valid(target): return false
+	# A mine is hidden once armed: seen only while one of the side's detectors covers it (docs/MINES.md).
+	if target.is_in_group("land_mines") and not target.detected_by(team): return false
 	if not _fog_looked or (_fog != null and not is_instance_valid(_fog)):
 		_fog = get_tree().get_first_node_in_group("fog_of_war") if is_inside_tree() else null
 		_fog_looked = true
@@ -970,7 +975,7 @@ func _nearest_opponent() -> Node3D:
 	if closest != null: return closest
 	# With no unit in range it turns on the nearest hostile building, as an attack order on it would (docs/COMBAT_BATCH.md,
 	# Buildings as targets). Shared mines are left alone; units come first.
-	for building in get_tree().get_nodes_in_group("selectable_buildings"):
+	for building in get_tree().get_nodes_in_group("selectable_buildings")+get_tree().get_nodes_in_group("land_mines"):
 		if not is_instance_valid(building) or building.is_in_group("mines") or building.get("team") in [null,team,"neutral"]: continue
 		var d := global_position.distance_to(building.global_position)
 		if d >= distance or d < min_attack_range: continue
@@ -1290,6 +1295,70 @@ func _capture_order() -> void:
 		if _retry <= 0 and not _route_near(order_target,radius): state = "Capture target unreachable"
 	else: state = "Capturing · stay uncontested"
 
+## Minelaying (item 9 of the balance handoff, docs/MINES.md). Once its side has researched Minelaying at a Temple
+## of Science, a Derailer carries up to `mine_rules.capacity` mines. Stopped inside a friendly Depot's range or by a
+## deployed Cargo truck, it loads them one at a time for `iron_per_mine` iron each from that stockpile, the way it
+## refuels. Lay mine sends it to a point, where it works `lay_seconds` and leaves a mine (`mine_scene`).
+@export var mine_rules: MineRules
+@export var mine_scene: PackedScene
+var mines := 0
+var _mine_load_timer := 0.0
+var _lay_point := Vector3.ZERO
+func can_carry_mines() -> bool:
+	return mine_rules != null and mine_scene != null and has_ability(&"derail") and Research.has(self,team,Research.MINELAYING)
+## Why it cannot lay a mine now, or "" when it can.
+func lay_mine_blocker() -> String:
+	if mine_rules == null or not has_ability(&"derail"): return "Only a Derailer lays mines."
+	if not Research.has(self,team,Research.MINELAYING): return "Research Minelaying at a Temple of Science first."
+	if mines <= 0: return "No mines aboard. Stop inside a friendly Depot's range, or by a deployed Cargo truck, to load them for %d iron each." % mine_rules.iron_per_mine
+	return ""
+## The friendly stockpile it would load from here: a covering Depot or deployed Cargo truck with the iron.
+func mine_source() -> Node3D:
+	if not is_inside_tree(): return null
+	for source in SupplySource.candidates(get_tree(),global_position,team):
+		if source.get("stockpile") != null and source.stockpile.amount(&"iron") >= mine_rules.iron_per_mine: return source
+	return null
+func _mine_load_tick(delta: float) -> void:
+	if not can_carry_mines() or mines >= mine_rules.capacity or not is_stopped() or order != "idle":
+		_mine_load_timer = 0.0
+		return
+	_mine_load_timer += delta
+	if _mine_load_timer < mine_rules.load_seconds: return
+	_mine_load_timer = 0.0
+	var source := mine_source()
+	if source != null and source.stockpile.withdraw(&"iron",mine_rules.iron_per_mine) == mine_rules.iron_per_mine: mines += 1
+func command_lay_mine(point: Vector3) -> void:
+	var blocker := lay_mine_blocker()
+	if not blocker.is_empty(): state = blocker; return
+	_stop_route()
+	order_target = null
+	source = null
+	_lay_point = point
+	_work_timer = 0.0
+	order = "lay_mine"
+	state = "To lay a mine"
+func _lay_mine_order(delta: float) -> void:
+	if mines <= 0: order = "idle"; state = "No mines aboard"; return
+	var flat := Vector2(global_position.x-_lay_point.x,global_position.z-_lay_point.z).length()
+	if flat > 2.5:
+		_work_timer = 0.0
+		if _retry <= 0:
+			state = "To lay a mine"
+			if not _route_to_point(_lay_point): order = "idle"; state = "Mine site unreachable"
+		return
+	_work_timer += delta
+	state = "Laying a mine · %d%%" % roundi(minf(1.0,_work_timer/mine_rules.lay_seconds)*100)
+	if _work_timer < mine_rules.lay_seconds: return
+	_work_timer = 0.0
+	mines -= 1
+	var mine: Node3D = mine_scene.instantiate()
+	mine.team = team
+	mine.rules = mine_rules
+	game.get_node("Entities").add_child(mine)
+	# On the point clicked, which may be track it can stand beside but not on.
+	mine.global_position = Vector3(_lay_point.x,0.0,_lay_point.z)
+	order = "idle"
+	state = "Mine laid · %d left" % mines
 ## Derail (docs/DERAILER.md): the unit goes to a piece of track and destroys it, derailing any train on it.
 ## Seconds until it can derail again.
 var derail_cooldown := 0.0

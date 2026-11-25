@@ -308,6 +308,14 @@ events = [SubResource("key_build_tank_factory")]
 action = &"build_temple"
 [sub_resource type="Shortcut" id="shortcut_build_temple"]
 events = [SubResource("key_build_temple")]
+[sub_resource type="InputEventAction" id="key_research_minelaying"]
+action = &"research_minelaying"
+[sub_resource type="Shortcut" id="shortcut_research_minelaying"]
+events = [SubResource("key_research_minelaying")]
+[sub_resource type="InputEventAction" id="key_command_lay_mine"]
+action = &"command_lay_mine"
+[sub_resource type="Shortcut" id="shortcut_command_lay_mine"]
+events = [SubResource("key_command_lay_mine")]
 [sub_resource type="InputEventAction" id="key_research_mining_trains"]
 action = &"research_mining_trains"
 [sub_resource type="Shortcut" id="shortcut_research_mining_trains"]
@@ -3218,6 +3226,31 @@ horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
+[node name="LayMine" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+tooltip_text = "Lay mine: click a point. Needs Minelaying researched and a mine aboard."
+shortcut = SubResource("shortcut_command_lay_mine")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_derail")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/LayMine"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="Auto" type="Label" parent="Bottom/Body/Row/Commands/Main/Fell"]
 visible = false
 layout_mode = 1
@@ -3704,6 +3737,30 @@ icon = ExtResource("card_research_mining_trains")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Research"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="ResearchMines" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_research_minelaying")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_derail")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ResearchMines"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
