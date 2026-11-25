@@ -34,6 +34,12 @@ func _ready() -> void:
 	_select_weapon(LASER)
 
 
+## The unit names the weapon of its next shot (unit_agent.weapon_for): 0 the laser, 1 the pod volley. Without
+## it, the walker alternates the two as before.
+func use_weapon(weapon: int) -> void:
+	if weapon >= 0: _next_clip = LASER if weapon == 0 else VOLLEY
+
+
 func _select_weapon(clip: StringName) -> void:
 	shoot_clip = clip
 	muzzle_bone = &"Muzzle" if clip == LASER else PORT_ORDER[0]
