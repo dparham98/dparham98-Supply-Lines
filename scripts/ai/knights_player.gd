@@ -43,10 +43,22 @@ var first_army_at := -1.0
 ## Once home has all its Chapterhouses (or no room for more), a Forge goes up there for Arms and Mail
 ## (docs/UPGRADES.md). While it saves for a level, the Chapterhouses leave home that Food and Iron.
 @export var forge_wanted := true
+@export_group("Rail")
+## Once it has a second Keep, it puts up a Wainwright, joins each Keep to home with track and runs a train hauling
+## iron home from each (docs/KNIGHTS_RAIL.md). The trains burn coal, so home also gets a Coal Mine and a Forester
+## works it while home holds less than `train_coal_wanted`.
+@export var rail_wanted := true
+@export_range(0,1000,10) var train_coal_wanted := 60
+@export_group("")
+## Its Coal Mine plan, and the Forester that builds it and then works it.
+var coal_plan: Node3D
+var coal_hand: Node3D
 func _ready() -> void:
 	# The army waits outside the Keep's range, off the ground its buildings go on.
 	rally_distance = 36.0
 	upgrade_lines = [&"arms",&"mail"]
+	# Its trains haul; mining trains need a Temple, which the Knights don't have.
+	mining_trains = false
 func think() -> void:
 	var depot := home()
 	var units := own_units()
@@ -59,6 +71,7 @@ func think() -> void:
 	for keep in own_keeps(): economy(keep,keep == depot)
 	found_keep(depot)
 	research()
+	rail_economy(depot)
 	produce()
 	fight(depot)
 	_medics()
@@ -103,9 +116,13 @@ func has_forge() -> bool:
 	for node in get_tree().get_nodes_in_group("research_buildings"):
 		if node.team == team and node.health > 0 and node.stats.building_id == &"forge": return true
 	return plans.values().any(func(other): return is_instance_valid(other) and other.kind == &"forge")
+## Whether it has a building of `id` standing, or planned at one of its Keeps.
+func has_building(id: StringName) -> bool:
+	if own_buildings().any(func(node): return node.get("stats") != null and node.stats.get("building_id") == id): return true
+	return plans.values().any(func(other): return is_instance_valid(other) and other.kind == id)
 func economy(keep: Node3D, is_home: bool) -> void:
 	var key: int = keep.get_instance_id()
-	var mine: Array = workers.filter(func(unit): return base_of(unit) == keep and not founders.has(unit))
+	var mine: Array = workers.filter(func(unit): return base_of(unit) == keep and not founders.has(unit) and unit != coal_hand)
 	var fields: Array = _at(keep,farms())
 	var local_halls: Array = _at(keep,halls())
 	var want_farms := farms_wanted if is_home else outpost_farms
@@ -128,6 +145,8 @@ func economy(keep: Node3D, is_home: bool) -> void:
 		# the room (docs/KNIGHTS_AI.md).
 		elif not local_halls.is_empty() and local_halls.size() < want_halls and fields.size() >= second_hall_farms and keep.food >= 105 and keep.wood >= 30 and keep.iron >= 65 and not _hall_waits.get(key,false): kind = &"chapterhouse"
 		elif is_home and forge_wanted and upgrades and not local_halls.is_empty() and (local_halls.size() >= want_halls or _hall_waits.get(key,false)) and not has_forge() and keep.wood >= 60 and keep.iron >= 80: kind = &"forge"
+		# The Wainwright goes up at whichever Keep has room first, once there is a second Keep to join.
+		elif rail_wanted and own_keeps().size() >= 2 and not has_building(&"wainwright") and keep.wood >= 60 and keep.iron >= 60: kind = &"wainwright"
 		elif fields.size() < target_farms and keep.wood >= 30: kind = &"farm"
 		if kind != &"":
 			var spec: Dictionary = network.plan_spec(kind)
@@ -206,6 +225,56 @@ func economy(keep: Node3D, is_home: bool) -> void:
 				var tree := forest_at(keep.global_position)
 				if tree != null: unit.command_gather(tree)
 	_train_foresters(keep,mine,want_workers)
+# --- Rail -----------------------------------------------------------------------------------------------------------
+
+## With a Wainwright standing: track from home to each other Keep, trains hauling their iron home (the Cyborg AI's
+## rail and run_trains, with Keeps for Depots), and coal at home for the trains.
+func rail_economy(depot: Node3D) -> void:
+	if not rail_wanted or rails == null or own_keeps().size() < 2 or not KnightRail.has_wainwright(depot,team): return
+	rail(depot)
+	run_trains(depot)
+	_coal(depot)
+## No build order holds iron back: each Keep's plans pay as they are placed.
+func _iron_held() -> int:
+	return 0
+func _buy_train(depot: Node3D, line: Node3D) -> void:
+	var r := Supply.rules()
+	if depot.food >= r.train_food_cost and depot.wood >= r.train_wood_cost and depot.iron >= r.train_iron_cost: depot.request_train(line)
+## One home Forester carries iron out to a Coal Mine site near home and builds it, then gathers coal while home
+## holds less than `train_coal_wanted` (up to twice that), and goes back to the Keep's own work after.
+func _coal(depot: Node3D) -> void:
+	if coal_hand != null and (not is_instance_valid(coal_hand) or not workers.has(coal_hand)): coal_hand = null
+	var coal := _nearest_mine(depot.global_position,&"coal")
+	if coal != null: coal_plan = null
+	elif not is_instance_valid(coal_plan) or coal_plan.finished:
+		coal_plan = null
+		var site = coal_site(depot)
+		if site == null: return
+		coal_plan = network.queue_plan(site,&"coal_mine",depot,true,false,team)
+		if coal_plan == null: return
+	if coal != null and depot.coal >= train_coal_wanted*2:
+		if coal_hand != null and coal_hand.order == "gather" and is_instance_valid(coal_hand.source) and coal_hand.source.resource_kind == &"coal": coal_hand._stop_route(); coal_hand.order = "idle"
+		coal_hand = null
+		return
+	if coal != null and depot.coal >= train_coal_wanted and coal_hand == null: return
+	if coal_hand == null:
+		var best: Node3D
+		for unit in workers:
+			if base_of(unit) != depot or unit.farmer or farmers.values().has(unit) or founders.has(unit) or unit.order in ["construct","repair"]: continue
+			var at: Vector3 = coal.global_position if coal != null else coal_plan.global_position
+			if best == null or unit.global_position.distance_to(at) < best.global_position.distance_to(at): best = unit
+		coal_hand = best
+		if coal_hand == null: return
+	if coal != null:
+		if not (coal_hand.order in ["gather","return"] and coal_hand.source == coal): coal_hand.command_gather(coal)
+		return
+	# The site needs its iron carried out: the Forester mines it, then builds.
+	if coal_hand.cargo > 0 and coal_hand.cargo_kind != &"iron": coal_hand.cargo = 0
+	if coal_plan.shortfall(&"iron") <= 0 or coal_hand.cargo >= mini(coal_hand.carry_capacity,coal_plan.shortfall(&"iron")):
+		if coal_hand.order != "construct": coal_hand.command_construct(coal_plan)
+	elif coal_hand.order != "gather" or not is_instance_valid(coal_hand.source) or coal_hand.source.resource_kind != &"iron":
+		var iron := _nearest_mine(depot.global_position,&"iron")
+		if iron != null: coal_hand.command_gather(iron)
 func _train_foresters(keep: Node3D, mine: Array, want_workers: int) -> void:
 	if mine.size()+keep.pending.count("forester_maiden") < want_workers and keep.food >= 45 and keep.queue < keep.queue_limit and Supply.room(get_tree(),team,&"forester_maiden"): keep.request_forester()
 func forest_at(point: Vector3) -> Node3D:
