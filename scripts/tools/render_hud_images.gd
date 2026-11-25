@@ -30,6 +30,7 @@ const ENTRIES := {
 	"barracks": ["res://scenes/gameplay/barracks.tscn","","build_barracks",35.0,1.0],
 	"tank_factory": ["res://scenes/gameplay/tank_factory.tscn","","build_factory",35.0,1.0],
 	"generator": ["res://scenes/gameplay/energy_generator.tscn","","build_generator",35.0,1.0],
+	"keep": ["res://scenes/gameplay/keep.tscn","","build_keep",215.0,1.0,1.02],
 	"farm": ["res://scenes/gameplay/farm.tscn","","build_farm",35.0,1.0,0.98],
 	"house": ["res://scenes/gameplay/house.tscn","","build_house",35.0,1.0],
 	"mine": ["res://scenes/gameplay/site_mine.tscn","","build_mine",20.0,1.0],
