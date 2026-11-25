@@ -55,7 +55,7 @@ Both spells go on the Grail Sentinel's card:
 
 ## Not done
 
-- **AI:** the Knights AI doesn't cast either spell or research Slow.
+- **AI:** the Knights AI researches Slow and its Sentinels cast both spells (`docs/KNIGHTS_AI.md`, Spells; `tests/ai_spells_test.gd`).
 - **Art:** the cloud and the ring are placeholders, and the cards borrow other art.
 
 ## Check

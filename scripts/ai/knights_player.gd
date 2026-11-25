@@ -53,6 +53,19 @@ var first_army_at := -1.0
 ## Its Coal Mine plan, and the Forester that builds it and then works it.
 var coal_plan: Node3D
 var coal_hand: Node3D
+@export_group("Spells")
+## Grail Sentinels cast Slow on a clump of the other side's units and Mist over a group of friends under fire from
+## beyond Mist's sight (docs/MIST_AND_SLOW.md). The Forge researches Slow after level 1 of Arms and Mail.
+@export var spells := true
+## Reserve a Sentinel keeps for healing after a cast.
+@export_range(0,200,5) var spell_keep := 40
+## The other side's units within Slow's radius of a point before it is slowed.
+@export_range(1,20) var slow_clump := 3
+## Friends within Mist's radius of a Sentinel before it covers them.
+@export_range(1,20) var mist_group := 4
+@export_group("")
+## Its casts still running: {kind, point, until}, so two Sentinels don't cast on the same spot.
+var _casts: Array = []
 func _ready() -> void:
 	# The army waits outside the Keep's range, off the ground its buildings go on.
 	rally_distance = 36.0
@@ -75,6 +88,7 @@ func think() -> void:
 	produce()
 	fight(depot)
 	_medics()
+	_spells()
 func own_keeps() -> Array[Node3D]:
 	var result: Array[Node3D] = []
 	var depot := home()
@@ -347,7 +361,7 @@ func _next_knight() -> StringName:
 ## Grail Sentinels heal the most hurt friend near them.
 func _medics() -> void:
 	for unit in army:
-		if unit.unit_stats.unit_id != &"grail_sentinel": continue
+		if unit.unit_stats.unit_id != &"grail_sentinel" or unit.order in ["mist","slow"]: continue
 		if unit.order == "heal" and is_instance_valid(unit.order_target) and unit.order_target.health < unit.order_target.max_health: continue
 		var best: Node3D
 		var worst := 0.9
@@ -357,3 +371,60 @@ func _medics() -> void:
 			var share: float = float(friend.health)/friend.max_health
 			if share < worst: worst = share; best = friend
 		if best != null: unit.command_heal(best)
+## Slow after level 1 of each upgrade line, once the army is big enough.
+func research_wanted() -> Array[StringName]:
+	var ids := super()
+	if not spells or army.size() < upgrades_army: return ids
+	var at := 0
+	for i in range(ids.size()):
+		if upgrade_lines.any(func(line): return ids[i] == Upgrades.research_id(line,1)): at = i+1
+	ids.insert(at,Research.SLOW)
+	return ids
+
+# --- Spells ---------------------------------------------------------------------------------------------------------
+
+## Each Grail Sentinel with the other side's units it sees within reach of a cast tries Slow, then Mist.
+func _spells() -> void:
+	if not spells: return
+	_casts = _casts.filter(func(cast): return cast.until > elapsed)
+	var foes: Array = get_tree().get_nodes_in_group("units").filter(func(unit): return unit.team == opponent and unit.health > 0 and not unit.is_in_group("rail_trains") and sees(unit.global_position))
+	if foes.is_empty(): return
+	for unit in army:
+		if unit.unit_stats.unit_id != &"grail_sentinel" or unit.spell_rules == null or unit.order in ["mist","slow"]: continue
+		var near: Array = foes.filter(func(foe): return foe.global_position.distance_to(unit.global_position) <= unit.spell_rules.cast_range+10.0)
+		if near.is_empty(): continue
+		if not _try_slow(unit,near): _try_mist(unit,near)
+func _cast_near(kind: String, point: Vector3, radius: float) -> bool:
+	return _casts.any(func(cast): return cast.kind == kind and cast.point.distance_to(point) < radius)
+func _cast(unit: Node3D, kind: String, point: Vector3, seconds: float) -> bool:
+	unit.command_spell(kind,point)
+	if unit.order != kind: return false
+	_casts.append({kind = kind, point = point, until = elapsed+seconds})
+	return true
+## Slow on the point among `near` with the most of them within Slow's radius, at least `slow_clump`.
+func _try_slow(unit: Node3D, near: Array) -> bool:
+	if not unit.spell_blocker("slow").is_empty() or unit.med_reserve < unit.spell_cost("slow")+spell_keep: return false
+	var r: float = unit.spell_rules.slow_radius
+	var best: Node3D
+	var best_count := 0
+	for foe in near:
+		var count: int = near.filter(func(other): return other.global_position.distance_to(foe.global_position) <= r).size()
+		if count > best_count: best = foe; best_count = count
+	if best == null or best_count < slow_clump or _cast_near("slow",best.global_position,r): return false
+	return _cast(unit,"slow",best.global_position,unit.spell_rules.slow_seconds)
+## Mist over the friends round the Sentinel, `mist_group` or more, while the other side's units in reach are all
+## further off than Mist lets them see in: they lose sight of the friends and can't shoot them.
+func _try_mist(unit: Node3D, near: Array) -> bool:
+	if not unit.spell_blocker("mist").is_empty() or unit.med_reserve < unit.spell_cost("mist")+spell_keep: return false
+	var r: float = unit.spell_rules.mist_radius
+	var centre := Vector3.ZERO
+	var friends := 0
+	for friend in army:
+		if friend.global_position.distance_to(unit.global_position) > r: continue
+		centre += friend.global_position
+		friends += 1
+	if friends < mist_group: return false
+	centre /= friends
+	if near.any(func(foe): return foe.global_position.distance_to(centre) <= r+unit.spell_rules.mist_reveal): return false
+	if _cast_near("mist",centre,r*2.0): return false
+	return _cast(unit,"mist",centre,unit.spell_rules.mist_seconds)

@@ -20,6 +20,11 @@ Item 5 of `docs/BALANCE_IMPLEMENTATION_HANDOFF.md` (2026-11-23). This branch is 
   - **Track and trains:** with a Wainwright standing, it uses the Cyborg AI's rail and train code with Keeps for Depots. Track joins home to each other Keep within `expand_reach`, paid by home. Home buys a train (60 F / 40 W / 30 I) for each line that has none, and the train hauls that Keep's iron home, pausing while home is full.
   - **Coal:** the Keep starts with none and the trains burn it. One home Forester (`coal_hand`) mines iron, carries it out to a Coal Mine site near home and builds it. It then works the mine while home holds less than `train_coal_wanted` (60), up to twice that, and goes back to the Keep's own work after.
   - It runs no mining trains, which need a Temple.
+- **Spells** (docs/MIST_AND_SLOW.md, `spells`): the Forge researches Slow after level 1 of Arms and Mail. Each round, a Grail Sentinel with the other side's units it sees within 30 m:
+  - casts **Slow** on the point with the most of them within Slow's 5 m, if that is at least `slow_clump` (3);
+  - else casts **Mist** over the friends round it, if there are at least `mist_group` (4) within 8 m and every foe in reach is further than 16 m from their centre (beyond Mist's 8 m sight into it);
+  - keeps `spell_keep` (40) reserve for healing after a cast;
+  - doesn't cast where another of its casts is still running.
 - **Waves:** as the Cyborg AI's, the first after `first_wave_seconds` (480 s, 8:00). The rally point is 36 m out, beyond the Keep's range, so the army stands off the ground its buildings go on.
 
 **From the main menu** an AI side can now be the Knights (`MatchSetup.FACTIONS`). A Knights East start gets the Keep and two Forester Maidens in place of the Cyborg start, as the West does (`_knights_start(game, "enemy")`). The East's `EnemyPlayer` node, or the West's `PlayerAI` when spectating, is replaced by a Knights AI node with the same name, side and switch (`_knights_ai`). It is replaced rather than given a new script, so its ready-time lookups run again.
