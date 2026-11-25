@@ -12,8 +12,9 @@ extends Node
 ## Seconds between decisions.
 @export_range(0.2,5,0.1) var think_seconds := 1.0
 ## What it builds at home, in order. Each waits for the one before to be finished.
-## Two Barracks before tech (docs/BALANCE_IMPLEMENTATION_HANDOFF.md, item 5): tech first lost to it.
-@export var build_order: Array[StringName] = [&"generator",&"barracks",&"generator",&"barracks",&"generator",&"coal_mine",&"tank_factory",&"generator"]
+## Two Barracks before tech (docs/BALANCE_IMPLEMENTATION_HANDOFF.md, item 5): tech first lost to it. The Temple of
+## Science comes after the Tank Factory, for Mining Trains and Minelaying.
+@export var build_order: Array[StringName] = [&"generator",&"barracks",&"generator",&"barracks",&"generator",&"coal_mine",&"tank_factory",&"temple_of_science",&"generator"]
 ## Once `build_order` is done, it keeps adding Generators, up to this many in all, while it holds `iron_plenty`.
 ## Energy, not iron, is what holds it back once it has expanded.
 @export_range(0,20) var generators_wanted := 6
@@ -41,6 +42,16 @@ extends Node
 @export_range(0.0,1.0,0.05) var repair_below := 0.75
 ## Workers repairing at once.
 @export_range(0,10) var repairers := 2
+@export_group("Mines")
+## Once it has a Derailer, the Temple researches Minelaying (after Mining Trains), and Derailers waiting at the rally
+## point lay mines across the way the other side would come (docs/MINES.md).
+@export var minelaying := true
+## Its own mines it keeps laid at once.
+@export_range(0,30) var mines_wanted := 6
+## How far out from home, toward the other side, the row of mines goes (metres).
+@export_range(10,200,1) var mine_distance := 45.0
+## Metres between mines along the row.
+@export_range(1,20,0.5) var mine_spacing := 5.0
 @export_group("")
 ## Infantry kept on gathering and building; the Barracks makes these before anything else.
 @export_range(0,20) var workers_wanted := 6
@@ -102,6 +113,11 @@ var _bases := {}
 var _search := {}
 ## Pairs it found no track for, so it does not search for them again: "from id:to id" -> true.
 var _no_path := {}
+## Derailer instance id -> the point it was sent to lay a mine; points it could not reach, so it does not try again.
+var _laying := {}
+var _bad_mine_spots: Array[Vector3] = []
+## Where its row of mines faces, fixed the first time it knows of somewhere to attack, so the row stays put.
+var _mine_toward: Variant = null
 @onready var game = get_tree().get_first_node_in_group("skirmish")
 @onready var ground = get_tree().get_first_node_in_group("terrain_grid")
 @onready var network = game.get_node("DepotNetwork")
@@ -134,6 +150,7 @@ func think() -> void:
 	gather(depot)
 	repair()
 	produce(depot)
+	lay_mines(depot)
 	fight(depot)
 
 # --- What it knows -------------------------------------------------------------------------------------------------
@@ -586,16 +603,24 @@ func mining_target(depot: Node3D) -> Node3D:
 		return mine
 	return null
 ## Researches Mining Trains at its Temple once it can pay.
+## The research it wants, in order: Mining Trains, then Minelaying once it has a Derailer.
+func research_wanted() -> Array[StringName]:
+	var ids: Array[StringName] = []
+	if mining_trains: ids.append(Research.MINING_TRAINS)
+	if minelaying and army.any(func(unit): return _is_derailer(unit)): ids.append(Research.MINELAYING)
+	return ids
+## Starts the first research it wants that is neither done nor under way, at a building of its own that offers it
+## and is free, saving for it meanwhile (held_back). One thing at a time is saved for.
 func research() -> void:
-	if not mining_trains or Research.has(game,team,Research.MINING_TRAINS): return
-	if Research.underway(game,team,Research.MINING_TRAINS) != null: return
-	for temple in get_tree().get_nodes_in_group("research_buildings"):
-		if temple.team != team or temple.health <= 0: continue
-		var entry = temple.research_by_id(Research.MINING_TRAINS)
-		if entry == null: continue
-		wants.research = Vector2i(entry.energy_cost,entry.iron_cost)
-		if temple.research_blocker(Research.MINING_TRAINS).is_empty(): temple.request_research(Research.MINING_TRAINS)
-		return
+	for id in research_wanted():
+		if Research.has(game,team,id) or Research.underway(game,team,id) != null: continue
+		for building in get_tree().get_nodes_in_group("research_buildings"):
+			if building.team != team or building.health <= 0 or building.researching != null: continue
+			var entry = building.research_by_id(id)
+			if entry == null: continue
+			wants.research = Vector2i(entry.energy_cost,entry.iron_cost)
+			if building.research_blocker(id).is_empty(): building.request_research(id)
+			return
 ## Gives each of its trains a job: hauling iron home from an expansion its track reaches that no train serves,
 ## else mining its mine. Buys a train at home for a job no train has.
 func run_trains(depot: Node3D) -> void:
@@ -718,6 +743,61 @@ func _stats(building: Node3D, id: StringName) -> UnitStats:
 		var stats: UnitStats = building.unit_stats_for(scene)
 		if stats.unit_id == id: return stats
 	return null
+
+# --- Mines ----------------------------------------------------------------------------------------------------------
+
+func _is_derailer(unit: Node3D) -> bool:
+	return unit.has_method("can_carry_mines") and unit.has_ability(&"derail")
+## Its own mines on the map.
+func own_mines() -> Array:
+	return get_tree().get_nodes_in_group("land_mines").filter(func(mine): return mine.team == team and not mine.is_queued_for_deletion())
+## Where its `n`-th mine goes: a row across the way from home toward what it would attack, `mine_distance` out (or
+## half way, if that is nearer), spots `mine_spacing` apart from the middle outward. The way is fixed the first time
+## it knows of somewhere (`_mine_toward`). Null while it knows of nowhere.
+func mine_spot(depot: Node3D, n: int) -> Variant:
+	if _mine_toward == null: _mine_toward = wave_target(depot.global_position)
+	if _mine_toward == null: return null
+	var way: Vector3 = _mine_toward-depot.global_position
+	way.y = 0.0
+	if way.length() < 2.0: return null
+	var out := minf(mine_distance,way.length()*0.5)
+	way = way.normalized()
+	var across := Vector3(-way.z,0.0,way.x)
+	var side: int = (n+1)/2*(1 if n%2 == 1 else -1)
+	return depot.global_position+way*out+across*mine_spacing*side
+## The first spot of the row with no mine of its own on it, none on the way and none it failed to reach.
+func next_mine_spot(depot: Node3D) -> Variant:
+	var taken: Array[Vector3] = []
+	for mine in own_mines(): taken.append(mine.global_position)
+	for point in _laying.values(): taken.append(point)
+	taken.append_array(_bad_mine_spots)
+	for n in range(mines_wanted*3):
+		var spot = mine_spot(depot,n)
+		if spot == null: return null
+		if ground.get_tile_at_position(spot) == null: continue
+		if taken.any(func(point): return Vector2(point.x-spot.x,point.z-spot.z).length() < mine_spacing*0.5): continue
+		return spot
+	return null
+## Derailers with mines aboard and a full tank, waiting at home and not in a wave, lay them along the row until `mines_wanted` of its
+## own are down. They load more at the rally point, inside the Depot's range (docs/MINES.md).
+func lay_mines(depot: Node3D) -> void:
+	for id in _laying.keys():
+		var unit = instance_from_id(id)
+		if unit == null or not is_instance_valid(unit) or unit.order != "lay_mine":
+			if unit != null and is_instance_valid(unit) and str(unit.state).contains("unreachable"): _bad_mine_spots.append(_laying[id])
+			_laying.erase(id)
+	if not minelaying or not Research.has(game,team,Research.MINELAYING) or _threat() != null: return
+	var down := own_mines().size()+_laying.size()
+	for unit in army:
+		if down >= mines_wanted: return
+		# Only a full tank leaves: a Derailer with too little coal would stop at the edge of the Depot's range.
+		if wave.has(unit) or not _is_derailer(unit) or unit.mines <= 0 or not _idle(unit) or not fuelled(unit): continue
+		var spot = next_mine_spot(depot)
+		if spot == null: return
+		unit.command_lay_mine(spot)
+		if unit.order != "lay_mine": continue
+		_laying[unit.get_instance_id()] = spot
+		down += 1
 
 # --- Fighting -------------------------------------------------------------------------------------------------------
 
