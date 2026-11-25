@@ -1,15 +1,18 @@
 extends "res://scripts/components/character_animator.gd"
-## Drives the Forester Maiden GLB inside Supply Lines: strips baked glTF scale keys on
-## replaceable KIT meshes so outfit/tool visibility matches gathering, carrying, and constructing.
+## The assignment selects the outfit. Activity and cargo select the tool or load.
 
-const KIT := [&"Kerchief", &"Sunhat", &"WoodcuttingAxe", &"FarmingTool", &"MaterialLoad", &"BuildingHammer"]
-const WORK_CLIPS := [&"Walk", &"Chop", &"Gather", &"Carry", &"Build", &"Till"]
+const KIT := [&"Kerchief", &"Sunhat", &"WoodcuttingAxe", &"FarmingTool", &"MaterialLoad", &"FoodBasket", &"BuildingHammer"]
+const WORK_CLIPS := [&"Walk", &"Chop", &"Gather", &"Carry", &"CarryFood", &"Build", &"Till"]
 static var _clean_libraries: Dictionary = {}
 
 var _kit_meshes: Dictionary = {}
+var _worker: Node
 
 func _ready() -> void:
 	super._ready()
+	var unit := get_parent().get_parent() if get_parent() != null else null
+	if unit != null and unit.has_method("command_gather"):
+		_worker = unit
 	for key: StringName in KIT:
 		var mesh := find_child(String(key), true, false) as MeshInstance3D
 		if mesh != null:
@@ -36,56 +39,56 @@ func _install_clean_clips() -> void:
 	player.remove_animation_library(&"")
 	player.add_animation_library(&"", _clean_libraries[source])
 
-func _owner_unit() -> Node:
-	var parent := get_parent()
-	return parent.get_parent() if parent != null else null
+func _load_clip() -> StringName:
+	return &"CarryFood" if _worker.cargo_kind == &"food" else &"Carry"
 
-func _is_carrying() -> bool:
-	var unit := _owner_unit()
-	if unit == null: return false
-	var cargo = unit.get("cargo")
-	return cargo is int and cargo > 0
+func _working_clip() -> StringName:
+	if _worker == null: return work_clip
+	if _worker.state.begins_with("Felling"): return &"Chop"
+	if _worker.order in ["construct", "repair"]: return &"Build"
+	if _worker.order == "gather" and is_instance_valid(_worker.source):
+		var source: Node = _worker.source
+		if source.is_in_group("farms"): return &"Till"
+		if source.is_in_group("material_piles") or source.resource_kind != &"wood": return &"Gather"
+	return work_clip
 
-func _is_constructing() -> bool:
-	var unit := _owner_unit()
-	if unit == null: return false
-	return str(unit.get("order")) == "construct"
-
-## A Farmer (unit_agent.gd, docs/KNIGHTS_ECONOMY.md) wears the sun hat and carries the farming tool.
-func _is_farmer() -> bool:
-	var unit := _owner_unit()
-	return unit != null and unit.get("farmer") == true
-
-func _is_tilling() -> bool:
-	var unit := _owner_unit()
-	if unit == null: return false
-	var source = unit.get("source")
-	return is_instance_valid(source) and source.is_in_group("farms")
+func _shows_load(kind: StringName) -> bool:
+	if _worker == null or _worker.cargo <= 0: return false
+	# The worker finishes gathering before taking a load into her arms.
+	if _worker.order == "gather" and is_instance_valid(_worker.source) and _worker.cargo_kind == _worker.source.resource_kind: return false
+	if kind == &"work" and (_worker.order in ["construct", "repair", "fell"] or _worker.state.begins_with("Felling")): return false
+	return true
 
 func _clip_for(kind: StringName) -> StringName:
-	match kind:
-		&"run": return &"Carry" if _is_carrying() else run_clip
-		&"work":
-			if _is_constructing(): return &"Build"
-			return &"Till" if _is_tilling() and player != null and player.has_animation(&"Till") else work_clip
-	return idle_clip
+	if _shows_load(kind): return _load_clip()
+	if kind == &"work": return _working_clip()
+	return super._clip_for(kind)
+
+func _pace(kind: StringName, clip: StringName) -> float:
+	if clip in [&"Carry", &"CarryFood"]:
+		return clampf(_value / 0.84, 0.5, 2.0) if kind == &"run" else 0.0
+	if clip in [&"Till", &"Gather"] and _value > 0.0:
+		return player.get_animation(clip).length / _value
+	return super._pace(kind, clip)
 
 func _process(delta: float) -> void:
 	super._process(delta)
 	_update_kit(motion())
 
 func _update_kit(kind: StringName) -> void:
-	var loaded := _is_carrying()
-	var building := _is_constructing() and kind == &"work"
-	var farming := _is_farmer()
+	var farm: bool = _worker != null and _worker.farmer
+	var loaded := _shows_load(kind)
+	var food: bool = loaded and _worker.cargo_kind == &"food"
+	var activity := _working_clip() if kind == &"work" else &""
+	var building := activity == &"Build"
 	for key: StringName in _kit_meshes:
 		var mesh: MeshInstance3D = _kit_meshes[key]
-		if not is_instance_valid(mesh): continue
 		mesh.scale = Vector3.ONE
 		match key:
-			&"Kerchief": mesh.visible = not farming
-			&"Sunhat": mesh.visible = farming
-			&"FarmingTool": mesh.visible = farming and not loaded
-			&"MaterialLoad": mesh.visible = loaded
+			&"Kerchief": mesh.visible = not farm
+			&"Sunhat": mesh.visible = farm
+			&"FoodBasket": mesh.visible = food
+			&"MaterialLoad": mesh.visible = loaded and not food
 			&"BuildingHammer": mesh.visible = building
-			&"WoodcuttingAxe": mesh.visible = not (loaded or building or farming)
+			&"FarmingTool": mesh.visible = farm and not loaded and not building
+			&"WoodcuttingAxe": mesh.visible = not farm and not loaded and not building and activity != &"Gather"

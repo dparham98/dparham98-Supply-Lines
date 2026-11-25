@@ -12,7 +12,7 @@ extends SceneTree
 ## Pass ids after `--` to render only those.
 const TeamPaint = preload("res://scripts/components/team_paint.gd")
 const HUD = preload("res://scripts/gameplay/skirmish_hud.gd")
-## id: [gameplay scene, production card or "", build card or "", yaw of the view in degrees, portrait framing].
+## id: [gameplay scene, production card or "", build card or "", yaw in degrees, portrait framing, optional portrait fill].
 ## Portrait framing: the share of the model's height, from the top, the portrait shows (1 is the whole model).
 const ENTRIES := {
 	"infantry": ["res://scenes/gameplay/infantry.tscn","produce_infantry","",35.0,0.55],
@@ -30,6 +30,8 @@ const ENTRIES := {
 	"barracks": ["res://scenes/gameplay/barracks.tscn","","build_barracks",35.0,1.0],
 	"tank_factory": ["res://scenes/gameplay/tank_factory.tscn","","build_factory",35.0,1.0],
 	"generator": ["res://scenes/gameplay/energy_generator.tscn","","build_generator",35.0,1.0],
+	"farm": ["res://scenes/gameplay/farm.tscn","","build_farm",35.0,1.0,0.98],
+	"house": ["res://scenes/gameplay/house.tscn","","build_house",35.0,1.0],
 	"mine": ["res://scenes/gameplay/site_mine.tscn","","build_mine",20.0,1.0],
 	"pithead": ["res://scenes/gameplay/iron_mine.tscn","","build_coal_mine",35.0,1.0],
 	"temple": ["res://scenes/gameplay/temple_of_science.tscn","","build_temple",215.0,1.0], # its door faces +Z
@@ -147,7 +149,8 @@ func render(id: String, entry: Array) -> void:
 	var share: float = entry[4]
 	top.position.y += box.size.y*(1.0-share)
 	top.size.y = box.size.y*share
-	frame_box(top,entry[3]-10.0,float(PORTRAIT_SIZE.x)/PORTRAIT_SIZE.y,1.7 if share < 1.0 else 1.2)
+	var portrait_fill: float = entry[5] if entry.size() > 5 else (1.7 if share < 1.0 else 1.2)
+	frame_box(top,entry[3]-10.0,float(PORTRAIT_SIZE.x)/PORTRAIT_SIZE.y,portrait_fill)
 	var portrait := await shoot(PORTRAIT_SIZE)
 	# Cut to what is drawn, so a long vehicle fills the frame's height as a figure does.
 	var used := portrait.get_used_rect().grow(6).intersection(Rect2i(Vector2i.ZERO,portrait.get_size()))

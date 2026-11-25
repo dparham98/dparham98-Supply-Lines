@@ -8,6 +8,7 @@ var max_health: int:
 	get: return RULES.house_health
 var assigned_depot: Node3D
 var cells: Array[Vector2i] = []
+@onready var model: Node3D = $Visuals/Model
 @onready var ground = get_tree().get_first_node_in_group("terrain_grid")
 func _ready() -> void:
 	health = max_health
@@ -32,9 +33,11 @@ func _process(_delta: float) -> void:
 	if has_node("Label"): $Label.text = "HOUSE · %s · %d/%d HP" % ["+%d housing" % RULES.house_room if housed() else "outside Keep range: no housing",health,max_health]
 func take_damage(hit: int) -> void:
 	health = maxi(0,health-maxi(0,hit))
-	if health <= 0:
+	if health <= 0 and not is_queued_for_deletion():
 		set_process(false)
 		for group in get_groups(): remove_from_group(group)
+		model.reparent(get_parent())
+		model.play_death()
 		queue_free()
 func _exit_tree() -> void:
 	if not is_instance_valid(ground): return

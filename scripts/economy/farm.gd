@@ -12,7 +12,7 @@ var assigned_depot: Node3D
 var cells: Array[Vector2i] = []
 ## The Forester working it, if any.
 var worker: Node3D
-var _work_left := 0.0
+@onready var model: Node3D = $Visuals/Model
 ## An enemy ground unit stands on the field, so it yields nothing (checked every `farm_raid_check_seconds`).
 var raided := false
 var _raid_wait := 0.0
@@ -70,27 +70,26 @@ func enemy_on_field() -> bool:
 	return false
 func extract(requested: int, asking := "") -> int:
 	if not can_extract(asking): return 0
-	_work_left = 1.5
 	return mini(maxi(0,requested),RULES.farm_food_per_beat)
 func update_label() -> void:
 	if not has_node("Label"): return
 	var status := "enemy on the field: no Food" if raided else ("tilled" if worker_busy() else "no worker")
 	$Label.text = "FARM · %s · %d/%d HP" % [status,health,max_health]
 func _process(delta: float) -> void:
-	_work_left = maxf(0.0,_work_left-delta)
 	_raid_wait -= delta
 	if _raid_wait <= 0.0:
 		_raid_wait = RULES.farm_raid_check_seconds
 		raided = enemy_on_field()
 	update_label()
-	var model := get_node_or_null("Visuals/Model")
-	if model != null and model.has_method("show_working"): model.show_working(_work_left > 0.0)
+	model.show_running(worker_busy() and not raided)
 func take_damage(hit: int) -> void:
 	health = maxi(0,health-maxi(0,hit))
 	update_label()
-	if health <= 0:
+	if health <= 0 and not is_queued_for_deletion():
 		set_process(false)
 		for group in get_groups(): remove_from_group(group)
+		model.reparent(get_parent())
+		model.play_death()
 		queue_free()
 func _exit_tree() -> void:
 	if not is_instance_valid(ground): return
