@@ -8,7 +8,7 @@ Item 5 of `docs/BALANCE_IMPLEMENTATION_HANDOFF.md` (2026-11-23). This branch is 
 
 - **Economy:** each Keep runs its own.
   - **Plans:** one at a time, paid from the Keep's stock (item 4). A House goes up when housing has `house_headroom` (3) or less to spare. Farms come next, then a Chapterhouse once there are 2 Farms, then more Farms up to `farms_wanted` (8 at home, 6 at an outpost). A further Chapterhouse needs `second_hall_farms` (3) Farms, up to `chapterhouses_wanted` (3 at home, 2 at an outpost).
-  - **Workers:** one Forester to each Farm; the rest cut wood (one, or two while the Keep is short of it) and mine the nearest iron.
+  - **Workers:** one Forester to each Farm, who stays its Farmer for good; a Farmer whose Farm is lost takes the next empty Farm first. The AI never picks a Farmer to build or to found a Keep. The rest cut wood (one, or two while the Keep is short of it) and mine the nearest iron.
   - **Training:** the Keep trains Foresters without a pause to `foresters_wanted` (14 at home, 10 at an outpost).
 - **A second Keep** at `expand_at` (300 s), or sooner if it runs out of building room. Two home Foresters carry 50 iron and 50 wood onto a site beside the nearest free iron mine and build it.
 - **The army:** the Chapterhouses train `knight_mix` in turn, 10 Round Table Marines to 3 Questing Marines to 3 Grail Sentinels. It keeps 45 Food for workers while a Keep has fewer than `early_workers` (6). A Warhound scouts after 90 s. Grail Sentinels heal the most hurt friend within 22 m.

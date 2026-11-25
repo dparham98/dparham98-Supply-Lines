@@ -292,6 +292,7 @@ func object_name(node: Node3D) -> String:
 	if node.is_in_group("houses"): return "House" if node.name == "House" else "%s · House" % node.name
 	if node.is_cargo_vehicle: return "Cargo Vehicle"
 	if node.is_depot_truck: return "Depot Truck"
+	if node.get("farmer") == true: return "Farmer"
 	return node.unit_stats.display_name if node.unit_stats != null else "Deforester"
 func nearest_depot(node: Node3D) -> Node3D:
 	var nearest: Node3D
@@ -1003,10 +1004,12 @@ the one shown while it can, else another that can."
 	elif node.is_in_group("farms"):
 		commands.get_node("Title").text = "FARM · FOOD"
 		var tiller = node.worker if node.worker_busy() else null
-		state_label.text = "%s · %s" % [team_label(node),("tilled by "+str(tiller.name)) if tiller != null else "no worker"]
-		set_stats([["Food a beat","%d / 1.2 s" % KnightHousing.rules().farm_food_per_beat],["Workers","%d / 1" % (1 if tiller != null else 0)]])
-		info.get_node("Details").text = "One Forester Maiden tills it and carries the Food to a Keep."
-		hint_text = "Right-click the Farm with one Forester Maiden to till it; a Farm takes one worker. The Food goes to the nearest Keep."
+		var status: String = ("tilled by "+str(tiller.name)) if tiller != null else "no Farmer"
+		if node.raided: status = "enemy on the field: no Food"
+		state_label.text = "%s · %s" % [team_label(node),status]
+		set_stats([["Food a beat","%d / 1.2 s" % KnightHousing.rules().farm_food_per_beat],["Farmer","%d / 1" % (1 if tiller != null else 0)]])
+		info.get_node("Details").text = "A field any unit can walk over. Its Farmer tills it and carries the Food to a Keep. While an enemy ground unit stands on it, it yields nothing."
+		hint_text = "Right-click the Farm with one Forester Maiden: she becomes its Farmer for good and no longer builds, fells or fights. A Farm takes one Farmer. The Food goes to the nearest Keep."
 	elif node.is_in_group("houses"):
 		commands.get_node("Title").text = "HOUSE · HOUSING"
 		state_label.text = "%s · %s" % [team_label(node),"+%d housing" % KnightHousing.rules().house_room if node.housed() else "outside every Keep's range: no housing"]
@@ -1056,7 +1059,10 @@ the one shown while it can, else another that can."
 			hint_text = "Deploy on an empty Depot footprint. This vehicle does not carry transferable cargo."
 		else:
 			if node._attack_enabled: show_button("Attack","Attack")
-			if node.can_gather:
+			if node.get("farmer") == true:
+				# A Farmer works only a Farm (docs/KNIGHTS_ECONOMY.md).
+				show_button("Gather","Work an empty Farm")
+			elif node.can_gather:
 				show_button("Gather","Gather")
 				show_button("Fell","Fell")
 				card.get_node("Fell/Auto").visible = fell_autocast_on()
@@ -1074,6 +1080,7 @@ the one shown while it can, else another that can."
 				show_button("Derail","Derail")
 				explain(card.get_node("Derail"),node.derail_cooldown > 0.0,"Recharging: %d s" % ceili(node.derail_cooldown))
 			hint_text = "Right-click to move, gather or attack. Workers pay from and deliver to the nearest stockpile unless you right-click a Depot. Build plans with B."
+			if node.get("farmer") == true: hint_text = "A Farmer works its Farm for good and carries the Food to the nearest Keep. It does not build, fell or fight. If its Farm is lost, right-click an empty Farm."
 # Card art that follows the state of a button. Unchanged art is not reassigned, so buttons do not redraw each frame.
 func set_card(button: Button, id: String) -> void:
 	var path := "res://assets/ui/command_cards/sl_%s.png" % id

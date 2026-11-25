@@ -10,26 +10,26 @@ roughness = 0.8
 
 [sub_resource type="BoxMesh" id="body"]
 material = SubResource("wall")
-size = Vector3(2.6, 1.8, 2.6)
+size = Vector3(3.5, 2.2, 3.5)
 
 [sub_resource type="PrismMesh" id="gable"]
 material = SubResource("roof")
-size = Vector3(2.9, 1.1, 2.9)
+size = Vector3(3.9, 1.4, 3.9)
 
 [sub_resource type="BoxMesh" id="door"]
 size = Vector3(0.6, 1.0, 0.06)
 
 [node name="HousePlaceholder" type="Node3D"]
-editor_description = "Placeholder House model (docs/KNIGHTS_ECONOMY.md): plastered walls and a red gable roof on a 3 x 3 m footprint, door to -Z. The owner will supply art; replace this scene in the House's Visuals slot."
+editor_description = "Placeholder House model (docs/KNIGHTS_ECONOMY.md): plastered walls and a red gable roof on a 4 x 4 m footprint, door to -Z. The owner will supply art; replace this scene in the House's Visuals slot."
 
 [node name="Body" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
 mesh = SubResource("body")
 
 [node name="Roof" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.35, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.9, 0)
 mesh = SubResource("gable")
 
 [node name="Door" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -1.31)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -1.76)
 mesh = SubResource("door")

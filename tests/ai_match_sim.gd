@@ -72,7 +72,7 @@ func _blockers(plan: Node3D) -> String:
 	for x in range(rect.position.x,rect.end.x):
 		for z in range(rect.position.y,rect.end.y):
 			var tile: Dictionary = game.ground.tiles[z*game.ground.grid_size.x+x]
-			for key in ["occupied_by","apron","rail","mine_front"]:
+			for key in ["occupied_by","apron","rail","mine_front","field"]:
 				if tile.has(key) and tile.get(key) != null and not str(tile.get(key)).is_empty(): parts.append("%s=%s" % [key,tile.get(key)])
 			if not game.ground.is_tile_valid(Vector2i(x,z)): parts.append("invalid tile (terrain %s)" % game.ground.get_terrain(Vector2i(x,z)))
 	for unit in get_nodes_in_group("units"):

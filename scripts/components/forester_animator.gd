@@ -51,10 +51,23 @@ func _is_constructing() -> bool:
 	if unit == null: return false
 	return str(unit.get("order")) == "construct"
 
+## A Farmer (unit_agent.gd, docs/KNIGHTS_ECONOMY.md) wears the sun hat and carries the farming tool.
+func _is_farmer() -> bool:
+	var unit := _owner_unit()
+	return unit != null and unit.get("farmer") == true
+
+func _is_tilling() -> bool:
+	var unit := _owner_unit()
+	if unit == null: return false
+	var source = unit.get("source")
+	return is_instance_valid(source) and source.is_in_group("farms")
+
 func _clip_for(kind: StringName) -> StringName:
 	match kind:
 		&"run": return &"Carry" if _is_carrying() else run_clip
-		&"work": return &"Build" if _is_constructing() else work_clip
+		&"work":
+			if _is_constructing(): return &"Build"
+			return &"Till" if _is_tilling() and player != null and player.has_animation(&"Till") else work_clip
 	return idle_clip
 
 func _process(delta: float) -> void:
@@ -64,14 +77,15 @@ func _process(delta: float) -> void:
 func _update_kit(kind: StringName) -> void:
 	var loaded := _is_carrying()
 	var building := _is_constructing() and kind == &"work"
+	var farming := _is_farmer()
 	for key: StringName in _kit_meshes:
 		var mesh: MeshInstance3D = _kit_meshes[key]
 		if not is_instance_valid(mesh): continue
 		mesh.scale = Vector3.ONE
 		match key:
-			&"Kerchief": mesh.visible = true
-			&"Sunhat": mesh.visible = false
-			&"FarmingTool": mesh.visible = false
+			&"Kerchief": mesh.visible = not farming
+			&"Sunhat": mesh.visible = farming
+			&"FarmingTool": mesh.visible = farming and not loaded
 			&"MaterialLoad": mesh.visible = loaded
 			&"BuildingHammer": mesh.visible = building
-			&"WoodcuttingAxe": mesh.visible = not (loaded or building)
+			&"WoodcuttingAxe": mesh.visible = not (loaded or building or farming)

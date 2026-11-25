@@ -123,7 +123,7 @@ func economy(keep: Node3D, is_home: bool) -> void:
 			var best: Node3D
 			var best_score := INF
 			for unit in mine:
-				if unit.order == "construct": continue
+				if unit.order == "construct" or unit.farmer: continue
 				var score: float = unit.global_position.distance_to(plan.global_position)+(1000.0 if farmers.values().has(unit) else 0.0)
 				if score < best_score: best = unit; best_score = score
 			if best != null: best.command_construct(plan)
@@ -134,17 +134,22 @@ func economy(keep: Node3D, is_home: bool) -> void:
 		if farm == null or not is_instance_valid(farm) or farm.is_queued_for_deletion() or farm.health <= 0 or not is_instance_valid(worker) or not workers.has(worker): farmers.erase(id)
 	for farm in fields:
 		if farmers.has(farm.get_instance_id()): continue
+		# A Farmer whose Farm was lost takes an empty one first (docs/KNIGHTS_ECONOMY.md).
 		var best: Node3D
 		for unit in mine:
-			if unit.order in ["construct","repair"] or farmers.values().has(unit): continue
+			if not unit.farmer or farmers.values().has(unit) or (is_instance_valid(unit.farm) and unit.farm.health > 0): continue
 			if best == null or unit.global_position.distance_to(farm.global_position) < best.global_position.distance_to(farm.global_position): best = unit
+		if best == null:
+			for unit in mine:
+				if unit.farmer or unit.order in ["construct","repair"] or farmers.values().has(unit): continue
+				if best == null or unit.global_position.distance_to(farm.global_position) < best.global_position.distance_to(farm.global_position): best = unit
 		if best != null: farmers[farm.get_instance_id()] = best
 	for farm in fields:
 		var worker = farmers.get(farm.get_instance_id())
 		if worker == null or worker.order in ["construct","repair"]: continue
 		if not (worker.order in ["gather","return"] and worker.source == farm): worker.command_gather(farm)
 	# The rest cut wood and mine iron.
-	var free: Array = mine.filter(func(unit): return not farmers.values().has(unit) and not unit.order in ["construct","repair"])
+	var free: Array = mine.filter(func(unit): return not unit.farmer and not farmers.values().has(unit) and not unit.order in ["construct","repair"])
 	var want_wood := 1
 	if keep.wood >= 200: want_wood = 0
 	elif keep.wood < 40 and free.size() >= 3: want_wood = 2
@@ -193,7 +198,7 @@ func found_keep(depot: Node3D) -> void:
 	if elapsed < expand_at and no_room == 0: return
 	var site = expansion_spot(depot,null)
 	if site == null: return
-	var pool: Array = workers.filter(func(unit): return base_of(unit) == depot and not farmers.values().has(unit) and unit.order != "construct")
+	var pool: Array = workers.filter(func(unit): return base_of(unit) == depot and not unit.farmer and not farmers.values().has(unit) and unit.order != "construct")
 	if pool.size() < 2: return
 	keep_plan = network.queue_plan(site,&"keep",null,false,false,team)
 	if keep_plan == null: return

@@ -176,7 +176,7 @@ func ground_clear(cells: Array[Vector2i], ignore = null) -> bool:
 	for cell in cells:
 		if not ground.is_tile_in_bounds(cell) or ground.get_terrain(cell) not in [0,2]: return false
 		var tile: Dictionary = ground.tiles[cell.y*500+cell.x]
-		if not tile.buildable or (tile.occupied_by != null and not str(tile.occupied_by).begins_with("agent_")): return false
+		if not tile.buildable or tile.has("field") or (tile.occupied_by != null and not str(tile.occupied_by).begins_with("agent_")): return false
 		var rail = tile.get("rail")
 		if is_instance_valid(rail) and not (ignore.has(rail) if ignore is Array else rail == ignore): return false
 	return true

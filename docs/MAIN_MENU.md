@@ -32,7 +32,7 @@ shows. Spectating, the rows are the West AI and the East AI.
   same spot, two Forester Maidens and a 25 Food crate. The start is saved as `scenes/maps/starts/knights_start.tscn`
   (positions from the start marker). The Keep keeps its own stock: 150 iron, 150 wood, 300 Food. The rest of Two
   Lakes, the mines and the East start are unchanged.
-- **Food:** Two Lakes has no Food source yet (no Farm), so a Knights player has only the starting Food.
+- **Food:** a Knights player makes Food from Farms (docs/KNIGHTS_ECONOMY.md).
 
 **Start match** (Start watching, when spectating) loads the map; **Quit** closes the game. The menu remembers the
 last match when you come back to it.
