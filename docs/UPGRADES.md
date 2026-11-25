@@ -34,8 +34,8 @@ Each level is its own research, `assets/research/upgrades/<line>_<n>.tres` (for 
 ## Effects
 
 `scripts/research/upgrades.gd` (`Upgrades`):
-- **Attack:** each level adds 10% of the weapon's base damage, rounded, at least 1 (`with_attack`). With two levels a 4 becomes 6 and a 20 becomes 24. It applies in `CombatResolver.splash_damage`, so it covers main and second weapons, splash and heavy damage.
-- **Armour:** each level takes 1 off every hit the unit takes, never below 1 (`after_armour`). It applies in `unit_agent.take_damage`, so it covers every source of damage, mines included.
+- **Attack:** each level adds 10% of the weapon's base damage, rounded, at least 1 (`with_attack`). With two levels a 4 becomes 6 and a 20 becomes 24. It applies in `CombatResolver.splash_damage`, so it covers splash and heavy damage too.
+- **Armour:** each level takes 1 off every hit the unit takes, never below 1 (`after_armour`). It applies in `unit_agent.take_damage`, so it covers every source of damage.
 
 **Which units a line covers:**
 - **Cyborgs:** vehicles (anything with fuel, `EngineeringWork.is_vehicle`) get the Vehicle lines; everything else gets the Infantry lines.
