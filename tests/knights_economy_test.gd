@@ -290,7 +290,7 @@ func run() -> void:
 		game.selected_building = node
 		hud.update_contents()
 		if not check(not hud.state_label.text.is_empty(),"%s should show a panel" % node.name): return
-		if node != keep and not building_art(hud, "farm" if node == farm else "house"): return
+		if not building_art(hud, node.scene_file_path.get_file().get_basename()): return
 	if not check(hud.state_label.text.contains("housing"),"The Keep panel should show housing: '%s'" % hud.state_label.text): return
 	# A Keep trains for the enemy side too (away from the player's units, which would capture it).
 	var enemy_keep = load("res://scenes/gameplay/keep.tscn").instantiate()

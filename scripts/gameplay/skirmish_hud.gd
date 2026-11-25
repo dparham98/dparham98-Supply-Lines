@@ -508,6 +508,7 @@ func update_portrait(node) -> void:
 	frame.texture = _icons[path]
 	frame.visible = true
 func icon_name(node: Node) -> String:
+	if node.is_in_group("keeps"): return "keep"
 	if node.is_in_group("depots"): return "depot"
 	if node.is_in_group("farms"): return "farm"
 	if node.is_in_group("houses"): return "house"

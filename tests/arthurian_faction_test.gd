@@ -67,24 +67,63 @@ func run() -> void:
 			if not check(player.has_animation(clip), "%s missing clip %s (has %s)" % [model_name, clip, player.get_animation_list()]): return
 		var painted := TeamPaint.apply(model, "player")
 		if not check(painted >= 1, "%s painted 0 team surfaces" % model_name): return
+		if model_name == "keep_model":
+			var roof := model.find_child("roof", true, false) as MeshInstance3D
+			if not check(roof != null and roof.mesh != null, "Keep roof missing"): return
+			var fixed_blue := false
+			for i in roof.mesh.get_surface_count():
+				var finish := roof.mesh.surface_get_material(i)
+				if finish != null and finish.resource_name == "Royal_Enamel":
+					fixed_blue = roof.get_active_material(i) == finish
+			if not check(fixed_blue,
+					"The Keep's royal blue roof should retain its enamel when team colors are applied"): return
 		model.free()
 
 	# 3. Keep model clips & wreck lifecycle check.
 	var keep_probe: Node3D = load("res://scenes/models/keep_model.tscn").instantiate()
 	root.add_child(keep_probe)
 	await process_frame
+	var hull := extent(keep_probe, keep_probe)
+	if not check(hull.position.x >= -4.91 and hull.end.x <= 4.91 and hull.position.z >= -4.91 and hull.end.z <= 4.91,
+			"Keep must leave clearance within its 10 × 10 m site: %s" % hull): return
+	if not check(absf(hull.position.y) < 0.06 and hull.end.y < 9.5, "Keep needs ground contact and overhead clearance: %s" % hull): return
+	var gate := keep_probe.find_child("portcullis", true, false) as MeshInstance3D
+	var pad := keep_probe.find_child("balloon_pad", true, false) as Node3D
+	if not check(gate != null and gate.global_position.z > 3.5, "Keep gate should face the +Z approach"): return
+	if not check(pad != null and pad.global_position.y > 6.5, "Keep mooring pad should sit on the roof"): return
 	keep_probe.show_construction(0.5)
 	if not check(keep_probe.player.assigned_animation == &"Build", "Keep model did not pose Build"): return
-	keep_probe.show_print(0.5)
+	keep_probe.show_construction(1.0)
+	keep_probe.show_print(0.0)
+	var closed_gate := gate.global_transform * gate.get_aabb()
+	keep_probe.show_print(1.0)
 	if not check(keep_probe.player.assigned_animation == &"Train", "Keep model did not pose Train"): return
+	var open_gate := gate.global_transform * gate.get_aabb()
+	if not check(closed_gate.position.y < 0.5 and open_gate.position.y > 1.73,
+			"Keep gate should clear a Forester at the training exit: closed %.2f, open %.2f" % [closed_gate.position.y, open_gate.position.y]): return
 	keep_probe.play_launch_balloon()
 	if not check(keep_probe.player.assigned_animation == &"LaunchBalloon", "Keep model did not play LaunchBalloon"): return
+	var launch: AnimationPlayer = keep_probe.player
+	for i in range(1,5):
+		var claw := pad.find_child("mooring_clamp_%02d" % i, true, false) as Node3D
+		if not check(claw != null, "Keep mooring clamp %d is missing from the moving pad" % i): return
+		launch.seek(0, true)
+		var latched := claw.quaternion
+		launch.seek(launch.current_animation_length * 0.5, true)
+		if not check(latched.angle_to(claw.quaternion) > deg_to_rad(45), "Mooring clamp %d should release the balloon" % i): return
+		launch.seek(launch.current_animation_length, true)
+		if not check(latched.angle_to(claw.quaternion) < deg_to_rad(3), "Mooring clamp %d should latch again" % i): return
 	keep_probe.unit_left()
 	if not check(keep_probe.closing(), "Keep model did not close gate after unit_left()"): return
 	if not check(keep_probe.has_death_clip(), "Keep model missing Die clip"): return
 	keep_probe.play_death()
 	var fx := keep_probe.get_children().filter(func(n): return n.get_script() == Burst)
 	if not check(fx.size() == 1 and fx[0].player.has_animation(&"Death"), "Keep death FX missing or lacking Death clip"): return
+	var wreck_fx: Node3D = fx[0]
+	wreck_fx.player.seek(0.35, true)
+	wreck_fx._process(0.0)
+	if not check(wreck_fx.flash != null and wreck_fx.flash.global_position.y > 5.0 and wreck_fx.light.visible,
+			"Keep destruction should light the flash at the crown"): return
 	keep_probe.free()
 
 	# 4. Load playable Arthurian skirmish scene cleanly.
