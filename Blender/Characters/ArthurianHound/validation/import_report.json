@@ -1,0 +1,25 @@
+{
+  "bounds_position": "(-0.280518, -0.0, -0.99361)",
+  "bounds_size": "(0.561037, 1.280023, 1.846543)",
+  "checks": 10,
+  "errors": [],
+  "materials": [
+    "white",
+    "gold",
+    "team_color",
+    "fur",
+    "black",
+    "muzzle",
+    "leather",
+    "graphite",
+    "Head | nose leather",
+    "Head | sable mask and flews",
+    "steel",
+    "joint",
+    "glow"
+  ],
+  "mesh_count": 1,
+  "glb_sha256": "3b9fb1e19c9949ab7b0aeef11fb3d16b2758f396eb5600a24f583d686aa68006",
+  "renderer": "Godot 4.7.2 Forward+",
+  "review_toggle_passed": true
+}
