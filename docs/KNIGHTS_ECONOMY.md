@@ -31,7 +31,17 @@ Yield stays at 2 Food a beat, the handoff's settled figure: size sets how much l
 - **Keep panel:** "housing used / cap" on its status line. **Chapterhouse panel:** a Housing row.
 - **Farm panel:** who tills it, Food a beat, Farmer 0 or 1, and "enemy on the field: no Food" while raided. **Farmer panel:** one Gather tile ("Work an empty Farm"); no Fell, Deliver or Drop. **House panel:** whether it is housed, and the side's housing.
 - A Forester tilling shows the state "Farming"; a Farmer waiting out a raid shows "Enemy on the Farm".
-- **Placeholders:** the Farm is a flat 10 x 10 m field with knee-high crop rows and a low rail; the House is a 4 x 4 m box with a gable roof. Both are boxes (`scenes/models/farm_placeholder.tscn`, `house_placeholder.tscn`) in their `Visuals` slots, and their card icons and portraits borrow the Generator's and Depot's. The owner will supply art.
+- The Farm and House use their own model portraits and Build cards.
+
+## Models
+
+The 10 × 10 m Farm is a vineyard. Low grapevines and open soil lanes leave the field passable. Hovering irrigation equipment travels over the canopy and sprays the rows while a Farmer is assigned. It stops during a ground raid and resumes when the field is clear. A Farmer delivering Food carries her harvest basket to the Keep.
+
+The 4 × 4 m House uses laminated timber arches, plank walls and a cedar-shingle gable. The base roof is entirely shingled. Solar panels are reserved for a future upgrade.
+
+[In-game preview](../Blender/Previews/ArthurianCivilian/vineyard_and_house.mp4) · [Vineyard source and clips](../Blender/Buildings/Farm/README.md) · [House source and clips](../Blender/Buildings/House/README.md) · [Forester harvest basket and rig source](https://github.com/dparham98/dparham98-Supply-Lines/tree/6b226bace40493d5ae97a6ddcc80fc847a732629/Blender/Characters/ForesterMaiden/source)
+
+The saved models show construction progress and play their destruction clips. The Farm's 10 × 10 site uses the existing site fence. The 4 × 4 House rises on its construction grid.
 
 ## Checks
 
@@ -53,7 +63,4 @@ Yield stays at 2 Food a beat, the handoff's settled figure: size sets how much l
 - `tests/arthurian_faction_test.gd` now expects the 150 Food start, and stands three Houses before it trains: its scene's units already fill one Keep's 10 housing.
 - **Not done here:** the handoff's "one Keep reaches 50 army units by 8:00 under the Knights AI" needs item 5's Knights AI and is checked there.
 
-- **Construction sites:** a 10 x 10 site uses the existing 10 x 10 fence. A 4 x 4 House site shows only the grid, because there is no 4 x 4 fence scene yet.
-- **The local Farm art** (a 4 x 4 m barn and windmill, uncommitted) doesn't fit a walkable 10 x 10 field. A field model is still needed.
-
-Not checked by a person: the placeholders, the pace of the Knights' opening on 150 Food, how housing feels, whether a Keep's land runs out at about eight Farms, and whether permanent Farmers make the choice between farming and expanding a real one.
+Human playtesting is pending for model readability, the Knights' opening pace, housing and the trade-off between farming and expanding.

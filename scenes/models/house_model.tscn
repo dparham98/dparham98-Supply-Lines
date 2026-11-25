@@ -1,0 +1,9 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/generator_rig.gd" id="animation"]
+[ext_resource type="PackedScene" path="res://assets/models/buildings/house.glb" id="house"]
+
+[node name="HouseModel" type="Node3D"]
+script = ExtResource("animation")
+
+[node name="Rig" parent="." instance=ExtResource("house")]

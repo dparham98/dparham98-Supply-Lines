@@ -49,6 +49,8 @@
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_trips_once.png" id="card_trips_once"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_cancel_target_pick.png" id="card_cancel_target_pick"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_depot.png" id="card_build_depot"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_farm.png" id="card_build_farm"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_house.png" id="card_build_house"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_generator.png" id="card_build_generator"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_barracks.png" id="card_build_barracks"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_factory.png" id="card_build_factory"]
@@ -4590,7 +4592,7 @@ shortcut = SubResource("shortcut_build_farm")
 layout_mode = 2
 text = ""
 custom_minimum_size = Vector2(46,46)
-icon = ExtResource("card_build_generator")
+icon = ExtResource("card_build_farm")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/Farm"]
@@ -4615,7 +4617,7 @@ shortcut = SubResource("shortcut_build_house")
 layout_mode = 2
 text = ""
 custom_minimum_size = Vector2(46,46)
-icon = ExtResource("card_build_depot")
+icon = ExtResource("card_build_house")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/House"]
