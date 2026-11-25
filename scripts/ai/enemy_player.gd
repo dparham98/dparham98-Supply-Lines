@@ -13,7 +13,8 @@ extends Node
 @export_range(0.2,5,0.1) var think_seconds := 1.0
 ## What it builds at home, in order. Each waits for the one before to be finished.
 ## Two Barracks before tech (docs/BALANCE_IMPLEMENTATION_HANDOFF.md, item 5): tech first lost to it.
-@export var build_order: Array[StringName] = [&"generator",&"barracks",&"generator",&"barracks",&"generator",&"coal_mine",&"tank_factory",&"generator"]
+## The Foundry goes last, for attack and armour upgrades (docs/UPGRADES.md).
+@export var build_order: Array[StringName] = [&"generator",&"barracks",&"generator",&"barracks",&"generator",&"coal_mine",&"tank_factory",&"generator",&"foundry"]
 ## Once `build_order` is done, it keeps adding Generators, up to this many in all, while it holds `iron_plenty`.
 ## Energy, not iron, is what holds it back once it has expanded.
 @export_range(0,20) var generators_wanted := 6
@@ -41,6 +42,12 @@ extends Node
 @export_range(0.0,1.0,0.05) var repair_below := 0.75
 ## Workers repairing at once.
 @export_range(0,10) var repairers := 2
+@export_group("Upgrades")
+## It researches attack and armour upgrades (docs/UPGRADES.md) at its Foundry, or the Knights at their Forge, level
+## by level across `upgrade_lines`, once its army has `upgrades_army` units.
+@export var upgrades := true
+@export var upgrade_lines: Array[StringName] = [&"infantry_weapons",&"vehicle_weapons",&"infantry_armour",&"vehicle_armour"]
+@export_range(0,100) var upgrades_army := 6
 @export_group("")
 ## Infantry kept on gathering and building; the Barracks makes these before anything else.
 @export_range(0,20) var workers_wanted := 6
@@ -586,16 +593,27 @@ func mining_target(depot: Node3D) -> Node3D:
 		return mine
 	return null
 ## Researches Mining Trains at its Temple once it can pay.
+## The research it wants, in order: Mining Trains, then (once the army is big enough) the upgrade lines, level 1 of
+## each, then level 2 of each, then level 3.
+func research_wanted() -> Array[StringName]:
+	var ids: Array[StringName] = []
+	if mining_trains: ids.append(Research.MINING_TRAINS)
+	if upgrades and army.size() >= upgrades_army:
+		for n in range(1,Upgrades.LEVELS+1):
+			for line in upgrade_lines: ids.append(Upgrades.research_id(line,n))
+	return ids
+## Starts the first research it wants that is neither done nor under way, at a building of its own that offers it
+## and is free, saving for it meanwhile (`wants.research`, energy or food then iron). One thing at a time is saved for.
 func research() -> void:
-	if not mining_trains or Research.has(game,team,Research.MINING_TRAINS): return
-	if Research.underway(game,team,Research.MINING_TRAINS) != null: return
-	for temple in get_tree().get_nodes_in_group("research_buildings"):
-		if temple.team != team or temple.health <= 0: continue
-		var entry = temple.research_by_id(Research.MINING_TRAINS)
-		if entry == null: continue
-		wants.research = Vector2i(entry.energy_cost,entry.iron_cost)
-		if temple.research_blocker(Research.MINING_TRAINS).is_empty(): temple.request_research(Research.MINING_TRAINS)
-		return
+	for id in research_wanted():
+		if Research.has(game,team,id) or Research.underway(game,team,id) != null: continue
+		for building in get_tree().get_nodes_in_group("research_buildings"):
+			if building.team != team or building.health <= 0 or building.researching != null: continue
+			var entry = building.research_by_id(id)
+			if entry == null: continue
+			wants.research = Vector2i(entry.energy_cost+entry.food_cost,entry.iron_cost)
+			if building.research_blocker(id).is_empty(): building.request_research(id)
+			return
 ## Gives each of its trains a job: hauling iron home from an expansion its track reaches that no train serves,
 ## else mining its mine. Buys a train at home for a job no train has.
 func run_trains(depot: Node3D) -> void:
