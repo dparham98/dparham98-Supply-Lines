@@ -1,25 +1,28 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/gameplay/slow_field.gd" id="field"]
+[ext_resource type="Script" path="res://scripts/components/spell_look.gd" id="look"]
+[ext_resource type="Shader" path="res://assets/shaders/slow_sigil.gdshader" id="shader"]
 
-[sub_resource type="StandardMaterial3D" id="glow"]
-transparency = 1
-shading_mode = 0
-albedo_color = Color(0.45,0.7,1,0.5)
+[sub_resource type="ShaderMaterial" id="sigil"]
+render_priority = 1
+shader = ExtResource("shader")
 
-[sub_resource type="TorusMesh" id="ring"]
-material = SubResource("glow")
-inner_radius = 4.7
-outer_radius = 5.0
-rings = 48
-ring_segments = 4
+[sub_resource type="PlaneMesh" id="disc"]
+material = SubResource("sigil")
+size = Vector2(2, 2)
 
 [node name="SlowField" type="Node3D"]
 script = ExtResource("field")
 
 [node name="Visuals" type="Node3D" parent="."]
+script = ExtResource("look")
+in_seconds = 0.35
+out_seconds = 0.8
+grow_from = 0.85
+grow_height = 0.0
 
-[node name="Ring" type="MeshInstance3D" parent="Visuals"]
-transform = Transform3D(1,0,0,0,0.2,0,0,0,1,0,0.1,0)
+[node name="Sigil" type="MeshInstance3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12, 0)
 cast_shadow = 0
-mesh = SubResource("ring")
+mesh = SubResource("disc")
