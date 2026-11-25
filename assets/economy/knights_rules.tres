@@ -23,3 +23,8 @@ housing = {
 &"round_table_marine": 2,
 &"warhound": 1
 }
+balloon_wood_cost = 20
+balloon_crates = 4
+balloon_cruise_height = 10.0
+balloon_dock_height = 6.0
+balloon_climb_rate = 2.5
