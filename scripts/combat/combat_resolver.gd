@@ -33,7 +33,8 @@ static func strike(attacker: Node3D, primary: Node3D, forced := false) -> void:
 		if can_hit(attacker,victim) or (forced and victim == primary and can_force(attacker,victim)): victim.take_damage(splash_damage(attacker,victim,primary))
 ## Damage to `victim`: the full hit for the target aimed at, the attacker's splash share of it for other units.
 static func splash_damage(attacker: Node3D, victim: Node3D, primary) -> int:
-	var damage := damage_for(attacker,victim)
+	# Attack upgrades add to the weapon's base damage (docs/UPGRADES.md).
+	var damage := Upgrades.with_attack(attacker,damage_for(attacker,victim))
 	if victim == primary or not victim.is_in_group("units") or attacker.unit_stats == null: return damage
 	return roundi(damage*attacker.unit_stats.splash_share)
 ## A shell or grenade bursting at `point`: the target it was fired at, when still there (`primary`, may be null),

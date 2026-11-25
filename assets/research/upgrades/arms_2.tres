@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ResearchStats" format=3]
+[ext_resource type="Script" path="res://scripts/research/research_stats.gd" id="stats"]
+[resource]
+script = ExtResource("stats")
+research_id = &"arms_2"
+display_name = "Arms II"
+iron_cost = 250
+food_cost = 150
+seconds = 90.0
+line = &"arms"
+level = 2
+summary = "Level 2 of 3: +10% of base weapon damage (at least 1) for Knights units, 2 in all. Holds for your whole side. Needs Arms I."

@@ -9,6 +9,9 @@ extends Node
 ## The Temple of Science (docs/TEMPLE_OF_SCIENCE.md). Maps that leave it unset use the saved scene.
 @export var temple_scene: PackedScene
 const TEMPLE_SCENE_PATH := "res://scenes/gameplay/temple_of_science.tscn"
+## The upgrade buildings (docs/UPGRADES.md): the Cyborgs' Foundry and the Knights' Forge.
+const FOUNDRY_SCENE_PATH := "res://scenes/gameplay/foundry.tscn"
+const FORGE_SCENE_PATH := "res://scenes/gameplay/forge.tscn"
 ## The Arthurian Keep and Chapterhouse (docs/ARTHURIAN_KNIGHTS.md). Maps that leave them unset use the saved scenes,
 ## loaded when first needed: a preload here would make a load cycle (the Keep is a Depot) that leaks at exit.
 @export var keep_scene: PackedScene
@@ -400,6 +403,8 @@ func production_scene(kind: StringName) -> PackedScene:
 	if kind == &"tank_factory": return tank_factory_scene
 	if kind == &"temple_of_science": return temple_scene if temple_scene != null else load(TEMPLE_SCENE_PATH)
 	if kind == &"chapterhouse": return chapterhouse_scene if chapterhouse_scene != null else load(CHAPTERHOUSE_SCENE_PATH)
+	if kind == &"foundry": return load(FOUNDRY_SCENE_PATH)
+	if kind == &"forge": return load(FORGE_SCENE_PATH)
 	return null
 func construct_production(point: Vector3, kind: StringName) -> bool:
 	if kind == &"iron_mine": return construct_mine(point)

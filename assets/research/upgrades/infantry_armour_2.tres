@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ResearchStats" format=3]
+[ext_resource type="Script" path="res://scripts/research/research_stats.gd" id="stats"]
+[resource]
+script = ExtResource("stats")
+research_id = &"infantry_armour_2"
+display_name = "Infantry Armour II"
+energy_cost = 150
+iron_cost = 250
+seconds = 90.0
+line = &"infantry_armour"
+level = 2
+summary = "Level 2 of 3: -1 off every hit infantry take, never below 1; 2 in all. Holds for your whole side. Needs Infantry Armour I."
