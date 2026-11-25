@@ -74,7 +74,7 @@ still offers both factions' buildings.
 **While it is open:**
 
 - The game is paused.
-- The menu takes every click and key. Esc closes it.
+- The menu takes every click and key. Esc closes it. F11 and Alt+Enter still switch fullscreen, and the cursor is free to leave the window while the menu is open (docs/WINDOW_CONTROLS.md).
 - Enter, Space and the arrow keys work its buttons.
 - It shows the match: the map, who plays and their factions.
 

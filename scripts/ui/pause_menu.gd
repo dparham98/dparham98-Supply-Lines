@@ -1,11 +1,14 @@
 extends Control
 ## The pause menu (docs/MAIN_MENU.md). Esc, with no command or placement armed, opens it, as does the HUD's Menu
 ## button. It pauses the game and takes every click and key until it closes: Resume (or Esc again), Restart match,
-## Main menu, Quit game. A game already paused from the playtest panel stays paused when it closes.
+## Main menu, Quit game. A game already paused from the playtest panel stays paused when it closes. While it is open
+## the cursor is free to leave the window (docs/WINDOW_CONTROLS.md), so the window can be moved, resized or closed.
 @onready var game = get_tree().get_first_node_in_group("skirmish")
 @onready var setup = get_node_or_null("/root/MatchSetup")
 ## Whether the tree was paused before the menu opened.
 var _was_paused := false
+## The cursor's mode before the menu opened, given back when it closes.
+var _was_mouse_mode := Input.MOUSE_MODE_VISIBLE
 func _ready() -> void:
 	visible = false
 	%Resume.pressed.connect(close)
@@ -17,6 +20,8 @@ func open() -> void:
 	if visible: return
 	_was_paused = get_tree().paused
 	get_tree().paused = true
+	_was_mouse_mode = Input.mouse_mode
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	if game != null: game.cancel_armed()
 	%Match.text = setup.summary() if setup != null and setup.configured else "Map started directly · no match set up"
 	visible = true
@@ -25,6 +30,7 @@ func close() -> void:
 	if not visible: return
 	visible = false
 	get_tree().paused = _was_paused
+	Input.mouse_mode = _was_mouse_mode
 func restart() -> void:
 	visible = false
 	get_tree().paused = false
@@ -43,6 +49,8 @@ func _input(event: InputEvent) -> void:
 		close()
 		get_viewport().set_input_as_handled()
 		return
+	# The fullscreen key still reaches the window controls.
+	if preload("res://scripts/ui/window_controls.gd").is_toggle(event): return
 	# Enter and Space still work the focused button.
 	if event.keycode in [KEY_ENTER,KEY_KP_ENTER,KEY_SPACE,KEY_UP,KEY_DOWN]: return
 	get_viewport().set_input_as_handled()
