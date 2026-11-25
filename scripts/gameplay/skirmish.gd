@@ -628,6 +628,20 @@ func issue_card_order(screen, queued := false) -> void:
 					target = ground.coal_mine_at(cell)
 					if target == null: notify("Build a Mine on this coal seam before gathering coal."); return
 				else: target = ground.coal_source(cell) if ground.get_terrain(cell) == 6 else ground.forest_source(cell)
+	elif pending_unit_command in ["mist","slow"]:
+		# Mist and Slow take a point (docs/MIST_AND_SLOW.md); Grail Sentinels walk within range and cast.
+		var spot = ground_at(screen)
+		if spot == null: return
+		var ordered := 0
+		for unit in get_tree().get_nodes_in_group("units"):
+			if unit.team != "player" or not unit.is_selected or not unit.get("can_heal"): continue
+			if not unit.spell_blocker(pending_unit_command).is_empty(): continue
+			give_order(unit,{kind = pending_unit_command, point = spot},queued)
+			ordered += 1
+			if not queued: break
+		notify(("%s ordered." % pending_unit_command.capitalize()) if ordered > 0 else "No selected Grail Sentinel can cast %s now." % pending_unit_command.capitalize())
+		if not queued: pending_unit_command = ""
+		return
 	elif pending_unit_command == "fell":
 		# Fell takes any spot: the trees on a roughly straight line to it are felled (docs/FELL.md).
 		var point = ground_at(screen)

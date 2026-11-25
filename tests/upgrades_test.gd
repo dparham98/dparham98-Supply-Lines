@@ -102,7 +102,7 @@ func run() -> void:
 	plan = place(network,&"forge",keep)
 	if not check(is_instance_valid(plan),"A Forge plan could not be queued: "+game.message): return
 	var forge = plan.complete_from_stock()
-	if not check(is_instance_valid(forge) and forge.is_in_group("research_buildings") and forge.research.size() == 6,"The plan should finish as a Forge with 6 levels"): return
+	if not check(is_instance_valid(forge) and forge.is_in_group("research_buildings") and forge.research.size() == 7,"The plan should finish as a Forge with 6 levels and Slow (docs/MIST_AND_SLOW.md)"): return
 	await process_frame
 	forge.set_process(false)
 	var food: int = keep.food
@@ -114,7 +114,7 @@ func run() -> void:
 	game.selected_building = forge
 	game.get_node("Interface")._process(0)
 	var tiles: Array = game.get_node("Interface").desired_buttons
-	if not check(tiles.has("Upgrade1") and tiles.has("Upgrade2") and not tiles.has("Upgrade3"),"The Forge card should show two upgrade tiles: %s" % [tiles]): return
+	if not check(tiles.has("Upgrade1") and tiles.has("Upgrade2") and tiles.has("Upgrade3") and not tiles.has("Upgrade4"),"The Forge card should show two upgrade tiles and Slow: %s" % [tiles]): return
 	game.selected_building = null
 	var marine := spawn("round_table_marine","player",keep.global_position+Vector3(6,0,6))
 	if not check(Upgrades.with_attack(marine,30) == 33,"Arms I: a Marine's 30 becomes 33"): return

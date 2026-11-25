@@ -1,0 +1,26 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/mist_cloud.gd" id="mist"]
+
+[sub_resource type="StandardMaterial3D" id="haze"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.82,0.88,0.92,0.42)
+cull_mode = 2
+
+[sub_resource type="SphereMesh" id="cloud"]
+material = SubResource("haze")
+radius = 1.0
+height = 1.0
+radial_segments = 24
+rings = 8
+
+[node name="MistCloud" type="Node3D"]
+script = ExtResource("mist")
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Cloud" type="MeshInstance3D" parent="Visuals"]
+transform = Transform3D(8,0,0,0,3,0,0,0,8,0,0.8,0)
+cast_shadow = 0
+mesh = SubResource("cloud")

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SpellRules" format=3]
+[ext_resource type="Script" path="res://scripts/combat/spell_rules.gd" id="rules"]
+[resource]
+script = ExtResource("rules")
+cast_range = 20.0
+mist_cost = 40
+mist_seconds = 8.0
+mist_radius = 8.0
+mist_reveal = 8.0
+slow_cost = 25
+slow_seconds = 5.0
+slow_radius = 5.0
+slow_factor = 0.6
