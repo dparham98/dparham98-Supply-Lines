@@ -590,6 +590,18 @@ func issue_card_order(screen, queued := false) -> void:
 		if point == null: notify("Click the map where the balloon should set its crates down."); return
 		if keep.launch_balloon(point) and not queued: pending_unit_command = ""
 		return
+	# Lay mine (docs/MINES.md): the selected Derailers carrying mines go to the clicked point and lay one.
+	if pending_unit_command == "lay_mine":
+		var spot = ground_at(screen)
+		if spot == null: notify("Click the map where the mine should go."); return
+		var sent := 0
+		for unit in get_tree().get_nodes_in_group("units"):
+			if unit.team != "player" or not unit.is_selected or not unit.has_method("lay_mine_blocker") or not unit.lay_mine_blocker().is_empty(): continue
+			give_order(unit,{kind = "lay_mine", point = spot},queued)
+			sent += 1
+		notify("Lay mine order issued." if sent > 0 else "No selected Derailer carries a mine.")
+		if not queued or sent == 0: pending_unit_command = ""
+		return
 	if pending_unit_command == "pin":
 		target = pick_target(screen,"depots",50)
 		var stockpile := pick_target(screen,"mobile_supplies",34)

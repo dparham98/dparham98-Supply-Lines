@@ -1,0 +1,48 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/land_mine.gd" id="mine"]
+[ext_resource type="Resource" path="res://assets/combat/mine_rules.tres" id="rules"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/grenade_blast.tscn" id="blast"]
+
+[sub_resource type="StandardMaterial3D" id="casing"]
+albedo_color = Color(0.16,0.17,0.15,1)
+metallic = 0.6
+roughness = 0.55
+
+[sub_resource type="StandardMaterial3D" id="fuse"]
+albedo_color = Color(0.85,0.18,0.12,1)
+emission_enabled = true
+emission = Color(0.9,0.15,0.08,1)
+emission_energy_multiplier = 0.8
+
+[sub_resource type="CylinderMesh" id="body"]
+material = SubResource("casing")
+top_radius = 0.42
+bottom_radius = 0.5
+height = 0.16
+radial_segments = 16
+rings = 1
+
+[sub_resource type="CylinderMesh" id="cap"]
+material = SubResource("fuse")
+top_radius = 0.1
+bottom_radius = 0.12
+height = 0.08
+radial_segments = 10
+rings = 1
+
+[node name="LandMine" type="Node3D"]
+script = ExtResource("mine")
+rules = ExtResource("rules")
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Body" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0,0.08,0)
+mesh = SubResource("body")
+
+[node name="Fuse" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0,0.2,0)
+mesh = SubResource("cap")
+
+[node name="Blast" parent="." instance=ExtResource("blast")]
