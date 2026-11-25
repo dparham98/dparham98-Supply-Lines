@@ -5,11 +5,13 @@
 [resource]
 script = ExtResource("rules")
 farm_wood_cost = 30
-farm_footprint = Vector2i(4, 4)
+farm_footprint = Vector2i(10, 10)
 farm_food_per_beat = 2
 farm_health = 300
+farmers_permanent = true
+farm_raid_check_seconds = 0.25
 house_wood_cost = 40
-house_footprint = Vector2i(3, 3)
+house_footprint = Vector2i(4, 4)
 house_room = 8
 house_health = 300
 keep_room = 10

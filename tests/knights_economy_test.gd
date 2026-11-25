@@ -1,6 +1,8 @@
 extends SceneTree
 # Headless (docs/KNIGHTS_ECONOMY.md): the Knights' economy. A Farm with one Forester yields 80 to 90 Food a minute
-# into the Keep, and refuses a second worker; a Farm must stand in a Keep's range; a House adds housing only inside
+# into the Keep, and refuses a second worker; a Farm is a 10 x 10 field any unit walks over and nothing is built on,
+# and yields nothing while an enemy ground unit stands on it; its Forester is its Farmer for good, and takes only an
+# empty Farm when hers is lost; a House is 4 x 4; a Farm must stand in a Keep's range; a House adds housing only inside
 # a Keep's range; training waits when housing is full; a Knights plan in a Keep's range builds from the Keep's
 # stock with nothing carried; the Keep trains for the enemy side too; the start and the training times.
 var game: Node3D
@@ -51,12 +53,12 @@ func run() -> void:
 	# Inside the range, a Farm plan builds from the Keep's wood, with nothing carried.
 	keep.stockpile.deposit(&"wood",200)
 	var wood_before: int = keep.stockpile.amount(&"wood")
-	# Near the Keep: its centre 12 m from the Keep's. Yield falls with the walk: about 100 a minute touching the Keep,
-	# 80 at 13 m and 70 at 18 m (docs/KNIGHTS_ECONOMY.md).
+	# Near the Keep: its centre 14 m from the Keep's, its near edge 9 m. The Farmer tills from the near edge, so the walk is
+	# the near edge's. Yield falls with the walk (docs/KNIGHTS_ECONOMY.md).
 	var plan: Node3D = null
 	var spot: Vector3
 	for offset in [Vector3(0,0,10),Vector3(0,0,-10),Vector3(10,0,0),Vector3(-10,0,0)]:
-		spot = keep.global_position+offset*1.2
+		spot = keep.global_position+offset*1.4
 		plan = network.queue_plan(spot,&"farm",null,false,false)
 		if plan != null: break
 	if not check(plan != null,"A Farm inside the Keep's range should be placed"): return
@@ -86,11 +88,71 @@ func run() -> void:
 	place(second,farm.global_position+Vector3(3,0,4))
 	second.command_gather(farm)
 	if not check(second.order != "gather" and second.state == "Farm already has a worker","A second Forester should be refused: %s '%s'" % [second.order,second.state]): return
+	# The field: 10 x 10, walkable, nothing built on it, no track across it.
+	var ground = game.ground
+	if not check(farm.cells.size() == rules.farm_footprint.x*rules.farm_footprint.y and rules.farm_footprint == Vector2i(10,10),"A Farm should cover 10 x 10 cells, covers %d" % farm.cells.size()): return
+	var mid: Vector2i = farm.field_rect().position+farm.field_rect().size/2
+	if not check(ground.is_field(mid) and ground.can_traverse(mid) and not ground.is_footprint_valid(mid,Vector2i.ONE),"A Farm's field should be walkable and unbuildable"): return
+	var mid_cells: Array[Vector2i] = [mid]
+	if not check(not game.get_node("RailNetwork").ground_clear(mid_cells),"Track should not be laid across a Farm"): return
+	if not check(network.queue_plan(farm.global_position,&"house",null,false,false) == null,"A House should not be planned on a Farm"): return
+	# An enemy ground unit standing on the field stops its Food; the Farmer waits and does not leave.
+	var raider = load("res://scenes/gameplay/scout.tscn").instantiate()
+	raider.team = "enemy"
+	game.get_node("Entities/Units").add_child(raider)
+	await process_frame
+	raider.set_process(false)
+	place(raider,ground.tile_to_world(mid))
+	if not check(farm.on_field(raider.global_position),"The raider should stand on the field"): return
+	step([farmer,farm],8.0)
+	var raid_before: int = keep.stockpile.amount(&"food")
+	step([farmer,farm],30.0)
+	if not check(farm.raided and keep.stockpile.amount(&"food")-raid_before <= farmer.carry_capacity,"A raided Farm should yield nothing: raided %s, +%d Food" % [farm.raided,keep.stockpile.amount(&"food")-raid_before]): return
+	if not check(farmer.order in ["gather","return"] and farmer.source == farm,"A Farmer should wait out a raid: %s '%s'" % [farmer.order,farmer.state]): return
+	raider.queue_free()
+	await process_frame
+	var after_raid: int = keep.stockpile.amount(&"food")
+	step([farmer,farm],30.0)
+	if not check(not farm.raided and keep.stockpile.amount(&"food") > after_raid+20,"A Farm should yield again once the raider leaves: +%d" % (keep.stockpile.amount(&"food")-after_raid)): return
+	# The Farmer stays a Farmer: no moving, felling or building.
+	if not check(farmer.farmer and farmer.farm == farm and game.get_node("Interface").object_name(farmer) == "Farmer","A Forester sent to a Farm should become its Farmer"): return
+	farmer.command_move(keep.global_position+Vector3(-6,0,-6))
+	farmer.command_fell(mid)
+	var probe_plan = network.queue_plan(keep.global_position+Vector3(-14,0,12),&"house",null,false,false)
+	if probe_plan != null: farmer.command_construct(probe_plan)
+	if not check(farmer.order in ["gather","return"] and farmer.source == farm and farmer.state == "A Farmer works only a Farm","A Farmer should refuse other orders: %s '%s'" % [farmer.order,farmer.state]): return
+	if probe_plan != null: probe_plan.queue_free()
+	farmer.set_fell_autocast(true)
+	if not check(not farmer.fell_autocast,"A Farmer should not fell on autocast"): return
+	# Its Farm lost, a Farmer takes an empty Farm and not one that has a Farmer.
+	var empty_farm: Node3D = null
+	var busy_farm: Node3D = null
+	for offset in [Vector3(-13,0,0),Vector3(13,0,0),Vector3(0,0,-13),Vector3(0,0,13),Vector3(-13,0,-13),Vector3(13,0,13)]:
+		var made = stand(&"farm",keep.global_position+offset)
+		if made == null: continue
+		made.set_process(false)
+		if empty_farm == null: empty_farm = made
+		elif busy_farm == null: busy_farm = made; break
+	if not check(empty_farm != null and busy_farm != null,"Two more Farms should fit in the Keep's range"): return
+	place(second,busy_farm.global_position)
+	second.command_gather(busy_farm)
+	if not check(second.farmer and busy_farm.worker_busy(),"The second Forester should become the other Farm's Farmer"): return
+	farm.take_damage(100000)
+	await process_frame
+	farmer.command_gather(busy_farm)
+	if not check(farmer.farm != busy_farm and farmer.state == "Farm already has a worker","A Farmer should not take a Farm that has a Farmer: '%s'" % farmer.state): return
+	farmer.command_gather(empty_farm)
+	if not check(farmer.farm == empty_farm and farmer.order == "gather","A Farmer whose Farm was lost should take an empty Farm: '%s'" % farmer.state): return
+	farm = empty_farm
 	# Housing: 10 from the Keep; a House inside the range adds 8, one outside adds nothing.
 	var cap: int = KnightHousing.cap(self,"player")
 	if not check(cap == rules.keep_room,"One Keep should give %d housing, gave %d" % [rules.keep_room,cap]): return
-	var house = stand(&"house",keep.global_position+Vector3(14,0,-12))
+	var house: Node3D = null
+	for offset in [Vector3(14,0,-12),Vector3(-14,0,12),Vector3(-12,0,-14),Vector3(12,0,14),Vector3(18,0,0),Vector3(-18,0,0)]:
+		house = stand(&"house",keep.global_position+offset)
+		if house != null: break
 	if not check(house != null and KnightHousing.cap(self,"player") == cap+rules.house_room,"A House in the Keep's range should add %d housing" % rules.house_room): return
+	if not check(house.cells.size() == 16,"A House should cover 4 x 4 cells, covers %d" % house.cells.size()): return
 	var outside = load("res://scenes/gameplay/house.tscn").instantiate()
 	outside.position = keep.global_position+Vector3(90,0,0)
 	game.get_node("Entities/Buildings").add_child(outside)

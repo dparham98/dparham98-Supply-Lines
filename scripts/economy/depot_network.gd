@@ -485,12 +485,13 @@ func _model_scene(scene: PackedScene) -> PackedScene:
 ## Plan kinds that build a mine: an Iron Mine on a mine site or ore field, a Coal Mine on a coal seam.
 static func is_mine_kind(kind: StringName) -> bool:
 	return kind == &"iron_mine" or kind == &"coal_mine"
-## A Depot plan also needs the strip it will keep clear to be free (strip_clear).
+## A Depot plan also needs the strip it will keep clear to be free (strip_clear). A Farm's field is walkable, so units
+## crossing its plan do not hold it up.
 func plan_terrain_valid(start: Vector2i, size: Vector2i, kind: StringName, ignore: Node = null) -> bool:
 	if is_mine_kind(kind):
 		var on_coal: bool = game.ground.is_tile_in_bounds(start) and game.ground.get_terrain(start) == game.ground.Terrain.COAL
 		return game.ground.ore_footprint_valid(start,size) and on_coal == (kind == &"coal_mine")
-	if not game.ground.is_footprint_valid(start,size): return false
+	if not game.ground.is_footprint_valid(start,size,kind == &"farm"): return false
 	return kind != &"depot" or strip_clear(game.ground.tile_to_world(start+size/2),0.0,ignore)
 ## Whether a footprint overlaps another unfinished plan, or the strip a planned Depot will keep clear.
 func plan_overlaps(start: Vector2i, size: Vector2i) -> bool:

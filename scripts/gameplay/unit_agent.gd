@@ -148,19 +148,39 @@ func _stop_route() -> void:
 		_claim(cell)
 	_retry = 0
 func command_move(point: Vector3) -> void:
+	if _farmer_refuses(): return
 	_stop_route()
 	order = "move"
 	order_target = null
 	source = null
 	move_goal = point
 	state = "Moving"
+## A Farmer (docs/KNIGHTS_ECONOMY.md): a Forester sent to a Farm, for good. It works only that Farm; when the Farm is
+## lost it may take over an empty Farm and nothing else. It never builds, fells or fights.
+var farmer := false
+## The Farm a Farmer works, or null once that Farm is lost.
+var farm: Node3D
+var _farm_resume := 0.0
+## True, with the reason as the state, when a Farmer is given any order but working a Farm.
+func _farmer_refuses() -> bool:
+	if not farmer: return false
+	state = "A Farmer works only a Farm"
+	return true
 func command_gather(node: Node3D) -> void:
 	if not can_gather or is_depot_truck or is_cargo_vehicle or not is_instance_valid(node): return
+	if farmer:
+		if not node.is_in_group("farms"): _farmer_refuses(); return
+		if is_instance_valid(farm) and farm != node and farm.health > 0 and not farm.is_queued_for_deletion():
+			state = "A Farmer stays on its Farm"; return
 	# A Farm takes one worker (docs/KNIGHTS_ECONOMY.md).
 	if node.has_method("take_worker") and not node.take_worker(self):
 		state = "Farm already has a worker"
 		game.notify("%s already has a worker: a Farm takes one." % node.name,team)
 		return
+	if node.is_in_group("farms") and KnightHousing.rules().farmers_permanent:
+		farmer = true
+		farm = node
+		fell_autocast = false
 	_stop_route()
 	order = "gather"
 	source = node
@@ -179,7 +199,7 @@ var fell_autocast := false
 var _auto_home := Vector2i(-1,-1)
 var _auto_wait := 0.0
 func set_fell_autocast(on: bool) -> void:
-	fell_autocast = on and can_gather and not is_cargo_vehicle and not is_depot_truck
+	fell_autocast = on and can_gather and not is_cargo_vehicle and not is_depot_truck and not farmer
 	_auto_home = Vector2i(-1,-1)
 	_auto_wait = 0.0
 ## Looks for Forest round its spot about once a second (ten after a tree it could not reach). Each pick is a
@@ -213,6 +233,7 @@ var _fell_goal := Vector2i(-1,-1)
 ## Cells given up on: no way to them even through the trees.
 var _fell_skip := {}
 func command_fell(cell: Vector2i, area := Rect2i()) -> void:
+	if _farmer_refuses(): return
 	if not can_gather or is_depot_truck or is_cargo_vehicle or not ground.is_tile_in_bounds(cell): return
 	_stop_route()
 	order = "fell"
@@ -275,6 +296,7 @@ func _fell(delta: float) -> void:
 		source.extract(harvest_amount,team)
 ## `forced`: the player's explicit Attack command, which may target friendly units and buildings.
 func command_attack(node: Node3D, forced := false) -> void:
+	if _farmer_refuses(): return
 	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or not CombatResolver.can_attack(self,node,forced): return
 	attack_forced = forced
 	if carrying() and is_instance_valid(game): game.notify("A Deforester carrying cargo can't fire: drop it (X) first.")
@@ -285,6 +307,7 @@ func command_attack(node: Node3D, forced := false) -> void:
 	state = "Attacking"
 ## Attack-move: travel to a point, stopping to fire at anything that comes into range.
 func command_attack_move(point: Vector3) -> void:
+	if _farmer_refuses(): return
 	if is_depot_truck or is_cargo_vehicle or not _attack_enabled: command_move(point); return
 	command_move(point)
 	order = "attack_move"
@@ -299,6 +322,7 @@ func command_deploy_at(point: Vector3) -> void:
 	move_goal = point
 	state = "To deploy site"
 func command_return(target: Node3D = null) -> void:
+	if _farmer_refuses(): return
 	return_depot = target
 	return_explicit = is_instance_valid(target)
 	_stop_route()
@@ -349,6 +373,10 @@ func _animate(delta: float = 1.0/60) -> void:
 # Orders, movement and combat for one frame. Callers tick fuel first.
 func _order_process(delta: float) -> void:
 	if order == "idle" and not order_queue.is_empty() and not out_of_fuel: _start_next_order()
+	# A Farmer left idle goes back to its Farm.
+	if farmer and order == "idle" and is_instance_valid(farm) and farm.health > 0 and not farm.is_queued_for_deletion():
+		_farm_resume -= delta
+		if _farm_resume <= 0.0: _farm_resume = 1.0; command_gather(farm)
 	_cooldown = maxf(0,_cooldown-delta)
 	_retry = maxf(0,_retry-delta)
 	_scan_wait -= delta
@@ -721,6 +749,11 @@ func _gather(delta: float) -> void:
 		if cargo > 0: _head_home()
 		else: order = "idle"; state = str(source.resource_kind).capitalize()+" depleted" if is_instance_valid(source) else "Source unavailable"
 		return
+	if source.get("raided") == true:
+		# The enemy stands on the field: a Farmer waits by it, and takes home what it carries.
+		if cargo > 0: _head_home()
+		else: state = "Enemy on the Farm"
+		return
 	if not source.can_extract(team):
 		if cargo > 0: _head_home()
 		else: order = "idle"; state = "A working mine is required before extracting iron"
@@ -729,7 +762,18 @@ func _gather(delta: float) -> void:
 	if cargo_kind != source.resource_kind or cargo >= carry_capacity:
 		_head_home()
 		return
-	if global_position.distance_to(source.global_position) > interaction_range:
+	# A Farm is tilled from its near edge or anywhere on the field, so the walk to the Keep stays short.
+	var field: Rect2i = source.field_rect() if source.has_method("field_rect") else Rect2i()
+	if field.has_area():
+		if Approach.distance_to_rect(ground,global_position,field) > Approach.TOUCH:
+			if _retry <= 0:
+				state = "To food"
+				_retry = 0.5
+				var path: Array[Vector2i] = Approach.touch_path(self,field)
+				if path.is_empty(): _retry = 1.0; state = "Food unreachable"
+				else: path.remove_at(0); _route = path
+			return
+	elif global_position.distance_to(source.global_position) > interaction_range:
 		if _retry <= 0:
 			state = "Felling a way to the coal" if is_instance_valid(_dig_source) else "To "+str(source.resource_kind)
 			if not _route_to_interaction(source,interaction_range) and not _cut_way_in(): state = "Coal unreachable" if is_instance_valid(_dig_source) else str(source.resource_kind).capitalize()+" unreachable"
@@ -1115,6 +1159,7 @@ func has_ability(ability_id: StringName) -> bool:
 
 
 func command_repair(target: Node3D, payer: Node3D = null) -> void:
+	if _farmer_refuses(): return
 	if not can_repair or engineering_rules == null or target == self or not EngineeringWork.repairable(target,team): return
 	_stop_route()
 	order_target = target
@@ -1147,6 +1192,7 @@ func _repair(delta: float) -> void:
 		_work_timer = 0
 		if not EngineeringWork.tick(self,order_target,repair_payer): state = "Repair paused · local funds unavailable"
 func command_heal(target: Node3D) -> void:
+	if _farmer_refuses(): return
 	if not can_heal or target == self or not MedicalWork.can_heal(target,team): return
 	_stop_route()
 	order_target = target
@@ -1179,6 +1225,7 @@ func _heal(delta: float) -> void:
 ## Build at a queued site (docs/SITE_CONSTRUCTION.md): carried materials the site needs go onto its
 ## pile first, then the worker builds them in at its work pace, 5 per saw blow.
 func command_construct(plan: Node3D) -> void:
+	if _farmer_refuses(): return
 	if not can_construct or is_depot_truck or is_cargo_vehicle or not is_instance_valid(plan) or not plan.is_in_group("construction_plans") or plan.finished or plan.kind == &"rail": return
 	_stop_route()
 	source = null
@@ -1226,6 +1273,7 @@ func _construct(delta: float) -> void:
 	elif waited.is_empty(): state = "Constructing"
 	else: state = waited
 func command_capture(target: Node3D) -> void:
+	if _farmer_refuses(): return
 	if not can_capture_depots or is_depot_truck or is_cargo_vehicle or not is_instance_valid(target) or not target.is_in_group("capturable_buildings"): return
 	_stop_route()
 	source = null
@@ -1246,6 +1294,7 @@ func _capture_order() -> void:
 ## Seconds until it can derail again.
 var derail_cooldown := 0.0
 func command_derail(target: Node3D) -> void:
+	if _farmer_refuses(): return
 	if not has_ability(&"derail") or not is_instance_valid(target) or not target.is_in_group("rails"): return
 	if derail_cooldown > 0.0: state = "Derail recharging · %d s" % ceili(derail_cooldown); return
 	_stop_route()

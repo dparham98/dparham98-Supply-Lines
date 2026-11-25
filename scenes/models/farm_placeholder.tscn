@@ -13,43 +13,75 @@ albedo_color = Color(0.36, 0.25, 0.16, 1)
 
 [sub_resource type="BoxMesh" id="field"]
 material = SubResource("soil")
-size = Vector3(3.9, 0.08, 3.9)
+size = Vector3(9.9, 0.06, 9.9)
 
 [sub_resource type="BoxMesh" id="row"]
 material = SubResource("crop")
-size = Vector3(3.4, 0.28, 0.32)
+size = Vector3(9.2, 0.22, 0.34)
 
 [sub_resource type="BoxMesh" id="rail"]
 material = SubResource("fence")
-size = Vector3(3.9, 0.12, 0.08)
+size = Vector3(9.9, 0.1, 0.08)
 
 [node name="FarmPlaceholder" type="Node3D"]
-editor_description = "Placeholder Farm model (docs/KNIGHTS_ECONOMY.md): a 4 x 4 m tilled field with four crop rows and a low fence. The owner will supply art; replace this scene in the Farm's Visuals slot."
+editor_description = "Placeholder Farm model (docs/KNIGHTS_ECONOMY.md): a flat 10 x 10 m tilled field with ten low crop rows and a low rail round it, all knee-high or less because any unit walks over a Farm. The owner will supply art; replace this scene in the Farm's Visuals slot."
 
 [node name="Field" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, 0)
 mesh = SubResource("field")
 
 [node name="Row1" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, -1.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.16, -4.05)
 mesh = SubResource("row")
 
 [node name="Row2" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, -0.4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.16, -3.15)
 mesh = SubResource("row")
 
 [node name="Row3" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0.4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.16, -2.25)
 mesh = SubResource("row")
 
 [node name="Row4" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 1.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.16, -1.35)
+mesh = SubResource("row")
+
+[node name="Row5" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.16, -0.45)
+mesh = SubResource("row")
+
+[node name="Row6" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.16, 0.45)
+mesh = SubResource("row")
+
+[node name="Row7" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.16, 1.35)
+mesh = SubResource("row")
+
+[node name="Row8" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.16, 2.25)
+mesh = SubResource("row")
+
+[node name="Row9" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.16, 3.15)
+mesh = SubResource("row")
+
+[node name="Row10" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.16, 4.05)
 mesh = SubResource("row")
 
 [node name="FenceNorth" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, -1.95)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, -4.9)
 mesh = SubResource("rail")
 
 [node name="FenceSouth" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 1.95)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 4.9)
+mesh = SubResource("rail")
+
+[node name="FenceWest" type="MeshInstance3D" parent="."]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -4.9, 0.3, 0)
+mesh = SubResource("rail")
+
+[node name="FenceEast" type="MeshInstance3D" parent="."]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 4.9, 0.3, 0)
 mesh = SubResource("rail")
