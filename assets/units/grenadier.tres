@@ -19,5 +19,6 @@ damage = 20
 attack_interval = 3.0
 abilities = Array[StringName]([])
 splash_radius = 3.0
+splash_share = 0.5
 heavy_target_damage = 40
 heavy_target_interval = 3.0

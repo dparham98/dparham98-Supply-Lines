@@ -43,13 +43,13 @@ func run() -> void:
 	if not check(not east_depot.visible,"The enemy's Depot should be hidden in the fog"): return
 	for mine in get_nodes_in_group("mines"):
 		if not check(mine.visible,"Shared mines always show"): return
-	# Vision is each unit's own: from a lone Tank (52 m) a point 40 m off is in sight, from an Infantry (30 m) not.
+	# Vision is each unit's own: from a lone Scout (50 m) a point 40 m off is in sight, from an Infantry (30 m) not.
 	var spot := Vector3(0,0,150)
-	var tank := actor("tank","player",spot)
+	var scout := actor("scout","player",spot)
 	var foe := actor("infantry","enemy",spot+Vector3(40,0,0))
 	fog.update_now()
-	if not check(fog.visible_to("player",spot+Vector3(40,0,0)) and foe.visible,"A Tank should see an enemy 40 m away"): return
-	tank.free()
+	if not check(fog.visible_to("player",spot+Vector3(40,0,0)) and foe.visible,"A Scout should see an enemy 40 m away"): return
+	scout.free()
 	var rifle := actor("infantry","player",spot)
 	fog.update_now()
 	if not check(not fog.visible_to("player",spot+Vector3(40,0,0)) and not foe.visible,"An Infantry should not see 40 m"): return

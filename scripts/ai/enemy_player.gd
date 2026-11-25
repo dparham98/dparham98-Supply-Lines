@@ -12,7 +12,8 @@ extends Node
 ## Seconds between decisions.
 @export_range(0.2,5,0.1) var think_seconds := 1.0
 ## What it builds at home, in order. Each waits for the one before to be finished.
-@export var build_order: Array[StringName] = [&"generator",&"barracks",&"generator",&"coal_mine",&"tank_factory",&"temple_of_science",&"generator"]
+## Two Barracks before tech (docs/BALANCE_IMPLEMENTATION_HANDOFF.md, item 5): tech first lost to it.
+@export var build_order: Array[StringName] = [&"generator",&"barracks",&"generator",&"barracks",&"generator",&"coal_mine",&"tank_factory",&"generator"]
 ## Once `build_order` is done, it keeps adding Generators, up to this many in all, while it holds `iron_plenty`.
 ## Energy, not iron, is what holds it back once it has expanded.
 @export_range(0,20) var generators_wanted := 6
@@ -42,12 +43,15 @@ extends Node
 @export_range(0,10) var repairers := 2
 @export_group("")
 ## Infantry kept on gathering and building; the Barracks makes these before anything else.
-@export_range(0,20) var workers_wanted := 4
+@export_range(0,20) var workers_wanted := 6
 ## What each building makes, in turn, once there are workers enough.
 @export var barracks_mix: Array[StringName] = [&"scout",&"infantry",&"grenadier",&"infantry",&"grenadier"]
 @export var factory_mix: Array[StringName] = [&"tank",&"motorcycle",&"tank",&"drone",&"ubermech"]
+## A Drone is unarmed and outruns the army, so it is kept over the centre of the ground units it goes with,
+## moved back whenever it strays further than this (metres).
+@export_range(1,30) var drone_escort_radius := 6.0
 ## Units queued at once in each building.
-@export_range(1,5) var queue_depth := 2
+@export_range(1,5) var queue_depth := 3
 ## No wave goes before this many seconds of play, nor with fewer units than `first_wave_size`. Each later wave
 ## waits for `wave_growth` more units than the last one had.
 @export_range(0,3600,10) var first_wave_seconds := 480.0
@@ -259,7 +263,17 @@ func build(depot: Node3D) -> void:
 		plan = network.queue_plan(point,kind,null if mine else payer,not mine,seen,team)
 		if plan == null: build_step += 1; return
 		plan.tree_exiting.connect(_plan_gone.bind(plan))
+	# Track laid across the site after it was planned (the other side's, say) would leave it waiting for good: it is
+	# given up and planned again elsewhere. Iron already on the site stays there as piles (docs/ENEMY_AI.md).
+	if track_on(plan):
+		_given_up = plan
+		plan = null
+		_given_up.cancel()
+		return
 	var truck := _cargo_truck()
+	# Only the Cargo truck takes iron out to a site: one that is lost (shot on the way, say) is replaced, or the site
+	# would wait for its iron for good (docs/ENEMY_AI.md).
+	if truck == null and plan.shortfall(&"iron") > 0: _replace_truck(depot)
 	if truck != null and plan.shortfall(&"iron") > 0 and _idle(truck) and truck.get("fetch_plan") == null: truck.command_fetch(plan)
 	# Builders go once the iron is on site; a mine out in the woods gets one early, to fell its way in.
 	var home_workers := _workers_at(depot)
@@ -271,6 +285,11 @@ func build(depot: Node3D) -> void:
 		if unit.cargo > 0 and unit.cargo_kind != &"iron": continue
 		unit.command_construct(plan)
 		builders += 1
+## Prints a Cargo truck at home when none is on its way, saving up for it first (held_back).
+func _replace_truck(depot: Node3D) -> void:
+	if depot.pending.has("cargo"): return
+	if depot.request_cargo(): return
+	wants["cargo"] = true
 ## What it builds next: the next step of `build_order`, then more Generators while iron piles up; &"" for none.
 func next_building() -> StringName:
 	if build_step < build_order.size(): return build_order[build_step]
@@ -286,9 +305,18 @@ func _park_truck(depot: Node3D) -> void:
 	var spot := depot.global_position+Vector3(-10.0*signf(depot.global_position.x),0,4)
 	if truck.global_position.distance_to(spot) > 8.0: truck.command_move(spot)
 ## A finished plan moves on to the next step; one that is lost (cancelled, destroyed) is tried again.
+var _given_up: Node3D
 func _plan_gone(gone: Node3D) -> void:
-	if gone.finished: build_step += 1
+	if gone.finished and gone != _given_up: build_step += 1
 	if plan == gone: plan = null
+## Whether any track lies on the plan's footprint.
+func track_on(site: Node3D) -> bool:
+	var ground = game.ground
+	for z in range(site.start.y,site.start.y+site.spec.size.y):
+		for x in range(site.start.x,site.start.x+site.spec.size.x):
+			var cell := Vector2i(x,z)
+			if ground.is_tile_in_bounds(cell) and ground.tiles[z*ground.grid_size.x+x].has("rail"): return true
+	return false
 ## A spot in the Depot's range for a building of `size`, with room round it to walk, off the way to its home mine.
 func building_site(depot: Node3D, size: Vector2i) -> Variant:
 	var centre := depot.global_position
@@ -646,6 +674,7 @@ func held_back() -> Vector2i:
 	var depot := home()
 	if wants.get("truck",false) and depot != null: held += Vector2i(depot.rules.truck_energy_cost,depot.rules.truck_iron_cost)
 	if wants.get("train",false) and rails != null: held += Vector2i(rails.rules.cargo_energy_cost,rails.rules.cargo_iron_cost)
+	if wants.get("cargo",false): held += Vector2i(network.supply_rules.cargo_energy_cost,network.supply_rules.cargo_iron_cost)
 	if wants.has("research"): held += wants.research
 	held.y += int(wants.get("rail",0))
 	return held
@@ -702,6 +731,7 @@ func fight(depot: Node3D) -> void:
 			if unit.order == "attack": continue
 			if unit.order == "attack_move" and unit.move_goal.distance_to(threat.global_position) < 15.0: continue
 			unit.command_attack_move(threat.global_position)
+		_escort_drones()
 		return
 	# A wave presses on to the next target it knows of; one with nothing left to find, or down to its last unit,
 	# comes home and joins the next.
@@ -723,6 +753,18 @@ func fight(depot: Node3D) -> void:
 		if wave.size() < next_wave_size(): wave.clear(); return
 		last_wave = wave.size(); waves_sent += 1
 		for unit in wave: unit.command_attack_move(target)
+	_escort_drones()
+## Keeps each Drone over the centre of the ground units it goes with: the wave's if it is in the wave, else the
+## rest of the army's. A Drone with no ground units to go with is left alone.
+func _escort_drones() -> void:
+	for drone in army:
+		if not _is_drone(drone): continue
+		var group: Array[Node3D] = (wave if wave.has(drone) else army.filter(func(unit): return not wave.has(unit))).filter(func(unit): return not _is_drone(unit))
+		if group.is_empty(): continue
+		var centre := _centre(group)
+		if drone.global_position.distance_to(centre) > drone_escort_radius: drone.command_move(centre)
+func _is_drone(unit: Node3D) -> bool:
+	return unit.get("unit_stats") != null and unit.unit_stats.unit_id == &"drone"
 ## How many units the next wave needs.
 func next_wave_size() -> int:
 	return first_wave_size if waves_sent == 0 else maxi(first_wave_size,last_wave+wave_growth)
