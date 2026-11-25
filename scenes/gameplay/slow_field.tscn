@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/slow_field.gd" id="field"]
+
+[sub_resource type="StandardMaterial3D" id="glow"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.45,0.7,1,0.5)
+
+[sub_resource type="TorusMesh" id="ring"]
+material = SubResource("glow")
+inner_radius = 4.7
+outer_radius = 5.0
+rings = 48
+ring_segments = 4
+
+[node name="SlowField" type="Node3D"]
+script = ExtResource("field")
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Ring" type="MeshInstance3D" parent="Visuals"]
+transform = Transform3D(1,0,0,0,0.2,0,0,0,1,0,0.1,0)
+cast_shadow = 0
+mesh = SubResource("ring")

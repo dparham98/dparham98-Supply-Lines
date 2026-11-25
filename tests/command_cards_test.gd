@@ -35,7 +35,8 @@ func run() -> void:
 	# 62 with the Arthurian Knights (docs/ARTHURIAN_KNIGHTS.md): Keep and Chapterhouse build tiles, the Food crate, Heal,
 	# the Keep's two units and the Chapterhouse's four. 64 with the Farm and House build tiles (docs/KNIGHTS_ECONOMY.md). 65 with the Keep's Launch balloon (docs/AIR_BALLOON.md).
 	# 71 with the Foundry and Forge build tiles and the four upgrade-line tiles (docs/UPGRADES.md).
-	if not check(tiles == 71,"Expected 71 card tiles, found %d" % tiles): return
+	# 73 with the Grail Sentinel's Mist and Slow (docs/MIST_AND_SLOW.md).
+	if not check(tiles == 73,"Expected 73 card tiles, found %d" % tiles): return
 	# Commands with their own art.
 	var names := {"Return":"sl_deliver.png","DropMaterials":"sl_drop.png","DeployTruck":"sl_deploy_depot.png","ProduceUbermech":"sl_produce_ubermech.png","PrintTruck":"sl_produce_truck.png","Derail":"sl_derail.png","Research":"sl_research_mining_trains.png","MineIron":"sl_mine_iron.png"}
 	for id in names:

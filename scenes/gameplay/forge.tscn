@@ -2,6 +2,7 @@
 [ext_resource type="Script" path="res://scripts/buildings/temple_of_science.gd" id="script"]
 [ext_resource type="Resource" path="res://assets/buildings/forge.tres" id="stats"]
 [ext_resource type="Script" path="res://scripts/research/research_stats.gd" id="research_stats"]
+[ext_resource type="Resource" path="res://assets/research/slow.tres" id="slow"]
 [ext_resource type="Resource" path="res://assets/research/upgrades/arms_1.tres" id="arms_1"]
 [ext_resource type="Resource" path="res://assets/research/upgrades/arms_2.tres" id="arms_2"]
 [ext_resource type="Resource" path="res://assets/research/upgrades/arms_3.tres" id="arms_3"]
@@ -18,7 +19,7 @@ size = Vector2(8.8, 8.8)
 [node name="Forge" type="Node3D"]
 script = ExtResource("script")
 stats = ExtResource("stats")
-research = Array[ExtResource("research_stats")]([ExtResource("arms_1"), ExtResource("arms_2"), ExtResource("arms_3"), ExtResource("mail_1"), ExtResource("mail_2"), ExtResource("mail_3")])
+research = Array[ExtResource("research_stats")]([ExtResource("arms_1"), ExtResource("arms_2"), ExtResource("arms_3"), ExtResource("mail_1"), ExtResource("mail_2"), ExtResource("mail_3"), ExtResource("slow")])
 [node name="Visuals" type="Node3D" parent="."]
 script = ExtResource("slot")
 model_scene = ExtResource("model")

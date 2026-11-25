@@ -39,6 +39,7 @@ var _tip_since := 0.0
 ## Fixed command slots, row-major in the 4 × 3 grid. Commands that never share a card may share a slot.
 const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 4, "Return": 5, "DropMaterials": 6, "Build": 7,
 	"BurnWood": 4, "BurnCoal": 5, "BurnEither": 6, "MakeCrates": 3, "Worksite": 7,
+	"Mist": 4, "Slow": 5,
 	"Repair": 8, "Heal": 8, "Derail": 8, "Capture": 9, "DeployTruck": 10, "Fell": 10, "CancelPlan": 11,
 	"DeployCargo": 2, "Load": 4, "Unload": 5, "Trips": 6,
 	"PrintTruck": 0, "PrintCargo": 1, "PrintTrain": 2,
@@ -224,6 +225,9 @@ func _ready() -> void:
 		var tile: Button = card.get_node("Upgrade%d" % n)
 		tile.pressed.connect(func():
 			if is_instance_valid(shown) and shown.is_in_group("research_buildings") and tile.has_meta("research"): shown.request_research(tile.get_meta("research")))
+	# The Grail Sentinel's Mist and Slow (docs/MIST_AND_SLOW.md): click a point; a Sentinel walks within range and casts.
+	card.get_node("Mist").pressed.connect(func(): game.pending_unit_command = "mist"; game.notify("Mist: click a point. Units in the 8 m cloud are hidden from anyone more than 8 m away for 8 s. Esc cancels."))
+	card.get_node("Slow").pressed.connect(func(): game.pending_unit_command = "slow"; game.notify("Slow: click a point. Enemy units within 5 m move 40% slower for 5 s. Esc cancels."))
 	card.get_node("MineIron").pressed.connect(func(): game.pending_unit_command = "mine_rail"; game.notify("Mine iron: click an Iron Mine joined to this train's track. Esc cancels."))
 	card.get_node("PrintCargo").pressed.connect(func():
 		if network.owned_selected() and not least_busy().request_cargo(): game.notify("Depot lacks local funds or queue space."))
@@ -1100,6 +1104,14 @@ Flies only where its Keep sent it" % node.cargo_text()
 			if node.can_heal:
 				show_button("Heal","Heal")
 				card.get_node("Heal").tooltip_text = "Vitality Stimulus: heal %d HP every %.1fs from the carried reserve (%d / %d HP), one point for one HP. Idle or attack-moving, it heals the most hurt friend within %.0f m by itself. The reserve refills inside a friendly Keep's range or beside a %s crate, %d points for %d. Does not heal vehicles." % [node.heal_hp,node.heal_interval,node.med_reserve,node.med_reserve_capacity,node.heal_range,str(node.med_refill_kind).capitalize(),node.med_refill_points,node.med_refill_cost]
+			if node.can_heal and node.get("spell_rules") != null:
+				var spells: SpellRules = node.spell_rules
+				show_button("Mist","Mist")
+				card.get_node("Mist").set_meta("detail","Mist · %d reserve points: for %.0f s, units inside an %.0f m circle can be seen only from within %.0f m. Cast up to %.0f m away." % [spells.mist_cost,spells.mist_seconds,spells.mist_radius,spells.mist_reveal,spells.cast_range])
+				explain(card.get_node("Mist"),not node.spell_blocker("mist").is_empty(),node.spell_blocker("mist"))
+				show_button("Slow","Slow")
+				card.get_node("Slow").set_meta("detail","Slow · %d reserve points: enemy units within %.0f m move %d%% slower for %.0f s. Cast up to %.0f m away. Research it at a Forge." % [spells.slow_cost,spells.slow_radius,roundi((1.0-spells.slow_factor)*100),spells.slow_seconds,spells.cast_range])
+				explain(card.get_node("Slow"),not node.spell_blocker("slow").is_empty(),node.spell_blocker("slow"))
 			if node.can_capture_depots: show_button("Capture","Capture")
 			if node.has_ability(&"derail"):
 				show_button("Derail","Derail")
@@ -1204,8 +1216,10 @@ func show_upgrade_building(node: Node3D) -> void:
 	if node.researching != null: show_progress("Researching · "+node.researching.display_name,"%d%% · %s s left" % [roundi(node.fraction()*100),_seconds(ceilf(node.seconds_left()))],node.fraction())
 	if is_instance_valid(payer): set_stats([["Food",grouped(payer.food)],["Iron",grouped(payer.iron)]] if keep else [["Energy",grouped(payer.energy)],["Iron",grouped(payer.iron)]])
 	var lines: Array[StringName] = []
+	var plain: Array[ResearchStats] = []
 	for entry in node.research:
 		if entry.level > 0 and not entry.line in lines: lines.append(entry.line)
+		elif entry.level <= 0: plain.append(entry)
 	var levels: Array[String] = []
 	for line in lines: levels.append("%s %d/%d" % [_line_title(node,line),Upgrades.level(node,node.team,line),Upgrades.LEVELS])
 	info.get_node("Details").text = "Levels: "+" · ".join(levels)
@@ -1235,6 +1249,27 @@ func show_upgrade_building(node: Node3D) -> void:
 		if not button.disabled: button.tooltip_text += "\n"+entry.summary
 		elif node.researching != null: button.tooltip_text += "\nResearching now."
 		elif not blocker.is_empty(): button.tooltip_text += "\n"+blocker
+	# Research that is not an upgrade line, such as the Forge's Slow (docs/MIST_AND_SLOW.md).
+	for i in range(plain.size()):
+		if lines.size()+i >= 4: break
+		var entry := plain[i]
+		var id := "Upgrade%d" % (lines.size()+i+1)
+		var button: Button = card.get_node(id)
+		set_card(button,"research_mining_trains")
+		if node.is_done(entry.research_id):
+			desired_buttons.append(id)
+			if button.has_meta("research"): button.remove_meta("research")
+			button.add_theme_color_override("icon_normal_color",UNAFFORDABLE)
+			set_tile(button,entry.display_name+" · researched",entry.summary)
+			button.disabled = true
+			continue
+		button.set_meta("research",entry.research_id)
+		var pays = node.payer_for(entry.energy_cost,entry.iron_cost,entry.food_cost)
+		show_production(id,"Research "+entry.display_name+" (%s s)" % _seconds(entry.seconds),entry.energy_cost,entry.iron_cost,pays if pays != null else payer,entry.food_cost)
+		var blocker: String = node.research_blocker(entry.research_id)
+		button.disabled = node.researching != null or (not blocker.is_empty() and pays != null)
+		if not button.disabled: button.tooltip_text += "\n"+entry.summary
+		elif node.researching != null: button.tooltip_text += "\nResearching now."
 ## "Infantry Weapons" from the line's level-1 entry.
 func _line_title(node: Node3D, line: StringName) -> String:
 	var entry: ResearchStats = node.research_by_id(Upgrades.research_id(line,1))

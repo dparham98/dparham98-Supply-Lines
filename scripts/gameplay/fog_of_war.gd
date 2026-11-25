@@ -62,7 +62,7 @@ func update_now() -> void:
 		for node in get_tree().get_nodes_in_group(group):
 			var team = _team_of(node)
 			if team == null or team == viewer or team == "neutral": continue
-			node.visible = visible_to(viewer,node.global_position)
+			node.visible = visible_to(viewer,node.global_position) and not MistCloud.hides(node,viewer)
 ## How far `node` sees, in metres.
 func sight(node: Node3D) -> float:
 	if node.is_in_group("construction_plans"): return site_vision
@@ -104,7 +104,7 @@ func explored_by(team: String, point: Vector3) -> bool:
 ## Whether the viewer may see `node`: their own and neutral things always, the other side's inside sight.
 func shows(node: Node3D) -> bool:
 	var team = _team_of(node)
-	return team == null or team == viewer or team == "neutral" or visible_to(viewer,node.global_position)
+	return team == null or team == viewer or team == "neutral" or (visible_to(viewer,node.global_position) and not MistCloud.hides(node,viewer))
 ## The viewer's fog, for the minimap: alpha 1 in fog, 0 in sight.
 func shade_texture() -> Texture2D: return _texture
 ## The fog's first corner and size, in world space (y is 0).
