@@ -2,6 +2,26 @@
 
 `scenes/gameplay/grenadier.tscn` uses `scenes/models/grenadier_model.tscn`, which instances `assets/models/units/grenadier.glb` and drives it with `scripts/components/character_animator.gd`. The working file is `Blender/Characters/Grenadier/Grenadier.blend`. Its revision from before rigging is in `Blender/Backups/Grenadier/`.
 
+## Portrait looks
+
+The unit has two matching model and portrait sets in `Blender/Characters/Grenadier/looks`. **The game uses Goggles** (chosen 2026-11-24): `assets/models/units/grenadier.glb` and `assets/ui/portraits/grenadier.png` are the Goggles pair. **Goggles** wears brass-rimmed field goggles over the eyes. **NoGoggles** exposes the same grey-green eyes and steel cheek plate. Both use the same fitted peaked cap, swept blonde hair and full animation rig. The 720 × 408 portrait is rendered from the corresponding playable GLB in Rest.
+
+From the project root, switch both playable assets with `python Blender/Characters/Grenadier/use_look.py NoGoggles` or `python Blender/Characters/Grenadier/use_look.py Goggles`. Let the Godot editor finish importing before running the game. Select the Grenadier to see the matching portrait in the HUD.
+
+The editable source is `Blender/Characters/Grenadier/Grenadier.blend`. Toggle the `goggles` mesh to compare the looks in Blender. To regenerate both models after an edit, run Blender 4.5 in background mode with the working file and `-P Blender/Characters/Grenadier/export_looks.py`. To refresh either portrait, run Blender with `-b --factory-startup -P Blender/Characters/Grenadier/render_portrait.py -- <look-folder>/grenadier.glb <look-folder>`. The renderer writes the full master and the game PNG. Run the look switch again to publish that pair.
+
+## Full-body studio views
+
+The Grenadier wears a fitted cuirass, a lined greatcoat with walking vents, articulated leg armor, and strapped field boots. The field pack, belt pouches, gloves, and launcher furniture carry modeled detail for close-up portraits.
+
+`Blender/Previews/Grenadier/` contains front and rear views (`Grenadier-body.jpg`), close-ups of the armor, pack and boots (`Grenadier-detail.jpg`), a four-angle sheet (`turnaround.png`), and the Godot turntable (`turntable.mp4`).
+
+To render a look in Blender 4.5, run this command from the project root with Blender on your executable path. Substitute `NoGoggles` to render the alternate look. The final argument names the shots. Omit `--shots` and its list to render every view, including the running and braced poses.
+
+```shell
+blender -b --factory-startup -P Blender/Characters/Grenadier/render_body.py -- Blender/Characters/Grenadier/looks/Goggles/grenadier.glb Grenadier-studio --shots front rear armor kit boots
+```
+
 ## Rig
 
 36 bones. The body is `root`, `hips`, `spine`, `chest`, `neck`, `head`, arms and legs (`upper_arm`, `forearm`, `hand`, `thigh`, `shin`, `foot`), with `pauldron.L/R` following the upper arms halfway and `pack` riding the chest. The coat has three columns each side (`coat_f`, `coat_s`, `coat_b`), two lengths each (`_lo` is the lower), plus `tabard`.
