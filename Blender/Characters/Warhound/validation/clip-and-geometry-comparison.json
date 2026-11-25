@@ -1,0 +1,84 @@
+{
+  "original": {
+    "asset_sha256": "83b853f71dd06db8574f16c1c1590d6867679fa944b1da2b63e6664054bd72a4",
+    "mesh_geometry_normals_and_uvs": "b1dfdad8e667d017e6bf6abe4253462ecfecec26ab72739973662f1813ff5f0e",
+    "skin_attributes_by_mesh": {
+      "Warhound_Body": "75b0c3111e136ef3b6d7d854d6206ac068d5f7384d2bcdfd1ef4fcf699a52374",
+      "Warhound_Comms": "df39a43a7186d6cd1510d821df0292ddf94c578278c9b0b4b86f6ce21bf3ad29",
+      "Warhound_Cuirass": "f16bdc8a6f5a8405b439bdf247b90f835272a92a408804932329c3b1c152e2a7",
+      "Warhound_Gorget": "013bd2ebfc292b173dae2e8025b7ee0e56b2256f1bcf045fb9f863b49c7ca54f",
+      "Warhound_Greave_FL": "d37de0aabfc6e9ee47fa0c6bb46ab36e34a4ac8a075438467f46f74c265723a8",
+      "Warhound_Greave_FR": "969345179c22d0ea332d9640487d49b5173b2b78333af7d2d864ad7d81461a8a",
+      "Warhound_Harness": "a53955272e6dda270053c52be2952786d8cd9f2309f69a6bb3a6483011b00f2f",
+      "Warhound_Haunch_L": "38f761716c0cd2f3747de5b97beb468f4e15f351cca7deafbedbbcab6e8bff78",
+      "Warhound_Haunch_R": "41f0c57cf7fbf79a2ac37e7a72c1da7c2768ee8fd2ef9255344b607cf4f23fba",
+      "Warhound_Head": "56341729b4aafaaa3dad55e1b9dbdf6a6d810d9f5009c5b98db486a3d5ced4c6",
+      "Warhound_Helm": "922fffb187ca82a2c0f509e7b151fc5a4258cb3794b114d83808ef22e4ce69dc",
+      "Warhound_Legs": "66f130ba3b7870926879796e9f41a8952571a5d522dcc1c21ef9d0d53d2b2665",
+      "Warhound_Pauldron_L": "d322f46fe4c9c38d4830049a9e84e5522255d6ad35f7bd67c235d49acfd7a798",
+      "Warhound_Pauldron_R": "5f2dce4bf097afefee82640980bccb9b792aabf50e1b18137f8052d16ee4d052",
+      "Warhound_Tabard": "cc79e31292efd0c3d986dfa14467cfbbca60bc6f0d04769768da5887057465d7"
+    },
+    "scene_and_nodes": "7dfe25376e4eba43fb614e529e4ba319feadf2f0a60f09180e9fd7a3ddd61d4a",
+    "skeleton": "b9feca5eb535abb584b6e661d41d774f32943c10b3aca40782e0b71adaa7ffe2",
+    "materials": "63603372842f84ef0598bd5dfd299417a801c4b2d0acf05f19a5d67d7b9520a7",
+    "embedded_images": [
+      "830d2cd254d6d4acf0316e0afe1e2a9595236291866f0ce93b22f5c2cb8c2886"
+    ],
+    "clips": {
+      "Rest": "c42cc9e26b347ba6cbffe7c3c74667b10334fd8e26ed5697b2bf831fe7e13d0d",
+      "Run": "730a14eea8024a834d0abbfaf9139f0e7802af1c3edc74999a1c81179adc57bf",
+      "Attack": "1ae1d6f9fe2254078e45809679ce6e96768ed00011b9a808381f2c4a2ef93953",
+      "Die": "ef90266718dbdfa83705cdd86cd8fd0ca2efe0859b1960e792fcc99892ebf946"
+    }
+  },
+  "revision": {
+    "asset_sha256": "19fe70da8b83ebe86b518452e8fc3b65293ac8a2e6c2dcf141b9f240557284d8",
+    "mesh_geometry_normals_and_uvs": "b1dfdad8e667d017e6bf6abe4253462ecfecec26ab72739973662f1813ff5f0e",
+    "skin_attributes_by_mesh": {
+      "Warhound_Body": "525e3d1cb5806f2567b35d2b58622bd6eb7712c3d39ada65cc7b33a77cdd5886",
+      "Warhound_Comms": "df39a43a7186d6cd1510d821df0292ddf94c578278c9b0b4b86f6ce21bf3ad29",
+      "Warhound_Cuirass": "f16bdc8a6f5a8405b439bdf247b90f835272a92a408804932329c3b1c152e2a7",
+      "Warhound_Gorget": "013bd2ebfc292b173dae2e8025b7ee0e56b2256f1bcf045fb9f863b49c7ca54f",
+      "Warhound_Greave_FL": "d37de0aabfc6e9ee47fa0c6bb46ab36e34a4ac8a075438467f46f74c265723a8",
+      "Warhound_Greave_FR": "969345179c22d0ea332d9640487d49b5173b2b78333af7d2d864ad7d81461a8a",
+      "Warhound_Harness": "a53955272e6dda270053c52be2952786d8cd9f2309f69a6bb3a6483011b00f2f",
+      "Warhound_Haunch_L": "38f761716c0cd2f3747de5b97beb468f4e15f351cca7deafbedbbcab6e8bff78",
+      "Warhound_Haunch_R": "41f0c57cf7fbf79a2ac37e7a72c1da7c2768ee8fd2ef9255344b607cf4f23fba",
+      "Warhound_Head": "56341729b4aafaaa3dad55e1b9dbdf6a6d810d9f5009c5b98db486a3d5ced4c6",
+      "Warhound_Helm": "922fffb187ca82a2c0f509e7b151fc5a4258cb3794b114d83808ef22e4ce69dc",
+      "Warhound_Legs": "66f130ba3b7870926879796e9f41a8952571a5d522dcc1c21ef9d0d53d2b2665",
+      "Warhound_Pauldron_L": "d322f46fe4c9c38d4830049a9e84e5522255d6ad35f7bd67c235d49acfd7a798",
+      "Warhound_Pauldron_R": "5f2dce4bf097afefee82640980bccb9b792aabf50e1b18137f8052d16ee4d052",
+      "Warhound_Tabard": "cc79e31292efd0c3d986dfa14467cfbbca60bc6f0d04769768da5887057465d7"
+    },
+    "scene_and_nodes": "7dfe25376e4eba43fb614e529e4ba319feadf2f0a60f09180e9fd7a3ddd61d4a",
+    "skeleton": "b9feca5eb535abb584b6e661d41d774f32943c10b3aca40782e0b71adaa7ffe2",
+    "materials": "63603372842f84ef0598bd5dfd299417a801c4b2d0acf05f19a5d67d7b9520a7",
+    "embedded_images": [
+      "830d2cd254d6d4acf0316e0afe1e2a9595236291866f0ce93b22f5c2cb8c2886"
+    ],
+    "clips": {
+      "Rest": "c42cc9e26b347ba6cbffe7c3c74667b10334fd8e26ed5697b2bf831fe7e13d0d",
+      "Run": "0ea63a38efd9e249c984835c1e040bc87f1769c95fbae67af80a9f057e287a2a",
+      "Attack": "1ae1d6f9fe2254078e45809679ce6e96768ed00011b9a808381f2c4a2ef93953",
+      "Die": "ef90266718dbdfa83705cdd86cd8fd0ca2efe0859b1960e792fcc99892ebf946"
+    }
+  },
+  "identical_asset_components": {
+    "mesh_geometry_normals_and_uvs": true,
+    "scene_and_nodes": true,
+    "skeleton": true,
+    "materials": true,
+    "embedded_images": true
+  },
+  "meshes_with_revised_deformation": [
+    "Warhound_Body"
+  ],
+  "identical_clip_data": {
+    "Rest": true,
+    "Run": false,
+    "Attack": true,
+    "Die": true
+  }
+}

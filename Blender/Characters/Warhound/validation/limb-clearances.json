@@ -1,0 +1,7 @@
+{
+  "glb_sha256": "19fe70da8b83ebe86b518452e8fc3b65293ac8a2e6c2dcf141b9f240557284d8",
+  "samples": 160,
+  "samples_per_second": 240.0,
+  "method": "At each sampled subframe, test deformed skin triangles across each distinct pair of anatomical limbs; excludes other body meshes and armor. Bounds summarize region of crossing faces, not depth of penetration.",
+  "crossings_by_pair": {}
+}

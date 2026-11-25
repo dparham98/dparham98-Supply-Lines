@@ -1,0 +1,12 @@
+{
+  "source_sha256": "14a1c39f6c7a98137ccd4cb8a7619599e5cba3e1e9884d663e67944d5080047a",
+  "body_mesh_vertices": 216,
+  "changed_weights_count": 61,
+  "bind_pose_vertex_positions_identical": true,
+  "revised_run_max_neck_edge_extension_m": 0.027042880654335022,
+  "other_clip_max_body_surface_change_m": {
+    "Rest": 0.015426845289766788,
+    "Attack": 0.09375865757465363,
+    "Die": 0.04574735090136528
+  }
+}

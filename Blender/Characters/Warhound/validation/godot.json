@@ -1,0 +1,92 @@
+{
+	"baseline_triangles": 7316,
+	"bone_count": 29,
+	"character_animator": {
+		"attack": true,
+		"death": true,
+		"death_queues_removal": true,
+		"gameplay_faces_minus_z": true,
+		"idle": true,
+		"run": true,
+		"run_at_reference_speed": true,
+		"run_repeats": true
+	},
+	"character_animator_sha256": "7101792d69412c5537ec316aa97805e8047f2257ce84bed664b2f5e7961f95ef",
+	"clips": {
+		"Attack": {
+			"first_last_angle_degrees": 0.0559529103338718,
+			"first_last_position_delta_m": 0.0000000596046447753906,
+			"imported_loop_mode": 0,
+			"max_angle_degrees": 27.5505771636963,
+			"max_displacement_m": 0.144082069396973,
+			"seconds": 0.75,
+			"tracks": 33
+		},
+		"Die": {
+			"first_last_angle_degrees": 93.3945999145508,
+			"first_last_position_delta_m": 0.970389068126678,
+			"imported_loop_mode": 0,
+			"max_angle_degrees": 96.3858489990234,
+			"max_displacement_m": 0.996546804904938,
+			"seconds": 1.0,
+			"tracks": 33
+		},
+		"Rest": {
+			"first_last_angle_degrees": 0.0559529103338718,
+			"first_last_position_delta_m": 0.00000000372529029846191,
+			"imported_loop_mode": 1,
+			"max_angle_degrees": 23.4809875488281,
+			"max_displacement_m": 0.129897847771645,
+			"seconds": 1.0,
+			"tracks": 33
+		},
+		"Run": {
+			"first_last_angle_degrees": 0.0395646803081036,
+			"first_last_position_delta_m": 0.0000000954139878217575,
+			"imported_loop_mode": 1,
+			"max_angle_degrees": 123.581100463867,
+			"max_displacement_m": 0.789181590080261,
+			"seconds": 0.666666686534882,
+			"tracks": 33
+		}
+	},
+	"engine": "4.7.2-stable (official)",
+	"errors": [],
+	"ground_y_m": 0.0,
+	"material_names": [
+		"Hound_Coat_Dark",
+		"Rifle_Parkerized",
+		"Recessed_Steel",
+		"Satin_Silver",
+		"Ivory_Armor",
+		"Flexible_Undersuit",
+		"Heraldic_Brass",
+		"Harness_Leather",
+		"team_color_shadow",
+		"team_color",
+		"Hound_Muzzle_Brown",
+		"Hound_Nose_Claws",
+		"Hound_Inner_Ear",
+		"Visor_Amber"
+	],
+	"meshes": 15,
+	"native_heading_dot_godot_plus_z": 1.0,
+	"ortho_height_m": 72.0,
+	"passed": true,
+	"pitch_degrees": 50.0,
+	"presentation_nodes": [],
+	"rest_size_m_xyz": [
+		0.485249519348145,
+		1.32000005245209,
+		1.83787488937378
+	],
+	"source_sha256": "19fe70da8b83ebe86b518452e8fc3b65293ac8a2e6c2dcf141b9f240557284d8",
+	"surfaces": 60,
+	"triangles": 8820,
+	"two_lakes_rest_footprint_px_1280x900": [
+		6.06561851501465,
+		16.8190402984619
+	],
+	"uv_mapped_albedo_surfaces": 2,
+	"warnings": []
+}
