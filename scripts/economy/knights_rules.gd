@@ -25,3 +25,14 @@ extends Resource
 @export_range(0,100) var keep_room := 10
 ## Housing each unit takes, by unit id; units not listed take none. There is no upper limit on housing.
 @export var housing := {&"forester_maiden": 1, &"warhound": 1, &"round_table_marine": 2, &"grail_sentinel": 2, &"questing_marine": 2, &"azure_dragon": 4}
+@export_group("Air Balloon")
+## Launch balloon (docs/AIR_BALLOON.md), a Keep ability: the balloon takes the full crates packed beside the Keep,
+## up to `balloon_crates`, flies them to a point the player sees, sets them down and is gone. Each launch costs
+## `balloon_wood_cost` Wood from the Keep. Its speed, health and sight are in assets/units/air_balloon.tres.
+@export_range(0,10000) var balloon_wood_cost := 20
+@export_range(1,8) var balloon_crates := 4
+## Height the balloon flies at, and the Keep's rooftop dock it lifts off from, in metres.
+@export_range(1.0,40.0,0.5) var balloon_cruise_height := 10.0
+@export_range(0.0,20.0,0.5) var balloon_dock_height := 6.0
+## How fast it climbs off the dock and comes down to land, in metres a second.
+@export_range(0.5,20.0,0.5) var balloon_climb_rate := 2.5

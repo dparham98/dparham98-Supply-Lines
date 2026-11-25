@@ -1,0 +1,31 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/burst_effect.gd" id="burst"]
+[ext_resource type="PackedScene" path="res://assets/models/effects/air_balloon_death_fx.glb" id="model"]
+
+[sub_resource type="StandardMaterial3D" id="flash_hot"]
+shading_mode = 0
+albedo_color = Color(1, 0.88, 0.56, 1)
+
+[node name="AirBalloonDeathFx" type="Node3D"]
+script = ExtResource("burst")
+clip = &"Death"
+flash_path = NodePath("Model/Flash_Envelope")
+light_path = NodePath("Light")
+light_energy = 4.5
+one_shot = true
+
+[node name="Model" parent="." instance=ExtResource("model")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
+
+[node name="Flash_Envelope" parent="Model" index="13"]
+material_override = SubResource("flash_hot")
+
+[node name="Light" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.6, 0)
+visible = false
+light_color = Color(1, 0.65, 0.3, 1)
+omni_range = 10.0
+omni_attenuation = 1.0
+
+[editable path="Model"]

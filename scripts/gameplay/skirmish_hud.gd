@@ -42,7 +42,7 @@ const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 
 	"Repair": 8, "Heal": 8, "Derail": 8, "Capture": 9, "DeployTruck": 10, "Fell": 10, "CancelPlan": 11,
 	"DeployCargo": 2, "Load": 4, "Unload": 5, "Trips": 6,
 	"PrintTruck": 0, "PrintCargo": 1, "PrintTrain": 2,
-	"TrainForester": 0, "TrainWarhound": 1,
+	"TrainForester": 0, "TrainWarhound": 1, "LaunchBalloon": 2,
 	"PrintInfantry": 0, "ProduceScout": 1, "ProduceGrenadier": 2, "ProduceTank": 3, "ProduceMotorcycle": 4, "ProduceDrone": 5, "ProduceUbermech": 6,
 	"ProduceRoundTableMarine": 0, "ProduceGrailSentinel": 1, "ProduceQuestingMarine": 2, "ProduceAzureDragon": 3,
 	"ToggleGenerator": 0, "FocusAssigned": 1,
@@ -224,6 +224,13 @@ func _ready() -> void:
 	card.get_node("TrainForester").pressed.connect(func():
 		if is_instance_valid(shown) and shown.is_in_group("keeps") and shown.team == "player":
 			if not least_busy().request_forester(): game.notify("Keep lacks Food or queue space."))
+	# Launch balloon (docs/AIR_BALLOON.md): arms a click on the map for the selected Keep's balloon.
+	card.get_node("LaunchBalloon").pressed.connect(func():
+		if not is_instance_valid(shown) or not shown.is_in_group("keeps") or shown.team != "player": return
+		var refusal: String = shown.balloon_refusal()
+		if not refusal.is_empty(): game.notify(refusal); return
+		game.pending_unit_command = "launch_balloon"
+		game.notify("Launch balloon: click where %s should set its crates down. Esc cancels." % shown.name))
 	card.get_node("TrainWarhound").pressed.connect(func():
 		if is_instance_valid(shown) and shown.is_in_group("keeps") and shown.team == "player":
 			if not least_busy().request_warhound(): game.notify("Keep lacks Food, Iron or queue space."))
@@ -939,6 +946,12 @@ func update_contents() -> void:
 				show_production("TrainForester",forester_stats.display_name,forester_stats.energy_cost,forester_stats.iron_cost,node,forester_stats.food_cost,forester_stats.wood_cost,forester_stats.unit_id)
 				var hound_stats: UnitStats = node.unit_stats_for_kind("warhound")
 				show_production("TrainWarhound",hound_stats.display_name,hound_stats.energy_cost,hound_stats.iron_cost,node,hound_stats.food_cost,hound_stats.wood_cost,hound_stats.unit_id)
+				var balloon_button: Button = card.get_node("LaunchBalloon")
+				var aboard: Array[Node3D] = node.balloon_crates()
+				balloon_button.set_meta("detail","%d Wood. Takes up to %d full crates packed beside the Keep (%d ready) to a point you see, sets them down and is gone; inside a Keep's range it unloads into that Keep. 40 health: shot down, it drops nothing." % [KnightHousing.rules().balloon_wood_cost,KnightHousing.rules().balloon_crates,aboard.size()])
+				show_button("LaunchBalloon","Launch balloon")
+				var refusal: String = node.balloon_refusal()
+				explain(balloon_button,not refusal.is_empty(),refusal)
 				hint_text = "Keep stores Food, Wood and Iron locally and trains Forester Maidens and Warhounds. Found forward Keeps anywhere from 50 Wood and 50 Iron on site (B → K)."
 		else:
 			commands.get_node("Title").text = "DEPOT · PRODUCTION"
@@ -1037,6 +1050,13 @@ the one shown while it can, else another that can."
 		update_bars(node)
 		update_unit_sections(node)
 		commands.get_node("Title").text = "UNIT · ORDERS"
+		# An Air Balloon takes no orders (docs/AIR_BALLOON.md).
+		if node.is_in_group("air_balloons"):
+			info.get_node("Details").text = "Carrying %s
+Flies only where its Keep sent it" % node.cargo_text()
+			commands.get_node("Title").text = "AIR BALLOON"
+			hint_text = "An Air Balloon flies its crates to where its Keep sent it, sets them down and is gone. It takes no orders. Shot down, it drops nothing."
+			return
 		show_button("Move","Move")
 		show_button("Stop","Stop")
 		if node.fuel_active():
