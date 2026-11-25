@@ -30,6 +30,7 @@ const ENTRIES := {
 	"barracks": ["res://scenes/gameplay/barracks.tscn","","build_barracks",35.0,1.0],
 	"tank_factory": ["res://scenes/gameplay/tank_factory.tscn","","build_factory",35.0,1.0],
 	"generator": ["res://scenes/gameplay/energy_generator.tscn","","build_generator",35.0,1.0],
+	"farm": ["res://scenes/gameplay/farm.tscn","","build_farm",145.0,1.0],
 	"mine": ["res://scenes/gameplay/site_mine.tscn","","build_mine",20.0,1.0],
 	"pithead": ["res://scenes/gameplay/iron_mine.tscn","","build_coal_mine",35.0,1.0],
 	"temple": ["res://scenes/gameplay/temple_of_science.tscn","","build_temple",215.0,1.0], # its door faces +Z

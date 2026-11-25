@@ -155,12 +155,14 @@ func command_move(point: Vector3) -> void:
 	move_goal = point
 	state = "Moving"
 func command_gather(node: Node3D) -> void:
-	if not can_gather or is_depot_truck or is_cargo_vehicle or not is_instance_valid(node): return
+	if not is_instance_valid(node): return
 	# A Farm takes one worker (docs/KNIGHTS_ECONOMY.md).
-	if node.has_method("take_worker") and not node.take_worker(self):
-		state = "Farm already has a worker"
-		game.notify("%s already has a worker: a Farm takes one." % node.name,team)
-		return
+	if node.has_method("take_worker"):
+		if not node.take_worker(self):
+			state = node.worker_refusal(self)
+			game.notify(state, team)
+			return
+	elif not can_gather or is_depot_truck or is_cargo_vehicle: return
 	_stop_route()
 	order = "gather"
 	source = node
@@ -341,7 +343,7 @@ func _animate(delta: float = 1.0/60) -> void:
 	var value := 0.0
 	if _animated_from != Vector3.INF and here != _animated_from: kind = &"run"; value = move_speed
 	elif _aimed_frame == Engine.get_process_frames(): kind = &"aim"
-	elif state in ["Gathering","Felling","Farming"] or state.begins_with("Constructing"): kind = &"work"; value = harvest_interval
+	elif state in ["Gathering","Farming"] or state.begins_with("Felling") or state.begins_with("Constructing"): kind = &"work"; value = harvest_interval
 	elif state.begins_with("Repairing"): kind = &"work"; value = engineering_rules.repair_interval if engineering_rules else 0.0
 	model.set_motion(kind,value)
 	if kind == &"work" and _work_timer == 0.0 and model.has_method("sync_work"): model.sync_work()
@@ -700,6 +702,24 @@ func _source_left() -> bool:
 func _head_home() -> void:
 	order = "return"
 	if not return_explicit: return_depot = null
+## Stand alongside an accessible furrow, then angle the cultivator into the bed.
+func _approach_furrow(delta: float) -> bool:
+	if not source.has_furrow(grid_position):
+		if _retry <= 0.0:
+			state = "To food"
+			for cell: Vector2i in source.tending_cells(grid_position):
+				if _plan(cell): return false
+			state = "Food unreachable"
+			_retry = 1.0
+		return false
+	var pose: Transform3D = source.tending_pose(grid_position)
+	if not global_position.is_equal_approx(pose.origin):
+		state = "At the field edge"
+		_face(pose.origin)
+		global_position = global_position.move_toward(pose.origin, move_speed * delta)
+		return false
+	_face(global_position - pose.basis.z)
+	return true
 func _gather(delta: float) -> void:
 	# A tree in the way of a coal mine: felled where it stands, then back to the mine.
 	if is_instance_valid(_dig_source) and _dig_source.is_in_group("mines") and is_instance_valid(source) and source.remaining > 0:
@@ -722,13 +742,16 @@ func _gather(delta: float) -> void:
 	if cargo_kind != source.resource_kind or cargo >= carry_capacity:
 		_head_home()
 		return
-	if global_position.distance_to(source.global_position) > interaction_range:
+	var farming := source.is_in_group("farms")
+	if farming:
+		if not _approach_furrow(delta): return
+	elif global_position.distance_to(source.global_position) > interaction_range:
 		if _retry <= 0:
 			state = "Felling a way to the coal" if is_instance_valid(_dig_source) else "To "+str(source.resource_kind)
 			if not _route_to_interaction(source,interaction_range) and not _cut_way_in(): state = "Coal unreachable" if is_instance_valid(_dig_source) else str(source.resource_kind).capitalize()+" unreachable"
 		return
-	state = "Farming" if source.is_in_group("farms") else "Gathering"
-	_face(source.global_position)
+	else: _face(source.global_position)
+	state = "Farming" if farming else "Gathering"
 	_work_timer += delta
 	if _work_timer >= harvest_interval:
 		_work_timer = 0
