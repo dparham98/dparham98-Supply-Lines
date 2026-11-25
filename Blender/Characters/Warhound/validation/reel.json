@@ -1,0 +1,36 @@
+{
+  "stream": {
+    "codec_name": "h264",
+    "width": 1280,
+    "height": 720,
+    "pix_fmt": "yuv420p",
+    "avg_frame_rate": "48/1",
+    "duration": "8.000000",
+    "nb_frames": "384"
+  },
+  "max_frame_duration_error_s": 6.666666673531274e-07,
+  "sha256": "d70799351c2f5818ff3c756d1052f244aa53b0a199b8440f88cd41f078bba497",
+  "source_sha256": "19fe70da8b83ebe86b518452e8fc3b65293ac8a2e6c2dcf141b9f240557284d8",
+  "native_cycle_length_s": 0.666666686534882,
+  "ground_speed_m_s": 4.0,
+  "real_time_strides": 6,
+  "half_speed_strides": 3,
+  "half_speed_starts_at_s": 4.0,
+  "normal_repeat_mean_rgb_error": 0.6413349535820634,
+  "half_speed_matching_phase_mean_rgb_error": 0.7139795717288492,
+  "opposite_phase_mean_rgb_difference": 18.175385356454722,
+  "comparison": {
+    "stream": {
+      "codec_name": "h264",
+      "width": 1600,
+      "height": 450,
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "48/1",
+      "duration": "4.000000",
+      "nb_frames": "192"
+    },
+    "max_frame_duration_error_s": 6.666666666869936e-07,
+    "sha256": "2455cda50c84ff55bd24a19617b6e2d53df7cd9b3c80c0f1447931a60d5a3677",
+    "pilot_source_sha256": "83b853f71dd06db8574f16c1c1590d6867679fa944b1da2b63e6664054bd72a4"
+  }
+}

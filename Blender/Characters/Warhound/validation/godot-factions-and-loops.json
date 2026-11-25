@@ -1,0 +1,98 @@
+{
+  "animation_loop_modes": {
+    "Attack": 0,
+    "Die": 0,
+    "Rest": 1,
+    "Run": 1
+  },
+  "authored": {
+    "base_team_surfaces": {
+      "team_color": 6,
+      "team_color_shadow": 5
+    },
+    "correct_team_overrides": {
+      "team_color": 0,
+      "team_color_shadow": 0
+    },
+    "project_apply_returned": 0,
+    "total_surfaces": 60,
+    "unchanged_surfaces_by_material": {
+      "Flexible_Undersuit": 8,
+      "Harness_Leather": 2,
+      "Heraldic_Brass": 8,
+      "Hound_Coat_Dark": 3,
+      "Hound_Inner_Ear": 1,
+      "Hound_Muzzle_Brown": 1,
+      "Hound_Nose_Claws": 2,
+      "Ivory_Armor": 5,
+      "Recessed_Steel": 11,
+      "Rifle_Parkerized": 1,
+      "Satin_Silver": 6,
+      "Visor_Amber": 1,
+      "team_color": 6,
+      "team_color_shadow": 5
+    },
+    "unexpected_surfaces": 0
+  },
+  "enemy": {
+    "base_team_surfaces": {
+      "team_color": 6,
+      "team_color_shadow": 5
+    },
+    "correct_team_overrides": {
+      "team_color": 6,
+      "team_color_shadow": 5
+    },
+    "project_apply_returned": 11,
+    "total_surfaces": 60,
+    "unchanged_surfaces_by_material": {
+      "Flexible_Undersuit": 8,
+      "Harness_Leather": 2,
+      "Heraldic_Brass": 8,
+      "Hound_Coat_Dark": 3,
+      "Hound_Inner_Ear": 1,
+      "Hound_Muzzle_Brown": 1,
+      "Hound_Nose_Claws": 2,
+      "Ivory_Armor": 5,
+      "Recessed_Steel": 11,
+      "Rifle_Parkerized": 1,
+      "Satin_Silver": 6,
+      "Visor_Amber": 1
+    },
+    "unexpected_surfaces": 0
+  },
+  "errors": [],
+  "native_wrapped_position_s": {
+    "Rest": 0.125,
+    "Run": 0.125
+  },
+  "passed": true,
+  "player": {
+    "base_team_surfaces": {
+      "team_color": 6,
+      "team_color_shadow": 5
+    },
+    "correct_team_overrides": {
+      "team_color": 6,
+      "team_color_shadow": 5
+    },
+    "project_apply_returned": 11,
+    "total_surfaces": 60,
+    "unchanged_surfaces_by_material": {
+      "Flexible_Undersuit": 8,
+      "Harness_Leather": 2,
+      "Heraldic_Brass": 8,
+      "Hound_Coat_Dark": 3,
+      "Hound_Inner_Ear": 1,
+      "Hound_Muzzle_Brown": 1,
+      "Hound_Nose_Claws": 2,
+      "Ivory_Armor": 5,
+      "Recessed_Steel": 11,
+      "Rifle_Parkerized": 1,
+      "Satin_Silver": 6,
+      "Visor_Amber": 1
+    },
+    "unexpected_surfaces": 0
+  },
+  "project_team_paint_path": "res://scripts/components/team_paint.gd"
+}

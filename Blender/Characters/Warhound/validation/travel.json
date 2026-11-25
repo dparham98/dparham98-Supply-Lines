@@ -1,0 +1,17 @@
+{
+  "camera_fov_deg": 27.5,
+  "count": 91,
+  "duration": 0.666666686534882,
+  "end_z_m": 3.75,
+  "fps": 48.0,
+  "speed": 4.0,
+  "start_z_m": -3.75,
+  "stream": {
+    "width": 1280,
+    "height": 720,
+    "avg_frame_rate": "48/1",
+    "nb_frames": "91"
+  },
+  "source_sha256": "19fe70da8b83ebe86b518452e8fc3b65293ac8a2e6c2dcf141b9f240557284d8",
+  "mp4_sha256": "82a3ef5bd4e3da65f2c27aa0e38e6d146adfc5e3807f3cb1e4677a6c68cdb9ee"
+}

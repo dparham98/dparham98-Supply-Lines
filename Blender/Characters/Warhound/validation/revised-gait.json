@@ -1,0 +1,174 @@
+{
+  "glb_sha256": "19fe70da8b83ebe86b518452e8fc3b65293ac8a2e6c2dcf141b9f240557284d8",
+  "cycle_seconds": 0.6666666666666666,
+  "actor_speed_m_s": 4.0,
+  "stride_m": 2.6666666666666665,
+  "samples_per_cycle": 160,
+  "sample_rate_hz": 240.0,
+  "contact_threshold_mm": 5,
+  "method": "Reimported GLB skinned distal vertices. Contact when any distal skin is within threshold of Z=0. Slip sums absolute ground-relative velocity of lowest material points (within 1 mm of each paw minimum) when <=2 mm above floor. Forward is Blender -Y. Periodic central derivatives sampled over one stride.",
+  "footfalls_in_cycle_order": [
+    {
+      "paw": "LR",
+      "phase": 0.075
+    },
+    {
+      "paw": "FL",
+      "phase": 0.50625
+    },
+    {
+      "paw": "FR",
+      "phase": 0.58125
+    },
+    {
+      "paw": "RR",
+      "phase": 0.98125
+    }
+  ],
+  "support_fraction_by_paw_count": {
+    "0": 0.25,
+    "1": 0.35625,
+    "2": 0.39375,
+    "3": 0.0,
+    "4": 0.0
+  },
+  "aerial_intervals": [
+    {
+      "start_phase": 0.36875,
+      "end_phase": 0.50625,
+      "duration_s": 0.09166666666666666,
+      "maximum_lowest_paw_clearance_m": 0.07214819639921188,
+      "front_to_hind_pad_spacing_at_midflight_m": 1.7538048128286998
+    },
+    {
+      "start_phase": 0.86875,
+      "end_phase": 0.98125,
+      "duration_s": 0.075,
+      "maximum_lowest_paw_clearance_m": 0.04846546798944473,
+      "front_to_hind_pad_spacing_at_midflight_m": 0.166714732017782
+    }
+  ],
+  "overall_minimum_paw_height_m": -0.002148747444152832,
+  "overall_peak_all_paw_clearance_m": 0.07214819639921188,
+  "paws": {
+    "FL": {
+      "contacts": [
+        {
+          "touchdown_phase": 0.50625,
+          "duration_s": 0.17916666666666667,
+          "loaded_time_within_2mm_s": 0.16666666666666666,
+          "absolute_tangential_slip_path_m": 0.012352171043554941,
+          "middle_60pct_support_net_travel_range_m": 0.004911658664544423,
+          "middle_60pct_support_cumulative_abs_slip_m": 0.00512028286854426,
+          "median_abs_tangential_speed_m_s": 0.05092775821685791
+        }
+      ],
+      "clearance_min_max_m": [
+        -0.0016669472679495811,
+        0.28985729813575745
+      ],
+      "lowest_at_frame": 9.4,
+      "marker_reach_fore_aft_m": 0.867672054304017,
+      "loop_vertex_error_m": 0.0
+    },
+    "FR": {
+      "contacts": [
+        {
+          "touchdown_phase": 0.58125,
+          "duration_s": 0.19166666666666665,
+          "loaded_time_within_2mm_s": 0.18333333333333332,
+          "absolute_tangential_slip_path_m": 0.01648023972908656,
+          "middle_60pct_support_net_travel_range_m": 0.0050479834278424575,
+          "middle_60pct_support_cumulative_abs_slip_m": 0.005251177648703257,
+          "median_abs_tangential_speed_m_s": 0.03768324851989746
+        }
+      ],
+      "clearance_min_max_m": [
+        -0.002148747444152832,
+        0.28985777497291565
+      ],
+      "lowest_at_frame": 10.4,
+      "marker_reach_fore_aft_m": 0.8488569226529863,
+      "loop_vertex_error_m": 0.0
+    },
+    "LR": {
+      "contacts": [
+        {
+          "touchdown_phase": 0.075,
+          "duration_s": 0.19583333333333333,
+          "loaded_time_within_2mm_s": 0.1875,
+          "absolute_tangential_slip_path_m": 0.023286154866218566,
+          "middle_60pct_support_net_travel_range_m": 0.005271702011426289,
+          "middle_60pct_support_cumulative_abs_slip_m": 0.005610121786594391,
+          "median_abs_tangential_speed_m_s": 0.04044747352600098
+        }
+      ],
+      "clearance_min_max_m": [
+        -0.0005461593973450363,
+        0.3045700490474701
+      ],
+      "lowest_at_frame": 2.6,
+      "marker_reach_fore_aft_m": 0.8537527173757553,
+      "loop_vertex_error_m": 0.0
+    },
+    "RR": {
+      "contacts": [
+        {
+          "touchdown_phase": 0.98125,
+          "duration_s": 0.19583333333333333,
+          "loaded_time_within_2mm_s": 0.1875,
+          "absolute_tangential_slip_path_m": 0.023394634823004405,
+          "middle_60pct_support_net_travel_range_m": 0.005124021073182424,
+          "middle_60pct_support_cumulative_abs_slip_m": 0.005703575909137726,
+          "median_abs_tangential_speed_m_s": 0.04811859130859375
+        }
+      ],
+      "clearance_min_max_m": [
+        -0.000688560598064214,
+        0.3047429919242859
+      ],
+      "lowest_at_frame": 1.1,
+      "marker_reach_fore_aft_m": 0.8536101116074456,
+      "loop_vertex_error_m": 0.0
+    }
+  },
+  "average_front_to_hind_pad_spacing_min_max_m": [
+    0.1647687355677287,
+    1.764642972085211
+  ],
+  "pelvis_to_chest_relative_pitch_range_deg": 49.6508896363551,
+  "body_motion": {
+    "pelvis": {
+      "range_degrees": 25.99922109260661,
+      "head_vertical_excursion_m": 0.10798662900924683
+    },
+    "spine.01": {
+      "range_degrees": 15.984384833891102,
+      "head_vertical_excursion_m": 0.1574941873550415
+    },
+    "spine.02": {
+      "range_degrees": 9.999891905349065,
+      "head_vertical_excursion_m": 0.2049960494041443
+    },
+    "chest": {
+      "range_degrees": 23.996984244945054,
+      "head_vertical_excursion_m": 0.1790899634361267
+    },
+    "neck": {
+      "range_degrees": 19.976739306181322,
+      "head_vertical_excursion_m": 0.12043708562850952
+    },
+    "head": {
+      "range_degrees": 9.99811670423067,
+      "head_vertical_excursion_m": 0.14712059497833252
+    },
+    "tail.01": {
+      "range_degrees": 17.998790879705894,
+      "head_vertical_excursion_m": 0.12081706523895264
+    },
+    "tail.03": {
+      "range_degrees": 25.979044455123415,
+      "head_vertical_excursion_m": 0.22178307175636292
+    }
+  }
+}

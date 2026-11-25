@@ -1,16 +1,15 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/components/character_animator.gd" id="animator"]
-[ext_resource type="PackedScene" path="res://assets/models/units/warhound.glb" id="rig"]
+[ext_resource type="Script" path="res://scripts/components/character_animator.gd" id="1_animator"]
+[ext_resource type="PackedScene" path="res://assets/models/units/warhound.glb" id="2_model"]
 
 [node name="WarhoundModel" type="Node3D"]
-script = ExtResource("animator")
+script = ExtResource("1_animator")
+metadata/team_materials = PackedStringArray("team_color_shadow")
 player_path = NodePath("Rig/AnimationPlayer")
-idle_clip = &"Rest"
-run_clip = &"Run"
-shoot_clip = &"Attack"
 run_reference_speed = 4.0
+shoot_clip = &"Attack"
 death_clip = &"Die"
 
-[node name="Rig" parent="." instance=ExtResource("rig")]
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
+[node name="Rig" parent="." instance=ExtResource("2_model")]
+rotation = Vector3(0, 3.14159265, 0)

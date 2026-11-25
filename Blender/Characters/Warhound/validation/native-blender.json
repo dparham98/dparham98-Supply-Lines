@@ -1,0 +1,194 @@
+{
+  "source_file": "warhound.blend",
+  "source_sha256": "14a1c39f6c7a98137ccd4cb8a7619599e5cba3e1e9884d663e67944d5080047a",
+  "Blender": "4.5.3 LTS",
+  "native_source": {
+    "mesh_names_bound_to_editable_armature": [
+      "Warhound_Body",
+      "Warhound_Comms",
+      "Warhound_Cuirass",
+      "Warhound_Gorget",
+      "Warhound_Greave_FL",
+      "Warhound_Greave_FR",
+      "Warhound_Harness",
+      "Warhound_Haunch_L",
+      "Warhound_Haunch_R",
+      "Warhound_Head",
+      "Warhound_Helm",
+      "Warhound_Legs",
+      "Warhound_Pauldron_L",
+      "Warhound_Pauldron_R",
+      "Warhound_Tabard"
+    ],
+    "bone_count": 29,
+    "active_object": "warhound_rig",
+    "opening_view": [
+      "Layout",
+      "SOLID",
+      "MATERIAL",
+      "ORTHO"
+    ],
+    "bone_overlays_visible": false,
+    "presentation_collection": "PRESENTATION_NOT_EXPORTED",
+    "presentation_objects": [
+      "Backdrop \u00e2\u20ac\u00a2 seamless studio",
+      "Camera \u00e2\u20ac\u00a2 Warhound hero",
+      "Fill \u00e2\u20ac\u00a2 cool window",
+      "Key \u00e2\u20ac\u00a2 warm softbox",
+      "Rim \u00e2\u20ac\u00a2 armor edge"
+    ],
+    "presentation_objects_in_asset_collection": [],
+    "camera": "Camera \u00e2\u20ac\u00a2 Warhound hero",
+    "world": "Studio \u00e2\u20ac\u00a2 ambient",
+    "Rest_playback_range": [
+      1,
+      24
+    ],
+    "NLA_tracks_enabled_on_open": [
+      "Rest"
+    ],
+    "available_NLA_clips": [
+      "Rest",
+      "Run",
+      "Attack",
+      "Die"
+    ],
+    "Rest_head_moves_between_frames_1_and_7": true,
+    "packed_image": "harness_leather_basecolor.png",
+    "packed_image_bytes": 15014,
+    "external_PNG_sha256": "830d2cd254d6d4acf0316e0afe1e2a9595236291866f0ce93b22f5c2cb8c2886",
+    "packed_image_equals_external_PNG": true,
+    "native_camera_preview_rendered": true
+  },
+  "armor_fit_method": "Intersections of evaluated face geometry against body and limb skin on every integer clip frame. Hidden lining and pad contacts are counted separately. For exterior intersections, sample points on the affected armor face and cast rays laterally to estimate the largest visible fur excursion. This surface test does not test every possible camera or fractional animation time.",
+  "armor_fit_by_clip": {
+    "Rest": {
+      "frames": [
+        1,
+        25
+      ],
+      "guards": {
+        "Haunch_L": {
+          "visible_face_intersection_frames": [],
+          "interior_contact_frames": 25,
+          "peak_lateral_excursion_mm": 0,
+          "peak_frame": null
+        },
+        "Pauldron_L": {
+          "visible_face_intersection_frames": [],
+          "interior_contact_frames": 25,
+          "peak_lateral_excursion_mm": 0,
+          "peak_frame": null
+        },
+        "Haunch_R": {
+          "visible_face_intersection_frames": [],
+          "interior_contact_frames": 25,
+          "peak_lateral_excursion_mm": 0,
+          "peak_frame": null
+        },
+        "Pauldron_R": {
+          "visible_face_intersection_frames": [],
+          "interior_contact_frames": 25,
+          "peak_lateral_excursion_mm": 0,
+          "peak_frame": null
+        }
+      }
+    },
+    "Run": {
+      "frames": [
+        1,
+        17
+      ],
+      "guards": {
+        "Haunch_L": {
+          "visible_face_intersection_frames": [],
+          "interior_contact_frames": 17,
+          "peak_lateral_excursion_mm": 0,
+          "peak_frame": null
+        },
+        "Pauldron_L": {
+          "visible_face_intersection_frames": [],
+          "interior_contact_frames": 6,
+          "peak_lateral_excursion_mm": 0,
+          "peak_frame": null
+        },
+        "Haunch_R": {
+          "visible_face_intersection_frames": [],
+          "interior_contact_frames": 17,
+          "peak_lateral_excursion_mm": 0,
+          "peak_frame": null
+        },
+        "Pauldron_R": {
+          "visible_face_intersection_frames": [],
+          "interior_contact_frames": 5,
+          "peak_lateral_excursion_mm": 0,
+          "peak_frame": null
+        }
+      }
+    },
+    "Attack": {
+      "frames": [
+        1,
+        19
+      ],
+      "guards": {
+        "Haunch_L": {
+          "visible_face_intersection_frames": [],
+          "interior_contact_frames": 19,
+          "peak_lateral_excursion_mm": 0,
+          "peak_frame": null
+        },
+        "Pauldron_L": {
+          "visible_face_intersection_frames": [],
+          "interior_contact_frames": 19,
+          "peak_lateral_excursion_mm": 0,
+          "peak_frame": null
+        },
+        "Haunch_R": {
+          "visible_face_intersection_frames": [],
+          "interior_contact_frames": 19,
+          "peak_lateral_excursion_mm": 0,
+          "peak_frame": null
+        },
+        "Pauldron_R": {
+          "visible_face_intersection_frames": [],
+          "interior_contact_frames": 19,
+          "peak_lateral_excursion_mm": 0,
+          "peak_frame": null
+        }
+      }
+    },
+    "Die": {
+      "frames": [
+        1,
+        25
+      ],
+      "guards": {
+        "Haunch_L": {
+          "visible_face_intersection_frames": [],
+          "interior_contact_frames": 25,
+          "peak_lateral_excursion_mm": 0,
+          "peak_frame": null
+        },
+        "Pauldron_L": {
+          "visible_face_intersection_frames": [],
+          "interior_contact_frames": 25,
+          "peak_lateral_excursion_mm": 0,
+          "peak_frame": null
+        },
+        "Haunch_R": {
+          "visible_face_intersection_frames": [],
+          "interior_contact_frames": 25,
+          "peak_lateral_excursion_mm": 0,
+          "peak_frame": null
+        },
+        "Pauldron_R": {
+          "visible_face_intersection_frames": [],
+          "interior_contact_frames": 25,
+          "peak_lateral_excursion_mm": 0,
+          "peak_frame": null
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "native_duration_s": 0.6666666666666666,
+  "glb_duration_s": 0.6666666666666666,
+  "samples": 65,
+  "worst_vertex_difference_m": 8.793263475525968e-07,
+  "worst_vertex_difference_by_mesh_m": {
+    "Warhound_Body": 6.462707651317549e-07,
+    "Warhound_Comms": 4.3610720959978275e-07,
+    "Warhound_Cuirass": 4.081021091364039e-07,
+    "Warhound_Gorget": 5.397944357001768e-07,
+    "Warhound_Greave_FL": 8.450416850303307e-07,
+    "Warhound_Greave_FR": 6.248279175976665e-07,
+    "Warhound_Harness": 4.239574347533096e-07,
+    "Warhound_Haunch_L": 4.27743795347432e-07,
+    "Warhound_Haunch_R": 4.470348358154297e-07,
+    "Warhound_Head": 8.793263475525968e-07,
+    "Warhound_Helm": 7.385100275873769e-07,
+    "Warhound_Legs": 8.663202437012573e-07,
+    "Warhound_Pauldron_L": 4.924151790695877e-07,
+    "Warhound_Pauldron_R": 5.136039239053156e-07,
+    "Warhound_Tabard": 4.349505758084781e-07
+  }
+}
