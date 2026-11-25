@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/production/production_building.gd" id="script"]
 [ext_resource type="Resource" path="res://assets/buildings/wainwright.tres" id="stats"]
 [ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
-[ext_resource type="PackedScene" path="res://scenes/models/house_model.tscn" id="model"]
+[ext_resource type="PackedScene" path="res://scenes/models/wainwright_model.tscn" id="model"]
 [ext_resource type="Material" path="res://assets/materials/units/team_marker.tres" id="team_marker"]
 
 [sub_resource type="PlaneMesh" id="team_marker_mesh"]

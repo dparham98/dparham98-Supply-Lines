@@ -37,7 +37,7 @@ func run() -> void:
 	# 67 with the Wainwright build tile and the Keep's train (docs/KNIGHTS_RAIL.md).
 	if not check(tiles == 67,"Expected 67 card tiles, found %d" % tiles): return
 	# Commands with their own art.
-	var names := {"Return":"sl_deliver.png","DropMaterials":"sl_drop.png","DeployTruck":"sl_deploy_depot.png","ProduceUbermech":"sl_produce_ubermech.png","PrintTruck":"sl_produce_truck.png","Derail":"sl_derail.png","Research":"sl_research_mining_trains.png","MineIron":"sl_mine_iron.png"}
+	var names := {"Return":"sl_deliver.png","DropMaterials":"sl_drop.png","DeployTruck":"sl_deploy_depot.png","ProduceUbermech":"sl_produce_ubermech.png","PrintTruck":"sl_produce_truck.png","Derail":"sl_derail.png","Research":"sl_research_mining_trains.png","MineIron":"sl_mine_iron.png","KeepTrain":"sl_produce_knights_train.png"}
 	for id in names:
 		if not check(art(hud.card.get_node(id)) == names[id],"%s has the wrong card" % id): return
 	# Cargo: supplies, refuelling and trips each show the art for their state.

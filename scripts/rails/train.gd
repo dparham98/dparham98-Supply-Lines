@@ -154,6 +154,11 @@ func _place_consist() -> void:
 	var track: Dictionary = _line if not _line.is_empty() else _rest_line
 	if track.is_empty(): return
 	model.place(track,_s,_load_fraction())
+	# A coal train's firebox and stack (docs/KNIGHTS_TRAIN_MODEL.md): smoke and a roaring fire while it moves, banked
+	# embers once its tank is empty.
+	if coal_fuelled and model.has_method("set_running"):
+		model.set_running(not _line.is_empty() and not _route.is_empty())
+		model.set_out_of_fuel(out_of_fuel or (fuel_active() and fuel <= 0))
 # ---- movement along the line
 func _follow(track: Dictionary) -> bool:
 	if track.is_empty(): return false

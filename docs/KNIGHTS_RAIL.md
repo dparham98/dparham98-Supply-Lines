@@ -12,7 +12,7 @@ A Knights building, W on the Build page (`scenes/gameplay/wainwright.tscn`, `ass
   - build trains at Keeps.
 
   If every Wainwright falls, laid track and trains keep working, but no new track or trains can be bought.
-- **Model:** a placeholder (the House).
+- **Model:** a cartwright and track works with a wheel bench, rail stacks and sheerlegs (docs/WAINWRIGHT_MODEL.md).
 
 ## Track
 
@@ -47,13 +47,12 @@ When a Keep has several lines, the player clicks the line to start on, as at a D
 - **Coal per metre:** 0.05 a metre (a third of the Cyborg vehicles' 0.15), with a 60 tank. The handoff gave no number.
 - **Build time:** 30 s. The handoff gave no number.
 - **Keeps only:** the Wainwright enables track and trains at Keeps only. A Cyborg Depot captured by the Knights works as it always has.
-- **Placeholders:** the House model for the Wainwright, the Cyborg train model for the Knights train, and the Rail and Train card art.
+- **Art:** the Wainwright (docs/WAINWRIGHT_MODEL.md) and the Knights train (docs/KNIGHTS_TRAIN_MODEL.md) have their own models, icons, portraits and cards (`sl_build_wainwright.png`, `sl_produce_knights_train.png`).
 
 ## Not done
 
 - **Food:** a train can't carry Food. The route and Load page know Energy, Iron, Wood and Coal only. Food still moves by balloon and crates.
 - **AI:** the Knights AI doesn't build a Wainwright, lay track or run trains.
-- **Art:** no models or card art of their own.
 
 ## Check
 
