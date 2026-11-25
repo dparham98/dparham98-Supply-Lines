@@ -757,13 +757,14 @@ func fight(depot: Node3D) -> void:
 ## Keeps each Drone over the centre of the ground units it goes with: the wave's if it is in the wave, else the
 ## rest of the army's. A Drone with no ground units to go with is left alone. One low on coal (it burns coal by the
 ## second in the air) leaves the wave and flies home to the rally point, inside the Depot's range, to refuel.
-func _escort_drones(depot: Node3D) -> void:
-	var rally := rally_point(depot)
+func _escort_drones(depot: Node3D = null) -> void:
+	var home := is_instance_valid(depot)
+	var rally := rally_point(depot) if home else Vector3.ZERO
 	for drone in army:
 		if not _is_drone(drone): continue
-		if drone.has_method("fuel_low") and (drone.fuel_low() or drone.get("landed") == true):
+		if home and drone.has_method("fuel_low") and (drone.fuel_low() or drone.get("fuel_landed") == true):
 			wave.erase(drone)
-			if not drone.landed and drone.global_position.distance_to(rally) > 6.0 and (drone.order != "move" or drone.move_goal.distance_to(rally) > 6.0): drone.command_move(rally)
+			if not drone.fuel_landed and drone.global_position.distance_to(rally) > 6.0 and (drone.order != "move" or drone.move_goal.distance_to(rally) > 6.0): drone.command_move(rally)
 			continue
 		var group: Array[Node3D] = (wave if wave.has(drone) else army.filter(func(unit): return not wave.has(unit))).filter(func(unit): return not _is_drone(unit))
 		if group.is_empty(): continue

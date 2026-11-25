@@ -39,7 +39,7 @@ var fuel_source_explicit := false
 var refuel_from: Node3D
 var out_of_fuel := false
 ## A flyer that ran out of coal is on the ground where it stopped (FuelRules.coal_per_second_airborne).
-var landed := false
+var fuel_landed := false
 var _flight_height := -1.0
 var _refuel_credit := 0.0
 @export var unit_stats: UnitStats
@@ -458,7 +458,7 @@ func _order_process(delta: float) -> void:
 		"derail": _derail_order(delta)
 		_:
 			var unreachable := state == "Trees unreachable"
-			state = "Out of fuel · landed" if landed else "Idle"
+			state = "Out of fuel · landed" if fuel_landed else "Idle"
 			# Hold ground and defend even when deselected; working units keep working.
 			var enemy = _acquire()
 			if enemy: _shoot(enemy)
@@ -1425,28 +1425,28 @@ func fuel_tick(delta: float) -> void:
 ## covering Depot, a deployed Cargo truck or a coal crate beside it), it takes off again.
 func _airborne_burn(delta: float) -> void:
 	if fuel_rules.coal_per_second_airborne <= 0: return
-	if landed:
-		if fuel > 0 and not out_of_fuel: landed = false
+	if fuel_landed:
+		if fuel > 0 and not out_of_fuel: fuel_landed = false
 		return
 	fuel -= fuel_rules.coal_per_second_airborne*delta
 	if fuel <= 0.0001:
 		fuel = 0
 		_mark_out_of_fuel()
-		landed = true
+		fuel_landed = true
 		_stop_route()
 		state = "Out of fuel · landed"
 ## The Visuals' flying height eases down to the ground when landed and back up after refuelling.
 func _ease_flight(delta: float) -> void:
 	if fuel_rules == null or fuel_rules.coal_per_second_airborne <= 0: return
 	if _flight_height < 0: _flight_height = $Visuals.position.y
-	var goal := 0.4 if landed else _flight_height
+	var goal := 0.4 if fuel_landed else _flight_height
 	$Visuals.position.y = move_toward($Visuals.position.y,goal,4.0*delta)
 func fuel_summary() -> String:
 	if fuel_rules == null: return ""
 	if not fuel_active(): return "Fuel reserve %.0f / %.0f · not required here" % [fuel,fuel_rules.reserve_capacity]
 	var text := "Fuel %.1f / %.0f coal" % [fuel,fuel_rules.reserve_capacity]
 	if is_instance_valid(powered_by) and _depot_power() == powered_by: text += " · running on %s power" % powered_by.name
-	if landed: text += " · OUT OF FUEL · landed"
+	if fuel_landed: text += " · OUT OF FUEL · landed"
 	elif out_of_fuel: text += " · OUT OF FUEL"
 	elif fuel_low(): text += " · LOW FUEL"
 	var from := "nearest in range"
