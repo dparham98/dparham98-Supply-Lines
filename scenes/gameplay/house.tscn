@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/economy/house.gd" id="script"]
 [ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
-[ext_resource type="PackedScene" path="res://scenes/models/house_placeholder.tscn" id="model"]
+[ext_resource type="PackedScene" path="res://scenes/models/house_model.tscn" id="model"]
 [ext_resource type="Material" path="res://assets/materials/units/team_marker.tres" id="team_marker"]
 
 [sub_resource type="PlaneMesh" id="team_marker_mesh"]

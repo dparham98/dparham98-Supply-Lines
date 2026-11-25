@@ -84,14 +84,22 @@ func _process(delta: float) -> void:
 		raided = enemy_on_field()
 	update_label()
 	var model := get_node_or_null("Visuals/Model")
-	if model != null and model.has_method("show_working"): model.show_working(_work_left > 0.0)
+	# The vineyard's irrigation carriages water the rows while its Farmer works it (scenes/models/farm_model.tscn).
+	if model != null and model.has_method("show_running"): model.show_running(_work_left > 0.0)
 func take_damage(hit: int) -> void:
 	health = maxi(0,health-maxi(0,hit))
 	update_label()
 	if health <= 0:
 		set_process(false)
 		for group in get_groups(): remove_from_group(group)
+		_leave_wreck()
 		queue_free()
+## The model stays behind to play its Die clip and death effect, as a Generator's does.
+func _leave_wreck() -> void:
+	var model := get_node_or_null("Visuals/Model")
+	if model == null or not model.has_method("has_death_clip") or not model.has_death_clip() or get_parent() == null: return
+	model.reparent(get_parent())
+	model.play_death()
 func _exit_tree() -> void:
 	if not is_instance_valid(ground): return
 	for cell in cells: ground.set_field(cell,_key(),false)

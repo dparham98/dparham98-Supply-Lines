@@ -31,7 +31,10 @@ Yield stays at 2 Food a beat, the handoff's settled figure: size sets how much l
 - **Keep panel:** "housing used / cap" on its status line. **Chapterhouse panel:** a Housing row.
 - **Farm panel:** who tills it, Food a beat, Farmer 0 or 1, and "enemy on the field: no Food" while raided. **Farmer panel:** one Gather tile ("Work an empty Farm"); no Fell, Deliver or Drop. **House panel:** whether it is housed, and the side's housing.
 - A Forester tilling shows the state "Farming"; a Farmer waiting out a raid shows "Enemy on the Farm".
-- **Placeholders:** the Farm is a flat 10 x 10 m field with knee-high crop rows and a low rail; the House is a 4 x 4 m box with a gable roof. Both are boxes (`scenes/models/farm_placeholder.tscn`, `house_placeholder.tscn`) in their `Visuals` slots, and their card icons and portraits borrow the Generator's and Depot's. The owner will supply art.
+- **Models (2026-11-24, the owner's art):**
+  - **Farm:** a walkable 10 x 10 m vineyard (`scenes/models/farm_model.tscn`, `assets/models/buildings/farm.glb`, Blender source in `Blender/Buildings/Farm/`). Its two irrigation carriages water the rows (Work) while its Farmer works it, it rises through Build while it is built, and it plays Die with an irrigation-rupture effect when destroyed.
+  - **House:** a 4 x 4 m timber dwelling (`scenes/models/house_model.tscn`, `assets/models/buildings/house.glb`, `Blender/Buildings/House/`), with Idle, Build and Die.
+  - Both have their own portraits and Build-page cards. The placeholder boxes are gone.
 
 ## Checks
 
@@ -54,6 +57,5 @@ Yield stays at 2 Food a beat, the handoff's settled figure: size sets how much l
 - **Not done here:** the handoff's "one Keep reaches 50 army units by 8:00 under the Knights AI" needs item 5's Knights AI and is checked there.
 
 - **Construction sites:** a 10 x 10 site uses the existing 10 x 10 fence. A 4 x 4 House site shows only the grid, because there is no 4 x 4 fence scene yet.
-- **The local Farm art** (a 4 x 4 m barn and windmill, uncommitted) doesn't fit a walkable 10 x 10 field. A field model is still needed.
 
-Not checked by a person: the placeholders, the pace of the Knights' opening on 150 Food, how housing feels, whether a Keep's land runs out at about eight Farms, and whether permanent Farmers make the choice between farming and expanding a real one.
+Not checked by a person: the Farm and House models in play, the pace of the Knights' opening on 150 Food, how housing feels, whether a Keep's land runs out at about eight Farms, and whether permanent Farmers make the choice between farming and expanding a real one.
