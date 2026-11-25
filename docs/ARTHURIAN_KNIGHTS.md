@@ -16,7 +16,7 @@ same day it was moved onto its own branch from main and merged onto main's newer
 | Building | What it does |
 | --- | --- |
 | Keep | The faction's base. It stores Food, Wood and Iron; trains Forester Maidens (F) and Warhounds (W); packs Food, Wood and Iron crates (C). It is a kind of Depot (`scripts/gameplay/keep.gd` extends `depot.gd`). |
-| Chapterhouse | Trains Round Table Marines (R), Grail Sentinels (G), Questing Marines (Q) and Azure Dragons (D). Its model is still a placeholder. Costs 40 Food, 30 Wood and 40 Iron. |
+| Chapterhouse | Trains Round Table Marines (R), Grail Sentinels (G), Questing Marines (Q) and Azure Dragons (D). Costs 40 Food, 30 Wood and 40 Iron. |
 
 **Founding a Keep:** Build (B) → Keep (K) plans a Keep anywhere on valid land.
 
@@ -80,4 +80,3 @@ These come from the original report:
 
 - **A Farm:** the Forester Maiden's model already has a sun hat, a farming tool and a Till clip.
 - **An Air Balloon** from the Keep's roof pad: `keep.launch_balloon_fx()`.
-- **A Chapterhouse model.**
