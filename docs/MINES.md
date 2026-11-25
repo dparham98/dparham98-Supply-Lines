@@ -83,7 +83,7 @@ Nothing else detects. Scouts and Sentinels don't (decided in the handoff).
 
 ## Not done
 
-- **AI:** neither AI researches Minelaying or lays mines.
+- **AI:** the Cyborg AI researches Minelaying and lays mines (`docs/ENEMY_AI.md`, Mines). The Knights have no Derailer.
 - **Art:** the mine has no model or card art of its own.
 - **Tests:** the train derail on a mine isn't tested.
 - **Clicking a mine:** a detected mine can't be clicked for an Attack order. Units fire at it by themselves.
