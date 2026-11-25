@@ -18,11 +18,13 @@ projectile_scene = ExtResource("bullet")
 can_construct = false
 can_repair = false
 can_heal = true
-heal_range = 7.0
-heal_hp = 5
+heal_range = 9.0
+heal_hp = 10
 heal_interval = 1.0
-heal_food_cost = 1
-med_reserve_capacity = 120
+med_reserve_capacity = 200
+med_refill_kind = &"food"
+med_refill_cost = 1
+med_refill_points = 5
 can_gather = false
 can_capture_depots = true
 

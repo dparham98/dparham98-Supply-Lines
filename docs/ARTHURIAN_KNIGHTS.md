@@ -31,7 +31,7 @@ same day it was moved onto its own branch from main and merged onto main's newer
 | --- | --- | --- | --- | --- |
 | Forester Maiden | 45 | 0 | 45 | Worker: gathers and builds |
 | Warhound | 30 | 5 | 38 | Melee |
-| Round Table Marine | 65 | 25 | 65 | Range 16 |
+| Round Table Marine | 65 | 25 | 65 | Range 18 |
 | Grail Sentinel | 75 | 20 | 75 | Heals; range 10 |
 | Questing Marine | 75 | 35 | 65 | Range 19 |
 | Azure Dragon | 160 | 60 | 180 | Breath; its Breath_Light shows only while breathing |
@@ -48,9 +48,15 @@ pay, else the nearest covering one that can. A covering Keep counts. The check i
 
 **Healing (Heal, H):** the Grail Sentinel heals friendly units that aren't vehicles.
 
-- 5 HP a second, for 1 Food from a covering Keep.
-- Away from a Keep it uses a carried reserve of 120 HP. There is no free regeneration.
-- It refills the reserve at a Keep or beside a Food crate.
+- **Healing:** 10 HP a second, at up to 9 m.
+  - **Reserve:** it always heals from a carried reserve of 200 points, one point for one HP. There is no free regeneration.
+  - **By itself:** idle or attack-moving with reserve left, it heals the most hurt friend within 9 m (lowest share of its health). After that, it carries on with the attack-move.
+- **Refill:** the reserve refills only inside a friendly Keep's range or beside a Food crate, 5 points for 1 Food each second, whether or not it is healing.
+  - The refill is data on the Sentinel's scene (`med_refill_kind`, `med_refill_cost`, `med_refill_points`, `med_refill_interval`). A cost of 0 makes it free, which the owner is weighing.
+
+These are item 6 of the balance handoff (2026-11-25). Before that it healed 5 HP a second at 7 m, only when ordered, with a 120-point reserve. Inside a Keep's range it was paid straight from the Keep's Food.
+
+Item 6's battle check is `tests/knights_line_battle_sim.gd`. It isn't in the suite; run it with `--fixed-fps 30`.
 
 The code is `scripts/economy/medical_work.gd`.
 
