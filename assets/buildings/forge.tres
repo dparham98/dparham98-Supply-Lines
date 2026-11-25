@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ProductionBuildingStats" format=3]
+[ext_resource type="Script" path="res://scripts/production/production_building_stats.gd" id="stats"]
+[resource]
+script = ExtResource("stats")
+building_id = &"forge"
+display_name = "Forge"
+energy_cost = 0
+iron_cost = 80
+wood_cost = 60
+footprint = Vector2i(6,6)
+queue_limit = 1

@@ -1112,6 +1112,8 @@ func _in_moving_arc(target: Node3D, facing: float) -> bool:
 	return absf(angle_difference(facing,atan2(-to.x,-to.z))) <= deg_to_rad(unit_stats.moving_fire_arc*0.5)
 func take_damage(amount: int) -> void:
 	if _dead: return
+	# Armour upgrades take 1 a level off every hit, never below 1 (docs/UPGRADES.md).
+	amount = Upgrades.after_armour(self,amount)
 	health = maxi(0,health-maxi(0,amount))
 	_update_display()
 	if health <= 0:

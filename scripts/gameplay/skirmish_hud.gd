@@ -46,7 +46,8 @@ const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 
 	"PrintInfantry": 0, "ProduceScout": 1, "ProduceGrenadier": 2, "ProduceTank": 3, "ProduceMotorcycle": 4, "ProduceDrone": 5, "ProduceUbermech": 6,
 	"ProduceRoundTableMarine": 0, "ProduceGrailSentinel": 1, "ProduceQuestingMarine": 2, "ProduceAzureDragon": 3,
 	"ToggleGenerator": 0, "FocusAssigned": 1,
-	"Research": 0, "ResearchMines": 1, "MineIron": 7}
+	"Research": 0, "ResearchMines": 1, "MineIron": 7,
+	"Upgrade1": 0, "Upgrade2": 1, "Upgrade3": 2, "Upgrade4": 3}
 const TILE := 46
 const TRIP_LABELS := {"once": "once", "all": "all available", "repeat": "repeat"}
 ## One icon per stat row (assets/ui/icons).
@@ -81,8 +82,8 @@ func has_arthurian_faction() -> bool:
 		if unit.get("team") == "player" and unit.get("unit_stats") != null and unit.unit_stats.unit_id in ARTHURIAN_UNIT_IDS: return true
 	return false
 ## Build-page buildings only the Cyborgs see; Keep and Chapterhouse are the Knights'. Mines are for both.
-const CYBORG_BUILDINGS := [&"depot",&"generator",&"barracks",&"tank_factory",&"temple_of_science",&"rail"]
-const KNIGHT_BUILDINGS := [&"keep",&"chapterhouse",&"farm",&"house"]
+const CYBORG_BUILDINGS := [&"depot",&"generator",&"barracks",&"tank_factory",&"temple_of_science",&"foundry",&"rail"]
+const KNIGHT_BUILDINGS := [&"keep",&"chapterhouse",&"farm",&"house",&"forge"]
 ## True when the player builds as the Cyborgs: the match setup's faction, or, in a scene run straight from the
 ## editor or a test, any Depot of the player's that is not a Keep, or no Knights presence at all.
 func has_cyborg_faction() -> bool:
@@ -229,6 +230,11 @@ func _ready() -> void:
 		if is_instance_valid(shown) and shown.is_in_group("research_buildings"): shown.request_research(Research.MINING_TRAINS))
 	card.get_node("ResearchMines").pressed.connect(func():
 		if is_instance_valid(shown) and shown.is_in_group("research_buildings"): shown.request_research(Research.MINELAYING))
+	# The Foundry's and Forge's upgrade lines (docs/UPGRADES.md): each tile asks for its line's next level.
+	for n in range(1,5):
+		var tile: Button = card.get_node("Upgrade%d" % n)
+		tile.pressed.connect(func():
+			if is_instance_valid(shown) and shown.is_in_group("research_buildings") and tile.has_meta("research"): shown.request_research(tile.get_meta("research")))
 	card.get_node("MineIron").pressed.connect(func(): game.pending_unit_command = "mine_rail"; game.notify("Mine iron: click an Iron Mine joined to this train's track. Esc cancels."))
 	card.get_node("PrintCargo").pressed.connect(func():
 		if network.owned_selected() and not least_busy().request_cargo(): game.notify("Depot lacks local funds or queue space."))
@@ -249,7 +255,7 @@ func _ready() -> void:
 		var btn_id := production_button_id(StringName(id))
 		card.get_node(btn_id).pressed.connect(func():
 			if is_instance_valid(shown) and shown.is_in_group("production_buildings"): least_busy().request_unit(StringName(id)))
-	for pair in [["Depot",&"depot"],["Generator",&"generator"],["Barracks",&"barracks"],["TankFactory",&"tank_factory"],["Temple",&"temple_of_science"],["Mine",&"iron_mine"],["CoalMine",&"coal_mine"],["Rail",&"rail"],["Keep",&"keep"],["Chapterhouse",&"chapterhouse"],["Farm",&"farm"],["House",&"house"]]:
+	for pair in [["Depot",&"depot"],["Generator",&"generator"],["Barracks",&"barracks"],["TankFactory",&"tank_factory"],["Temple",&"temple_of_science"],["Foundry",&"foundry"],["Mine",&"iron_mine"],["CoalMine",&"coal_mine"],["Rail",&"rail"],["Keep",&"keep"],["Chapterhouse",&"chapterhouse"],["Farm",&"farm"],["House",&"house"],["Forge",&"forge"]]:
 		build_menu.get_node("Actions/"+pair[0]).pressed.connect(begin_global_placement.bind(pair[1]))
 	build_menu.get_node("Actions/Pin").pressed.connect(toggle_pin)
 	card.get_node("DeployTruck").pressed.connect(func(): game.pending_unit_command = "deploy"; game.notify("Click a site for the Depot. Only an empty Depot footprint is accepted; Shift queues."))
@@ -1189,6 +1195,7 @@ func set_label(button: Button, text: String) -> void:
 ## The Temple of Science (docs/TEMPLE_OF_SCIENCE.md): its research, under way or to start.
 func show_research_building(node: Node3D) -> void:
 	commands.get_node("Title").text = node.stats.display_name.to_upper()+" · RESEARCH"
+	if node.research.any(func(r): return r.level > 0): show_upgrade_building(node); return
 	var payer = node.assigned_depot
 	state_label.text = "%s · %s" % [team_label(node),("pays from "+str(payer.name)) if node.source_friendly() else "no friendly Depot in range"]
 	if node.researching != null: show_progress("Researching · "+node.researching.display_name,"%d%% · %s s left" % [roundi(node.fraction()*100),_seconds(ceilf(node.seconds_left()))],node.fraction())
@@ -1220,6 +1227,49 @@ func _research_tile(node: Node3D, tile: String, id: StringName) -> void:
 	button.disabled = node.researching != null or (not blocker.is_empty() and pays != null)
 	if not button.disabled: button.tooltip_text += "\n"+entry.summary
 	elif node.researching != null: button.tooltip_text += "\nResearching now."
+## The Foundry's or Forge's card (docs/UPGRADES.md): one tile per upgrade line, offering its next level.
+func show_upgrade_building(node: Node3D) -> void:
+	var payer = node.assigned_depot
+	var keep: bool = node.stats.building_id == &"forge"
+	state_label.text = "%s · %s" % [team_label(node),("pays from "+str(payer.name)) if node.source_friendly() else ("no friendly Keep in range" if keep else "no friendly Depot in range")]
+	if node.researching != null: show_progress("Researching · "+node.researching.display_name,"%d%% · %s s left" % [roundi(node.fraction()*100),_seconds(ceilf(node.seconds_left()))],node.fraction())
+	if is_instance_valid(payer): set_stats([["Food",grouped(payer.food)],["Iron",grouped(payer.iron)]] if keep else [["Energy",grouped(payer.energy)],["Iron",grouped(payer.iron)]])
+	var lines: Array[StringName] = []
+	for entry in node.research:
+		if entry.level > 0 and not entry.line in lines: lines.append(entry.line)
+	var levels: Array[String] = []
+	for line in lines: levels.append("%s %d/%d" % [_line_title(node,line),Upgrades.level(node,node.team,line),Upgrades.LEVELS])
+	info.get_node("Details").text = "Levels: "+" · ".join(levels)
+	hint_text = "Each line has three levels, researched in order. Attack adds 10%% of base weapon damage a level; armour takes 1 off every hit a level, never below 1. Paid when started from a covering %s; Cancel gives it back. One research at a time; levels hold for your whole side." % ("Keep" if keep else "Depot")
+	if node.team != "player": return
+	if node.researching != null: show_button("CancelPlan","Cancel research")
+	for i in range(mini(lines.size(),4)):
+		var line := lines[i]
+		var id := "Upgrade%d" % (i+1)
+		var button: Button = card.get_node(id)
+		set_card(button,"attack" if line in [Upgrades.INFANTRY_WEAPONS,Upgrades.VEHICLE_WEAPONS,Upgrades.ARMS] else "repair")
+		var have := Upgrades.level(node,node.team,line)
+		if have >= Upgrades.LEVELS:
+			desired_buttons.append(id)
+			if button.has_meta("research"): button.remove_meta("research")
+			button.add_theme_color_override("icon_normal_color",UNAFFORDABLE)
+			set_tile(button,"%s · all %d levels" % [_line_title(node,line),Upgrades.LEVELS],"Researched in full.")
+			button.disabled = true
+			continue
+		var entry: ResearchStats = node.research_by_id(Upgrades.research_id(line,have+1))
+		if entry == null: continue
+		button.set_meta("research",entry.research_id)
+		var pays = node.payer_for(entry.energy_cost,entry.iron_cost,entry.food_cost)
+		show_production(id,"Research "+entry.display_name+" (%s s)" % _seconds(entry.seconds),entry.energy_cost,entry.iron_cost,pays if pays != null else payer,entry.food_cost)
+		var blocker: String = node.research_blocker(entry.research_id)
+		button.disabled = node.researching != null or (not blocker.is_empty() and pays != null)
+		if not button.disabled: button.tooltip_text += "\n"+entry.summary
+		elif node.researching != null: button.tooltip_text += "\nResearching now."
+		elif not blocker.is_empty(): button.tooltip_text += "\n"+blocker
+## "Infantry Weapons" from the line's level-1 entry.
+func _line_title(node: Node3D, line: StringName) -> String:
+	var entry: ResearchStats = node.research_by_id(Upgrades.research_id(line,1))
+	return entry.display_name.trim_suffix(" I") if entry != null else str(line)
 ## A train's Mine iron tile: open once Mining Trains is researched (docs/TEMPLE_OF_SCIENCE.md).
 func show_mine_tile(node: Node3D) -> void:
 	show_button("MineIron","Mine iron")
@@ -1393,12 +1443,13 @@ func refresh_global_menu() -> void:
 	build_menu.get_node("Actions/Chapterhouse").visible = arthurian
 	build_menu.get_node("Actions/Farm").visible = arthurian
 	build_menu.get_node("Actions/House").visible = arthurian
-	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"]]:
+	build_menu.get_node("Actions/Forge").visible = arthurian
+	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"foundry","Foundry"]]:
 		build_menu.get_node("Actions/"+pair[1]).visible = build_kind_offered(pair[0])
 	if worksite_open:
 		build_menu.get_node("Bank").text = "DELIVERS: EXACT MATERIALS"
 		build_menu.get_node("Bank").tooltip_text = "The selected trucks load exactly what the building needs and unload it on the footprint. A covering stockpile pays the energy as Deforesters build."
-		for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"]]:
+		for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"foundry","Foundry"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"]]:
 			var spec: Dictionary = network.plan_spec(pair[0])
 			var button: Button = build_menu.get_node("Actions/"+pair[1])
 			button.disabled = false
@@ -1411,7 +1462,7 @@ func refresh_global_menu() -> void:
 	build_menu.get_node("Bank").tooltip_text = "One covering Depot or deployed Cargo truck pays each plan's energy as Deforesters build it. Iron must be delivered to the footprint first. Rails pay fully from Depots. No pooled resources."
 	set_card(build_menu.get_node("Actions/Pin"),"unpin_payer" if global_pinned else "pin_payer")
 	set_tile(build_menu.get_node("Actions/Pin"),"Unpin payer (back to Auto)" if global_pinned else "Pin payer","New plans pay from the nearest covering stockpile that can pay." if global_pinned else "Pick one Depot or deployed Cargo truck on the map or minimap; new plans pay only from it.")
-	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"],[&"rail","Rail"],[&"keep","Keep"],[&"chapterhouse","Chapterhouse"],[&"farm","Farm"],[&"house","House"]]:
+	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"foundry","Foundry"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"],[&"rail","Rail"],[&"keep","Keep"],[&"chapterhouse","Chapterhouse"],[&"farm","Farm"],[&"house","House"],[&"forge","Forge"]]:
 		var spec: Dictionary = network.plan_spec(pair[0])
 		var button: Button = build_menu.get_node("Actions/"+pair[1])
 		button.disabled = false
@@ -1422,6 +1473,8 @@ func refresh_global_menu() -> void:
 			set_tile(button,spec.title,"%d W · %d I · site materials only, no Keep range needed" % [spec.wood,spec.iron])
 		elif pair[0] == &"chapterhouse":
 			set_tile(button,spec.title,"%d F · %d W · %d I · from a covering Keep's stock, else Wood & Iron on site" % [spec.food,spec.wood,spec.iron])
+		elif pair[0] == &"forge":
+			set_tile(button,spec.title,"%d W · %d I · from a covering Keep's stock, else on site · researches Arms and Mail" % [spec.wood,spec.iron])
 		elif pair[0] == &"farm":
 			set_tile(button,spec.title,"%d W · inside a Keep's range, from its stock · one Forester tills it for Food" % spec.wood)
 		elif pair[0] == &"house":
