@@ -56,6 +56,10 @@ var _attack_enabled := true
 @export var attack_range := 12.0
 ## The main weapon cannot fire nearer than this (UnitStats.min_attack_range).
 @export var min_attack_range := 0.0
+## Armour class (CombatResolver.target_class). Taken from UnitStats.armoured; trains and trucks set it on their scenes.
+@export var armoured := false
+## The weapon of the shot being resolved: 0 the main weapon, 1 the second (UnitStats.second_*).
+var firing_weapon := 0
 @export var attack_damage := 16
 @export var shot_interval := 0.7
 ## What a shot looks like in flight; empty uses the map's plain tracer.
@@ -917,11 +921,27 @@ func _attack_order() -> void:
 func _forced_on(target: Node3D) -> bool:
 	return attack_forced and order == "attack" and target == order_target
 func _may_hit(target: Node3D) -> bool:
-	return CombatResolver.can_attack(self,target,_forced_on(target))
-## Between the main weapon's minimum range and its range.
+	return CombatResolver.can_attack(self,target,_forced_on(target)) and fires_at(target)
+## Between the minimum range and the range of a weapon that fires at the target's class.
 func in_attack_range(target: Node3D) -> bool:
+	return weapon_for(target) >= 0
+## The weapon to fire at `target` from here: the second weapon when it suits the target's class and the target is in
+## its range band, else the main weapon when it fires at that class and is in range; -1 when neither can.
+func weapon_for(target: Node3D) -> int:
 	var d := global_position.distance_to(target.global_position)
-	return d <= attack_range and d >= min_attack_range
+	var cls := CombatResolver.target_class(target)
+	if unit_stats != null and unit_stats.second_damage >= 0 and unit_stats.second_targets & cls and d <= unit_stats.second_range and d >= unit_stats.second_min_range: return 1
+	if (unit_stats == null or unit_stats.targets & cls) and d <= attack_range and d >= min_attack_range: return 0
+	return -1
+## Whether any of its weapons fires at the target's class, at some range.
+func fires_at(target: Node3D) -> bool:
+	if unit_stats == null: return true
+	var cls := CombatResolver.target_class(target)
+	return bool(unit_stats.targets & cls) or (unit_stats.second_damage >= 0 and bool(unit_stats.second_targets & cls))
+## Its longest reach, over both weapons.
+func reach() -> float:
+	if unit_stats != null and unit_stats.second_damage >= 0: return maxf(attack_range,unit_stats.second_range)
+	return attack_range
 ## The nearest unit in range it may shoot. Only units near it are looked at (the skirmish's UnitGrid): asking every
 ## unit on the map, as every unit does every frame, slowed big battles to a crawl.
 ## How often, in seconds, a unit looks round for something to shoot when it has nothing in its sights (docs/COMBAT_BATCH.md,
@@ -958,12 +978,12 @@ func team_sees(target: Node3D) -> bool:
 	return _fog == null or _fog.visible_to(team,target.global_position)
 func _nearest_opponent() -> Node3D:
 	var closest: Node3D
-	var distance := attack_range
-	var nearby: Array = game.units_near(global_position,attack_range) if is_instance_valid(game) and game.has_method("units_near") else get_tree().get_nodes_in_group("units")
+	var distance := reach()
+	var nearby: Array = game.units_near(global_position,distance) if is_instance_valid(game) and game.has_method("units_near") else get_tree().get_nodes_in_group("units")
 	for unit in nearby:
 		if not is_instance_valid(unit) or unit.team == team: continue
 		var d := global_position.distance_to(unit.global_position)
-		if d >= distance or d < min_attack_range: continue
+		if d >= distance or not in_attack_range(unit): continue
 		if not CombatResolver.can_hit(self,unit): continue
 		if not team_sees(unit): continue
 		closest = unit; distance = d
@@ -973,7 +993,7 @@ func _nearest_opponent() -> Node3D:
 	for building in get_tree().get_nodes_in_group("selectable_buildings"):
 		if not is_instance_valid(building) or building.is_in_group("mines") or building.get("team") in [null,team,"neutral"]: continue
 		var d := global_position.distance_to(building.global_position)
-		if d >= distance or d < min_attack_range: continue
+		if d >= distance or not in_attack_range(building): continue
 		if not CombatResolver.can_hit(self,building): continue
 		if not team_sees(building): continue
 		closest = building; distance = d
@@ -998,6 +1018,8 @@ func _shoot(target: Node3D) -> void:
 	var animator := _animator()
 	# A clip whose shot lands partway through starts early, so its flash meets the shot.
 	var lead: float = animator.shot_lead() if animator and animator.has_method("shot_lead") else 0.0
+	var weapon := weapon_for(target)
+	if animator and animator.has_method("use_weapon"): animator.use_weapon(weapon)
 	if _cooldown > 0:
 		if lead > 0.0 and _cooldown <= lead and not animator.acting():
 			animator.play_action(&"shoot",lead-_cooldown)
@@ -1005,7 +1027,8 @@ func _shoot(target: Node3D) -> void:
 		return
 	# A turret fires only once it is round on the target (docs/TURRET_AIM.md); the reload is done meanwhile.
 	if turret and turret.has_method("on_target") and not turret.on_target(): return
-	_cooldown = CombatResolver.interval_for(self,target)
+	firing_weapon = weapon
+	_cooldown = CombatResolver.interval_for(self,target,weapon)
 	if animator and (lead <= 0.0 or not animator.acting()): animator.play_action(&"shoot",lead)
 	_aim_body(target,turret,animator)
 	var target_height: Vector3 = target.get_node("Visuals").position if target.has_node("Visuals") else Vector3.ZERO
@@ -1022,7 +1045,7 @@ func _shoot(target: Node3D) -> void:
 	# A shell or grenade hurts when it gets there; a shooter gone by then takes its shot with it.
 	if shot != null and shot.get("damage_on_impact") == true:
 		shot.target = weakref(target)
-		shot.on_impact = _strike_on_impact.bind(target,forced,shot)
+		shot.on_impact = _strike_on_impact.bind(target,forced,shot,weapon)
 	else: CombatResolver.strike(self,target,forced)
 	if is_instance_valid(target) and game.has_method("mark_attacked"): game.mark_attacked(target)
 	if is_instance_valid(target) and target.is_in_group("selectable_buildings") and target.get("team") == "player" and team != "player" and game.has_method("alert"):
@@ -1030,8 +1053,9 @@ func _shoot(target: Node3D) -> void:
 ## A shell's or grenade's damage, when it bursts: the target if it is still there, and splash round the burst. The
 ## target may have died or gone meanwhile, so it is untyped: a freed Node3D fails a typed argument before this
 ## body can check it.
-func _strike_on_impact(target, forced: bool, shot) -> void:
+func _strike_on_impact(target, forced: bool, shot, weapon := 0) -> void:
 	var point: Vector3 = shot.impact_point() if is_instance_valid(shot) else (target.global_position if is_instance_valid(target) else global_position)
+	firing_weapon = weapon
 	CombatResolver.strike_at(self,target if is_instance_valid(target) else null,point,forced)
 ## Where a modelled projectile stops: on the near face of the target's body, so its impact is not buried inside.
 func _shot_end(muzzle: Vector3, target: Node3D, fallback: Vector3) -> Vector3:
@@ -1147,6 +1171,7 @@ func apply_unit_stats() -> void:
 	abilities = unit_stats.abilities.duplicate()
 	if unit_stats.attack_range >= 0: attack_range = unit_stats.attack_range
 	min_attack_range = unit_stats.min_attack_range
+	armoured = unit_stats.armoured
 	if unit_stats.has_resolved_attack():
 		attack_damage = unit_stats.damage
 		shot_interval = unit_stats.attack_interval

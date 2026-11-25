@@ -30,6 +30,7 @@ size = Vector2(2.4, 5.4)
 
 [node name="CargoVehicle" type="Node3D"]
 script = ExtResource("agent")
+armoured = true
 fuel_rules = ExtResource("fuel")
 supply_rules = ExtResource("stats")
 mobile_rules = ExtResource("mobile")

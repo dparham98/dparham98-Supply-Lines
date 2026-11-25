@@ -50,7 +50,7 @@ const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 
 const TILE := 46
 const TRIP_LABELS := {"once": "once", "all": "all available", "repeat": "repeat"}
 ## One icon per stat row (assets/ui/icons).
-const STAT_ICONS := {"Speed": "speed", "Range": "focus", "Damage": "damage", "Vision": "scout", "Vs buildings": "depot", "Splash": "splash",
+const STAT_ICONS := {"Speed": "speed", "Range": "focus", "Damage": "damage", "Vision": "scout", "Vs armour": "depot", "Splash": "splash",
 	"Cost": "cost", "Deploys": "deploy", "Output": "generator", "Burning": "refuel", "Cycle": "cycle", "Mode": "mode",
 	"Energy": "generator", "Food": "crate", "Iron": "mine", "Queue": "queue", "Fuel left": "cargo", "Energy ceiling": "generator", "Coal kept": "refuel",
 	"Housing": "depot", "Food a beat": "crate", "Workers": "queue"}
@@ -584,6 +584,12 @@ func fuel_note(node: Node) -> String:
 	var status := "OUT OF FUEL · " if node.out_of_fuel else ("LOW FUEL · " if node.fuel_low() else "")
 	var lines: PackedStringArray = node.fuel_summary().split("\n")
 	return status+(lines[1] if lines.size() > 1 else "")
+## The target classes in a weapon's flags (CombatResolver), as words.
+func _classes(flags: int) -> String:
+	var names: Array[String] = []
+	for pair in [[CombatResolver.LIGHT,"light"],[CombatResolver.ARMOURED,"armour"],[CombatResolver.FLYER,"flyers"],[CombatResolver.BUILDING,"buildings"]]:
+		if flags & pair[0]: names.append(pair[1])
+	return ", ".join(names)
 ## `inspect` is an enemy unit: its stats and abilities only, not what it carries or where it is going.
 func update_unit_sections(node: Node3D, inspect := false) -> void:
 	var pairs := [["Speed","%.1f" % node.move_speed]]
@@ -597,8 +603,10 @@ func update_unit_sections(node: Node3D, inspect := false) -> void:
 		if node.unit_stats != null:
 			var stats: UnitStats = node.unit_stats
 			if stats.heavy_target_damage >= 0:
-				pairs.append(["Vs buildings","%d / %.1fs" % [stats.heavy_target_damage,stats.heavy_target_interval]])
+				pairs.append(["Vs armour","%d / %.1fs" % [stats.heavy_target_damage,stats.heavy_target_interval]])
 				pairs.append(["Splash","%.1f" % stats.splash_radius])
+			if stats.second_damage >= 0: abilities.append("Second weapon %d / %.1fs at %.0f–%.0f vs %s" % [stats.second_damage,stats.second_interval,stats.second_min_range,stats.second_range,_classes(stats.second_targets)])
+			if stats.targets != 15: abilities.append("Main weapon vs %s" % _classes(stats.targets))
 			if stats.fire_while_moving: abilities.append("Fires while moving")
 			if not stats.has_resolved_attack(): abilities.append("Fallback attack stats")
 		var roof: Node = node.get_node_or_null("CloseDefense")
@@ -606,6 +614,7 @@ func update_unit_sections(node: Node3D, inspect := false) -> void:
 			# The stat grid is full on a Tank, so the roof gun goes on the abilities line.
 			abilities.insert(0,"Roof gun %d / %.2fs at units within %.0f" % [roof.damage,roof.shot_interval,roof.attack_range])
 	else: abilities.append("Unarmed worker" if node.can_gather else "Attack unavailable · unresolved stats")
+	if node.get("armoured") == true: abilities.append("Armoured")
 	if node.can_heal: abilities.append("Vitality Stimulus · 5 HP/s (%d/%d HP reserve)" % [node.med_reserve,node.med_reserve_capacity])
 	if node.mobility_layer() == MobilityRules.Layer.AIR: abilities.append("Flies on a separate air layer")
 	elif node.unit_stats != null and node.unit_stats.mobility != null and node.unit_stats.mobility.clears_forest: abilities.append("Clears forest")

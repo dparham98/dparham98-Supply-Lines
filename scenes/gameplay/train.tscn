@@ -28,6 +28,7 @@ size = Vector2(2.8, 7.2)
 
 [node name="Train" type="Node3D"]
 script = ExtResource("agent")
+armoured = true
 supply_rules = ExtResource("stats")
 mobile_rules = ExtResource("mobile")
 max_health = 80

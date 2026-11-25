@@ -63,7 +63,7 @@ func run() -> void:
 	var tank = spawn("res://scenes/gameplay/tank.tscn",Vector3(14,0,14))
 	tank.fuel = 10
 	select(tank)
-	if not check(hud.bars.get_node("FuelValue").text == "10 / 60" and hud.bars.get_node("FuelLabel").text == "Fuel" and stat("Vs buildings") != "" and stat("Splash") != "","Tank bars or stats wrong"): return
+	if not check(hud.bars.get_node("FuelValue").text == "10 / 60" and hud.bars.get_node("FuelLabel").text == "Fuel" and stat("Vs armour") != "" and stat("Splash") != "","Tank bars or stats wrong"): return
 	if not check(shown("Abilities") and "Fires while moving" in hud.context.get_node("Abilities").text and "LOW FUEL" in info.get_node("Details").text,"Tank abilities or fuel note wrong"): return
 	for i in range(1,7):
 		var value: Label = hud.context.get_node("Stats/V%d" % i)
