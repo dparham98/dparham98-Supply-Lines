@@ -8,6 +8,8 @@ Item 5 of `docs/BALANCE_IMPLEMENTATION_HANDOFF.md` (2026-11-23). This branch is 
 
 - **Economy:** each Keep runs its own.
   - **Plans:** one at a time, paid from the Keep's stock (item 4). A House goes up when housing has `house_headroom` (3) or less to spare. Farms come next, then a Chapterhouse once there are 2 Farms, then more Farms up to `farms_wanted` (8 at home, 6 at an outpost). A further Chapterhouse needs `second_hall_farms` (3) Farms, up to `chapterhouses_wanted` (3 at home, 2 at an outpost).
+  - **Round 2 Farms (2026-11-24):** Farms are 10 x 10, so a Keep's land runs out at about eight. Once a Keep has `second_hall_farms` (3) Farms, its further Chapterhouses come before more Farms; a Keep with no room left for a Chapterhouse stops trying and lets Farms have the land.
+  - **Full stores:** a Keep holding `iron_enough` (600) iron stops its miners, who cut wood instead; at `wood_enough` (300) wood they stand idle. Before this the AI mined iron into the Keep until its 2,000 store was full and turned away its Farmers' Food.
   - **Workers:** one Forester to each Farm, who stays its Farmer for good; a Farmer whose Farm is lost takes the next empty Farm first. The AI never picks a Farmer to build or to found a Keep. The rest cut wood (one, or two while the Keep is short of it) and mine the nearest iron.
   - **Training:** the Keep trains Foresters without a pause to `foresters_wanted` (14 at home, 10 at an outpost).
 - **A second Keep** at `expand_at` (300 s), or sooner if it runs out of building room. Two home Foresters carry 50 iron and 50 wood onto a site beside the nearest free iron mine and build it.
@@ -63,3 +65,14 @@ The handoff asks for ten runs that all complete. This branch has 13 of 14 comple
 `tests/main_menu_test.gd` now checks that the Knights can be chosen on the AI's row, that spectating keeps a Knights choice, and that a match against the Knights puts a Keep and two Foresters at the East start, played by the Knights AI.
 
 Not checked by a person: how the Knights AI plays against you, and whether its pace on 150 Food matches what the investigation saw.
+
+**Results with round 2 Farms, 2026-11-24 (`feature/knights-farm-round2`, Cyborgs West against Knights East, one run each):**
+
+| AI | Knights army at 8:00 | Chapterhouses | What held it back |
+| --- | --- | --- | --- |
+| As on `claude/stage1-playtest` | 28 | 2 | The home Keep's store full of iron (1,652 I) from 6:00, turning away Food |
+| With the store caps | 29 | 2 | Food piled up unspent (600 F at 9:00): too few Chapterhouses, the land taken by Farms |
+| With the caps and Chapterhouses before late Farms | 29 | 4 | Housing full (83 / 84) from 8:00: no room left for Houses |
+
+The handoff's 50 by 8:00 was measured with 4 x 4 Farms. With 10 x 10 Farms the Knights AI is held at about 30 by land, as round 2 intended. Reaching 50 again needs a third Keep, smaller Farms, or Houses that fit between Farms: not decided.
+

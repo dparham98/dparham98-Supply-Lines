@@ -26,12 +26,18 @@ const Supply = preload("res://scripts/economy/knight_housing.gd")
 var plans := {}
 var farmers := {}
 var keep_plan: Node3D
+## Keeps with no room left for another Chapterhouse, by instance id.
+var _hall_waits := {}
 var founding := false
 var founders: Array[Node3D] = []
 var keeps_founded: Array = []
 var no_room := 0
 var _made := 0
 var first_army_at := -1.0
+## Iron and wood a Keep holds before its workers stop bringing more; past this the store only fills and turns
+## away its Farmers' Food.
+@export var iron_enough := 600
+@export var wood_enough := 300
 ## Housing free below which it plans a House.
 @export var house_headroom := 3
 func _ready() -> void:
@@ -108,15 +114,20 @@ func economy(keep: Node3D, is_home: bool) -> void:
 		if cap-used <= house_headroom and not house_planned and keep.wood >= 40: kind = &"house"
 		elif fields.size() < mini(2,target_farms) and keep.wood >= 30: kind = &"farm"
 		elif local_halls.is_empty() and want_halls > 0 and fields.size() >= 2 and keep.food >= 40 and keep.wood >= 30 and keep.iron >= 40: kind = &"chapterhouse"
+		# With 10 x 10 Farms a Keep's land runs out at about eight; its Chapterhouses go up before the last Farms take
+		# the room (docs/KNIGHTS_AI.md).
+		elif not local_halls.is_empty() and local_halls.size() < want_halls and fields.size() >= second_hall_farms and keep.food >= 105 and keep.wood >= 30 and keep.iron >= 65 and not _hall_waits.get(key,false): kind = &"chapterhouse"
 		elif fields.size() < target_farms and keep.wood >= 30: kind = &"farm"
-		elif not local_halls.is_empty() and local_halls.size() < want_halls and fields.size() >= second_hall_farms and keep.food >= 105 and keep.wood >= 30 and keep.iron >= 65: kind = &"chapterhouse"
 		if kind != &"":
 			var spec: Dictionary = network.plan_spec(kind)
 			var point = building_site(keep,spec.size)
 			if point != null:
 				plan = network.queue_plan(point,kind,keep,true,false,team)
 				if plan != null: plans[key] = plan
-			else: no_room += 1
+			else:
+				no_room += 1
+				# No room for another Chapterhouse here: Farms may have the rest of the land.
+				if kind == &"chapterhouse": _hall_waits[key] = true
 	if is_instance_valid(plan):
 		var building: bool = mine.any(func(unit): return unit.order == "construct" and unit.order_target == plan)
 		if not building:
@@ -156,6 +167,17 @@ func economy(keep: Node3D, is_home: bool) -> void:
 	var iron := _nearest_mine(keep.global_position,&"iron")
 	if iron != null and iron.global_position.distance_to(keep.global_position) > 45.0: iron = null
 	if iron == null or keep.iron >= 600: want_wood = maxi(want_wood,1)
+	# A Keep that holds enough iron and wood stops taking more, so its store keeps room for its Farmers' Food.
+	if keep.iron >= iron_enough:
+		# Its iron miners cut wood instead.
+		iron = null
+		want_wood = free.size()
+	if keep.wood >= wood_enough:
+		want_wood = 0
+		for unit in free:
+			if _working(unit) == &"wood" or (_working(unit) == &"iron" and iron == null):
+				unit._stop_route(); unit.order = "idle"; unit.state = "Idle · the Keep has enough"
+		return _train_foresters(keep,mine,want_workers)
 	var on_wood := 0
 	for unit in free:
 		if _working(unit) == &"wood":
@@ -172,6 +194,8 @@ func economy(keep: Node3D, is_home: bool) -> void:
 			else:
 				var tree := forest_at(keep.global_position)
 				if tree != null: unit.command_gather(tree)
+	_train_foresters(keep,mine,want_workers)
+func _train_foresters(keep: Node3D, mine: Array, want_workers: int) -> void:
 	if mine.size()+keep.pending.count("forester_maiden") < want_workers and keep.food >= 45 and keep.queue < keep.queue_limit and Supply.room(get_tree(),team,&"forester_maiden"): keep.request_forester()
 func forest_at(point: Vector3) -> Node3D:
 	var centre = ground.get_tile_at_position(point)
