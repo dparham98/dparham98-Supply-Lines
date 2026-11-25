@@ -65,10 +65,10 @@ func run() -> void:
 	if not check(absf(low) < 0.1 and high > 1.6 and high < 2.1 and right-left < 1.6,"Grenadier size wrong: y %.2f..%.2f x %.2f..%.2f" % [low,high,left,right]): return
 	var head: int = model.skeleton.find_bone("head")
 	if not check(head >= 0,"Head bone missing"): return
-	var goggles: MeshInstance3D = model.get_node("Rig/grenadier_rig/Skeleton3D/goggles")
-	var goggle_local: Vector3 = goggles.get_aabb().get_center()
+	var face: MeshInstance3D = model.get_node("Rig/grenadier_rig/Skeleton3D/face")
+	var face_center: Vector3 = face.get_aabb().get_center()
 	var head_local: Vector3 = model.skeleton.get_bone_global_rest(head).origin
-	if not check(unit.to_local(model.skeleton.to_global(goggle_local)).z < unit.to_local(model.skeleton.to_global(head_local)).z,"Grenadier should face -Z"): return
+	if not check(unit.to_local(face.to_global(face_center)).z < unit.to_local(model.skeleton.to_global(head_local)).z,"Grenadier should face -Z"): return
 	# Carried low at Rest.
 	if not check(model.muzzle_position().y < 0.6,"Launcher should hang low at Rest, muzzle y %.2f" % model.muzzle_position().y): return
 	step(unit,model,3)
