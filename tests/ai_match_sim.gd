@@ -61,10 +61,12 @@ func _line(ai: Node, faction: StringName) -> String:
 	if faction == &"arthurian_knights":
 		var halls: int = get_nodes_in_group("production_buildings").filter(func(b): return b.team == ai.team and b.stats.building_id == &"chapterhouse").size()
 		var keep: Node3D = ai.home()
-		return "Keeps %d Farms %d Houses %d Halls %d · Foresters %d army %d wave %d · housing %s · %s" % [ai.own_keeps().size(),mine.call("farms"),mine.call("houses"),halls,ai.workers.size(),ai.army.size(),ai.wave.size(),KnightHousing.text(self,ai.team),"%d F %d W %d I" % [keep.food,keep.wood,keep.iron] if keep != null else "no Keep"]
+		var forges: int = get_nodes_in_group("research_buildings").filter(func(b): return b.team == ai.team and b.stats.building_id == &"forge").size()
+		return "Keeps %d Farms %d Houses %d Halls %d Forge %d (Arms %d Mail %d) · Foresters %d army %d wave %d · housing %s · %s" % [ai.own_keeps().size(),mine.call("farms"),mine.call("houses"),halls,forges,Upgrades.level(game,ai.team,&"arms"),Upgrades.level(game,ai.team,&"mail"),ai.workers.size(),ai.army.size(),ai.wave.size(),KnightHousing.text(self,ai.team),"%d F %d W %d I" % [keep.food,keep.wood,keep.iron] if keep != null else "no Keep"]
 	var depot: Node3D = ai.home()
 	var count := func(id: StringName) -> int: return get_nodes_in_group("production_buildings").filter(func(b): return b.team == ai.team and b.stats.building_id == id).size()
-	return "step %d/%d (%s) · Gen %d Bar %d Fac %d · workers %d army %d wave %d · %s" % [ai.build_step,ai.build_order.size(),str(ai.plan.kind) if is_instance_valid(ai.plan) else "-",mine.call("energy_generators"),count.call(&"barracks"),count.call(&"tank_factory"),ai.workers.size(),ai.army.size(),ai.wave.size(),"%d E %d I" % [depot.energy,depot.iron] if depot != null else "no Depot"]
+	var levels: Array = ai.upgrade_lines.map(func(line): return Upgrades.level(game,ai.team,line))
+	return "step %d/%d (%s) · Gen %d Bar %d Fac %d Foundry %d %s · workers %d army %d wave %d · %s" % [ai.build_step,ai.build_order.size(),str(ai.plan.kind) if is_instance_valid(ai.plan) else "-",mine.call("energy_generators"),count.call(&"barracks"),count.call(&"tank_factory"),get_nodes_in_group("research_buildings").filter(func(b): return b.team == ai.team and b.stats.building_id == &"foundry").size(),levels,ai.workers.size(),ai.army.size(),ai.wave.size(),"%d E %d I" % [depot.energy,depot.iron] if depot != null else "no Depot"]
 ## What stands on a plan's footprint: the claims on its cells, and the units whose cell is inside it.
 func _blockers(plan: Node3D) -> String:
 	var parts: Array[String] = []

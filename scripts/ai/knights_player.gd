@@ -40,9 +40,13 @@ var first_army_at := -1.0
 @export var wood_enough := 300
 ## Housing free below which it plans a House.
 @export var house_headroom := 3
+## Once home has all its Chapterhouses (or no room for more), a Forge goes up there for Arms and Mail
+## (docs/UPGRADES.md). While it saves for a level, the Chapterhouses leave home that Food and Iron.
+@export var forge_wanted := true
 func _ready() -> void:
 	# The army waits outside the Keep's range, off the ground its buildings go on.
 	rally_distance = 36.0
+	upgrade_lines = [&"arms",&"mail"]
 func think() -> void:
 	var depot := home()
 	var units := own_units()
@@ -54,6 +58,7 @@ func think() -> void:
 	wants = {}
 	for keep in own_keeps(): economy(keep,keep == depot)
 	found_keep(depot)
+	research()
 	produce()
 	fight(depot)
 	_medics()
@@ -93,6 +98,11 @@ func farms() -> Array:
 	return get_tree().get_nodes_in_group("farms").filter(func(f): return f.team == team and f.health > 0 and not f.is_queued_for_deletion())
 func halls() -> Array:
 	return get_tree().get_nodes_in_group("production_buildings").filter(func(b): return b.team == team and b.health > 0 and b.stats.building_id == &"chapterhouse")
+## Whether it has a Forge standing or planned.
+func has_forge() -> bool:
+	for node in get_tree().get_nodes_in_group("research_buildings"):
+		if node.team == team and node.health > 0 and node.stats.building_id == &"forge": return true
+	return plans.values().any(func(other): return is_instance_valid(other) and other.kind == &"forge")
 func economy(keep: Node3D, is_home: bool) -> void:
 	var key: int = keep.get_instance_id()
 	var mine: Array = workers.filter(func(unit): return base_of(unit) == keep and not founders.has(unit))
@@ -117,6 +127,7 @@ func economy(keep: Node3D, is_home: bool) -> void:
 		# With 10 x 10 Farms a Keep's land runs out at about eight; its Chapterhouses go up before the last Farms take
 		# the room (docs/KNIGHTS_AI.md).
 		elif not local_halls.is_empty() and local_halls.size() < want_halls and fields.size() >= second_hall_farms and keep.food >= 105 and keep.wood >= 30 and keep.iron >= 65 and not _hall_waits.get(key,false): kind = &"chapterhouse"
+		elif is_home and forge_wanted and upgrades and not local_halls.is_empty() and (local_halls.size() >= want_halls or _hall_waits.get(key,false)) and not has_forge() and keep.wood >= 60 and keep.iron >= 80: kind = &"forge"
 		elif fields.size() < target_farms and keep.wood >= 30: kind = &"farm"
 		if kind != &"":
 			var spec: Dictionary = network.plan_spec(kind)
@@ -254,7 +265,9 @@ func produce(depot: Node3D = null) -> void:
 		var source: Node3D = hall.assigned_depot
 		var local: int = workers.filter(func(unit): return base_of(unit) == source).size()
 		var reserve := 45 if local < early_workers else 0
-		if source.food-stats.food_cost < reserve or source.iron < stats.iron_cost: continue
+		# Home leaves what the Forge's next level needs.
+		var hold: Vector2i = wants.get("research",Vector2i.ZERO) if source == home() else Vector2i.ZERO
+		if source.food-stats.food_cost < maxi(reserve,hold.x) or source.iron-stats.iron_cost < hold.y: continue
 		if not Supply.room(get_tree(),team,id): continue
 		if hall.request_unit(id): _made += 1
 	var keep := home()

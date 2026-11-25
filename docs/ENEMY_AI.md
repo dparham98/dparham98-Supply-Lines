@@ -20,7 +20,7 @@ On Two Lakes the East start mirrors the player's West start:
 
 `scripts/ai/enemy_player.gd`, the `EnemyPlayer` node saved in `scenes/maps/lakes_skirmish.tscn`, decides once a second (`think_seconds`). It gives its units the same orders the player can.
 
-- **Building.** It works through `build_order`: Generator, Barracks, a second Generator, Coal Mine, Tank Factory, Temple of Science, then a third Generator.
+- **Building.** It works through `build_order`: Generator, Barracks, a second Generator, a second Barracks, a third Generator, Coal Mine, Tank Factory, a fourth Generator, then the Foundry.
   - After that it keeps adding Generators, up to `generators_wanted` (6) in all, while the Depot holds `iron_plenty` (250) iron. Once it has expanded, energy is what holds it back, not iron.
   - It plans one building at a time with `DepotNetwork.queue_plan(..., team = "enemy")`, as soon as the Depot holds the iron and energy.
   - Buildings go in the home Depot's range, toward the middle of the map. Each keeps a 2-tile walkway round it and stays off the way to the home mine. A Generator with no room left at home goes up at an expansion.
@@ -52,7 +52,10 @@ On Two Lakes the East start mirrors the player's West start:
   - **A router for each side.** `RailNetwork.begin_link` keeps a track-search router for each team, so with an AI on both sides (spectating, docs/MAIN_MENU.md) one side's new search never resets the other's half-done one.
   - **One search at a time**, worked on `link_usec` (2 ms) a frame so a long one doesn't hold the frame up. Found track is laid once home has the iron; if the ground has changed since, it searches again. Pairs with no open path are not tried again.
   - Home pays for the track and its upkeep, as the player's Depot pays for the player's.
-- **Research.** Once its Temple of Science stands, it researches Mining Trains as soon as it can pay (150 E / 100 I). `mining_trains` off leaves the Temple out of it.
+- **Research.** It researches what `research_wanted()` lists, the first that is neither done nor under way, at a free building of its own that offers it, saving for it meanwhile (`held_back`):
+  - Mining Trains (150 E / 100 I) at the Temple, unless `mining_trains` is off;
+  - once the army has `upgrades_army` (6) units, the Foundry's upgrades (docs/UPGRADES.md): level 1 of Infantry Weapons, Vehicle Weapons, Infantry Armour and Vehicle Armour (`upgrade_lines`), then level 2 of each, then 3. `upgrades` off leaves them out.
+- **The Foundry** is the last step of `build_order`, after the fourth Generator.
 - **Repair.** A building of its own below `repair_below` (75%) of its health, with none of the player's units seen within 30 m, gets the nearest free worker within 120 m. At most `repairers` (2) repair at once. They pay from the nearest covering stockpile, as the player's do.
 - **Scouting.** Its Scout visits the start sites (`Sites`) it has not seen, nearest first.
 - **Defence.** When it sees one of the player's units within `defend_radius` (60 m) of its buildings, the army attack-moves onto it. Units away on a wave keep going.
