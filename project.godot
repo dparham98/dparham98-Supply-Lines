@@ -23,6 +23,7 @@ config/icon="res://icon.svg"
 
 SelectionManager="*res://scripts/units/selection_manager.gd"
 MatchSetup="*res://scripts/gameplay/match_setup.gd"
+WindowControls="*res://scripts/ui/window_controls.gd"
 
 [display]
 
