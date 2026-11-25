@@ -33,7 +33,7 @@ A unit can have a second weapon, set with these `UnitStats` fields:
 
 **Range:**
 - `in_attack_range` asks whether either weapon can fire. So an attack order or attack-move stops at the range of the weapon that suits the target.
-- Target scans look as far as the longer weapon reaches (`reach()`).
+- Target scans look as far as the longer weapon reaches (`weapon_reach()`).
 - A unit with no weapon for a target's class won't take an attack order on it (`fires_at`).
 
 **Reload:** the two weapons share one reload. A shot takes the interval of the weapon that fired it.

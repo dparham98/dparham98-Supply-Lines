@@ -939,7 +939,7 @@ func fires_at(target: Node3D) -> bool:
 	var cls := CombatResolver.target_class(target)
 	return bool(unit_stats.targets & cls) or (unit_stats.second_damage >= 0 and bool(unit_stats.second_targets & cls))
 ## Its longest reach, over both weapons.
-func reach() -> float:
+func weapon_reach() -> float:
 	if unit_stats != null and unit_stats.second_damage >= 0: return maxf(attack_range,unit_stats.second_range)
 	return attack_range
 ## The nearest unit in range it may shoot. Only units near it are looked at (the skirmish's UnitGrid): asking every
@@ -978,7 +978,7 @@ func team_sees(target: Node3D) -> bool:
 	return _fog == null or _fog.visible_to(team,target.global_position)
 func _nearest_opponent() -> Node3D:
 	var closest: Node3D
-	var distance := reach()
+	var distance := weapon_reach()
 	var nearby: Array = game.units_near(global_position,distance) if is_instance_valid(game) and game.has_method("units_near") else get_tree().get_nodes_in_group("units")
 	for unit in nearby:
 		if not is_instance_valid(unit) or unit.team == team: continue
