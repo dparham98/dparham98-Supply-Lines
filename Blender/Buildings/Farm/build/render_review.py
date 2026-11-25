@@ -22,7 +22,7 @@ want = [
     "hero",
     "turnaround",
     "clip:Build:0,30,64,96",
-    "clip:Work:0,12,24,36",
+    "clip:Work:0,5,18,31",
     "clip:Depleted:0,12,24,36",
     "clip:Die:0,12,26,52",
 ]
@@ -129,7 +129,7 @@ def set_camera(name: str, res: tuple[int, int]) -> None:
         aim((7.2, 8.2, 5.4), CENTRE)
     elif name == "rts":
         cam_d.ortho_scale = 7.4
-        aim((0.0, -11.5, 13.8), (0.0, -0.1, 1.2))
+        aim((0.0, -11.5, 13.8), (0.0, -0.1, 1.68))
 
 
 def load_arr(path: str) -> np.ndarray:

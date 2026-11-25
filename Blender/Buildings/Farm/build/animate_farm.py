@@ -446,8 +446,23 @@ lc = bpy.context.view_layer.layer_collection.children
 if FX_COLL in lc:
     lc[FX_COLL].exclude = True
 scene.frame_start = 0
-scene.frame_end = BUILD_FRAMES
+scene.frame_end = IDLE_FRAMES - 1
+for ob in bpy.data.collections["farm"].all_objects:
+    if ob.animation_data:
+        for track in ob.animation_data.nla_tracks:
+            track.mute = track.name != "Idle"
 scene.frame_set(0)
+focus = V((0.0, 0.0, 1.65))
+view_rotation = (focus - V((5.2, -9.4, 6.5))).to_track_quat("-Z", "Y")
+for screen in bpy.data.screens:
+    for area in screen.areas:
+        if area.type == "VIEW_3D":
+            space = area.spaces.active
+            space.region_3d.view_rotation = view_rotation
+            space.region_3d.view_distance = 8.8
+            space.region_3d.view_location = focus
+            space.shading.color_type = "MATERIAL"
+            space.overlay.show_extras = False
 
 bpy.context.preferences.filepaths.save_version = 0
 bpy.ops.wm.save_mainfile()

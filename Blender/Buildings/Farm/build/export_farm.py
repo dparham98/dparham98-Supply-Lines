@@ -28,6 +28,10 @@ else:
 lc = bpy.context.view_layer.layer_collection.children
 for child in lc:
     child.exclude = False
+for ob in bpy.data.objects:
+    if ob.animation_data:
+        for track in ob.animation_data.nla_tracks:
+            track.mute = False
 bpy.context.view_layer.update()
 bpy.context.scene.frame_set(0)
 
