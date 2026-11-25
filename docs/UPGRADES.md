@@ -59,6 +59,6 @@ The Foundry's and Forge's card shows one tile per line (Q, W, E, R), each offeri
 
 ## Not done
 
-- **AI:** neither AI builds a Foundry or a Forge, or researches upgrades.
+- **AI:** the Cyborg AI builds a Foundry last and researches its lines; the Knights AI builds a Forge once its Chapterhouses stand and researches Arms and Mail (`docs/ENEMY_AI.md`, `docs/KNIGHTS_AI.md`). `tests/ai_upgrades_test.gd` checks both.
 - **Art:** no models or card art of their own.
 - **Unit card:** the unit panel doesn't yet show the upgraded damage or armour.

@@ -20,7 +20,7 @@ On Two Lakes the East start mirrors the player's West start:
 
 `scripts/ai/enemy_player.gd`, the `EnemyPlayer` node saved in `scenes/maps/lakes_skirmish.tscn`, decides once a second (`think_seconds`). It gives its units the same orders the player can.
 
-- **Building.** It works through `build_order`: Generator, Barracks, a second Generator, a second Barracks, a third Generator, Coal Mine, Tank Factory, Temple of Science, then a fourth Generator.
+- **Building.** It works through `build_order`: Generator, Barracks, a second Generator, a second Barracks, a third Generator, Coal Mine, Tank Factory, Temple of Science, a fourth Generator, then the Foundry.
   - The two-Barracks order (item 5 of the balance handoff) had left the Temple out, so it never researched anything. It was put back after the Tank Factory on 2026-11-25, with Minelaying.
   - After that it keeps adding Generators, up to `generators_wanted` (6) in all, while the Depot holds `iron_plenty` (250) iron. Once it has expanded, energy is what holds it back, not iron.
   - It plans one building at a time with `DepotNetwork.queue_plan(..., team = "enemy")`, as soon as the Depot holds the iron and energy.
@@ -53,9 +53,11 @@ On Two Lakes the East start mirrors the player's West start:
   - **A router for each side.** `RailNetwork.begin_link` keeps a track-search router for each team, so with an AI on both sides (spectating, docs/MAIN_MENU.md) one side's new search never resets the other's half-done one.
   - **One search at a time**, worked on `link_usec` (2 ms) a frame so a long one doesn't hold the frame up. Found track is laid once home has the iron; if the ground has changed since, it searches again. Pairs with no open path are not tried again.
   - Home pays for the track and its upkeep, as the player's Depot pays for the player's.
-- **Research.** Once its Temple of Science stands, it researches what `research_wanted()` lists, one at a time, saving for each (`held_back`):
-  - Mining Trains (150 E / 100 I), unless `mining_trains` is off;
-  - Minelaying (150 E / 100 I), once it has a Derailer, unless `minelaying` is off.
+- **Research.** It researches what `research_wanted()` lists, the first that is neither done nor under way, at a free building of its own that offers it, saving for it meanwhile (`held_back`):
+  - Mining Trains (150 E / 100 I) at the Temple, unless `mining_trains` is off;
+  - Minelaying (150 E / 100 I), once it has a Derailer, unless `minelaying` is off;
+  - once the army has `upgrades_army` (6) units, the Foundry's upgrades (docs/UPGRADES.md): level 1 of Infantry Weapons, Vehicle Weapons, Infantry Armour and Vehicle Armour (`upgrade_lines`), then level 2 of each, then 3. `upgrades` off leaves them out.
+- **The Foundry** is the last step of `build_order`, after the fourth Generator.
 - **Mines** (docs/MINES.md). With Minelaying, a Derailer at home with mines aboard and a full tank, not in a wave and with no threat near, lays them (`lay_mines`):
   - **Where:** a row across the way toward what it would attack, `mine_distance` (45 m) out from home, or half way if that's nearer. Spots are `mine_spacing` (5 m) apart, from the middle outward. The way is fixed the first time it knows of somewhere to attack, so the row stays put.
   - **How many:** it keeps `mines_wanted` (6) of its own laid. A spot a Derailer couldn't reach isn't tried again.
