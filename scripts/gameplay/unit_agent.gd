@@ -12,13 +12,23 @@ signal died(unit: Node3D)
 @export var engineering_rules: EngineeringRules
 var repair_payer: Node3D
 @export var can_heal := false
-@export var heal_range := 7.0
-@export var heal_hp := 5
+@export var heal_range := 9.0
+@export var heal_hp := 10
 @export var heal_interval := 1.0
-@export var heal_food_cost := 1
-@export var med_reserve_capacity := 120
+@export var med_reserve_capacity := 200
+## The reserve refills from a covering friendly Keep or an adjacent crate: `med_refill_points` points for
+## `med_refill_cost` of `med_refill_kind` every `med_refill_interval` s. A cost of 0 refills for nothing.
+@export var med_refill_kind := &"food"
+@export var med_refill_cost := 1
+@export var med_refill_points := 5
+@export var med_refill_interval := 1.0
+## Idle or attack-moving, a healer heals the most hurt friend within `heal_range` by itself.
+@export var heal_autocast := true
 var med_reserve := 0
 var _med_refill_timer := 0.0
+var _heal_scan := 0.0
+## The attack-move a healer left to heal by itself, resumed when the patient is done.
+var _heal_resume := Vector3.INF
 @export var can_gather := true
 @export var can_capture_depots := true
 @export var deployment_rules: DepotRules
@@ -333,7 +343,9 @@ func _process(delta: float) -> void:
 	if _dead: return
 	if derail_cooldown > 0.0: derail_cooldown = maxf(0.0,derail_cooldown-delta)
 	fuel_tick(delta)
-	if can_heal: MedicalWork.refill_tick(self,delta)
+	if can_heal:
+		MedicalWork.refill_tick(self,delta)
+		_autocast_heal(delta)
 	_order_process(delta)
 	_animate(delta)
 ## The Visuals model when it carries a character animator (scripts/components/character_animator.gd).
@@ -390,7 +402,9 @@ func _order_process(delta: float) -> void:
 	if order in ["repair","heal"] and not is_instance_valid(order_target):
 		_stop_route()
 		state = "Repair target lost" if order == "repair" else "Patient lost"
+		var resume := order == "heal" and _heal_resume != Vector3.INF
 		order = "idle"; order_target = null
+		if resume: _heal_done(state)
 		_update_display()
 		return
 	if order == "repair" and (not EngineeringWork.repairable(order_target,team) or not SupplySource.available(repair_payer,team)):
@@ -1200,15 +1214,34 @@ func command_heal(target: Node3D) -> void:
 	order_target = target
 	source = null
 	_work_timer = 0.0
+	_heal_resume = Vector3.INF
 	order = "heal"
 	state = "Healing ordered"
+## Heals by itself: idle or attack-moving with reserve left, it takes the most hurt friend within heal range.
+func _autocast_heal(delta: float) -> void:
+	if not heal_autocast or med_reserve <= 0 or not order in ["idle","attack_move"]: return
+	_heal_scan -= delta
+	if _heal_scan > 0.0: return
+	_heal_scan = 0.5
+	var patient := MedicalWork.most_hurt(self)
+	if patient == null: return
+	var resume := move_goal if order == "attack_move" else Vector3.INF
+	command_heal(patient)
+	_heal_resume = resume
+## A heal ended: back to the attack-move it left, if it left one.
+func _heal_done(note: String) -> void:
+	order = "idle"; state = note
+	if _heal_resume != Vector3.INF:
+		var goal := _heal_resume
+		_heal_resume = Vector3.INF
+		command_attack_move(goal)
 func _heal(delta: float) -> void:
 	if not is_instance_valid(order_target) or not order_target.is_in_group("units") or order_target.get("team") != team or order_target.health <= 0:
-		order = "idle"; state = "Patient lost"; return
+		_heal_done("Patient lost"); return
 	if order_target.health >= order_target.max_health:
-		order = "idle"; state = "Patient at full health"; return
+		_heal_done("Patient at full health"); return
 	if EngineeringWork.is_vehicle(order_target):
-		order = "idle"; state = "Cannot heal vehicles"; return
+		_heal_done("Cannot heal vehicles"); return
 	if global_position.distance_to(order_target.global_position) > heal_range:
 		_work_timer = 0.0
 		if _retry <= 0:
@@ -1223,6 +1256,7 @@ func _heal(delta: float) -> void:
 	_work_timer = 0.0
 	var note := MedicalWork.tick(self,order_target)
 	if note.is_empty(): state = "Healing %s" % order_target.name
+	elif _heal_resume != Vector3.INF: _heal_done(note)
 	else: state = note
 ## Build at a queued site (docs/SITE_CONSTRUCTION.md): carried materials the site needs go onto its
 ## pile first, then the worker builds them in at its work pace, 5 per saw blow.

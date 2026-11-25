@@ -612,7 +612,7 @@ func update_unit_sections(node: Node3D, inspect := false) -> void:
 			# The stat grid is full on a Tank, so the roof gun goes on the abilities line.
 			abilities.insert(0,"Roof gun %d / %.2fs at units within %.0f" % [roof.damage,roof.shot_interval,roof.attack_range])
 	else: abilities.append("Unarmed worker" if node.can_gather else "Attack unavailable · unresolved stats")
-	if node.can_heal: abilities.append("Vitality Stimulus · 5 HP/s (%d/%d HP reserve)" % [node.med_reserve,node.med_reserve_capacity])
+	if node.can_heal: abilities.append("Vitality Stimulus · %d HP/s at %.0f m, by itself (%d/%d HP reserve)" % [roundi(node.heal_hp/node.heal_interval),node.heal_range,node.med_reserve,node.med_reserve_capacity])
 	if node.mobility_layer() == MobilityRules.Layer.AIR: abilities.append("Flies on a separate air layer")
 	elif node.unit_stats != null and node.unit_stats.mobility != null and node.unit_stats.mobility.clears_forest: abilities.append("Clears forest")
 	elif node.mobility_layer() == MobilityRules.Layer.FOREST: abilities.append("Moves through forest")
@@ -1099,7 +1099,7 @@ Flies only where its Keep sent it" % node.cargo_text()
 				card.get_node("Repair").tooltip_text = "Restore up to %d HP every %.1fs for %d energy / %d iron from the selected local supply source. No wood is spent." % [node.engineering_rules.repair_hp,node.engineering_rules.repair_interval,node.engineering_rules.repair_energy,node.engineering_rules.repair_iron]
 			if node.can_heal:
 				show_button("Heal","Heal")
-				card.get_node("Heal").tooltip_text = "Vitality Stimulus: heal %d HP every %.1fs for %d Food from a covering Keep, or from carried reserve (%d / %d HP). Does not heal vehicles." % [node.heal_hp,node.heal_interval,node.heal_food_cost,node.med_reserve,node.med_reserve_capacity]
+				card.get_node("Heal").tooltip_text = "Vitality Stimulus: heal %d HP every %.1fs from the carried reserve (%d / %d HP), one point for one HP. Idle or attack-moving, it heals the most hurt friend within %.0f m by itself. The reserve refills inside a friendly Keep's range or beside a %s crate, %d points for %d. Does not heal vehicles." % [node.heal_hp,node.heal_interval,node.med_reserve,node.med_reserve_capacity,node.heal_range,str(node.med_refill_kind).capitalize(),node.med_refill_points,node.med_refill_cost]
 			if node.can_capture_depots: show_button("Capture","Capture")
 			if node.has_ability(&"derail"):
 				show_button("Derail","Derail")
