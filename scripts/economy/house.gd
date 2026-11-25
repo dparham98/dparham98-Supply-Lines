@@ -35,7 +35,14 @@ func take_damage(hit: int) -> void:
 	if health <= 0:
 		set_process(false)
 		for group in get_groups(): remove_from_group(group)
+		_leave_wreck()
 		queue_free()
+## The model stays behind to play its Die clip and death effect, as a Generator's does.
+func _leave_wreck() -> void:
+	var model := get_node_or_null("Visuals/Model")
+	if model == null or not model.has_method("has_death_clip") or not model.has_death_clip() or get_parent() == null: return
+	model.reparent(get_parent())
+	model.play_death()
 func _exit_tree() -> void:
 	if not is_instance_valid(ground): return
 	for cell in cells:
