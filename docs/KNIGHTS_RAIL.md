@@ -52,7 +52,7 @@ When a Keep has several lines, the player clicks the line to start on, as at a D
 ## Not done
 
 - **Food:** a train can't carry Food. The route and Load page know Energy, Iron, Wood and Coal only. Food still moves by balloon and crates.
-- **AI:** the Knights AI doesn't build a Wainwright, lay track or run trains.
+- **AI:** the Knights AI builds a Wainwright once it has a second Keep, joins its Keeps with track, runs trains hauling iron home, and builds a Coal Mine for their fuel (`docs/KNIGHTS_AI.md`, Rail; `tests/ai_knights_rail_test.gd`).
 - **Art:** no models or card art of their own.
 
 ## Check
