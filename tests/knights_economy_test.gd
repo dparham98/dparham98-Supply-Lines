@@ -26,6 +26,85 @@ func stand(kind: StringName, point: Vector3, team := "player") -> Node3D:
 	var building = network.finish_plan(plan)
 	plan.queue_free()
 	return building
+
+## Check the visible outfit on this instance; touching the shared imported scene would change both workers.
+func wears(model: Node3D, visible_parts: Array) -> bool:
+	for part in ["Kerchief", "Sunhat", "WoodcuttingAxe", "FarmingTool", "MaterialLoad", "FoodBasket", "BuildingHammer"]:
+		var item := model.find_child(part, true, false) as MeshInstance3D
+		if not check(item != null and item.is_visible_in_tree() == visible_parts.has(part),
+				"Unexpected %s visibility on %s; expected %s" % [part, model.get_path(), visible_parts]): return false
+	return true
+
+func check_first_delivery(farmer: Node3D, second: Node3D, farm: Node3D, keep: Node3D) -> bool:
+	var model = farmer.get_node("Visuals/Model")
+	var field_player := farm.get_node("Visuals/Model/Rig/AnimationPlayer") as AnimationPlayer
+	var worked := false
+	var returned_with_food := false
+	var before: int = keep.stockpile.amount(&"food")
+	for tick in 900:
+		farmer._process(1.0 / 30.0)
+		farm._process(1.0 / 30.0)
+		model._process(1.0 / 30.0)
+		if not worked and farmer.state == "Farming" and farmer.order == "gather" and farmer.cargo > 0 and field_player.assigned_animation == &"Work":
+			if not check(model.current_clip() == &"Till", "A farming Forester should till while filling a load"): return false
+			var centre: Vector3 = game.ground.tile_to_world(farmer.grid_position)
+			var offset := (centre - farm.global_position).abs()
+			if not check(is_equal_approx(maxf(offset.x, offset.z), 2.5) and minf(offset.x, offset.z) <= 1.501,
+					"The Forester should stand alongside a crop bed, got offset %s" % offset): return false
+			if not check(game.ground.get_tile_at_position(farmer.global_position) == farmer.grid_position and farmer._is_ours(farmer.grid_position),
+					"The tilling pose must keep the worker inside her claimed cell"): return false
+			if not check(farm.has_furrow(farmer.grid_position) and farmer.global_position.distance_to(farm.tending_pose(farmer.grid_position).origin) < 0.01,
+					"The Forester should finish the final step to her furrow before working"): return false
+			if not wears(model, ["Sunhat", "FarmingTool"]): return false
+			worked = true
+		if not returned_with_food and farmer.cargo_kind == &"food" and farmer.order == "return" and model.motion() == &"run":
+			if not check(model.current_clip() == &"CarryFood", "The food carrier should walk with the harvest basket"): return false
+			if not wears(model, ["Sunhat", "FoodBasket"]): return false
+			second.command_gather(farm)
+			if not check(farm.worker == farmer and second.order != "gather", "The Farm must retain its worker on her delivery trip"): return false
+			returned_with_food = true
+		if keep.stockpile.amount(&"food") > before:
+			if not check(farmer.cargo == 0 and keep.stockpile.amount(&"food") - before == farmer.carry_capacity,
+					"One farm trip should unload one full basket at the Keep"): return false
+			if not wears(model, ["Sunhat", "FarmingTool"]): return false
+			return check(worked and returned_with_food, "The worker should cultivate the plot and walk a full food basket to the Keep")
+	return check(false, "The assigned Forester never delivered the harvest")
+
+func check_material_jobs(worker: Node3D) -> bool:
+	var model = worker.get_node("Visuals/Model")
+	var tree: Node3D = game.ground.forest_source(Vector2i(345,275))
+	if not check(tree != null, "The test needs a standing forest cell"): return false
+	var resources := game.get_node("Entities/Resources")
+	for source: Node3D in [tree, resources.get_node("WoodStand"), resources.get_node("StarterWoodPile"), resources.get_node("StarterIronPile")]:
+		place(worker, source.global_position + Vector3(1, 0, 0))
+		worker.command_gather(source)
+		step([worker, model], worker.harvest_interval + 0.2)
+		var partial_load: int = worker.cargo
+		if not check(partial_load > 0 and partial_load < worker.carry_capacity and worker.order == "gather",
+				"The Forester should be partway through gathering from %s" % source.name): return false
+		var loose := source.is_in_group("material_piles")
+		if not check(model.current_clip() == (&"Gather" if loose else &"Chop"),
+				"The work clip should match %s, got %s" % [source.name, model.current_clip()]): return false
+		if not wears(model, ["Kerchief"] if loose else ["Kerchief", "WoodcuttingAxe"]): return false
+		if source == tree:
+			var before_felling: int = tree.remaining
+			worker.command_fell(tree.cell, Rect2i(tree.cell, Vector2i.ONE))
+			step([worker, model], worker.harvest_interval + 0.2)
+			if not check(model.current_clip() == &"Chop" and tree.remaining < before_felling and worker.cargo == partial_load,
+					"Felling with a retained load should cut the tree and leave the carried wood alone"): return false
+			if not wears(model, ["Kerchief", "WoodcuttingAxe"]): return false
+		worker.command_move(worker.global_position)
+		step([worker, model], 0.1)
+		if not check(worker.cargo == partial_load and model.current_clip() == &"Carry",
+				"Interrupting %s should put the retained load in her hands" % source.name): return false
+		if source.resource_kind == &"wood" and not wears(model, ["Kerchief", "MaterialLoad"]): return false
+		var dropped = game.drop_material(worker)
+		if not check(dropped != null and dropped.remaining == partial_load and dropped.resource_kind == source.resource_kind,
+				"Dropping the interrupted load should preserve its kind and amount"): return false
+		step([worker, model], 0.1)
+		if not wears(model, ["Kerchief", "WoodcuttingAxe"]): return false
+	return true
+
 func run() -> void:
 	var rules: KnightsRules = load("res://assets/economy/knights_rules.tres")
 	# The start and training times.
@@ -61,19 +140,41 @@ func run() -> void:
 		if plan != null: break
 	if not check(plan != null,"A Farm inside the Keep's range should be placed"): return
 	if not check(plan.materials_covered(),"The Keep's stock should cover a Farm plan in its range"): return
+	var site_player := plan.get_node_or_null("Visuals/Model/Rig/AnimationPlayer") as AnimationPlayer
+	if not check(site_player != null and site_player.assigned_animation == &"Build", "A Farm plan must show the construction clip"): return
 	var builder = game.get_node("Entities/Units/ForesterMaiden1")
 	place(builder,spot+Vector3(0,0,4))
 	builder.command_construct(plan)
+	var builder_model = builder.get_node("Visuals/Model")
+	step([builder,plan,builder_model],1.0)
+	if not check(builder_model.current_clip() == &"Build", "The Forester should use her building stroke at the Farm plan"): return
+	if not wears(builder_model, ["Kerchief", "BuildingHammer"]): return
 	step([builder,plan],40.0)
 	var farms := get_nodes_in_group("farms")
 	if not check(farms.size() == 1,"The Farm should be built from the Keep's stock: '%s', state '%s'" % [builder.state,plan.state if is_instance_valid(plan) else "done"]): return
 	if not check(wood_before-keep.stockpile.amount(&"wood") == rules.farm_wood_cost,"The Farm should take %d wood from the Keep, took %d" % [rules.farm_wood_cost,wood_before-keep.stockpile.amount(&"wood")]): return
 	var farm = farms[0]
+	var field_model = farm.get_node("Visuals/Model")
+	if not check(field_model.scene_file_path == "res://scenes/models/farm_model.tscn" and
+			field_model.player.assigned_animation == &"Idle", "An unworked Farm must show the finished field at rest"): return
+	var cyborg = load("res://scenes/gameplay/infantry.tscn").instantiate()
+	cyborg.position = farm.global_position + Vector3(4,0,2)
+	game.get_node("Entities/Units").add_child(cyborg)
+	cyborg.command_gather(farm)
+	if not check(cyborg.can_gather and cyborg.team == farm.team and cyborg.order != "gather" and farm.worker == null and cyborg.state == "A Farm requires a Forester Maiden",
+			"A friendly Cyborg gatherer must leave the Farm open for a Forester Maiden"): return
+	cyborg.free()
 	# One Forester tills it and carries the Food home: 80 to 90 a minute.
 	var farmer = builder
 	place(farmer,farm.global_position+Vector3(0,0,4))
 	farmer.command_gather(farm)
 	if not check(farmer.order == "gather","The Forester should take the Farm"): return
+	var second = game.get_node("Entities/Units/ForesterMaiden2")
+	var farmer_model = farmer.get_node("Visuals/Model")
+	farmer_model._process(0)
+	second.get_node("Visuals/Model")._process(0)
+	if not wears(farmer_model, ["Sunhat", "FarmingTool"]) or not wears(second.get_node("Visuals/Model"), ["Kerchief", "WoodcuttingAxe"]): return
+	if not check_first_delivery(farmer,second,farm,keep): return
 	step([farmer],10.0)
 	var food_before: int = keep.stockpile.amount(&"food")
 	step([farmer],120.0)
@@ -82,7 +183,6 @@ func run() -> void:
 	if not check(per_minute >= 80 and per_minute <= 90,"A Farm with one Forester should yield 80 to 90 Food a minute, gave %d" % per_minute): return
 	if not check(farmer.state in ["Farming","Returning","Returning cargo"] or farmer.order == "gather","The Forester should be farming: '%s'" % farmer.state): return
 	# A second worker is refused.
-	var second = game.get_node("Entities/Units/ForesterMaiden2")
 	place(second,farm.global_position+Vector3(3,0,4))
 	second.command_gather(farm)
 	if not check(second.order != "gather" and second.state == "Farm already has a worker","A second Forester should be refused: %s '%s'" % [second.order,second.state]): return
@@ -127,5 +227,30 @@ func run() -> void:
 	if not check(enemy_keep.request_forester(),"An enemy Keep should accept training: '%s'" % game.message): return
 	for i in range(30): enemy_keep._process(1.0)
 	if not check(enemy_units.call() == before+1,"An enemy Keep should train its Forester: '%s', queue %d" % [enemy_keep.get_node("Progress").text,enemy_keep.queue]): return
+	# Reassign the plot. The old worker should release it on her next order,
+	# and the field should settle back to idle after the last work cycle.
+	farmer.command_move(farmer.global_position)
+	second.command_gather(farm)
+	if not check(farm.worker == second and second.order == "gather", "An unassigned plot should accept a replacement farmer"): return
+	var second_model = second.get_node("Visuals/Model")
+	second_model._process(0)
+	if not wears(second_model, ["Sunhat", "FarmingTool"]): return
+	second.command_move(second.global_position)
+	second_model._process(0)
+	if not wears(second_model, ["Kerchief", "WoodcuttingAxe"]): return
+	for tick in 180:
+		farm._process(1.0 / 30.0)
+		field_model.player.advance(1.0 / 30.0)
+		field_model._process(1.0 / 30.0)
+	if not check(field_model.player.assigned_animation == &"Idle", "An untended Farm must return to its idle animation"): return
+	second.command_gather(farm)
+	farm.take_damage(farm.health)
+	if not check(not farm.is_in_group("farms") and is_instance_valid(field_model) and field_model.player.assigned_animation == &"Die",
+			"A destroyed Farm should stop accepting orders and play its collapse"): return
+	var effects_player := field_model.get_node_or_null("FarmDeathFx/Model/AnimationPlayer") as AnimationPlayer
+	if not check(effects_player != null and effects_player.current_animation == &"Death", "A collapsing Farm should play its destruction effects"): return
+	second_model._process(0)
+	if not wears(second_model, ["Kerchief", "WoodcuttingAxe"]): return
+	if not check_material_jobs(second): return
 	print("KNIGHTS_ECONOMY_TEST_PASSED")
 	quit(0)

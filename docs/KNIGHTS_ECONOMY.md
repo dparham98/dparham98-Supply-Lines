@@ -15,7 +15,13 @@ Item 4 of `docs/BALANCE_IMPLEMENTATION_HANDOFF.md` (2026-11-23). Before this the
 | Training | Forester 12 s (was 8), Round Table Marine 15 (11), Grail Sentinel 15 (12), Questing Marine 17 (14), Azure Dragon 40 (26). Warhound stays 7. Prices unchanged. |
 | Energy | None. A Keep starts with 0 and nothing of the Knights' spends it. |
 
-**How much a Farm yields depends on the walk.** In the headless test a Farm whose centre is 12 m from the Keep's yields 85 Food a minute, the handoff's figure. Touching the Keep's drop-off it yields about 100; at 13 m about 80; at 18 m about 70.
+**How much a Farm yields depends on the walk.** The target is 80–90 Food per minute with the centres of the Farm and Keep 12 m apart. A shorter walk leaves more time for fieldwork.
+
+## Fieldwork
+
+The farm is a timber-framed granary and windmill beside fenced wheat beds. The builder raises it in stages. When a worker tends the beds, the sails turn, the grain sieve moves and the wheat ripples. The mill winds down between work cycles. Destroying it plays the collapse and releases the plot.
+
+Assign a Forester Maiden by right-clicking the finished Farm. She trades her kerchief and axe for a straw sunhat and cultivator. She works from the edge of the plot until her load reaches 10 Food, carries a harvest basket to the Keep with both hands, then returns with the cultivator. The Farm reserves her place during delivery. Reassigning her releases the field for another Maiden.
 
 ## HUD
 
@@ -23,7 +29,7 @@ Item 4 of `docs/BALANCE_IMPLEMENTATION_HANDOFF.md` (2026-11-23). Before this the
 - **Keep panel:** "housing used / cap" on its status line. **Chapterhouse panel:** a Housing row.
 - **Farm panel:** who tills it, Food a beat, workers 0 or 1. **House panel:** whether it is housed, and the side's housing.
 - A Forester tilling shows the state "Farming".
-- **Placeholders:** the Farm and House models are boxes (`scenes/models/farm_placeholder.tscn`, `house_placeholder.tscn`) in their `Visuals` slots, and their card icons and portraits borrow the Generator's and Depot's. The owner will supply art.
+- The Farm has a model, portrait and Build card of its own. The House still uses its placeholder model and Depot art.
 
 ## Checks
 
@@ -32,7 +38,8 @@ Item 4 of `docs/BALANCE_IMPLEMENTATION_HANDOFF.md` (2026-11-23). Before this the
   - no energy on the Keep;
   - a Farm outside every Keep's range refused;
   - a Farm in range built from the Keep's wood with nothing carried;
-  - one Forester yielding 80 to 90 Food a minute (85 measured), and a second one refused;
+  - one Forester yielding 80 to 90 Food a minute, with her work outfit, tilling animation, loaded walk, deposit and return checked through actual orders;
+  - a second worker refused during delivery, reassignment on release, and the construction, idle, working and collapse animations;
   - a Keep giving 10 housing, a House in range adding 8 and one outside adding nothing;
   - the Keep and a Chapterhouse refusing to train when housing is full, saying why;
   - the Farm and House tiles on the Build page, and the Farm, House and Keep panels;
@@ -40,4 +47,4 @@ Item 4 of `docs/BALANCE_IMPLEMENTATION_HANDOFF.md` (2026-11-23). Before this the
 - `tests/arthurian_faction_test.gd` now expects the 150 Food start, and stands three Houses before it trains: its scene's units already fill one Keep's 10 housing.
 - **Not done here:** the handoff's "one Keep reaches 50 army units by 8:00 under the Knights AI" needs item 5's Knights AI and is checked there.
 
-Not checked by a person: the placeholders, the pace of the Knights' opening on 150 Food, and how housing feels.
+Human playtesting is pending for the farm presentation, the House placeholder, the pace of the Knights' opening on 150 Food, and housing.

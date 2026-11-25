@@ -486,8 +486,7 @@ func update_portrait(node) -> void:
 	frame.visible = true
 func icon_name(node: Node) -> String:
 	if node.is_in_group("depots"): return "depot"
-	# Placeholder portraits until the Farm and House have art (docs/KNIGHTS_ECONOMY.md).
-	if node.is_in_group("farms"): return "generator"
+	if node.is_in_group("farms"): return "farm"
 	if node.is_in_group("houses"): return "depot"
 	if node.is_in_group("mines"): return "mine" if str(node.scene_file_path).ends_with("site_mine.tscn") else "pithead"
 	if node.is_in_group("research_buildings"): return "temple"

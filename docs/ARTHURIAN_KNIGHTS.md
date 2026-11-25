@@ -76,8 +76,7 @@ with the faction. The full headless suite runs on the branch.
 
 ## Next
 
-These come from the original report:
+The Farm and the Forester's fieldwork are implemented in [the Knights economy](KNIGHTS_ECONOMY.md). The original report also proposed:
 
-- **A Farm:** the Forester Maiden's model already has a sun hat, a farming tool and a Till clip.
 - **An Air Balloon** from the Keep's roof pad: `keep.launch_balloon_fx()`.
 - **A Chapterhouse model.**
