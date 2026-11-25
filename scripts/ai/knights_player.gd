@@ -91,7 +91,9 @@ func _sort(units: Array[Node3D]) -> void:
 	if not alive.call(scout): scout = null
 	for unit in units:
 		if workers.has(unit) or army.has(unit) or unit == scout: continue
-		var id = unit.unit_stats.unit_id if unit.unit_stats != null else &""
+		# Its trains are no part of the army (rail_economy runs them).
+		if unit.is_in_group("rail_trains") or unit.unit_stats == null: continue
+		var id = unit.unit_stats.unit_id
 		if id == &"forester_maiden":
 			workers.append(unit)
 			_bases[unit.get_instance_id()] = _nearest_keep(unit.global_position)
