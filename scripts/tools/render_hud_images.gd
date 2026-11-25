@@ -33,7 +33,13 @@ const ENTRIES := {
 	"mine": ["res://scenes/gameplay/site_mine.tscn","","build_mine",20.0,1.0],
 	"pithead": ["res://scenes/gameplay/iron_mine.tscn","","build_coal_mine",35.0,1.0],
 	"temple": ["res://scenes/gameplay/temple_of_science.tscn","","build_temple",215.0,1.0], # its door faces +Z
+	"foundry": ["res://scenes/gameplay/foundry.tscn","","build_foundry",215.0,1.0], # docs/FOUNDRY_MODEL.md; door +Z
+	"forge": ["res://scenes/gameplay/forge.tscn","","build_forge",215.0,1.0], # docs/FORGE_MODEL.md; open front +Z
 }
+## Cards drawn in Blender (Blender/UI/UpgradeCards/render_upgrade_cards.py) and only framed here: the Foundry's
+## and Forge's upgrade lines (docs/UPGRADES.md). Asked for with the id "upgrade_cards".
+const ART_CARDS := ["upgrade_infantry_weapons","upgrade_infantry_armour","upgrade_vehicle_weapons","upgrade_vehicle_armour","upgrade_arms","upgrade_mail"]
+const ART_CARD_PATH := "res://Blender/UI/UpgradeCards/renders/%s.png"
 ## More cards made from an entry's render (docs/TEMPLE_OF_SCIENCE.md): the Temple's Mining Trains research shows the
 ## train, and the train's Mine iron order the portal mine.
 const EXTRA_CARDS := {"train": ["research_mining_trains"], "mine": ["mine_iron"]}
@@ -80,6 +86,12 @@ func run() -> void:
 	for id in ENTRIES:
 		if not only.is_empty() and not only.has(id): continue
 		await render(id,ENTRIES[id])
+	if only.is_empty() or only.has("upgrade_cards"):
+		for card in ART_CARDS:
+			var art := Image.load_from_file(ProjectSettings.globalize_path(ART_CARD_PATH % card))
+			art.convert(Image.FORMAT_RGBA8)
+			card_image("res://assets/ui/command_cards/sl_%s.png" % card,trimmed(art,ICON_SIZE))
+			print("framed ",card)
 	print("HUD_RENDERS_DONE")
 	quit()
 ## The entry's Visuals, cut from its gameplay scene so the gameplay script never runs.

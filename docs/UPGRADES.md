@@ -17,7 +17,7 @@ Both work as the Temple of Science does (`docs/TEMPLE_OF_SCIENCE.md`, `scripts/b
 
 **Who pays:** the Foundry pays in Energy and Iron from a Depot. The Forge pays in Food and Iron from a Keep.
 
-**Models:** placeholders. The Foundry shows the Temple's model and the Forge the Chapterhouse's (`scenes/gameplay/foundry.tscn`, `forge.tscn`).
+**Models:** each has its own model, with Idle, Research, Build and Die clips: the Foundry's works hall (docs/FOUNDRY_MODEL.md) and the Forge's open smithy (docs/FORGE_MODEL.md). While a level is being researched the building plays its Research loop. The selection icon, portrait and Build card are their own too.
 
 ## Levels
 
@@ -45,7 +45,7 @@ Buildings get no upgrades.
 
 ## HUD
 
-The Foundry's and Forge's card shows one tile per line (Q, W, E, R), each offering the line's next level with its cost and time. When the line is done the tile is greyed out. The details line shows each line's level, such as "Infantry Weapons 1/3".
+The Foundry's and Forge's card shows one tile per line (Q, W, E, R), each offering the line's next level with its cost and time. When the line is done the tile is greyed out. The details line shows each line's level, such as "Infantry Weapons 1/3". Each line has its own card (`sl_upgrade_<line>.png`, from `Blender/UI/UpgradeCards/render_upgrade_cards.py`). A weapons card shows the weapon with a rising gold chevron, an armour card shows a plate or a shield, and the Forge's cards are drawn in the Knights' silver and blue.
 
 ## Checks
 
@@ -60,5 +60,4 @@ The Foundry's and Forge's card shows one tile per line (Q, W, E, R), each offeri
 ## Not done
 
 - **AI:** neither AI builds a Foundry or a Forge, or researches upgrades.
-- **Art:** no models or card art of their own.
 - **Unit card:** the unit panel doesn't yet show the upgraded damage or armour.

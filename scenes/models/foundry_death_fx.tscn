@@ -1,0 +1,30 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/burst_effect.gd" id="burst"]
+[ext_resource type="PackedScene" path="res://assets/models/effects/foundry_death_fx.glb" id="model"]
+
+[sub_resource type="StandardMaterial3D" id="flash_hot"]
+shading_mode = 0
+albedo_color = Color(1, 0.86, 0.5, 1)
+
+[node name="FoundryDeathFx" type="Node3D"]
+script = ExtResource("burst")
+clip = &"Death"
+flash_path = NodePath("Model/Flash_Foundry")
+light_path = NodePath("Light")
+light_energy = 4.2
+one_shot = true
+
+[node name="Model" parent="." instance=ExtResource("model")]
+
+[node name="Flash_Foundry" parent="Model"]
+material_override = SubResource("flash_hot")
+
+[node name="Light" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+visible = false
+light_color = Color(1, 0.6, 0.25, 1)
+omni_range = 11.0
+omni_attenuation = 1.0
+
+[editable path="Model"]
