@@ -1,0 +1,9 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://assets/shaders/mine_signal.gdshader" id="shader"]
+
+[resource]
+resource_name = "mine_lamp"
+shader = ExtResource("shader")
+shader_parameter/colour = Color(1, 0.16, 0.04, 1)
+shader_parameter/dim_colour = Color(0.22, 0.03, 0.01, 1)

@@ -1,0 +1,9 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://assets/shaders/mine_warning.gdshader" id="shader"]
+
+[resource]
+resource_name = "mine_spotted"
+render_priority = 1
+shader = ExtResource("shader")
+shader_parameter/colour = Color(1, 0.42, 0.06, 0.9)

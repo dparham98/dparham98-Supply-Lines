@@ -358,6 +358,7 @@ func _animate(delta: float = 1.0/60) -> void:
 		rig.set_drive(here.distance_to(_animated_from)/delta if moved and delta > 0.0 else 0.0,angle_difference(_animated_yaw,yaw) if moved else 0.0,delta)
 		rig.set_hatches(_hatches_open())
 		rig.set_load(_load_fraction())
+		if rig.has_method("set_mines"): rig.set_mines(mines)
 		_animated_from = here; _animated_yaw = yaw
 		return
 	var model := _animator()
@@ -1334,20 +1335,40 @@ func command_lay_mine(point: Vector3) -> void:
 	order_target = null
 	source = null
 	_lay_point = point
+	_lay_stand = _lay_stand_for(point)
+	_lay_tries = 0
 	_work_timer = 0.0
 	order = "lay_mine"
 	state = "To lay a mine"
+## Where it stops to lay: LAY_STANDOFF past the point along its way there, so the point ends up just behind the
+## bike, where the rider lowers the mine (motorcycle_rig.gd set_laying). The mine still goes on the point itself.
+const LAY_STANDOFF := 1.75
+var _lay_stand := Vector3.ZERO
+var _lay_tries := 0
+func _lay_stand_for(point: Vector3) -> Vector3:
+	var way := Vector2(point.x-global_position.x,point.z-global_position.z)
+	if way.length() < 0.05: way = Vector2(-$Visuals.global_basis.z.x,-$Visuals.global_basis.z.z)
+	way = way.normalized()*LAY_STANDOFF
+	return Vector3(point.x+way.x,point.y,point.z+way.y)
 func _lay_mine_order(delta: float) -> void:
 	if mines <= 0: order = "idle"; state = "No mines aboard"; return
 	var flat := Vector2(global_position.x-_lay_point.x,global_position.z-_lay_point.z).length()
-	if flat > 2.5:
+	var at_stand := Vector2(global_position.x-_lay_stand.x,global_position.z-_lay_stand.z).length() <= 0.8
+	# Drive to the stand (three tries), else up to the point itself; lay once stopped there, or within 2.5 m of it.
+	if not (is_stopped() and (at_stand or (flat <= 2.5 and _lay_tries >= 3))):
 		_work_timer = 0.0
-		if _retry <= 0:
+		if is_stopped() and _retry <= 0:
 			state = "To lay a mine"
+			_lay_tries += 1
+			if _lay_tries <= 3 and _route_to_point(_lay_stand): return
+			_lay_tries = 3
 			if not _route_to_point(_lay_point): order = "idle"; state = "Mine site unreachable"
 		return
 	_work_timer += delta
-	state = "Laying a mine · %d%%" % roundi(minf(1.0,_work_timer/mine_rules.lay_seconds)*100)
+	var progress := minf(1.0,_work_timer/mine_rules.lay_seconds)
+	state = "Laying a mine · %d%%" % roundi(progress*100)
+	var rig := $Visuals.get_node_or_null("Model")
+	if rig != null and rig.has_method("set_laying"): rig.set_laying(progress,Vector3(_lay_point.x,0.0,_lay_point.z))
 	if _work_timer < mine_rules.lay_seconds: return
 	_work_timer = 0.0
 	mines -= 1
@@ -1355,8 +1376,9 @@ func _lay_mine_order(delta: float) -> void:
 	mine.team = team
 	mine.rules = mine_rules
 	game.get_node("Entities").add_child(mine)
-	# On the point clicked, which may be track it can stand beside but not on.
+	# On the point clicked, which may be track it can stand beside but not on; turned as the rider set it down.
 	mine.global_position = Vector3(_lay_point.x,0.0,_lay_point.z)
+	mine.rotation.y = $Visuals.global_rotation.y
 	order = "idle"
 	state = "Mine laid · %d left" % mines
 ## Derail (docs/DERAILER.md): the unit goes to a piece of track and destroys it, derailing any train on it.

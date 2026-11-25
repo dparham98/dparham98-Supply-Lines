@@ -26,8 +26,8 @@ A Derailer loads mines when all of these hold:
 ## Laying a mine
 
 1. Press **Lay mine** (N), then click a point on the map. The point can be on track. Shift keeps the command armed.
-2. The Derailer drives there and works for 2 s.
-3. It leaves the mine on the point clicked.
+2. The Derailer drives 1.75 m past the point along its way (`LAY_STANDOFF`), so the point is just behind it, and stops. If it can't reach that stand in three tries it drives up to the point instead. It works for 2 s once stopped there, or within 2.5 m of the point.
+3. It leaves the mine on the point clicked. The rider lifts the mine from its tray and lowers it there (docs/MOTORCYCLE_MODEL.md).
 
 **Arming:** the mine arms 3 s after it is laid. Until then the other side can see it. Once armed, it is hidden (see Detection).
 
@@ -63,13 +63,13 @@ Nothing else detects. Scouts and Sentinels don't (decided in the handoff).
 ## Files
 
 - **Rules:** `assets/combat/mine_rules.tres` (`MineRules`) holds the carry limit, iron per mine, load, lay and arm times, trigger and splash radii, damage, splash share and health.
-- **Mine scene:** `scenes/gameplay/land_mine.tscn`, a placeholder disc with a red fuse and the grenade's blast. It runs `scripts/gameplay/land_mine.gd`.
+- **Mine scene:** `scenes/gameplay/land_mine.tscn` runs `scripts/gameplay/land_mine.gd`. Its model (`scenes/models/land_mine_model.tscn`) and blast (`scenes/models/land_mine_blast.tscn`) are in docs/LAND_MINE_MODEL.md.
 - **Derailer:** `scenes/gameplay/motorcycle.tscn` carries `mine_rules` and `mine_scene`. The code is in `unit_agent.gd`, next to Derail: `can_carry_mines`, `lay_mine_blocker`, `command_lay_mine`.
 - **HUD tiles:**
   - LayMine (Derailer card, slot 9, N);
   - ResearchMines (Temple card, slot 1, N).
 
-  Both borrow the Derail card art for now.
+  Their cards are `sl_lay_mine.png` (a mine arming) and `sl_research_minelaying.png` (the Derailer with a mine in each tray), rendered by `scripts/tools/render_hud_images.gd`.
 - **Map click:** `skirmish.gd` (`lay_mine`).
 - **Check:** `tests/minelaying_test.gd` (headless) covers:
   - the Derailer's price and the research;
@@ -84,6 +84,5 @@ Nothing else detects. Scouts and Sentinels don't (decided in the handoff).
 ## Not done
 
 - **AI:** neither AI researches Minelaying or lays mines.
-- **Art:** the mine has no model or card art of its own.
 - **Tests:** the train derail on a mine isn't tested.
 - **Clicking a mine:** a detected mine can't be clicked for an Attack order. Units fire at it by themselves.

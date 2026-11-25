@@ -21,6 +21,8 @@
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_gather.png" id="card_gather"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_fell.png" id="card_fell"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_derail.png" id="card_derail"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_lay_mine.png" id="card_lay_mine"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_research_minelaying.png" id="card_research_minelaying"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_deliver.png" id="card_deliver"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_drop.png" id="card_drop"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_repair.png" id="card_repair"]
@@ -3233,7 +3235,7 @@ shortcut = SubResource("shortcut_command_lay_mine")
 layout_mode = 0
 custom_minimum_size = Vector2(46,46)
 text = ""
-icon = ExtResource("card_derail")
+icon = ExtResource("card_lay_mine")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/LayMine"]
@@ -3757,7 +3759,7 @@ shortcut = SubResource("shortcut_research_minelaying")
 layout_mode = 0
 custom_minimum_size = Vector2(46,46)
 text = ""
-icon = ExtResource("card_derail")
+icon = ExtResource("card_research_minelaying")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ResearchMines"]
