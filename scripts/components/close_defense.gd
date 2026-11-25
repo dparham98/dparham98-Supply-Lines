@@ -41,6 +41,7 @@ func _ready() -> void:
 func _eligible(unit: Node3D) -> bool:
 	return (not unit.is_queued_for_deletion() and unit.is_in_group("units")
 		and Combat.can_hit(_actor, unit) and unit.team != "neutral" and unit.team != _actor.team
+		and (not _actor.has_method("team_sees") or _actor.team_sees(unit))
 		and _actor.global_position.distance_squared_to(unit.global_position) <= attack_range * attack_range)
 
 

@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/units/unit_stats.gd" id="stats"]
+
+[ext_resource type="Resource" path="res://assets/movement/drone.tres" id="mobility"]
+
+[resource]
+script = ExtResource("stats")
+unit_id = &"air_balloon"
+display_name = "Air Balloon"
+energy_cost = 0
+iron_cost = 0
+max_health = 40
+movement_speed = 5.0
+attack_range = -1.0
+vision = 16.0
+turn_rate = 90.0
+combat_notation = ""
+damage = -1
+attack_interval = -1.0
+abilities = Array[StringName]([])
+mobility = ExtResource("mobility")

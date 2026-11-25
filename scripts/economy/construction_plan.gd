@@ -82,10 +82,20 @@ func inside(point: Vector3) -> bool:
 ## Piles and crates inside the footprint that still hold something.
 func site_stores() -> Array[Node3D]:
 	return network.stores_inside(footprint())
+## A Knights plan (spec "keep_stock") inside the range of one of its side's Keeps builds from that Keep's stock,
+## with nothing carried (docs/KNIGHTS_ECONOMY.md); outside every Keep's range its materials must be on the site.
+## Cyborg plans always need theirs on the site.
+func stock_keep() -> Node3D:
+	if not spec.get("keep_stock",false): return null
+	for source in SupplySource.candidates(get_tree(),global_position,team):
+		if source.is_in_group("keeps") and network.source_covers_plan(source,self): return source
+	return null
 func on_site(material: StringName) -> int:
 	var total := 0
 	for node in site_stores():
 		if node.resource_kind == material: total += node.remaining
+	var keep := stock_keep()
+	if keep != null: total += keep.stockpile.amount(material)
 	return total
 ## Whether the piles on the site hold everything the build still needs.
 func materials_covered() -> bool:
@@ -134,6 +144,8 @@ func take(material: StringName, amount: int) -> int:
 	for node in site_stores():
 		if got >= amount: break
 		if node.resource_kind == material: got += node.extract(amount-got)
+	var keep := stock_keep()
+	if got < amount and keep != null: got += keep.stockpile.withdraw(material,amount-got)
 	return got
 ## Primary labor resource spent tick-by-tick by the covering stockpile (Food for Knights, Energy for Cyborgs).
 func labor_kind() -> StringName:

@@ -55,6 +55,8 @@
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_mine.png" id="card_build_mine"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_coal_mine.png" id="card_build_coal_mine"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_rail.png" id="card_build_rail"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_farm.png" id="card_build_farm"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_house.png" id="card_build_house"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_pin_payer.png" id="card_pin_payer"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_back.png" id="card_build_back"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_crate_resource_iron.png" id="card_crate_resource_iron"]
@@ -481,6 +483,14 @@ events = [SubResource("key_build_keep")]
 action = &"build_chapterhouse"
 [sub_resource type="Shortcut" id="shortcut_build_chapterhouse"]
 events = [SubResource("key_build_chapterhouse")]
+[sub_resource type="InputEventAction" id="key_build_farm"]
+action = &"build_farm"
+[sub_resource type="Shortcut" id="shortcut_build_farm"]
+events = [SubResource("key_build_farm")]
+[sub_resource type="InputEventAction" id="key_build_house"]
+action = &"build_house"
+[sub_resource type="Shortcut" id="shortcut_build_house"]
+events = [SubResource("key_build_house")]
 [sub_resource type="InputEventAction" id="key_command_heal"]
 action = &"command_heal"
 [sub_resource type="Shortcut" id="shortcut_command_heal"]
@@ -493,6 +503,10 @@ events = [SubResource("key_produce_forester_maiden")]
 action = &"produce_warhound"
 [sub_resource type="Shortcut" id="shortcut_produce_warhound"]
 events = [SubResource("key_produce_warhound")]
+[sub_resource type="InputEventAction" id="key_command_launch_balloon"]
+action = &"command_launch_balloon"
+[sub_resource type="Shortcut" id="shortcut_command_launch_balloon"]
+events = [SubResource("key_command_launch_balloon")]
 [sub_resource type="InputEventAction" id="key_produce_round_table_marine"]
 action = &"produce_round_table_marine"
 [sub_resource type="Shortcut" id="shortcut_produce_round_table_marine"]
@@ -3367,6 +3381,30 @@ horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
+[node name="LaunchBalloon" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_command_launch_balloon")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_deliver")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/LaunchBalloon"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="ProduceRoundTableMarine" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
 shortcut = SubResource("shortcut_produce_round_table_marine")
@@ -4561,6 +4599,56 @@ icon = ExtResource("card_build_barracks")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/Chapterhouse"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -34.0
+offset_top = 1.0
+offset_right = -4.0
+offset_bottom = 15.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="Farm" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
+visible = false
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_build_farm")
+layout_mode = 2
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("card_build_farm")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/Farm"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -34.0
+offset_top = 1.0
+offset_right = -4.0
+offset_bottom = 15.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="House" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
+visible = false
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_build_house")
+layout_mode = 2
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("card_build_house")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/House"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0

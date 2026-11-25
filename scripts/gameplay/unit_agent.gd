@@ -148,14 +148,39 @@ func _stop_route() -> void:
 		_claim(cell)
 	_retry = 0
 func command_move(point: Vector3) -> void:
+	if _farmer_refuses(): return
 	_stop_route()
 	order = "move"
 	order_target = null
 	source = null
 	move_goal = point
 	state = "Moving"
+## A Farmer (docs/KNIGHTS_ECONOMY.md): a Forester sent to a Farm, for good. It works only that Farm; when the Farm is
+## lost it may take over an empty Farm and nothing else. It never builds, fells or fights.
+var farmer := false
+## The Farm a Farmer works, or null once that Farm is lost.
+var farm: Node3D
+var _farm_resume := 0.0
+## True, with the reason as the state, when a Farmer is given any order but working a Farm.
+func _farmer_refuses() -> bool:
+	if not farmer: return false
+	state = "A Farmer works only a Farm"
+	return true
 func command_gather(node: Node3D) -> void:
 	if not can_gather or is_depot_truck or is_cargo_vehicle or not is_instance_valid(node): return
+	if farmer:
+		if not node.is_in_group("farms"): _farmer_refuses(); return
+		if is_instance_valid(farm) and farm != node and farm.health > 0 and not farm.is_queued_for_deletion():
+			state = "A Farmer stays on its Farm"; return
+	# A Farm takes one worker (docs/KNIGHTS_ECONOMY.md).
+	if node.has_method("take_worker") and not node.take_worker(self):
+		state = "Farm already has a worker"
+		game.notify("%s already has a worker: a Farm takes one." % node.name,team)
+		return
+	if node.is_in_group("farms") and KnightHousing.rules().farmers_permanent:
+		farmer = true
+		farm = node
+		fell_autocast = false
 	_stop_route()
 	order = "gather"
 	source = node
@@ -174,7 +199,7 @@ var fell_autocast := false
 var _auto_home := Vector2i(-1,-1)
 var _auto_wait := 0.0
 func set_fell_autocast(on: bool) -> void:
-	fell_autocast = on and can_gather and not is_cargo_vehicle and not is_depot_truck
+	fell_autocast = on and can_gather and not is_cargo_vehicle and not is_depot_truck and not farmer
 	_auto_home = Vector2i(-1,-1)
 	_auto_wait = 0.0
 ## Looks for Forest round its spot about once a second (ten after a tree it could not reach). Each pick is a
@@ -208,6 +233,7 @@ var _fell_goal := Vector2i(-1,-1)
 ## Cells given up on: no way to them even through the trees.
 var _fell_skip := {}
 func command_fell(cell: Vector2i, area := Rect2i()) -> void:
+	if _farmer_refuses(): return
 	if not can_gather or is_depot_truck or is_cargo_vehicle or not ground.is_tile_in_bounds(cell): return
 	_stop_route()
 	order = "fell"
@@ -270,6 +296,7 @@ func _fell(delta: float) -> void:
 		source.extract(harvest_amount,team)
 ## `forced`: the player's explicit Attack command, which may target friendly units and buildings.
 func command_attack(node: Node3D, forced := false) -> void:
+	if _farmer_refuses(): return
 	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or not CombatResolver.can_attack(self,node,forced): return
 	attack_forced = forced
 	if carrying() and is_instance_valid(game): game.notify("A Deforester carrying cargo can't fire: drop it (X) first.")
@@ -280,6 +307,7 @@ func command_attack(node: Node3D, forced := false) -> void:
 	state = "Attacking"
 ## Attack-move: travel to a point, stopping to fire at anything that comes into range.
 func command_attack_move(point: Vector3) -> void:
+	if _farmer_refuses(): return
 	if is_depot_truck or is_cargo_vehicle or not _attack_enabled: command_move(point); return
 	command_move(point)
 	order = "attack_move"
@@ -294,6 +322,7 @@ func command_deploy_at(point: Vector3) -> void:
 	move_goal = point
 	state = "To deploy site"
 func command_return(target: Node3D = null) -> void:
+	if _farmer_refuses(): return
 	return_depot = target
 	return_explicit = is_instance_valid(target)
 	_stop_route()
@@ -336,7 +365,7 @@ func _animate(delta: float = 1.0/60) -> void:
 	var value := 0.0
 	if _animated_from != Vector3.INF and here != _animated_from: kind = &"run"; value = move_speed
 	elif _aimed_frame == Engine.get_process_frames(): kind = &"aim"
-	elif state in ["Gathering","Felling"] or state.begins_with("Constructing"): kind = &"work"; value = harvest_interval
+	elif state in ["Gathering","Felling","Farming"] or state.begins_with("Constructing"): kind = &"work"; value = harvest_interval
 	elif state.begins_with("Repairing"): kind = &"work"; value = engineering_rules.repair_interval if engineering_rules else 0.0
 	model.set_motion(kind,value)
 	if kind == &"work" and _work_timer == 0.0 and model.has_method("sync_work"): model.sync_work()
@@ -344,6 +373,10 @@ func _animate(delta: float = 1.0/60) -> void:
 # Orders, movement and combat for one frame. Callers tick fuel first.
 func _order_process(delta: float) -> void:
 	if order == "idle" and not order_queue.is_empty() and not out_of_fuel: _start_next_order()
+	# A Farmer left idle goes back to its Farm.
+	if farmer and order == "idle" and is_instance_valid(farm) and farm.health > 0 and not farm.is_queued_for_deletion():
+		_farm_resume -= delta
+		if _farm_resume <= 0.0: _farm_resume = 1.0; command_gather(farm)
 	_cooldown = maxf(0,_cooldown-delta)
 	_retry = maxf(0,_retry-delta)
 	_scan_wait -= delta
@@ -351,6 +384,13 @@ func _order_process(delta: float) -> void:
 		_stop_route()
 		order = "idle"
 		state = "Attack target lost"
+		_update_display()
+		return
+	# A freed target cannot be passed to the typed checks below, so drop the order first.
+	if order in ["repair","heal"] and not is_instance_valid(order_target):
+		_stop_route()
+		state = "Repair target lost" if order == "repair" else "Patient lost"
+		order = "idle"; order_target = null
 		_update_display()
 		return
 	if order == "repair" and (not EngineeringWork.repairable(order_target,team) or not SupplySource.available(repair_payer,team)):
@@ -381,7 +421,7 @@ func _order_process(delta: float) -> void:
 			_update_display()
 			return
 	if not _route.is_empty() or _moving_to.x >= 0:
-		if is_instance_valid(order_target) and ((order == "attack" and in_attack_range(order_target)) or (order == "repair" and global_position.distance_to(order_target.global_position) <= engineering_rules.repair_range) or (order == "heal" and global_position.distance_to(order_target.global_position) <= heal_range)):
+		if is_instance_valid(order_target) and ((order == "attack" and in_attack_range(order_target) and team_sees(order_target)) or (order == "repair" and global_position.distance_to(order_target.global_position) <= engineering_rules.repair_range) or (order == "heal" and global_position.distance_to(order_target.global_position) <= heal_range)):
 			_stop_route()
 		else:
 			_walk(delta)
@@ -709,6 +749,11 @@ func _gather(delta: float) -> void:
 		if cargo > 0: _head_home()
 		else: order = "idle"; state = str(source.resource_kind).capitalize()+" depleted" if is_instance_valid(source) else "Source unavailable"
 		return
+	if source.get("raided") == true:
+		# The enemy stands on the field: a Farmer waits by it, and takes home what it carries.
+		if cargo > 0: _head_home()
+		else: state = "Enemy on the Farm"
+		return
 	if not source.can_extract(team):
 		if cargo > 0: _head_home()
 		else: order = "idle"; state = "A working mine is required before extracting iron"
@@ -717,12 +762,23 @@ func _gather(delta: float) -> void:
 	if cargo_kind != source.resource_kind or cargo >= carry_capacity:
 		_head_home()
 		return
-	if global_position.distance_to(source.global_position) > interaction_range:
+	# A Farm is tilled from its near edge or anywhere on the field, so the walk to the Keep stays short.
+	var field: Rect2i = source.field_rect() if source.has_method("field_rect") else Rect2i()
+	if field.has_area():
+		if Approach.distance_to_rect(ground,global_position,field) > Approach.TOUCH:
+			if _retry <= 0:
+				state = "To food"
+				_retry = 0.5
+				var path: Array[Vector2i] = Approach.touch_path(self,field)
+				if path.is_empty(): _retry = 1.0; state = "Food unreachable"
+				else: path.remove_at(0); _route = path
+			return
+	elif global_position.distance_to(source.global_position) > interaction_range:
 		if _retry <= 0:
 			state = "Felling a way to the coal" if is_instance_valid(_dig_source) else "To "+str(source.resource_kind)
 			if not _route_to_interaction(source,interaction_range) and not _cut_way_in(): state = "Coal unreachable" if is_instance_valid(_dig_source) else str(source.resource_kind).capitalize()+" unreachable"
 		return
-	state = "Gathering"
+	state = "Farming" if source.is_in_group("farms") else "Gathering"
 	_face(source.global_position)
 	_work_timer += delta
 	if _work_timer >= harvest_interval:
@@ -842,11 +898,11 @@ func _attack_order() -> void:
 		order = "idle"
 		state = "Idle"
 		return
-	if in_attack_range(order_target):
+	if in_attack_range(order_target) and team_sees(order_target):
 		if carrying(): state = "Carrying cargo · drop it (X) to fire"; return
 		state = "Firing"
 		_shoot(order_target)
-	elif global_position.distance_to(order_target.global_position) < min_attack_range:
+	elif global_position.distance_to(order_target.global_position) < min_attack_range and team_sees(order_target):
 		# Too close for the main gun: back off until the target is at its minimum range.
 		if _retry <= 0:
 			state = "Backing off · too close for main gun"
@@ -876,7 +932,7 @@ var _scan_wait := 0.0
 var _sighted: Node3D
 var _had_sight := false
 func _acquire() -> Node3D:
-	if _had_sight and is_instance_valid(_sighted) and in_attack_range(_sighted) and CombatResolver.can_hit(self,_sighted):
+	if _had_sight and is_instance_valid(_sighted) and in_attack_range(_sighted) and CombatResolver.can_hit(self,_sighted) and team_sees(_sighted):
 		# A building in its sights gives way to a unit that comes into range (docs/COMBAT_BATCH.md, Buildings as targets).
 		if not _sighted.is_in_group("selectable_buildings"): return _sighted
 		if _scan_wait > 0.0: return _sighted
@@ -890,6 +946,16 @@ func _acquire() -> Node3D:
 		_had_sight = _sighted != null
 		return _sighted
 	return null
+## Whether this unit's side sees `target` now (docs/SEE_TO_SHOOT.md): the fog of war's answer, which counts what
+## the side's units and buildings see. A map with no fog sees everything. A unit fires only at what its side sees.
+var _fog: Node
+var _fog_looked := false
+func team_sees(target: Node3D) -> bool:
+	if not is_instance_valid(target): return false
+	if not _fog_looked or (_fog != null and not is_instance_valid(_fog)):
+		_fog = get_tree().get_first_node_in_group("fog_of_war") if is_inside_tree() else null
+		_fog_looked = true
+	return _fog == null or _fog.visible_to(team,target.global_position)
 func _nearest_opponent() -> Node3D:
 	var closest: Node3D
 	var distance := attack_range
@@ -899,6 +965,7 @@ func _nearest_opponent() -> Node3D:
 		var d := global_position.distance_to(unit.global_position)
 		if d >= distance or d < min_attack_range: continue
 		if not CombatResolver.can_hit(self,unit): continue
+		if not team_sees(unit): continue
 		closest = unit; distance = d
 	if closest != null: return closest
 	# With no unit in range it turns on the nearest hostile building, as an attack order on it would (docs/COMBAT_BATCH.md,
@@ -908,6 +975,7 @@ func _nearest_opponent() -> Node3D:
 		var d := global_position.distance_to(building.global_position)
 		if d >= distance or d < min_attack_range: continue
 		if not CombatResolver.can_hit(self,building): continue
+		if not team_sees(building): continue
 		closest = building; distance = d
 	return closest
 func _face(point: Vector3) -> void:
@@ -922,7 +990,7 @@ func _turret() -> Node3D:
 func carrying() -> bool:
 	return can_gather and not is_cargo_vehicle and not is_depot_truck and cargo > 0
 func _shoot(target: Node3D) -> void:
-	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or carrying() or not _may_hit(target) or not in_attack_range(target): return
+	if is_depot_truck or is_cargo_vehicle or not _attack_enabled or carrying() or not _may_hit(target) or not in_attack_range(target) or not team_sees(target): return
 	# A turret tracks the target between shots; a unit without one turns its whole body as it fires.
 	var turret := _turret()
 	if turret: turret.aim_at(target.global_position)
@@ -988,8 +1056,13 @@ func _fire_during_movement() -> void:
 	# Keep navigation/facing under the movement order; firing does not redirect the route.
 	var facing: float = $Visuals.rotation.y
 	var target = _acquire()
-	if target: _shoot(target)
+	if target and _in_moving_arc(target,facing): _shoot(target)
 	$Visuals.rotation.y = facing
+## Whether a unit on the move, its hull at `facing`, may fire at `target`: inside its moving-fire arc.
+func _in_moving_arc(target: Node3D, facing: float) -> bool:
+	if unit_stats == null or unit_stats.moving_fire_arc >= 360.0: return true
+	var to: Vector3 = target.global_position-global_position
+	return absf(angle_difference(facing,atan2(-to.x,-to.z))) <= deg_to_rad(unit_stats.moving_fire_arc*0.5)
 func take_damage(amount: int) -> void:
 	if _dead: return
 	health = maxi(0,health-maxi(0,amount))
@@ -1086,6 +1159,7 @@ func has_ability(ability_id: StringName) -> bool:
 
 
 func command_repair(target: Node3D, payer: Node3D = null) -> void:
+	if _farmer_refuses(): return
 	if not can_repair or engineering_rules == null or target == self or not EngineeringWork.repairable(target,team): return
 	_stop_route()
 	order_target = target
@@ -1100,7 +1174,7 @@ func command_repair(target: Node3D, payer: Node3D = null) -> void:
 	state = "Repair ordered"
 	game.notify("Repair %s; payer %s only." % [target.name,repair_payer.name if is_instance_valid(repair_payer) else "unavailable"],team)
 func _repair(delta: float) -> void:
-	if not EngineeringWork.repairable(order_target,team):
+	if not is_instance_valid(order_target) or not EngineeringWork.repairable(order_target,team):
 		order = "idle"; state = "Repair target lost"; return
 	if order_target.health >= order_target.max_health: order = "idle"; state = "Repair complete"; return
 	if not SupplySource.available(repair_payer,team):
@@ -1118,6 +1192,7 @@ func _repair(delta: float) -> void:
 		_work_timer = 0
 		if not EngineeringWork.tick(self,order_target,repair_payer): state = "Repair paused · local funds unavailable"
 func command_heal(target: Node3D) -> void:
+	if _farmer_refuses(): return
 	if not can_heal or target == self or not MedicalWork.can_heal(target,team): return
 	_stop_route()
 	order_target = target
@@ -1150,6 +1225,7 @@ func _heal(delta: float) -> void:
 ## Build at a queued site (docs/SITE_CONSTRUCTION.md): carried materials the site needs go onto its
 ## pile first, then the worker builds them in at its work pace, 5 per saw blow.
 func command_construct(plan: Node3D) -> void:
+	if _farmer_refuses(): return
 	if not can_construct or is_depot_truck or is_cargo_vehicle or not is_instance_valid(plan) or not plan.is_in_group("construction_plans") or plan.finished or plan.kind == &"rail": return
 	_stop_route()
 	source = null
@@ -1197,6 +1273,7 @@ func _construct(delta: float) -> void:
 	elif waited.is_empty(): state = "Constructing"
 	else: state = waited
 func command_capture(target: Node3D) -> void:
+	if _farmer_refuses(): return
 	if not can_capture_depots or is_depot_truck or is_cargo_vehicle or not is_instance_valid(target) or not target.is_in_group("capturable_buildings"): return
 	_stop_route()
 	source = null
@@ -1217,6 +1294,7 @@ func _capture_order() -> void:
 ## Seconds until it can derail again.
 var derail_cooldown := 0.0
 func command_derail(target: Node3D) -> void:
+	if _farmer_refuses(): return
 	if not has_ability(&"derail") or not is_instance_valid(target) or not target.is_in_group("rails"): return
 	if derail_cooldown > 0.0: state = "Derail recharging · %d s" % ceili(derail_cooldown); return
 	_stop_route()

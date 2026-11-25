@@ -9,10 +9,12 @@ const MAPS := {"two_lakes": {name = "Two Lakes", path = "res://scenes/maps/lakes
 ## Cyborgs, so the Knights are for You alone (against the AI or with no opponent), never an AI's side.
 const FACTIONS := {
 	&"cyborgs": {name = "Cyborgs", playable = true, ai = true},
-	&"arthurian_knights": {name = "Arthurian Knights", playable = true, ai = false},
+	&"arthurian_knights": {name = "Arthurian Knights", playable = true, ai = true},
 }
 ## The Knights' start, put at the West start in place of the Cyborg one (`_knights_start`).
 const KNIGHTS_START := "res://scenes/maps/starts/knights_start.tscn"
+## The AI that plays a Knights side (docs/KNIGHTS_AI.md).
+const KNIGHTS_AI := "res://scripts/ai/knights_player.gd"
 ## "ai": you against one AI; "sandbox": you alone, no opponent; "spectate": an AI on each side, you watch.
 const MODES := ["ai","sandbox","spectate"]
 var configured := false
@@ -68,8 +70,12 @@ func apply(game: Node) -> void:
 	if not configured: return
 	game.factions = factions.duplicate()
 	if factions.player == &"arthurian_knights": _knights_start(game)
+	if factions.enemy == &"arthurian_knights": _knights_start(game,"enemy")
 	var east: Node = game.enemy_player()
 	var west: Node = game.get_node_or_null("PlayerAI")
+	# A Knights side is played by the Knights AI (docs/KNIGHTS_AI.md).
+	if factions.enemy == &"arthurian_knights" and east != null: east = _knights_ai(east)
+	if factions.player == &"arthurian_knights" and west != null: west = _knights_ai(west)
 	match mode:
 		"sandbox":
 			if east != null:
@@ -93,13 +99,13 @@ func _team(node: Node):
 	return node.get("team")
 ## Replaces the West start's Cyborg Depot, Deforester and Cargo truck with the saved Knights start
 ## (KNIGHTS_START): a Keep on the same spot, two Forester Maidens and a Food crate. The rest of the map is unchanged.
-func _knights_start(game: Node) -> void:
-	var old: Node3D = game.depot
+func _knights_start(game: Node, team := "player") -> void:
+	var old: Node3D = game.depot if team == "player" else (game.enemy_player().home() if game.enemy_player() != null else null)
 	if not is_instance_valid(old) or old.is_in_group("keeps"): return
 	var at: Vector3 = old.global_position
 	var gone: Array[Node] = [old]
 	for unit in game.get_tree().get_nodes_in_group("units"):
-		if unit.get("team") == "player": gone.append(unit)
+		if unit.get("team") == team: gone.append(unit)
 	for node in gone:
 		node.get_parent().remove_child(node)
 		node.queue_free()
@@ -111,10 +117,30 @@ func _knights_start(game: Node) -> void:
 		start.remove_child(child)
 		child.owner = null
 		var parent := "Buildings" if child.is_in_group("keeps") or child.name == "Keep" else ("Resources" if child.name.begins_with("Starter") else "Units")
+		if child.get("team") != null: child.team = team
+		if team != "player": child.name = "Enemy"+child.name
 		entities.get_node(parent).add_child(child)
 		child.global_position = at+offset
-		if child.name == "Keep": keep = child
+		if child.name in ["Keep","EnemyKeep"]: keep = child
 	start.free()
+	if team != "player": return
 	game.depot = keep
 	game.get_node("DepotNetwork").select_depot(keep)
 	game.message = "Your Keep holds the West start. Forester Maidens gather and build; B → Chapterhouse trains knights."
+## Replaces a Cyborg AI node with the Knights AI (scripts/ai/knights_player.gd), keeping its name, side and whether it
+## is switched on. A node is replaced rather than given a new script, so its ready-time lookups run again.
+func _knights_ai(old: Node) -> Node:
+	var ai := Node.new()
+	ai.set_script(load(KNIGHTS_AI))
+	ai.name = old.name
+	ai.team = old.team
+	ai.opponent = old.opponent
+	ai.process_mode = old.process_mode
+	if old.has_meta("switched_off"): ai.set_meta("switched_off",true)
+	var parent := old.get_parent()
+	var index := old.get_index()
+	parent.remove_child(old)
+	old.queue_free()
+	parent.add_child(ai)
+	parent.move_child(ai,index)
+	return ai

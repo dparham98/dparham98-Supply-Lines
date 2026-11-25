@@ -15,4 +15,5 @@ iron_cost = 40
 food_cost = 40
 wood_cost = 30
 footprint = Vector2i(6, 6)
+max_power = 1.0
 unit_scenes = Array[PackedScene]([ExtResource("round_table"), ExtResource("sentinel"), ExtResource("questing"), ExtResource("dragon")])

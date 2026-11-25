@@ -1,0 +1,55 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/air_balloon.gd" id="agent"]
+[ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
+[ext_resource type="PackedScene" path="res://scenes/models/air_balloon_model.tscn" id="model"]
+[ext_resource type="Resource" path="res://assets/units/air_balloon.tres" id="stats"]
+[ext_resource type="Material" path="res://assets/materials/units/team_marker.tres" id="team_marker"]
+
+[sub_resource type="PlaneMesh" id="team_marker_mesh"]
+material = ExtResource("team_marker")
+size = Vector2(3.2, 3.2)
+
+[node name="AirBalloon" type="Node3D"]
+script = ExtResource("agent")
+unit_stats = ExtResource("stats")
+start_fuelled = false
+can_construct = false
+can_gather = false
+can_capture_depots = false
+use_prototype_combat_for_unresolved_stats = false
+
+[node name="Visuals" type="Node3D" parent="."]
+position = Vector3(0, 10, 0)
+script = ExtResource("slot")
+model_scene = ExtResource("model")
+
+[node name="Model" parent="Visuals" instance=ExtResource("model")]
+
+[node name="TeamMarker" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, -0.15, 0)
+visible = false
+cast_shadow = 0
+mesh = SubResource("team_marker_mesh")
+instance_shader_parameters/half_size = Vector2(1.6, 1.6)
+metadata/not_selectable = true
+
+[node name="Status" type="Label3D" parent="."]
+position = Vector3(0, 17, 0)
+billboard = 1
+no_depth_test = true
+font_size = 30
+pixel_size = 0.04
+outline_size = 6
+modulate = Color(0.65, 0.95, 1, 1)
+text = "AIR BALLOON · 40/40"
+
+[node name="Cargo" type="Label3D" parent="."]
+position = Vector3(0, 17.7, 0)
+billboard = 1
+no_depth_test = true
+font_size = 27
+pixel_size = 0.04
+outline_size = 6
+modulate = Color(1, 0.8, 0.35, 1)
+text = ""

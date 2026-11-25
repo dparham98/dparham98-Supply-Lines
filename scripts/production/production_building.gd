@@ -112,6 +112,9 @@ func request_unit(id: StringName) -> bool:
 	for scene in stats.unit_scenes:
 		var resource := unit_stats_for(scene)
 		if resource.unit_id != id: continue
+		if not KnightHousing.room(get_tree(),team,resource.unit_id):
+			game.notify("No housing for a %s (%s used): build a House inside a Keep's range." % [resource.display_name,KnightHousing.text(get_tree(),team)],team)
+			return false
 		var payer := payer_for(resource.energy_cost,resource.iron_cost,resource.food_cost,resource.wood_cost)
 		if payer == null:
 			if resource.food_cost > 0 or resource.wood_cost > 0: game.notify("No Keep in range has %d F, %d W and %d I for a %s." % [resource.food_cost,resource.wood_cost,resource.iron_cost,resource.display_name],team)

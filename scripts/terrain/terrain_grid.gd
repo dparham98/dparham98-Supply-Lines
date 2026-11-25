@@ -135,12 +135,27 @@ func is_tile_valid(pos: Vector2i) -> bool:
 func is_apron(pos: Vector2i) -> bool:
 	return is_tile_in_bounds(pos) and tiles[pos.y * grid_size.x + pos.x].has("apron")
 
-func is_footprint_valid(pos: Vector2i, size: Vector2i) -> bool:
+## `allow_units`: units standing on the footprint do not count against it, for walkable buildings (a Farm's
+## field) whose plan need not wait for passers-by.
+func is_footprint_valid(pos: Vector2i, size: Vector2i, allow_units := false) -> bool:
 	if not is_tile_in_bounds(pos) or not is_tile_in_bounds(pos + size - Vector2i.ONE): return false
 	for z in range(pos.y, pos.y + size.y):
 		for x in range(pos.x, pos.x + size.x):
-			if not is_tile_valid(Vector2i(x, z)) or tiles[z*grid_size.x+x].has("rail") or tiles[z*grid_size.x+x].has("apron") or tiles[z*grid_size.x+x].has("mine_front"): return false
+			var tile: Dictionary = tiles[z*grid_size.x+x]
+			var open := is_tile_valid(Vector2i(x, z))
+			if not open and allow_units and tile.occupied_by != null and str(tile.occupied_by).begins_with("agent_"): open = bool(tile.terrain_buildable) and bool(tile.buildable)
+			if not open or tile.has("rail") or tile.has("apron") or tile.has("mine_front") or tile.has("field"): return false
 	return true
+
+## A Farm's field (docs/KNIGHTS_ECONOMY.md): any unit walks over it, nothing is built on it.
+func is_field(pos: Vector2i) -> bool:
+	return is_tile_in_bounds(pos) and tiles[pos.y * grid_size.x + pos.x].has("field")
+## Marks or clears a Farm's field cell. The cell's walking and navigation are unchanged.
+func set_field(pos: Vector2i, owner: String, on: bool) -> void:
+	if not is_tile_in_bounds(pos): return
+	var tile: Dictionary = tiles[pos.y * grid_size.x + pos.x]
+	if on: tile["field"] = owner
+	elif tile.get("field") == owner: tile.erase("field")
 
 ## Kept clear in front of a mine site for the mine's rails and carts: units cross it, nothing is built on it.
 func is_mine_front(pos: Vector2i) -> bool:

@@ -110,6 +110,9 @@ var _indices := {}
 ## laid piece's own: a path can then hold a piece that can't be laid. The enemy player checks each found piece
 ## against the laid piece's cells and forbids the ones that fail before searching again (docs/ENEMY_AI.md).
 var forbidden := {}
+## Cells the search treats as blocked though the ground is clear, {Vector2i: true}: the enemy player keeps its track
+## off unfinished build sites, which a piece over them would never let finish (docs/ENEMY_AI.md).
+var blocked := {}
 func _move_clear(point: Vector2i, key: int) -> bool:
 	if not forbidden.is_empty() and forbidden.has(Vector3i(point.x,point.y,key)): return false
 	var phase := Vector2i(posmod(point.x,period),posmod(point.y,period))
@@ -212,6 +215,8 @@ func _read_clear() -> void:
 	_size = ground.grid_size
 	_clear.resize(_size.x*_size.y)
 	_clear.fill(2)
+	for cell in blocked:
+		if cell.x >= 0 and cell.y >= 0 and cell.x < _size.x and cell.y < _size.y: _clear[cell.y*_size.x+cell.x] = 0
 ## Whether a move from `point` comes within `reach` of `centre` along its centre line.
 func _touches(point: Vector2i, key: int, centre: Vector3, reach: float) -> bool:
 	var origin := world(point)

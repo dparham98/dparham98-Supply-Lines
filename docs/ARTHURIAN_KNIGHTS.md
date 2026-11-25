@@ -8,14 +8,14 @@ same day it was moved onto its own branch from main and merged onto main's newer
 **Where it plays:**
 
 - **Two Lakes, from the main menu:** choose Arthurian Knights for You, against the AI or with no opponent. Your West
-  start becomes a Keep with two Forester Maidens (docs/MAIN_MENU.md). The AI can't play the Knights.
+  start becomes a Keep with two Forester Maidens (docs/MAIN_MENU.md). The Knights AI (docs/KNIGHTS_AI.md) can play either start.
 - **The showcase map,** `scenes/maps/arthurian_skirmish.tscn` (open it and press F6).
 
 ## Buildings
 
 | Building | What it does |
 | --- | --- |
-| Keep | The faction's base. It stores Food, Wood and Iron; trains Forester Maidens (F) and Warhounds (W); packs Food, Wood and Iron crates (C). It is a kind of Depot (`scripts/gameplay/keep.gd` extends `depot.gd`). |
+| Keep | The faction's base. It stores Food, Wood and Iron; trains Forester Maidens (F) and Warhounds (W); packs Food, Wood and Iron crates (C); and launches an Air Balloon (L) that flies up to four of those crates to a point (`docs/AIR_BALLOON.md`). It is a kind of Depot (`scripts/gameplay/keep.gd` extends `depot.gd`). |
 | Chapterhouse | Trains Round Table Marines (R), Grail Sentinels (G), Questing Marines (Q) and Azure Dragons (D). Costs 40 Food, 30 Wood and 40 Iron. |
 
 **Founding a Keep:** Build (B) → Keep (K) plans a Keep anywhere on valid land.
@@ -76,7 +76,4 @@ with the faction. The full headless suite runs on the branch.
 
 ## Next
 
-These come from the original report:
-
-- **A Farm:** the Forester Maiden's model already has a sun hat, a farming tool and a Till clip.
-- **An Air Balloon** from the Keep's roof pad: `keep.launch_balloon_fx()`.
+All three items from the original report are now in: the Farm and House (Round 2), the Air Balloon (`docs/AIR_BALLOON.md`) and the Chapterhouse model.

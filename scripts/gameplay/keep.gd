@@ -4,6 +4,7 @@ extends "res://scripts/gameplay/depot.gd"
 
 @export var forester_scene: PackedScene = preload("res://scenes/gameplay/forester_maiden.tscn")
 @export var warhound_scene: PackedScene = preload("res://scenes/gameplay/warhound.tscn")
+@export var balloon_scene: PackedScene = preload("res://scenes/gameplay/air_balloon.tscn")
 
 var _unit_stats_cache := {}
 
@@ -41,8 +42,11 @@ func request_warhound() -> bool:
 	return _request_keep_unit("warhound")
 
 func _request_keep_unit(kind: String) -> bool:
-	if team != "player" or queue >= queue_limit: return false
+	if not SupplySource.plays(team) or queue >= queue_limit: return false
 	var stats := unit_stats_for_kind(kind)
+	if not KnightHousing.room(get_tree(), team, stats.unit_id):
+		game.notify("No housing for a %s (%s used): build a House inside a Keep's range." % [stats.display_name, KnightHousing.text(get_tree(), team)], team)
+		return false
 	var costs := {}
 	if stats.food_cost > 0: costs[&"food"] = stats.food_cost
 	if stats.iron_cost > 0: costs[&"iron"] = stats.iron_cost
@@ -51,7 +55,7 @@ func _request_keep_unit(kind: String) -> bool:
 	if not spend_resources(costs): return false
 	pending.append(kind)
 	queue += 1
-	game.notify("%s queued at %s." % [stats.display_name, name])
+	game.notify("%s queued at %s." % [stats.display_name, name], team)
 	return true
 
 func request_truck() -> bool:
@@ -61,6 +65,44 @@ func request_truck() -> bool:
 func request_cargo() -> bool:
 	game.notify("Keeps use Wood/Food logistics instead of Cyborg Cargo vehicles.")
 	return false
+
+## Launch balloon (docs/AIR_BALLOON.md): the full crates packed beside this Keep, up to `balloon_crates`, go up in
+## an Air Balloon to `point`. The player must see `point`, and there must be open land near it for the crates.
+func balloon_crates() -> Array[Node3D]:
+	var result: Array[Node3D] = []
+	for crate in CrateYard.beside(self):
+		if crate.amount > 0 and result.size() < KnightHousing.rules().balloon_crates: result.append(crate)
+	return result
+## Why a balloon can't be launched to `point` now, or "" when it can. `point` null checks only the Keep.
+func balloon_refusal(point = null) -> String:
+	var rules := KnightHousing.rules()
+	if health <= 0 or not SupplySource.plays(team): return "This Keep can't launch a balloon."
+	if balloon_crates().is_empty(): return "Pack crates beside the Keep first: Make crates, then Launch balloon."
+	if stockpile.amount(&"wood") < rules.balloon_wood_cost: return "A balloon costs %d Wood from the Keep." % rules.balloon_wood_cost
+	if point == null: return ""
+	var fog = game.fog_of_war() if game.has_method("fog_of_war") else null
+	if fog != null and not fog.visible_to(team,point): return "Send the balloon to a point you can see."
+	if ground.get_tile_at_position(point) == null or CrateYard.free_cell(get_tree(),point,0,8) == null: return "The balloon needs open land to set its crates on."
+	return ""
+## Launches the balloon to `point`; false, with the reason told to the player, if it can't go.
+func launch_balloon(point: Vector3) -> bool:
+	var refusal := balloon_refusal(point)
+	if not refusal.is_empty():
+		game.notify(refusal,team)
+		return false
+	if not stockpile.spend({&"wood": KnightHousing.rules().balloon_wood_cost}): return false
+	var cargo: Array[Dictionary] = []
+	for crate in balloon_crates():
+		cargo.append({kind = crate.resource_kind, amount = crate.amount})
+		crate.extract(crate.amount)
+	var balloon: Node3D = balloon_scene.instantiate()
+	balloon.team = team
+	balloon.position = global_position
+	game.get_node("Entities/Units").add_child(balloon,true)
+	balloon.launch(point,cargo,KnightHousing.rules().balloon_dock_height)
+	launch_balloon_fx()
+	game.notify("Air Balloon launched from %s with %s." % [name,balloon.cargo_text()],team)
+	return true
 
 func launch_balloon_fx() -> void:
 	var model := get_node_or_null("Visuals/Model")
@@ -93,7 +135,7 @@ func _process(delta: float) -> void:
 		if model != null and model.has_method("show_idle"): model.show_idle()
 		$Progress.text = "%s KEEP · F %d / W %d / I %d · capture %d%%" % [team, food, wood, iron, roundi(capture_progress / rules.capture_seconds * 100)]
 		return
-	if team != "player": return
+	if not SupplySource.plays(team): return
 	var kind: String = pending[0]
 	var stats := unit_stats_for_kind(kind)
 	var seconds := maxf(0.1, stats.build_seconds)
@@ -117,4 +159,4 @@ func _process(delta: float) -> void:
 		progress = 0.0
 		if model != null and model.has_method("unit_left"): model.unit_left()
 		if kind == "forester_maiden": game.units_printed += 1
-		game.notify("%s ready at %s." % [stats.display_name, name])
+		game.notify("%s ready at %s." % [stats.display_name, name], team)
