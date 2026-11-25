@@ -35,6 +35,9 @@ var mining_depot: Node3D
 var _dig_owed := 0.0
 ## Iron this train has delivered from mining since its order.
 var mined_delivered := 0
+## The Knights' train (docs/KNIGHTS_RAIL.md) burns coal from its own tank by the metre, `fuel_rules`, instead of
+## drawing a connected Depot's energy. It refuels, stopped, from a covering Keep's or Depot's coal.
+@export var coal_fuelled := false
 @onready var rail_network = get_tree().get_first_node_in_group("rail_network")
 func _ready() -> void:
 	super._ready()
@@ -77,6 +80,7 @@ func trip_endpoints() -> Array:
 	return shipment_pair()
 ## The connected Depot that would power this train now, or null.
 func power_source() -> Node3D:
+	if coal_fuelled: return self if on_friendly_track() and (not fuel_active() or fuel > 0) else null
 	return rail_network.power_source(piece,global_position,team) if on_friendly_track() else null
 func _rail_changed() -> void:
 	_checked_revision = rail_network.revision
@@ -204,7 +208,8 @@ func _walk(delta: float) -> void:
 	if _line.is_empty(): _route.clear(); return
 	var source := power_source()
 	if source == null:
-		state = "No power · cargo retained"
+		state = "Out of coal · refuel at a Keep" if coal_fuelled else "No power · cargo retained"
+		if coal_fuelled and fuel_active(): _mark_out_of_fuel()
 		return
 	var before := _s
 	_s = minf(_goal,_s+move_speed*delta)
@@ -392,6 +397,9 @@ func _mining_over(text: String) -> void:
 	stop_mining()
 	state = text
 func _pay_for_power(source: Node3D, distance: float) -> void:
+	if coal_fuelled:
+		if fuel_active(): burn_fuel(distance)
+		return
 	_power_owed += distance*rail_network.rules.train_energy_per_metre
 	var whole := floori(_power_owed)
 	if whole <= 0: return

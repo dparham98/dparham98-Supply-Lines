@@ -247,7 +247,7 @@ func refresh_state() -> void:
 	elif not materials_covered(): state = "Waiting for materials on site"
 	elif cost > energy_paid and energy_payer(energy_due(0)) == null:
 		state = "Waiting for %s · needs a %s whose range covers its centre, with %d %s" % [str(pay_kind),"Keep or Depot" if pay_kind == &"food" else "Depot",cost-energy_paid,"F" if pay_kind == &"food" else "E"]
-	else: state = "Materials on site · order %s to construct" % ("workers" if kind in [&"keep",&"chapterhouse",&"forge"] else "Deforesters")
+	else: state = "Materials on site · order %s to construct" % ("workers" if kind in [&"keep",&"chapterhouse",&"forge",&"wainwright"] else "Deforesters")
 	refresh_label()
 func finish() -> Node3D:
 	var building = network.finish_plan(self)

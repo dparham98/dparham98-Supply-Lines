@@ -42,7 +42,7 @@ const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 
 	"Repair": 8, "Heal": 8, "Derail": 8, "Capture": 9, "LayMine": 9, "DeployTruck": 10, "Fell": 10, "CancelPlan": 11,
 	"DeployCargo": 2, "Load": 4, "Unload": 5, "Trips": 6,
 	"PrintTruck": 0, "PrintCargo": 1, "PrintTrain": 2,
-	"TrainForester": 0, "TrainWarhound": 1, "LaunchBalloon": 2,
+	"TrainForester": 0, "TrainWarhound": 1, "LaunchBalloon": 2, "KeepTrain": 4,
 	"PrintInfantry": 0, "ProduceScout": 1, "ProduceGrenadier": 2, "ProduceTank": 3, "ProduceMotorcycle": 4, "ProduceDrone": 5, "ProduceUbermech": 6,
 	"ProduceRoundTableMarine": 0, "ProduceGrailSentinel": 1, "ProduceQuestingMarine": 2, "ProduceAzureDragon": 3,
 	"ToggleGenerator": 0, "FocusAssigned": 1,
@@ -83,7 +83,7 @@ func has_arthurian_faction() -> bool:
 	return false
 ## Build-page buildings only the Cyborgs see; Keep and Chapterhouse are the Knights'. Mines are for both.
 const CYBORG_BUILDINGS := [&"depot",&"generator",&"barracks",&"tank_factory",&"temple_of_science",&"foundry",&"rail"]
-const KNIGHT_BUILDINGS := [&"keep",&"chapterhouse",&"farm",&"house",&"forge"]
+const KNIGHT_BUILDINGS := [&"keep",&"chapterhouse",&"farm",&"house",&"forge",&"wainwright"]
 ## True when the player builds as the Cyborgs: the match setup's faction, or, in a scene run straight from the
 ## editor or a test, any Depot of the player's that is not a Keep, or no Knights presence at all.
 func has_cyborg_faction() -> bool:
@@ -225,6 +225,8 @@ func _ready() -> void:
 	card.get_node("PrintTruck").pressed.connect(func():
 		if network.owned_selected() and not least_busy().request_truck(): game.notify("Depot lacks local funds or queue space."))
 	card.get_node("PrintTrain").pressed.connect(queue_train)
+	# The Keep's coal train (docs/KNIGHTS_RAIL.md) is queued the same way, choosing a line when it has several.
+	card.get_node("KeepTrain").pressed.connect(queue_train)
 	# The Temple of Science's research (docs/TEMPLE_OF_SCIENCE.md) and the Mining Trains order it unlocks.
 	card.get_node("Research").pressed.connect(func():
 		if is_instance_valid(shown) and shown.is_in_group("research_buildings"): shown.request_research(Research.MINING_TRAINS))
@@ -255,7 +257,7 @@ func _ready() -> void:
 		var btn_id := production_button_id(StringName(id))
 		card.get_node(btn_id).pressed.connect(func():
 			if is_instance_valid(shown) and shown.is_in_group("production_buildings"): least_busy().request_unit(StringName(id)))
-	for pair in [["Depot",&"depot"],["Generator",&"generator"],["Barracks",&"barracks"],["TankFactory",&"tank_factory"],["Temple",&"temple_of_science"],["Foundry",&"foundry"],["Mine",&"iron_mine"],["CoalMine",&"coal_mine"],["Rail",&"rail"],["Keep",&"keep"],["Chapterhouse",&"chapterhouse"],["Farm",&"farm"],["House",&"house"],["Forge",&"forge"]]:
+	for pair in [["Depot",&"depot"],["Generator",&"generator"],["Barracks",&"barracks"],["TankFactory",&"tank_factory"],["Temple",&"temple_of_science"],["Foundry",&"foundry"],["Mine",&"iron_mine"],["CoalMine",&"coal_mine"],["Rail",&"rail"],["Keep",&"keep"],["Chapterhouse",&"chapterhouse"],["Farm",&"farm"],["House",&"house"],["Forge",&"forge"],["Wainwright",&"wainwright"]]:
 		build_menu.get_node("Actions/"+pair[0]).pressed.connect(begin_global_placement.bind(pair[1]))
 	build_menu.get_node("Actions/Pin").pressed.connect(toggle_pin)
 	card.get_node("DeployTruck").pressed.connect(func(): game.pending_unit_command = "deploy"; game.notify("Click a site for the Depot. Only an empty Depot footprint is accepted; Shift queues."))
@@ -978,6 +980,12 @@ func update_contents() -> void:
 				show_button("LaunchBalloon","Launch balloon")
 				var refusal: String = node.balloon_refusal()
 				explain(balloon_button,not refusal.is_empty(),refusal)
+				# Knights rail (docs/KNIGHTS_RAIL.md): shown once the side has a Wainwright.
+				if KnightRail.has_wainwright(node,node.team):
+					var r := KnightHousing.rules()
+					show_production("KeepTrain","Train (%s s, burns coal)" % _seconds(r.train_build_seconds),0,r.train_iron_cost,node,r.train_food_cost,r.train_wood_cost)
+					var train_refusal: String = node.train_refusal()
+					if not train_refusal.is_empty(): explain(card.get_node("KeepTrain"),true,train_refusal)
 				hint_text = "Keep stores Food, Wood and Iron locally and trains Forester Maidens and Warhounds. Found forward Keeps anywhere from 50 Wood and 50 Iron on site (B → K)."
 		else:
 			commands.get_node("Title").text = "DEPOT · PRODUCTION"
@@ -1437,13 +1445,15 @@ func begin_global_placement(kind: StringName) -> void:
 	game.notify("Click valid terrain to place an unpaid %s plan. Esc cancels placement; existing plans remain." % network.plan_spec(kind).title)
 func refresh_global_menu() -> void:
 	build_menu.get_node("Actions/Pin").visible = not worksite_open
-	build_menu.get_node("Actions/Rail").visible = not worksite_open and build_kind_offered(&"rail")
+	# The Knights lay track once they have a Wainwright (docs/KNIGHTS_RAIL.md).
+	build_menu.get_node("Actions/Rail").visible = not worksite_open and (build_kind_offered(&"rail") or (knights_build() and KnightRail.has_wainwright(game,"player")))
 	var arthurian := knights_build() and not worksite_open
 	build_menu.get_node("Actions/Keep").visible = arthurian
 	build_menu.get_node("Actions/Chapterhouse").visible = arthurian
 	build_menu.get_node("Actions/Farm").visible = arthurian
 	build_menu.get_node("Actions/House").visible = arthurian
 	build_menu.get_node("Actions/Forge").visible = arthurian
+	build_menu.get_node("Actions/Wainwright").visible = arthurian
 	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"foundry","Foundry"]]:
 		build_menu.get_node("Actions/"+pair[1]).visible = build_kind_offered(pair[0])
 	if worksite_open:
@@ -1462,7 +1472,7 @@ func refresh_global_menu() -> void:
 	build_menu.get_node("Bank").tooltip_text = "One covering Depot or deployed Cargo truck pays each plan's energy as Deforesters build it. Iron must be delivered to the footprint first. Rails pay fully from Depots. No pooled resources."
 	set_card(build_menu.get_node("Actions/Pin"),"unpin_payer" if global_pinned else "pin_payer")
 	set_tile(build_menu.get_node("Actions/Pin"),"Unpin payer (back to Auto)" if global_pinned else "Pin payer","New plans pay from the nearest covering stockpile that can pay." if global_pinned else "Pick one Depot or deployed Cargo truck on the map or minimap; new plans pay only from it.")
-	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"foundry","Foundry"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"],[&"rail","Rail"],[&"keep","Keep"],[&"chapterhouse","Chapterhouse"],[&"farm","Farm"],[&"house","House"],[&"forge","Forge"]]:
+	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"foundry","Foundry"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"],[&"rail","Rail"],[&"keep","Keep"],[&"chapterhouse","Chapterhouse"],[&"farm","Farm"],[&"house","House"],[&"forge","Forge"],[&"wainwright","Wainwright"]]:
 		var spec: Dictionary = network.plan_spec(pair[0])
 		var button: Button = build_menu.get_node("Actions/"+pair[1])
 		button.disabled = false
@@ -1477,6 +1487,8 @@ func refresh_global_menu() -> void:
 			set_tile(button,spec.title,"%d W · %d I · from a covering Keep's stock, else on site · researches Arms and Mail" % [spec.wood,spec.iron])
 		elif pair[0] == &"farm":
 			set_tile(button,spec.title,"%d W · inside a Keep's range, from its stock · one Forester tills it for Food" % spec.wood)
+		elif pair[0] == &"wainwright":
+			set_tile(button,spec.title,"%d W · %d I · inside a Keep's range, from its stock · lets your Keeps lay track and build coal trains" % [spec.wood,spec.iron])
 		elif pair[0] == &"house":
 			set_tile(button,spec.title,"%d W · +%d housing while inside a Keep's range" % [spec.wood,KnightHousing.rules().house_room])
 		else: set_tile(button,spec.title,"%d E · %d I · iron delivered to the site, energy as built" % [spec.energy,spec.iron])
