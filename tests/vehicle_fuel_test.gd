@@ -56,7 +56,8 @@ func run() -> void:
 	var tank = spawn("tank",depot.global_position+Vector3(14,0,14))
 	if not check(tank.fuel_active() and is_equal_approx(tank.fuel,60) and not tank.fuel_low(),"Authored vehicle did not start fuelled"): return
 	var drone = spawn("drone",depot.global_position+Vector3(-14,0,14))
-	if not check(not drone.fuel_active() and drone.fuel == 0,"Drone fuel should stay deferred"): return
+	if not check(drone.fuel_active() and is_equal_approx(drone.fuel,30),"The Drone burns coal now (drone_fuel_test.gd) and starts with a full 30 tank"): return
+	drone.queue_free()
 	# Ground vehicles burn nothing while idle.
 	step(tank,5)
 	if not check(is_equal_approx(tank.fuel,60),"Idle vehicle burned fuel"): return

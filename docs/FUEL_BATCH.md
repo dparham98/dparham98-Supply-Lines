@@ -6,7 +6,14 @@ Vehicles now burn coal to move and refuel from friendly stockpiles. This impleme
 
 - `skirmish.gd` exports `vehicle_fuel_required`. It is on in `resource_skirmish.tscn` (the playable scene).
 - Exercise scenes from earlier batches (all_sides, engineering, harvesting, rail and its children, terrain_abilities, supply_routes) set it off, so their scenarios and tests behave as before. With fuel off, vehicles move freely and their reserve stays at 0, as it always has.
-- Infantry has no fuel. The Drone's `fuel_drone.tres` has `consumes_fuel = false` until landing and emergency rules are approved (D3).
+- Infantry has no fuel.
+- **The Drone burns coal by the second** (item 10 of the balance handoff, 2026-11-25):
+  - 0.1 coal a second while in the air, moving or hovering. That is about five minutes on its 30 tank (`coal_per_second_airborne` in `fuel_drone.tres`). It takes no Depot power.
+  - Out of coal, it lands where it is, says "Out of fuel · landed", and takes no moves.
+  - Refuelled as any vehicle is (a covering Depot, a deployed Cargo truck, or a coal crate beside it), it takes off again.
+  - The Cyborg AI sends a Drone low on coal back to its rally point to refuel.
+  - Checked by `tests/drone_fuel_test.gd`.
+  - **Under review:** the owner wants Drones and Derailers clearly more fuel-efficient than Tanks and trucks, so expect the rate to change.
 
 ## Rules (`FuelRules`, `assets/economy/fuel_*.tres`)
 
@@ -17,7 +24,7 @@ Vehicles now burn coal to move and refuel from friendly stockpiles. This impleme
 | Tank | 60 | 0.15 (was 0.20) |
 | Motorcycle | 20 | 0.05 |
 | Übermech | 60 | 0.15 (was 0.20) |
-| Drone | 30 | not consumed yet |
+| Drone | 30 | none; 0.1 a second in the air instead |
 
 All types also share `refuel_coal_per_second = 5` and `low_fuel_fraction = 0.25`.
 
@@ -60,7 +67,6 @@ An **Auto-refuel** button toggles refuelling for every selected fuel-using vehic
 
 ## Not included
 
-- Drone fuel use, landing and emergency rules.
 - Coal extraction (stage 6).
 - A HUD source picker and a desired-reserve control.
 - Round-trip checks for road vehicles.

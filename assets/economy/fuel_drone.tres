@@ -3,5 +3,7 @@
 [resource]
 script = ExtResource("rules")
 reserve_capacity = 30.0
-coal_per_movement_unit = 0.10
-consumes_fuel = false
+coal_per_movement_unit = 0.0
+coal_per_second_airborne = 0.1
+depot_energy_per_metre = 0.0
+consumes_fuel = true

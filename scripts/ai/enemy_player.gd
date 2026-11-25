@@ -731,7 +731,7 @@ func fight(depot: Node3D) -> void:
 			if unit.order == "attack": continue
 			if unit.order == "attack_move" and unit.move_goal.distance_to(threat.global_position) < 15.0: continue
 			unit.command_attack_move(threat.global_position)
-		_escort_drones()
+		_escort_drones(depot)
 		return
 	# A wave presses on to the next target it knows of; one with nothing left to find, or down to its last unit,
 	# comes home and joins the next.
@@ -753,12 +753,18 @@ func fight(depot: Node3D) -> void:
 		if wave.size() < next_wave_size(): wave.clear(); return
 		last_wave = wave.size(); waves_sent += 1
 		for unit in wave: unit.command_attack_move(target)
-	_escort_drones()
+	_escort_drones(depot)
 ## Keeps each Drone over the centre of the ground units it goes with: the wave's if it is in the wave, else the
-## rest of the army's. A Drone with no ground units to go with is left alone.
-func _escort_drones() -> void:
+## rest of the army's. A Drone with no ground units to go with is left alone. One low on coal (it burns coal by the
+## second in the air) leaves the wave and flies home to the rally point, inside the Depot's range, to refuel.
+func _escort_drones(depot: Node3D) -> void:
+	var rally := rally_point(depot)
 	for drone in army:
 		if not _is_drone(drone): continue
+		if drone.has_method("fuel_low") and (drone.fuel_low() or drone.get("landed") == true):
+			wave.erase(drone)
+			if not drone.landed and drone.global_position.distance_to(rally) > 6.0 and (drone.order != "move" or drone.move_goal.distance_to(rally) > 6.0): drone.command_move(rally)
+			continue
 		var group: Array[Node3D] = (wave if wave.has(drone) else army.filter(func(unit): return not wave.has(unit))).filter(func(unit): return not _is_drone(unit))
 		if group.is_empty(): continue
 		var centre := _centre(group)
