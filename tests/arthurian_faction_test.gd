@@ -178,7 +178,9 @@ func run() -> void:
 		if keep.queue == 0: break
 	if not check(keep.queue == 0 and get_nodes_in_group("units").size() == units_before + 2, "Keep did not finish training both units"): return
 
-	for uid in [&"round_table_marine", &"grail_sentinel", &"questing_marine", &"azure_dragon"]:
+	# Azure Dragons come from the Dragon Yard since 2026-11-25 (docs/KNIGHTS_RAIL.md).
+	if not check(not chapterhouse.request_unit(&"azure_dragon"), "The Chapterhouse should refuse an Azure Dragon"): return
+	for uid in [&"round_table_marine", &"grail_sentinel", &"questing_marine"]:
 		var prev_count := get_nodes_in_group("units").size()
 		if not check(chapterhouse.request_unit(uid), "Chapterhouse refused %s" % uid): return
 		for _s in range(40):
