@@ -9,6 +9,8 @@
 [ext_resource type="Resource" path="res://assets/economy/fuel_motorcycle.tres" id="fuel"]
 
 [ext_resource type="PackedScene" path="res://scenes/gameplay/rail_spike.tscn" id="spike"]
+[ext_resource type="Resource" path="res://assets/combat/mine_rules.tres" id="mine_rules"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/land_mine.tscn" id="land_mine"]
 
 [ext_resource type="Material" path="res://assets/materials/units/team_marker.tres" id="team_marker"]
 
@@ -21,6 +23,8 @@ script = ExtResource("agent")
 fuel_rules = ExtResource("fuel")
 unit_stats = ExtResource("stats")
 projectile_scene = ExtResource("spike")
+mine_rules = ExtResource("mine_rules")
+mine_scene = ExtResource("land_mine")
 can_construct = false
 can_gather = false
 can_capture_depots = false

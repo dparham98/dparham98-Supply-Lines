@@ -3,6 +3,7 @@
 [ext_resource type="Resource" path="res://assets/buildings/temple_of_science.tres" id="stats"]
 [ext_resource type="Script" path="res://scripts/research/research_stats.gd" id="research_stats"]
 [ext_resource type="Resource" path="res://assets/research/mining_trains.tres" id="mining_trains"]
+[ext_resource type="Resource" path="res://assets/research/minelaying.tres" id="minelaying"]
 [ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
 [ext_resource type="PackedScene" path="res://scenes/models/temple_of_science_model.tscn" id="model"]
 [ext_resource type="Material" path="res://assets/materials/units/team_marker.tres" id="team_marker"]
@@ -13,7 +14,7 @@ size = Vector2(8.8, 8.8)
 [node name="TempleOfScience" type="Node3D"]
 script = ExtResource("script")
 stats = ExtResource("stats")
-research = Array[ExtResource("research_stats")]([ExtResource("mining_trains")])
+research = Array[ExtResource("research_stats")]([ExtResource("mining_trains"), ExtResource("minelaying")])
 [node name="Visuals" type="Node3D" parent="."]
 script = ExtResource("slot")
 model_scene = ExtResource("model")

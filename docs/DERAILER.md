@@ -7,12 +7,14 @@ provisional and wait on playtesting.
 
 - The Tank Factory's Motorcycle is now named the Derailer (`display_name` in `assets/units/motorcycle.tres`). Its
   stats, model, rail-spike gun and hotkey (C on the factory card) are unchanged.
+- **Price:** 70 E / 15 I since 2026-11-25 (was 45 / 10), item 9 of the balance handoff.
+- **Mines:** once Minelaying is researched it can also carry and lay mines (`docs/MINES.md`).
 - Inside the project it keeps the id `motorcycle`: its files, scenes, card art and the `produce_motorcycle` action.
   Only the name the player sees changed.
 
 ## Derail
 
-**Using it:** the Derailer's card has a **Derail** tile (key **E**). Click a piece of rail (anyone's, your own
+**Using it:** the Derailer's card has a **Derail** tile (key **R**, E until 2026-11-25). Click a piece of rail (anyone's, your own
 included) and the Derailer:
 
 1. drives to the middle of the piece;

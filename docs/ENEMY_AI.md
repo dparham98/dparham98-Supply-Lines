@@ -20,7 +20,8 @@ On Two Lakes the East start mirrors the player's West start:
 
 `scripts/ai/enemy_player.gd`, the `EnemyPlayer` node saved in `scenes/maps/lakes_skirmish.tscn`, decides once a second (`think_seconds`). It gives its units the same orders the player can.
 
-- **Building.** It works through `build_order`: Generator, Barracks, a second Generator, Coal Mine, Tank Factory, Temple of Science, then a third Generator.
+- **Building.** It works through `build_order`: Generator, Barracks, a second Generator, a second Barracks, a third Generator, Coal Mine, Tank Factory, Temple of Science, then a fourth Generator.
+  - The two-Barracks order (item 5 of the balance handoff) had left the Temple out, so it never researched anything. It was put back after the Tank Factory on 2026-11-25, with Minelaying.
   - After that it keeps adding Generators, up to `generators_wanted` (6) in all, while the Depot holds `iron_plenty` (250) iron. Once it has expanded, energy is what holds it back, not iron.
   - It plans one building at a time with `DepotNetwork.queue_plan(..., team = "enemy")`, as soon as the Depot holds the iron and energy.
   - Buildings go in the home Depot's range, toward the middle of the map. Each keeps a 2-tile walkway round it and stays off the way to the home mine. A Generator with no room left at home goes up at an expansion.
@@ -52,7 +53,14 @@ On Two Lakes the East start mirrors the player's West start:
   - **A router for each side.** `RailNetwork.begin_link` keeps a track-search router for each team, so with an AI on both sides (spectating, docs/MAIN_MENU.md) one side's new search never resets the other's half-done one.
   - **One search at a time**, worked on `link_usec` (2 ms) a frame so a long one doesn't hold the frame up. Found track is laid once home has the iron; if the ground has changed since, it searches again. Pairs with no open path are not tried again.
   - Home pays for the track and its upkeep, as the player's Depot pays for the player's.
-- **Research.** Once its Temple of Science stands, it researches Mining Trains as soon as it can pay (150 E / 100 I). `mining_trains` off leaves the Temple out of it.
+- **Research.** Once its Temple of Science stands, it researches what `research_wanted()` lists, one at a time, saving for each (`held_back`):
+  - Mining Trains (150 E / 100 I), unless `mining_trains` is off;
+  - Minelaying (150 E / 100 I), once it has a Derailer, unless `minelaying` is off.
+- **Mines** (docs/MINES.md). With Minelaying, a Derailer at home with mines aboard and a full tank, not in a wave and with no threat near, lays them (`lay_mines`):
+  - **Where:** a row across the way toward what it would attack, `mine_distance` (45 m) out from home, or half way if that's nearer. Spots are `mine_spacing` (5 m) apart, from the middle outward. The way is fixed the first time it knows of somewhere to attack, so the row stays put.
+  - **How many:** it keeps `mines_wanted` (6) of its own laid. A spot a Derailer couldn't reach isn't tried again.
+  - **Buying:** a Derailer idle at home buys mines (Buy mine) until it carries two, from the Depot's iron.
+  - **Seen in the sim (2026-11-25):** Minelaying done by 9:00 and mines laid by 10:00. With no opponent the Depot ran out of coal by 9:00, and Derailers without fuel then waited at home.
 - **Repair.** A building of its own below `repair_below` (75%) of its health, with none of the player's units seen within 30 m, gets the nearest free worker within 120 m. At most `repairers` (2) repair at once. They pay from the nearest covering stockpile, as the player's do.
 - **Scouting.** Its Scout visits the start sites (`Sites`) it has not seen, nearest first.
 - **Defence.** When it sees one of the player's units within `defend_radius` (60 m) of its buildings, the army attack-moves onto it. Units away on a wave keep going.

@@ -377,6 +377,7 @@ func _animate(delta: float = 1.0/60) -> void:
 		rig.set_drive(here.distance_to(_animated_from)/delta if moved and delta > 0.0 else 0.0,angle_difference(_animated_yaw,yaw) if moved else 0.0,delta)
 		rig.set_hatches(_hatches_open())
 		rig.set_load(_load_fraction())
+		if rig.has_method("set_mines"): rig.set_mines(mines)
 		_animated_from = here; _animated_yaw = yaw
 		return
 	var model := _animator()
@@ -474,6 +475,7 @@ func _order_process(delta: float) -> void:
 		"capture": _capture_order()
 		"construct": _construct(delta)
 		"derail": _derail_order(delta)
+		"lay_mine": _lay_mine_order(delta)
 		_:
 			var unreachable := state == "Trees unreachable"
 			state = "Out of fuel · landed" if fuel_landed else "Idle"
@@ -505,6 +507,7 @@ func run_order(entry: Dictionary) -> void:
 		"capture": command_capture(entry.target)
 		"construct": command_construct(entry.target)
 		"derail": command_derail(entry.target)
+		"lay_mine": command_lay_mine(entry.point)
 		"attack_move": command_attack_move(entry.point)
 		"deploy": command_deploy_at(entry.point)
 		"load", "unload":
@@ -990,6 +993,8 @@ var _fog: Node
 var _fog_looked := false
 func team_sees(target: Node3D) -> bool:
 	if not is_instance_valid(target): return false
+	# A mine is hidden once armed: seen only while one of the side's detectors covers it (docs/MINES.md).
+	if target.is_in_group("land_mines") and not target.detected_by(team): return false
 	if not _fog_looked or (_fog != null and not is_instance_valid(_fog)):
 		_fog = get_tree().get_first_node_in_group("fog_of_war") if is_inside_tree() else null
 		_fog_looked = true
@@ -1008,7 +1013,7 @@ func _nearest_opponent() -> Node3D:
 	if closest != null: return closest
 	# With no unit in range it turns on the nearest hostile building, as an attack order on it would (docs/COMBAT_BATCH.md,
 	# Buildings as targets). Shared mines are left alone; units come first.
-	for building in get_tree().get_nodes_in_group("selectable_buildings"):
+	for building in get_tree().get_nodes_in_group("selectable_buildings")+get_tree().get_nodes_in_group("land_mines"):
 		if not is_instance_valid(building) or building.is_in_group("mines") or building.get("team") in [null,team,"neutral"]: continue
 		var d := global_position.distance_to(building.global_position)
 		if d >= distance or not in_attack_range(building): continue
@@ -1353,6 +1358,96 @@ func _capture_order() -> void:
 		if _retry <= 0 and not _route_near(order_target,radius): state = "Capture target unreachable"
 	else: state = "Capturing · stay uncontested"
 
+## Minelaying (item 9 of the balance handoff, docs/MINES.md). Once its side has researched Minelaying at a Temple
+## of Science, a Derailer carries up to `mine_rules.capacity` mines. Each is bought with Buy mine, for
+## `iron_per_mine` iron from a friendly Depot whose range covers it or a deployed Cargo truck beside it. Lay mine
+## sends it to a point, where it works `lay_seconds` and leaves a mine (`mine_scene`).
+@export var mine_rules: MineRules
+@export var mine_scene: PackedScene
+var mines := 0
+var _lay_point := Vector3.ZERO
+func can_carry_mines() -> bool:
+	return mine_rules != null and mine_scene != null and has_ability(&"derail") and Research.has(self,team,Research.MINELAYING)
+## Why it cannot lay a mine now, or "" when it can.
+func lay_mine_blocker() -> String:
+	if mine_rules == null or not has_ability(&"derail"): return "Only a Derailer lays mines."
+	if not Research.has(self,team,Research.MINELAYING): return "Research Minelaying at a Temple of Science first."
+	if mines <= 0: return "No mines aboard. Buy one (Q) inside a friendly Depot's range or by a deployed Cargo truck, for %d iron." % mine_rules.iron_per_mine
+	return ""
+## Why it cannot buy a mine now, or "" when it can.
+func buy_mine_blocker() -> String:
+	if mine_rules == null or not has_ability(&"derail"): return "Only a Derailer carries mines."
+	if not Research.has(self,team,Research.MINELAYING): return "Research Minelaying at a Temple of Science first."
+	if mines >= mine_rules.capacity: return "Full: %d of %d mines aboard." % [mines,mine_rules.capacity]
+	if mine_source() == null: return "Needs a friendly Depot's range, or a deployed Cargo truck beside it, with %d iron." % mine_rules.iron_per_mine
+	return ""
+## Buys one mine from the covering stockpile. Returns whether it did.
+func command_buy_mine() -> bool:
+	if not buy_mine_blocker().is_empty(): return false
+	var source := mine_source()
+	if source.stockpile.withdraw(&"iron",mine_rules.iron_per_mine) != mine_rules.iron_per_mine: return false
+	mines += 1
+	state = "Mine bought · %d of %d aboard" % [mines,mine_rules.capacity]
+	return true
+## The friendly stockpile it would load from here: a covering Depot or deployed Cargo truck with the iron.
+func mine_source() -> Node3D:
+	if not is_inside_tree(): return null
+	for source in SupplySource.candidates(get_tree(),global_position,team):
+		if source.get("stockpile") != null and source.stockpile.amount(&"iron") >= mine_rules.iron_per_mine: return source
+	return null
+func command_lay_mine(point: Vector3) -> void:
+	var blocker := lay_mine_blocker()
+	if not blocker.is_empty(): state = blocker; return
+	_stop_route()
+	order_target = null
+	source = null
+	_lay_point = point
+	_lay_stand = _lay_stand_for(point)
+	_lay_tries = 0
+	_work_timer = 0.0
+	order = "lay_mine"
+	state = "To lay a mine"
+## Where it stops to lay: LAY_STANDOFF past the point along its way there, so the point ends up just behind the
+## bike, where the rider lowers the mine (motorcycle_rig.gd set_laying). The mine still goes on the point itself.
+const LAY_STANDOFF := 1.75
+var _lay_stand := Vector3.ZERO
+var _lay_tries := 0
+func _lay_stand_for(point: Vector3) -> Vector3:
+	var way := Vector2(point.x-global_position.x,point.z-global_position.z)
+	if way.length() < 0.05: way = Vector2(-$Visuals.global_basis.z.x,-$Visuals.global_basis.z.z)
+	way = way.normalized()*LAY_STANDOFF
+	return Vector3(point.x+way.x,point.y,point.z+way.y)
+func _lay_mine_order(delta: float) -> void:
+	if mines <= 0: order = "idle"; state = "No mines aboard"; return
+	var flat := Vector2(global_position.x-_lay_point.x,global_position.z-_lay_point.z).length()
+	var at_stand := Vector2(global_position.x-_lay_stand.x,global_position.z-_lay_stand.z).length() <= 0.8
+	# Drive to the stand (three tries), else up to the point itself; lay once stopped there, or within 2.5 m of it.
+	if not (is_stopped() and (at_stand or (flat <= 2.5 and _lay_tries >= 3))):
+		_work_timer = 0.0
+		if is_stopped() and _retry <= 0:
+			state = "To lay a mine"
+			_lay_tries += 1
+			if _lay_tries <= 3 and _route_to_point(_lay_stand): return
+			_lay_tries = 3
+			if not _route_to_point(_lay_point): order = "idle"; state = "Mine site unreachable"
+		return
+	_work_timer += delta
+	var progress := minf(1.0,_work_timer/mine_rules.lay_seconds)
+	state = "Laying a mine · %d%%" % roundi(progress*100)
+	var rig := $Visuals.get_node_or_null("Model")
+	if rig != null and rig.has_method("set_laying"): rig.set_laying(progress,Vector3(_lay_point.x,0.0,_lay_point.z))
+	if _work_timer < mine_rules.lay_seconds: return
+	_work_timer = 0.0
+	mines -= 1
+	var mine: Node3D = mine_scene.instantiate()
+	mine.team = team
+	mine.rules = mine_rules
+	game.get_node("Entities").add_child(mine)
+	# On the point clicked, which may be track it can stand beside but not on; turned as the rider set it down.
+	mine.global_position = Vector3(_lay_point.x,0.0,_lay_point.z)
+	mine.rotation.y = $Visuals.global_rotation.y
+	order = "idle"
+	state = "Mine laid · %d left" % mines
 ## Derail (docs/DERAILER.md): the unit goes to a piece of track and destroys it, derailing any train on it.
 ## Seconds until it can derail again.
 var derail_cooldown := 0.0

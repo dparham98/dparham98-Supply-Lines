@@ -1,0 +1,19 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/land_mine.gd" id="mine"]
+[ext_resource type="Resource" path="res://assets/combat/mine_rules.tres" id="rules"]
+[ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
+[ext_resource type="PackedScene" path="res://scenes/models/land_mine_model.tscn" id="model"]
+[ext_resource type="PackedScene" path="res://scenes/models/land_mine_blast.tscn" id="blast"]
+
+[node name="LandMine" type="Node3D"]
+script = ExtResource("mine")
+rules = ExtResource("rules")
+
+[node name="Visuals" type="Node3D" parent="."]
+script = ExtResource("slot")
+model_scene = ExtResource("model")
+
+[node name="Model" parent="Visuals" instance=ExtResource("model")]
+
+[node name="Blast" parent="." instance=ExtResource("blast")]

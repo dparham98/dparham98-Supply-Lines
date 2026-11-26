@@ -56,9 +56,9 @@ func pick_object(pos: Vector2) -> Node3D:
 	var closest: Node3D
 	var distance := INF
 	# Enemy units can be clicked too, to read their stats (docs/SELECTION_INSPECT.md); they never take orders.
-	for group in ["units","selectable_buildings","construction_plans"]:
+	for group in ["units","selectable_buildings","construction_plans","land_mines"]:
 		for actor in get_tree().get_nodes_in_group(group):
-			if group == "units" and actor.team != "player" and not actor.is_visible_in_tree(): continue
+			if group in ["units","land_mines"] and actor.team != "player" and not actor.is_visible_in_tree(): continue
 			var d: float = Bounds.hit_distance(actor,camera,pos)
 			if d < distance: distance = d; closest = actor
 	return closest
@@ -195,7 +195,7 @@ func selection_changed(closest: Node3D, buildings: Array[Node3D] = []) -> void:
 		game.get_node("DepotNetwork").clear_builder()
 		var enemy_unit: bool = closest != null and closest.is_in_group("units") and closest.team != "player"
 		var cell: bool = closest != null and (closest.is_in_group("forest_cells") or closest.is_in_group("coal_cells"))
-		var building = closest if closest != null and (closest.is_in_group("selectable_buildings") or closest.is_in_group("construction_plans") or enemy_unit or cell) else null
+		var building = closest if closest != null and (closest.is_in_group("selectable_buildings") or closest.is_in_group("construction_plans") or closest.is_in_group("land_mines") or enemy_unit or cell) else null
 		game.get_node("DepotNetwork").select_depot(building if building != null and building.is_in_group("depots") else null)
 		if buildings.size() > 1: game.select_buildings(buildings)
 		else: game.selected_building = building

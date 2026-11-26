@@ -43,6 +43,14 @@ extends "res://scripts/components/turret_aim.gd"
 @export_range(0,0.05,0.001) var rumble_height := 0.004
 @export_range(1,40,0.5) var rumble_hertz := 17.0
 @export_range(0,10,0.1) var sway_rider_degrees := 1.2
+## Minelaying (docs/MINES.md): mines ride in two side trays. A mine loaded drops into its tray over load_drop_time
+## and the clamp swings shut. Laying (set_laying) runs over the unit's lay_seconds: the clamp opens, the rider
+## turns and lifts the mine off, lowers it to the lay point (unfolding it to full size), twists it to arm and
+## rides on. The mine ends exactly on the point given.
+@export_range(0.05,2,0.05) var load_drop_time := 0.6
+@export_range(0,180,1) var clamp_open_degrees := 115.0
+@export_range(0,90,1) var lay_twist_rider_degrees := 50.0
+@export_range(0,180,1) var lay_reach_degrees := 75.0
 @export var death_clip := &"Die"
 ## Spawned on this model at death (sparks, oil, fire); built on the same timeline as the clip.
 @export var death_fx_scene: PackedScene
@@ -60,7 +68,15 @@ var _stopped := INF
 var _head := 0.0
 var _since_fire := INF
 var _clock := randf()*10.0
+var _mines := 0
+var _mine_drop: Array[float] = [1.0,1.0]
+var _lay_progress := -1.0
+var _lay_point := Vector3.ZERO
+var _lay_frame := -2
+var _lay_slot := -1
 const BIKE := "Rig/bike_root/"
+## A carried mine is modelled 0.24 m in radius; a laid one (scenes/models/land_mine_model.tscn) is 0.45 m.
+const LAID_SCALE := 0.45/0.24
 const FORWARD := Vector3(0,0,1)
 @onready var player: AnimationPlayer = get_node("Rig/AnimationPlayer")
 @onready var _bike: Node3D = get_node("Rig/bike_root")
@@ -81,6 +97,46 @@ const FORWARD := Vector3(0,0,1)
 @onready var _barrel_rest: Vector3 = _barrel.position
 @onready var _torso_rest: Basis = _torso.transform.basis
 @onready var _head_rest: Basis = _head_node.transform.basis
+@onready var _arms: Array[Node3D] = [get_node(BIKE+"rider_torso/rider_arm_L"),get_node(BIKE+"rider_torso/rider_arm_R")]
+@onready var _arm_rest: Array[Basis] = [_arms[0].transform.basis,_arms[1].transform.basis]
+@onready var _slot_mines: Array[Node3D] = [get_node(BIKE+"mine_slot_1/mine_carried_1"),get_node(BIKE+"mine_slot_2/mine_carried_2")]
+@onready var _clamps: Array[Node3D] = [get_node(BIKE+"mine_slot_1/mine_clamp_1"),get_node(BIKE+"mine_slot_2/mine_clamp_2")]
+@onready var _clamp_rest: Array[Basis] = [_clamps[0].transform.basis,_clamps[1].transform.basis]
+@onready var _carried_rest: Array[Transform3D] = [_slot_mines[0].transform,_slot_mines[1].transform]
+func _ready() -> void:
+	super._ready()
+	_show_mines()
+## How many mines ride in the trays (0, 1 or 2): slot 1 is the left tray, slot 2 the right. A mine that
+## appears drops in.
+func set_mines(count: int) -> void:
+	count = clampi(count,0,_slot_mines.size())
+	if count == _mines: return
+	for i in range(_mines,count): _mine_drop[i] = 0.0
+	_mines = count
+	_show_mines()
+## A still picture of buying a mine (the Buy mine card): `count` mines aboard, the last held `drop` of the way into
+## its tray with the clamp open.
+func pose_mine_drop(count: int, drop: float) -> void:
+	set_mines(count)
+	for i in _mines: _mine_drop[i] = 1.0
+	_mine_drop[_mines-1] = clampf(drop,0.0,1.0)
+	load_drop_time = INF
+	_mines_tick(0.0)
+func mines_shown() -> int:
+	return _slot_mines.filter(func(mine: Node3D) -> bool: return mine.visible).size()
+## Laying a mine: `progress` 0..1 through the unit's lay time, `point` where it goes on the ground (world).
+## Lapses after a frame without a call, which snaps everything back.
+func set_laying(progress: float, point: Vector3) -> void:
+	_lay_progress = clampf(progress,0.0,1.0)
+	_lay_point = point
+	_lay_frame = Engine.get_process_frames()
+func laying() -> bool:
+	return Engine.get_process_frames()-_lay_frame <= 1 and _lay_progress >= 0.0 and _mines > 0
+## The carried mine being laid, while laying (its world transform is where the mine is now).
+func laid_mine() -> Node3D:
+	return _slot_mines[_mines-1] if laying() else null
+func _show_mines() -> void:
+	for i in _slot_mines.size(): _slot_mines[i].visible = i < _mines
 ## Report this frame of travel: ground speed (m/s) and heading change (radians this frame, positive
 ## turning left). Lapses after a frame without a call.
 func set_drive(speed: float, turn: float, delta: float) -> void:
@@ -113,6 +169,7 @@ func dying() -> bool:
 func play_death() -> void:
 	_dying = true
 	_barrel.position = _barrel_rest
+	_reset_lay()
 	player.animation_finished.connect(func(clip: StringName) -> void: if clip == death_clip: queue_free())
 	player.play(death_clip)
 	if death_fx_scene: add_child(death_fx_scene.instantiate())
@@ -153,6 +210,9 @@ func _process(delta: float) -> void:
 	_frame.position = _frame_rest+Vector3.UP*rumble_height*sin(TAU*rumble_hertz*_clock)*(1.0 if moving else 0.5)
 	_torso.transform.basis = _torso_rest*Basis(FORWARD,deg_to_rad(sway_rider_degrees)*sin(1.7*_clock)-_lean*0.2)
 	var look := clampf(turret_yaw(),-deg_to_rad(head_turn_degrees),deg_to_rad(head_turn_degrees)) if aiming() else 0.0
+	_mines_tick(delta)
+	if laying(): look = _lay_pose()
+	elif _lay_slot >= 0: _reset_lay()
 	_head = lerpf(_head,look,minf(1.0,head_speed*delta))
 	_head_node.transform.basis = _head_rest*Basis(Vector3.UP,_head)
 ## Barrel recoil, and the pitch that lifts the back of the bike, for this frame.
@@ -166,3 +226,54 @@ func _kick(delta: float) -> float:
 	var back: float = smoothstep(0.0,recoil_kick_time,_since_fire)*(1.0-smoothstep(0.0,recoil_return_time,_since_fire-recoil_kick_time))
 	_barrel.position = _barrel_rest-barrel_axis*back*recoil_distance
 	return deg_to_rad(kick_degrees)*exp(-kick_damping*_since_fire)*sin(TAU*kick_hertz*_since_fire)
+## Mines loaded since the last frame drop into their trays; the clamp opens for them and swings shut.
+func _mines_tick(delta: float) -> void:
+	for i in _slot_mines.size():
+		if i == _lay_slot: continue
+		_mine_drop[i] = minf(1.0,_mine_drop[i]+delta/load_drop_time)
+		var d := _mine_drop[i]
+		var fall := 1.0-smoothstep(0.0,0.7,d)
+		var mine := _slot_mines[i]
+		mine.transform = Transform3D(_carried_rest[i].basis.scaled(Vector3.ONE*lerpf(0.85,1.0,smoothstep(0.0,0.7,d))),_carried_rest[i].origin+Vector3.UP*0.4*fall)
+		_clamps[i].transform.basis = _clamp_rest[i]*Basis(Vector3.RIGHT,deg_to_rad(clamp_open_degrees)*(1.0-smoothstep(0.65,1.0,d)) if d < 1.0 else 0.0)
+## One frame of laying: returns the head turn. 0-12% clamp opens and the rider turns to the tray; 12-35% lifts
+## the mine; 35-72% lowers it onto the point, unfolding to full size; 72-88% twists it to arm; 88-100% the
+## rider turns back. The mine is moved in world space so it lands on the point whatever the bike's stance.
+func _lay_pose() -> float:
+	var slot := _mines-1
+	if _lay_slot != slot: _reset_lay()
+	_lay_slot = slot
+	var p := _lay_progress
+	var side := 1.0 if slot == 0 else -1.0
+	var mine := _slot_mines[slot]
+	var turn := smoothstep(0.0,0.12,p)*(1.0-smoothstep(0.88,1.0,p))
+	_clamps[slot].transform.basis = _clamp_rest[slot]*Basis(Vector3.RIGHT,deg_to_rad(clamp_open_degrees)*smoothstep(0.0,0.12,p))
+	_torso.transform.basis = _torso.transform.basis*Basis(Vector3.UP,side*deg_to_rad(lay_twist_rider_degrees)*turn)
+	var reach := smoothstep(0.05,0.2,p)*(1.0-smoothstep(0.7,0.88,p))
+	var arm := _arms[slot]
+	arm.transform.basis = _arm_rest[slot]*Basis(Vector3.RIGHT,deg_to_rad(lay_reach_degrees)*reach)
+	_arms[1-slot].transform.basis = _arm_rest[1-slot]
+	# Where the mine goes, in world space: from its tray, up, out over the point, down onto it.
+	var parent := mine.get_parent() as Node3D
+	var home: Transform3D = parent.global_transform*_carried_rest[slot]
+	var start := home.origin
+	var lift := start+Vector3.UP*0.35
+	var ground := Vector3(_lay_point.x,global_position.y,_lay_point.z)
+	var over := ground+Vector3.UP*0.7
+	var pos := start
+	if p < 0.12: pos = start
+	elif p < 0.35: pos = start.lerp(lift,smoothstep(0.12,0.35,p))
+	else:
+		var t := smoothstep(0.35,0.72,p)
+		pos = lift.lerp(over,t).lerp(over.lerp(ground,t),t)
+	var size := lerpf(home.basis.get_scale().x,LAID_SCALE,smoothstep(0.4,0.72,p))
+	var yaw := home.basis.orthonormalized().get_euler().y+PI*0.5*smoothstep(0.72,0.88,p)
+	mine.global_transform = Transform3D(Basis(Vector3.UP,yaw).scaled(Vector3.ONE*size),pos)
+	return side*deg_to_rad(head_turn_degrees)*turn
+func _reset_lay() -> void:
+	if _lay_slot < 0: return
+	_slot_mines[_lay_slot].transform = _carried_rest[_lay_slot]
+	_clamps[_lay_slot].transform.basis = _clamp_rest[_lay_slot]
+	for i in _arms.size(): _arms[i].transform.basis = _arm_rest[i]
+	_lay_slot = -1
+	_lay_progress = -1.0

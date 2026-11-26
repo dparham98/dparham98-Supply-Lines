@@ -21,3 +21,4 @@ damage = -1
 attack_interval = -1.0
 abilities = Array[StringName]([])
 mobility = ExtResource("mobility")
+detect_range = 20.0

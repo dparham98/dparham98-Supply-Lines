@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/land_mine_model.gd" id="model_script"]
+[ext_resource type="PackedScene" path="res://assets/models/props/land_mine.glb" id="model"]
+[ext_resource type="Material" path="res://assets/materials/effects/mine_lamp.tres" id="lamp"]
+[ext_resource type="Material" path="res://assets/materials/effects/mine_spotted.tres" id="spotted"]
+
+[node name="LandMineModel" type="Node3D"]
+script = ExtResource("model_script")
+metadata/team_materials = PackedStringArray("mine_team")
+
+[node name="Model" parent="." instance=ExtResource("model")]
+
+[node name="mine_lamp" parent="Model/mine_root/mine_plate"]
+material_override = ExtResource("lamp")
+
+[node name="mine_spotted" parent="Model"]
+visible = false
+material_override = ExtResource("spotted")
+
+[editable path="Model"]

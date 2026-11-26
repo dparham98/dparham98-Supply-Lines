@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="ResearchStats" format=3]
+[ext_resource type="Script" path="res://scripts/research/research_stats.gd" id="stats"]
+[resource]
+script = ExtResource("stats")
+research_id = &"minelaying"
+display_name = "Minelaying"
+energy_cost = 150
+iron_cost = 100
+seconds = 60.0
+summary = "Every Derailer of yours can carry 2 mines. It loads them for 10 iron each, stopped inside a friendly Depot's range or by a deployed Cargo truck, and lays them with Lay mine (N). A laid mine arms after 3 s and is hidden from the other side except near its detectors."

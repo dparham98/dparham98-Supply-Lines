@@ -33,10 +33,10 @@ func run() -> void:
 			if not check(button.expand_icon and button.theme_type_variation == &"CommandCard" and button.text.is_empty() and button.has_node("Key"),"%s is not set up as a card" % button.name): return
 	# 52 since the Temple of Science (docs/TEMPLE_OF_SCIENCE.md): its Build tile, its Research card and the train's Mine iron.
 	# 62 with the Arthurian Knights (docs/ARTHURIAN_KNIGHTS.md): Keep and Chapterhouse build tiles, the Food crate, Heal,
-	# the Keep's two units and the Chapterhouse's four. 64 with the Farm and House build tiles (docs/KNIGHTS_ECONOMY.md). 65 with the Keep's Launch balloon (docs/AIR_BALLOON.md).
-	if not check(tiles == 65,"Expected 65 card tiles, found %d" % tiles): return
+	# the Keep's two units and the Chapterhouse's four. 64 with the Farm and House build tiles (docs/KNIGHTS_ECONOMY.md). 65 with the Keep's Launch balloon (docs/AIR_BALLOON.md). 67 with the Derailer's Lay mine and the Temple's Minelaying (docs/MINES.md). 68 with Buy mine.
+	if not check(tiles == 68,"Expected 68 card tiles, found %d" % tiles): return
 	# Commands with their own art.
-	var names := {"Return":"sl_deliver.png","DropMaterials":"sl_drop.png","DeployTruck":"sl_deploy_depot.png","ProduceUbermech":"sl_produce_ubermech.png","PrintTruck":"sl_produce_truck.png","Derail":"sl_derail.png","Research":"sl_research_mining_trains.png","MineIron":"sl_mine_iron.png"}
+	var names := {"Return":"sl_deliver.png","DropMaterials":"sl_drop.png","DeployTruck":"sl_deploy_depot.png","ProduceUbermech":"sl_produce_ubermech.png","PrintTruck":"sl_produce_truck.png","Derail":"sl_derail.png","Research":"sl_research_mining_trains.png","MineIron":"sl_mine_iron.png","LayMine":"sl_lay_mine.png","BuyMine":"sl_buy_mine.png","ResearchMines":"sl_research_minelaying.png"}
 	for id in names:
 		if not check(art(hud.card.get_node(id)) == names[id],"%s has the wrong card" % id): return
 	# Cargo: supplies, refuelling and trips each show the art for their state.

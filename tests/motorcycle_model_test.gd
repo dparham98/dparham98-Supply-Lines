@@ -55,16 +55,33 @@ func run() -> void:
 	if not check(fx.flash.scale.x < 0.01,"Steam should be out before the first shot"): return
 	# On the ground, the size of the concept, headlight and muzzle to the front; effects are not its body.
 	var meshes := Bounds.meshes(unit)
-	if not check(meshes.size() == 17 and meshes.all(func(m): return not fx.is_ancestor_of(m)),"Motorcycle meshes wrong: %d" % meshes.size()): return
+	# 17 parts plus the two mine-tray clamps; the carried mines are hidden with none aboard.
+	if not check(meshes.size() == 19 and meshes.all(func(m): return not fx.is_ancestor_of(m)),"Motorcycle meshes wrong: %d" % meshes.size()): return
 	var low := INF; var high := -INF; var ahead := INF; var behind := -INF; var left := INF; var right := -INF
 	for mesh in meshes:
 		for i in range(8):
 			var p: Vector3 = unit.global_transform.affine_inverse()*(mesh.global_transform*mesh.get_aabb().get_endpoint(i))
 			low = minf(low,p.y); high = maxf(high,p.y); ahead = minf(ahead,p.z); behind = maxf(behind,p.z); left = minf(left,p.x); right = maxf(right,p.x)
 	if not check(absf(low) < 0.15 and high > 1.9 and high < 2.2,"Motorcycle not on the ground or the wrong height: y %.2f..%.2f" % [low,high]): return
-	if not check(behind-ahead > 2.5 and behind-ahead < 2.9 and right-left > 0.8 and right-left < 1.3,"Motorcycle size wrong: z %.2f..%.2f x %.2f..%.2f" % [ahead,behind,left,right]): return
+	if not check(behind-ahead > 2.5 and behind-ahead < 2.9 and right-left > 0.8 and right-left < 1.6,"Motorcycle size wrong: z %.2f..%.2f x %.2f..%.2f" % [ahead,behind,left,right]): return
 	if not check(unit.to_local(fork.global_position).z < -0.5 and unit.to_local(model.muzzle_position()).z < unit.to_local(swivel.global_position).z-0.5,"Motorcycle should face -Z"): return
 	if not check(unit.get_node("Visuals/TeamMarker").mesh.size.y >= behind-ahead,"The bike sticks out past its team marker"): return
+	# Minelaying (docs/MINES.md): the trays show the mines aboard; laying lowers the last one onto the point given,
+	# full size, and a lapse snaps it back.
+	model.set_mines(2)
+	if not check(model.mines_shown() == 2,"Two mines aboard should show in both trays"): return
+	var drop: Vector3 = unit.global_position+unit.global_basis.z*1.75
+	model.set_laying(1.0,drop)
+	model._process(1.0/30)
+	var laid: Node3D = model.laid_mine()
+	if not check(laid != null and Vector2(laid.global_position.x-drop.x,laid.global_position.z-drop.z).length() < 0.02 and absf(laid.global_position.y-unit.global_position.y) < 0.02,"The mine should end on the lay point"): return
+	if not check(absf(laid.global_basis.get_scale().x*0.24-0.45) < 0.02,"A laid mine should be full size (0.45 m radius)"): return
+	for i in range(3):
+		await process_frame
+		model._process(1.0/30)
+	if not check(laid.global_position.distance_to(drop) > 0.5 and not model.laying(),"A lapsed lay should snap the mine back to its tray"): return
+	model.set_mines(0)
+	if not check(model.mines_shown() == 0,"No mines aboard should leave the trays empty"): return
 	# Where the left hand holds the bars, for checking it stays there through a turn.
 	var hand_in_arm := Vector3(0.0775,-0.117,0.5)
 	var grip_in_bars: Vector3 = bars.global_transform.affine_inverse()*(arm.global_transform*hand_in_arm)

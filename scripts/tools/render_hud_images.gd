@@ -33,7 +33,19 @@ const ENTRIES := {
 	"mine": ["res://scenes/gameplay/site_mine.tscn","","build_mine",20.0,1.0],
 	"pithead": ["res://scenes/gameplay/iron_mine.tscn","","build_coal_mine",35.0,1.0],
 	"temple": ["res://scenes/gameplay/temple_of_science.tscn","","build_temple",215.0,1.0], # its door faces +Z
+	# Minelaying (docs/MINES.md): the land mine's own icon and portrait, and the Derailer's Lay mine, show a mine arming; its
+	# Buy mine a mine dropping into its tray, and the Temple's research the Derailer with a mine in each tray.
+	"land_mine": ["res://scenes/gameplay/land_mine.tscn","","lay_mine",20.0,1.0],
+	"derailer_mines": ["res://scenes/gameplay/motorcycle.tscn","","research_minelaying",235.0,1.0],
+	"derailer_buy_mine": ["res://scenes/gameplay/motorcycle.tscn","","buy_mine",215.0,1.0],
 }
+## Entries shot only for their cards: no selection icon or portrait is written for them.
+const CARD_ONLY := ["derailer_mines","derailer_buy_mine"]
+## Calls made on an entry's model root before it is shot: method name and arguments.
+const POSES := {"land_mine": ["set_age",[1.6,3.0]],"derailer_mines": ["set_mines",[2]],"derailer_buy_mine": ["pose_mine_drop",[1,0.05]]}
+## Entries framed on one part of the model rather than the whole: the node's name and how far to widen the view
+## around it (a share of its size).
+const FOCUS := {"derailer_buy_mine": ["mine_slot_1",0.2]}
 ## More cards made from an entry's render (docs/TEMPLE_OF_SCIENCE.md): the Temple's Mining Trains research shows the
 ## train, and the train's Mine iron order the portal mine.
 const EXTRA_CARDS := {"train": ["research_mining_trains"], "mine": ["mine_iron"]}
@@ -131,16 +143,20 @@ func render(id: String, entry: Array) -> void:
 	var model := model_of(entry[0])
 	viewport.add_child(model)
 	TeamPaint.apply(model.get_node_or_null("Model"),"player")
+	if POSES.has(id): model.get_node("Model").callv(POSES[id][0],POSES[id][1])
 	for player in model.find_children("*","AnimationPlayer",true,false):
 		for clip in ["idle","Idle","idle_loop"]:
 			if player.has_animation(clip): player.play(clip); player.seek(0.4,true); break
 	await process_frame
 	var box := bounds(model)
+	if FOCUS.has(id):
+		box = bounds(model.find_child(FOCUS[id][0],true,false))
+		box = box.grow(box.size.length()*FOCUS[id][1])
 	# Icon: the whole model, three-quarter view, clear background.
 	frame_box(box,entry[3],1.0,0.98)
 	var icon := await shoot(ICON_SIZE)
 	icon = trimmed(icon,ICON_SIZE)
-	icon.save_png("res://assets/ui/renders/%s.png" % id)
+	if not CARD_ONLY.has(id): icon.save_png("res://assets/ui/renders/%s.png" % id)
 	# Portrait: the top share of the model, closer, on a clear ground. The frame shows it whole and centred, on
 	# its own background, at any width (the frame is 204 px tall and 172–812 px wide).
 	var top := box
@@ -153,7 +169,7 @@ func render(id: String, entry: Array) -> void:
 	var used := portrait.get_used_rect().grow(6).intersection(Rect2i(Vector2i.ZERO,portrait.get_size()))
 	if used.size.x > 0 and used.size.y > 0: portrait = portrait.get_region(used)
 	# A portrait composed for the frame by hand (the Deforester's, from Blender) is kept.
-	if not HUD.COMPOSED_PORTRAITS.has(id): portrait.save_png("res://assets/ui/portraits/%s.png" % id)
+	if not HUD.COMPOSED_PORTRAITS.has(id) and not CARD_ONLY.has(id): portrait.save_png("res://assets/ui/portraits/%s.png" % id)
 	# Cards: the render inside the card's own frame.
 	for card in [entry[1],entry[2]]+EXTRA_CARDS.get(id,[]):
 		if not card.is_empty(): card_image("res://assets/ui/command_cards/sl_%s.png" % card,icon)
