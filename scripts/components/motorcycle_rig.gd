@@ -114,6 +114,14 @@ func set_mines(count: int) -> void:
 	for i in range(_mines,count): _mine_drop[i] = 0.0
 	_mines = count
 	_show_mines()
+## A still picture of buying a mine (the Buy mine card): `count` mines aboard, the last held `drop` of the way into
+## its tray with the clamp open.
+func pose_mine_drop(count: int, drop: float) -> void:
+	set_mines(count)
+	for i in _mines: _mine_drop[i] = 1.0
+	_mine_drop[_mines-1] = clampf(drop,0.0,1.0)
+	load_drop_time = INF
+	_mines_tick(0.0)
 func mines_shown() -> int:
 	return _slot_mines.filter(func(mine: Node3D) -> bool: return mine.visible).size()
 ## Laying a mine: `progress` 0..1 through the unit's lay time, `point` where it goes on the ground (world).

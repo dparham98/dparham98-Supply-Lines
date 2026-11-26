@@ -103,6 +103,13 @@ func run() -> void:
 	if not check(game.hud.selected_object() == target,"A mine of yours can be selected and inspected"): return
 	game.hud._process(0)
 	if not check(game.hud.name_label.text == "Land mine","The card names the mine"): return
+	var head_icon: Texture2D = game.hud.info.get_node("Head/Icon").texture
+	var portrait: TextureRect = game.hud.get_node("Bottom/Body/Row/Ornament/Portrait")
+	if not check(head_icon != null and head_icon.resource_path.ends_with("renders/land_mine.png") and portrait.visible and portrait.texture.resource_path.ends_with("portraits/land_mine.png"),"The mine's card shows its own icon and portrait"): return
+	var camera := game.get_viewport().get_camera_3d()
+	camera.global_position = target.global_position+Vector3(0,14,10)
+	camera.look_at(target.global_position)
+	if not check(get_root().get_node("SelectionManager").pick_object(camera.unproject_position(target.global_position+Vector3(0,0.1,0))) == target,"A click on the mine's model picks it"): return
 	game.selected_building = null
 	var gunner := spawn("infantry","enemy",target.global_position+Vector3(6,0,0))
 	gunner.global_position = target.global_position+Vector3(6,0,0)
