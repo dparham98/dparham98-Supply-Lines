@@ -7,3 +7,4 @@
 script = ExtResource("animation")
 
 [node name="Rig" parent="." instance=ExtResource("house")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)

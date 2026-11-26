@@ -1,6 +1,6 @@
 # Arthurian House
 
-[House.blend](House.blend) is the editable four-cell-square dwelling. Its front door faces +Y in Blender and −Z in Godot. The shingled roof fits entirely within the footprint. Both roof slopes have their own origin at the eave. These named meshes give a later roof variant a stable reference.
+[House.blend](House.blend) is the editable four-cell-square dwelling. Its front door faces +Y in Blender and −Z in Godot. In the game `scenes/models/house_model.tscn` turns the model half round, so the door faces +Z toward the RTS camera like the other Knights buildings. The shingled roof fits entirely within the footprint. Both roof slopes have their own origin at the eave. These named meshes give a later roof variant a stable reference.
 
 The structural frame is laminated oak and fir with bronze joinery. Cedar boards close the walls, and overlapping heartwood shingles cover both pitches. The loft contains a bed, lamp and plant behind glazing. Named team-color materials pick out the shutters, sills and shield.
 
