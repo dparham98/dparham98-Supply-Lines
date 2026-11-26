@@ -455,11 +455,15 @@ func _order_process(delta: float) -> void:
 			_update_display()
 			return
 	if not _route.is_empty() or _moving_to.x >= 0:
-		if is_instance_valid(order_target) and ((order == "attack" and in_attack_range(order_target) and team_sees(order_target)) or (order == "repair" and global_position.distance_to(order_target.global_position) <= engineering_rules.repair_range) or (order == "heal" and global_position.distance_to(order_target.global_position) <= heal_range)):
+		if is_instance_valid(order_target) and ((order == "attack" and in_attack_range(order_target) and team_sees(order_target) and not _closing_in()) or (order == "repair" and global_position.distance_to(order_target.global_position) <= engineering_rules.repair_range) or (order == "heal" and global_position.distance_to(order_target.global_position) <= heal_range)):
 			_stop_route()
 		else:
 			_walk(delta)
-			_fire_during_movement()
+			if order == "attack" and _melee_pursuer() and is_instance_valid(order_target):
+				# A melee pursuer strikes its target as it closes and keeps re-planning toward it.
+				if in_attack_range(order_target) and team_sees(order_target) and not carrying(): _shoot(order_target)
+				_replan_pursuit()
+			else: _fire_during_movement()
 			_update_display()
 			return
 	match order:
@@ -941,6 +945,7 @@ func _attack_order() -> void:
 		if carrying(): state = "Carrying cargo · drop it (X) to fire"; return
 		state = "Firing"
 		_shoot(order_target)
+		if _closing_in(): _replan_pursuit()
 	elif global_position.distance_to(order_target.global_position) < min_attack_range and team_sees(order_target):
 		# Too close for the main gun: back off until the target is at its minimum range.
 		if _retry <= 0:
@@ -951,7 +956,33 @@ func _attack_order() -> void:
 			if not _route_to_point(order_target.global_position+away.normalized()*(min_attack_range+2.0)): state = "Too close for main gun"
 	elif _retry <= 0:
 		state = "Pursuing"
-		if not _route_toward(order_target): state = "Target unreachable"
+		if not (_route_pursuit() if _melee_pursuer() else _route_toward(order_target)): state = "Target unreachable"
+		elif _melee_pursuer() and _near_moving_target(): _retry = unit_stats.pursuit_replan_seconds
+## Whether it is on a route or heading for a cell.
+func is_moving() -> bool:
+	return not _route.is_empty() or _moving_to.x >= 0
+## The cell it is heading for, (-1, -1) when standing.
+func heading_cell() -> Vector2i:
+	return _moving_to
+## A melee pursuer near a moving target heads for the cell the target is heading for, so it closes along the target's
+## line instead of trailing it; otherwise for the target itself.
+func _route_pursuit() -> bool:
+	if _near_moving_target() and order_target.has_method("heading_cell"):
+		var lead: Vector2i = order_target.heading_cell()
+		if lead.x >= 0 and _plan(ground.nearest_actor_cell(lead,mobility_layer(),_owner_key())): return true
+	return _route_toward(order_target)
+## A melee unit that fires on the move (docs/MELEE_PURSUIT.md): the Warhound.
+func _melee_pursuer() -> bool:
+	return unit_stats != null and unit_stats.fire_while_moving and attack_range <= unit_stats.melee_range
+## A melee pursuer not yet within its stop distance of a moving attack target: it keeps closing while it strikes.
+func _closing_in() -> bool:
+	return _melee_pursuer() and is_instance_valid(order_target) and order_target.has_method("is_moving") and order_target.is_moving() and global_position.distance_to(order_target.global_position) >= unit_stats.pursuit_stop_distance
+func _near_moving_target() -> bool:
+	return is_instance_valid(order_target) and order_target.has_method("is_moving") and order_target.is_moving() and global_position.distance_to(order_target.global_position) <= unit_stats.pursuit_replan_within
+## Re-plans toward the attack target when due, sooner while near a moving one.
+func _replan_pursuit() -> void:
+	if _retry > 0 or not is_instance_valid(order_target): return
+	if _route_pursuit() and _near_moving_target(): _retry = unit_stats.pursuit_replan_seconds
 ## Forced fire counts only for the attack order's own target.
 func _forced_on(target: Node3D) -> bool:
 	return attack_forced and order == "attack" and target == order_target

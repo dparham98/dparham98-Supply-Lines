@@ -10,6 +10,9 @@ const SCAN_INTERVAL := 0.12
 
 @export_range(0.1, 50.0, 0.1) var attack_range := 10.0
 @export_range(1, 100, 1) var damage := 3
+## Damage the roof gun gains for each level of the side's attack upgrades (Vehicle Weapons; docs/UPGRADES.md), rounded
+## down: 0.5 makes it 3 at levels 0 and 1 and 4 at levels 2 and 3. Without it, Mail took 1, 2 and 3 off its 3 a hit.
+@export_range(0.0, 10.0, 0.1) var upgrade_bonus_per_level := 0.5
 @export_range(0.05, 5.0, 0.01) var shot_interval := 0.35
 @export_range(1.0, 1080.0, 1.0) var turn_speed_degrees := 360.0
 @export_range(0.1, 15.0, 0.1) var alignment_degrees := 3.0
@@ -36,6 +39,11 @@ func _ready() -> void:
 	if _muzzle == null:
 		push_error("The Bastion close-defense component needs Aux_Turret and its Aux_Muzzle marker.")
 		set_process(false)
+
+
+## A roof-gun hit before the target's armour: `damage` and its share of the side's attack upgrades.
+func shot_damage() -> int:
+	return damage + floori(Upgrades.attack_level(_actor) * upgrade_bonus_per_level)
 
 
 func _eligible(unit: Node3D) -> bool:
@@ -97,5 +105,5 @@ func _process(delta: float) -> void:
 	if _flash != null:
 		_flash.play()
 	var bullet: Node3D = _actor.game.show_shot(origin, end, _actor.team, BULLET)
-	bullet.arm(_actor, victim, damage)
+	bullet.arm(_actor, victim, shot_damage())
 	fired.emit(victim, origin, end)

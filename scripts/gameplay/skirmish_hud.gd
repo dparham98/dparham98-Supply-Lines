@@ -1170,7 +1170,8 @@ Flies only where its Keep sent it" % node.cargo_text()
 				explain(card.get_node("DropMaterials"),node.cargo <= 0,"Nothing carried to drop.")
 			if node.can_repair:
 				show_button("Repair","Repair")
-				card.get_node("Repair").tooltip_text = "Restore up to %d HP every %.1fs for %d energy / %d iron from the selected local supply source. No wood is spent." % [node.engineering_rules.repair_hp,node.engineering_rules.repair_interval,node.engineering_rules.repair_energy,node.engineering_rules.repair_iron]
+				var fix: EngineeringRules = node.engineering_rules
+				card.get_node("Repair").tooltip_text = "Restore up to %d HP every %.1fs from the selected local supply source: %d energy / %d iron from a Depot or Cargo truck, %d wood / %d iron from a Keep." % [fix.repair_hp,fix.repair_interval,fix.repair_energy,fix.repair_iron,fix.repair_wood,fix.repair_iron]
 			if node.can_heal:
 				show_button("Heal","Heal")
 				card.get_node("Heal").tooltip_text = "Vitality Stimulus: heal %d HP every %.1fs from the carried reserve (%d / %d HP), one point for one HP. Idle or attack-moving, it heals the most hurt friend within %.0f m by itself. The reserve refills inside a friendly Keep's range or beside a %s crate, %d points for %d. Does not heal vehicles." % [node.heal_hp,node.heal_interval,node.med_reserve,node.med_reserve_capacity,node.heal_range,str(node.med_refill_kind).capitalize(),node.med_refill_points,node.med_refill_cost]
