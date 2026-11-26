@@ -113,7 +113,7 @@ func run() -> void:
 	if not check(chapterhouse.assigned_depot == keep and chapterhouse.source_friendly(), "Chapterhouse should be assigned to Keep"): return
 	if not check(forester.can_gather and forester.can_construct and not forester._attack_enabled, "Forester Maiden should be unarmed gather/builder worker"): return
 	if not check(warhound.mobility_layer() == MobilityRules.Layer.FOREST, "Warhound should use FOREST mobility"): return
-	if not check(sentinel.can_heal and sentinel.med_reserve == 120, "Grail Sentinel missing 120 HP medical reserve"): return
+	if not check(sentinel.can_heal and sentinel.med_reserve == 200 and sentinel.heal_range == 9.0 and sentinel.heal_hp == 10, "Grail Sentinel should carry a 200 HP reserve and heal 10 HP a second at 9 m (docs/ARTHURIAN_KNIGHTS.md)"): return
 	if not check(questing != null and dragon != null, "Missing Questing Marine or Azure Dragon"): return
 
 	# 5. Forward Keep founding outside home Keep range using ONLY 50 Wood + 50 Iron site materials.
@@ -186,7 +186,9 @@ func run() -> void:
 			if chapterhouse.queue == 0: break
 		if not check(chapterhouse.queue == 0 and get_nodes_in_group("units").size() == prev_count + 1, "Chapterhouse did not finish training %s" % uid): return
 
-	# 7. Grail Sentinel Vitality Stimulus healing rules (Keep Food -> carried reserve -> zero free regen -> crate refill -> no vehicle heal).
+	# 7. Grail Sentinel Vitality Stimulus (item 6 of the balance handoff): heals from its carried reserve, one point for
+	# one HP, 10 HP a second; the reserve refills inside a friendly Keep's range or beside a Food crate, 5 points for 1
+	# Food, healing or not; no free regeneration; idle, it heals the most hurt friend within 9 m by itself.
 	marine.health = 20 # needs 45 HP
 	for c in sentinel._claimed.duplicate(): sentinel._release(c)
 	for c in marine._claimed.duplicate(): marine._release(c)
@@ -194,15 +196,19 @@ func run() -> void:
 	marine.global_position = keep.global_position + Vector3(2.0, 0, 8.0)
 	sentinel._claim(game.ground.get_tile_at_position(sentinel.global_position))
 	marine._claim(game.ground.get_tile_at_position(marine.global_position))
+	sentinel.heal_autocast = false
 
 	var keep_food_before: int = keep.food
 	sentinel.command_heal(marine)
 	if not check(sentinel.order == "heal", "Sentinel did not accept heal command"): return
-	for _h in range(9):
+	for _h in range(5):
 		sentinel._work_timer = sentinel.heal_interval
 		sentinel._process(0.0)
-	if not check(marine.health == marine.max_health and keep.food == keep_food_before - 9, "Sentinel should heal Marine 45 HP for 9 Food from Keep (hp=%d/%d, food=%d->%d)" % [marine.health, marine.max_health, keep_food_before, keep.food]): return
-	if not check(sentinel.med_reserve == 120, "Sentinel should draw from Keep before touching carried reserve"): return
+	if not check(marine.health == marine.max_health and sentinel.med_reserve == 155 and keep.food == keep_food_before, "Sentinel should heal the Marine 45 HP from its reserve, 10 a pulse (hp=%d/%d, res=%d, food=%d->%d)" % [marine.health, marine.max_health, sentinel.med_reserve, keep_food_before, keep.food]): return
+	sentinel.order = "idle"; sentinel.order_target = null
+	for _r in range(3):
+		sentinel._process(1.0)
+	if not check(sentinel.med_reserve == 170 and keep.food == keep_food_before - 3, "Inside the Keep's range the reserve should refill 5 points for 1 Food (res=%d, food=%d->%d)" % [sentinel.med_reserve, keep_food_before, keep.food]): return
 
 	# Field healing far away from Keep uses carried reserve, then stops completely when empty!
 	sentinel.global_position = keep.global_position + Vector3(-120.0, 0, 0)
@@ -214,13 +220,22 @@ func run() -> void:
 		sentinel._work_timer = sentinel.heal_interval
 		sentinel._process(0.0)
 	if not check(marine.health == 40 and sentinel.med_reserve == 0 and sentinel.state.begins_with("Medical reserve empty"), "Sentinel should heal 10 HP from reserve then stop with zero free regen (hp=%d, res=%d, state=%s)" % [marine.health, sentinel.med_reserve, sentinel.state]): return
+	sentinel._process(5.0)
+	if not check(sentinel.med_reserve == 0, "Away from a Keep and a Food crate the reserve should not refill (res=%d)" % sentinel.med_reserve): return
 
-	# Refill from adjacent Food crate when idle/not healing.
+	# Refill from adjacent Food crate.
 	sentinel.order = "idle"; sentinel.order_target = null
 	var food_crate := CrateYard.spawn(self, game.ground.get_tile_at_position(sentinel.global_position + Vector3(2, 0, 0)), &"food", 5, "player")
 	for _r in range(3):
 		sentinel._process(1.0)
 	if not check(sentinel.med_reserve == 15 and food_crate.amount == 2, "Sentinel should refill carried reserve from nearby Food crate (res=%d, crate=%d)" % [sentinel.med_reserve, food_crate.amount]): return
+
+	# By itself: idle, it takes the most hurt friend within 9 m and heals it.
+	sentinel.heal_autocast = true
+	marine.health = 50
+	for _p in range(2):
+		sentinel._process(0.6)
+	if not check(sentinel.order == "heal" and sentinel.order_target == marine and marine.health == 60, "An idle Sentinel should heal a hurt friend within 9 m by itself (order=%s, hp=%d)" % [sentinel.order, marine.health]): return
 
 	# Refuses vehicles even if same team.
 	var ally_tank = load("res://scenes/gameplay/tank.tscn").instantiate()
