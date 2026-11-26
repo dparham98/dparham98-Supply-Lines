@@ -2,7 +2,7 @@
 
 The Motorcycle is `assets/models/units/motorcycle.glb`, wrapped by `scenes/models/motorcycle_model.tscn` and placed in `scenes/gameplay/motorcycle.tscn`. The working file is `Blender/Vehicles/Motorcycle/Motorcycle.blend`, modelled from `Blender/References/Motorcycle_concept.webp`. Stats, range and combat rules are unchanged.
 
-It is 2.69 m long, 0.92 m wide and 2.04 m to the top of the gun, with about 24,600 triangles and flat materials only.
+The bike is 2.69 m long and 2.04 m to the top of the gun. The mine trays bring its full width to 1.52 m. The rider has a rolled helmet peak, amber optics, stamped metal cheek plates and a ribbed breather hose. The packed finish maps are shared between the game mesh and its [close-up portrait](../assets/ui/portraits/motorcycle.png). The production card and group icon show the entire bike.
 
 ## Parts
 
@@ -29,7 +29,7 @@ bike_root            on the ground under the bike's centre
     mine_clamp_N             the strap over it; local X along the bike is its hinge
 ```
 
-The two round mine trays over the rear exhausts are part of `frame`. They make the bike 1.52 m wide.
+The two round mine trays over the rear exhausts are part of `frame`. The rider turns toward the occupied tray during deployment. [Selection view](../Blender/Previews/Motorcycle/derailer_selected.jpg) · [Two deployments in game](../Blender/Previews/Motorcycle/portrait_and_minelaying.mp4)
 
 The gun is on the centre line behind the rider, raised so the barrel clears the helmet by about 8 cm all the way round.
 

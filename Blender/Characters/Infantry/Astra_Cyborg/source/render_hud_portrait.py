@@ -1,4 +1,4 @@
-"""Render the Infantry selection portrait directly from its playable GLB."""
+"""Render a close-up selection portrait directly from the playable Cyborg GLB."""
 import argparse
 import sys
 from pathlib import Path
@@ -23,9 +23,7 @@ def area(scene, name, position, target, width, height, watts, color):
     lamp.rotation_euler = (Vector(target) - lamp.location).to_track_quat("-Z", "Y").to_euler()
 
 
-def stage(scene):
-    aim = Vector((0, -.025, 1.566))
-    direction = Vector((-.47, -1, .052)).normalized()
+def stage(scene, aim, direction, height):
     camera = bpy.data.objects.new("Selection portrait", bpy.data.cameras.new("Orthographic lens"))
     scene.collection.objects.link(camera)
     scene.camera = camera
@@ -34,7 +32,7 @@ def stage(scene):
     camera.data.type = "ORTHO"
     # Leave the full helmet and cheek plates within the central 172 x 204
     # pixels used by the 1280-wide HUD. Extra width reveals the shoulders.
-    camera.data.ortho_scale = .515 * PANEL_SIZE[0] / PANEL_SIZE[1]
+    camera.data.ortho_scale = height * PANEL_SIZE[0] / PANEL_SIZE[1]
 
     world = bpy.data.worlds.new("Soft ambient")
     world.use_nodes = True
@@ -70,18 +68,30 @@ def stage(scene):
     links.new(screen.outputs[0], nodes["Material Output"].inputs["Surface"])
 
 
-def render(model, output, draft):
+def render(model, output, draft, unit="infantry"):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=str(model.resolve()))
     scene = bpy.context.scene
-    rig = next(obj for obj in scene.objects if obj.type == "ARMATURE")
-    rig.animation_data.use_nla = False
-    rig.animation_data.action = bpy.data.actions["Rest"]
-    scene.frame_set(1)
+    if unit == "motorcycle":
+        # The rider is in the riding pose on the real bike. Isolate it for the
+        # portrait so the rear turret cannot cross the silhouette of the helmet.
+        for obj in scene.objects:
+            if obj.animation_data:
+                obj.animation_data_clear()
+            if obj.type == "MESH" and not obj.name.startswith("rider_"):
+                obj.hide_render = True
+        scene.frame_set(0)
+        aim, angle, height = (.063,-.216,1.526), (-.56,-1,.11), .454
+    else:
+        rig = next(obj for obj in scene.objects if obj.type == "ARMATURE")
+        rig.animation_data.use_nla = False
+        rig.animation_data.action = bpy.data.actions["Rest"]
+        scene.frame_set(1)
+        aim, angle, height = (0,-.025,1.566), (-.47,-1,.052), .515
     for obj in scene.objects:
         if obj.type == "LIGHT" or obj.name == "Muzzle flash":
             obj.hide_render = True
-    stage(scene)
+    stage(scene, Vector(aim), Vector(angle).normalized(), height)
     scene.render.engine = "CYCLES"
     scene.cycles.samples = 12 if draft else 80
     scene.cycles.use_denoising = True
@@ -93,20 +103,22 @@ def render(model, output, draft):
     scene.render.resolution_percentage = 50 if draft else 100
     scene.render.image_settings.file_format = "PNG"
     scene.render.image_settings.color_mode = "RGB"
-    source = output / "source" / "infantry_model.png"
+    source = output / "source" / (unit + "_model.png")
     source.parent.mkdir(parents=True, exist_ok=True)
     scene.render.filepath = str(source)
     bpy.ops.render.render(write_still=True)
 
     image = imbuf.load(str(source))
     image.resize(tuple(n * 2 for n in PANEL_SIZE), method="BILINEAR")
-    imbuf.write(image, filepath=str(output / "infantry.png"))
+    imbuf.write(image, filepath=str(output / (unit + ".png")))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--model", type=Path, default=PROJECT / "assets/models/units/infantry.glb")
+    parser.add_argument("--unit", choices=("infantry","motorcycle"), default="infantry")
+    parser.add_argument("--model", type=Path)
     parser.add_argument("--output", type=Path, default=PROJECT / "assets/ui/portraits")
     parser.add_argument("--draft", action="store_true")
     options = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
-    render(options.model, options.output.resolve(), options.draft)
+    render(options.model or PROJECT / "assets/models/units" / (options.unit + ".glb"),
+           options.output.resolve(), options.draft, options.unit)
