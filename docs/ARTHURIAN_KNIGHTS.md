@@ -51,8 +51,11 @@ pay, else the nearest covering one that can. A covering Keep counts. The check i
 - **Healing:** 10 HP a second, at up to 9 m.
   - **Reserve:** it always heals from a carried reserve of 200 points, one point for one HP. There is no free regeneration.
   - **By itself:** idle or attack-moving with reserve left, it heals the most hurt friend within 9 m (lowest share of its health). After that, it carries on with the attack-move.
-- **Refill:** the reserve refills only inside a friendly Keep's range or beside a Food crate, 5 points for 1 Food each second, whether or not it is healing.
-  - The refill is data on the Sentinel's scene (`med_refill_kind`, `med_refill_cost`, `med_refill_points`, `med_refill_interval`). A cost of 0 makes it free, which the owner is weighing.
+- **Refill:** since Round 3 a Keep never refills the reserve (`docs/ROUND3_HEARTH_WAIN.md`). It refills, whether or not it is healing:
+  - on or within 3 m of a working Farm (the Living Draught): 15 points a 1.2 s beat, each Sentinel taking 1 Food off the Farm's next payout;
+  - within 9 m of a pitched Hearth-Wain: 10 points for 1 of its Food, 12.5 points a second;
+  - beside a Food crate: 8 points for 1 Food each second (5 before Round 3).
+  - The crate refill is data on the Sentinel's scene (`med_refill_kind`, `med_refill_cost`, `med_refill_points`, `med_refill_interval`); a cost of 0 makes it free. The Farm and Wain refills are on `knights_rules.tres`.
 
 These are item 6 of the balance handoff (2026-11-25). Before that it healed 5 HP a second at 7 m, only when ordered, with a 120-point reserve. Inside a Keep's range it was paid straight from the Keep's Food.
 

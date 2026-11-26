@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/units/unit_stats.gd" id="stats"]
+
+[resource]
+script = ExtResource("stats")
+unit_id = &"hearth_wain"
+display_name = "Hearth-Wain"
+energy_cost = 0
+iron_cost = 20
+food_cost = 60
+wood_cost = 35
+build_seconds = 16.0
+max_health = 110
+movement_speed = 5.5
+vision = 22.0
+turn_rate = 180.0
+abilities = Array[StringName]([])

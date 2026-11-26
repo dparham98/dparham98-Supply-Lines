@@ -8,7 +8,7 @@ static func available(node, team: String) -> bool:
 	if node.health <= 0 or node.team != team: return false
 	return node.is_in_group("depots") or (node.is_in_group("mobile_supplies") and node.supplies_available())
 static func radius(node: Node3D) -> float:
-	return node.rules.construction_radius if node.is_in_group("depots") else node.mobile_rules.supply_radius()
+	return node.rules.construction_radius if node.is_in_group("depots") else node.supply_radius()
 static func covers(node, point: Vector3, team: String) -> bool:
 	return available(node,team) and node.global_position.distance_to(point) <= radius(node)
 static func candidates(tree: SceneTree, point: Vector3, team: String) -> Array[Node3D]:

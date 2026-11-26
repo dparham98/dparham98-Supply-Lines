@@ -61,13 +61,20 @@ func source_friendly() -> bool:
 		_set_source(options[0] if not options.is_empty() else null)
 	return assigned_depot != null
 func _depot_ok(depot) -> bool:
-	return is_instance_valid(depot) and depot.is_inside_tree() and depot.health > 0 and depot.team == team
-## Friendly Depots whose range covers the building, nearest first.
+	if not is_instance_valid(depot) or not depot.is_inside_tree() or depot.health <= 0 or depot.team != team: return false
+	# A Hearth-Wain serves only while it is pitched with the building in its range (docs/ROUND3_HEARTH_WAIN.md).
+	return not depot.is_in_group("hearth_wains") or SupplySource.covers(depot,global_position,team)
+## Friendly Depots whose range covers the building, nearest first, then pitched Hearth-Wains covering it.
 func covering_depots() -> Array[Node3D]:
 	var found: Array[Node3D] = []
 	for depot in get_tree().get_nodes_in_group("depots"):
 		if _depot_ok(depot) and SupplySource.covers(depot,global_position,team): found.append(depot)
 	found.sort_custom(func(a,b): return a.global_position.distance_squared_to(global_position) < b.global_position.distance_squared_to(global_position))
+	var wains: Array[Node3D] = []
+	for wain in get_tree().get_nodes_in_group("hearth_wains"):
+		if _depot_ok(wain): wains.append(wain)
+	wains.sort_custom(func(a,b): return a.global_position.distance_squared_to(global_position) < b.global_position.distance_squared_to(global_position))
+	found.append_array(wains)
 	return found
 func _set_source(depot: Node3D) -> void:
 	if depot == assigned_depot: return
@@ -101,13 +108,20 @@ func brazier_scale(delta: float) -> float:
 	brazier_starved = false
 	if not brazier_on or not stats.can_stoke_brazier: return 1.0
 	if _brazier_paid <= 0.0:
-		if not is_instance_valid(assigned_depot) or assigned_depot.coal < 1 or not assigned_depot.spend_resources({&"coal": 1}):
+		var stoker := _brazier_payer()
+		if stoker == null or not stoker.spend_resources({&"coal": 1}):
 			brazier_starved = true
 			return 1.0
 		_brazier_paid += stats.brazier_coal_interval
 	_brazier_paid -= delta
 	brazier_lit = true
 	return stats.stoked_speed
+## Who pays the next Coal: the building's payer while it has some, else a covering Keep or pitched Hearth-Wain that does.
+func _brazier_payer() -> Node3D:
+	if _depot_ok(assigned_depot) and assigned_depot.coal >= 1: return assigned_depot
+	for source in covering_depots():
+		if source.coal >= 1: return source
+	return null
 ## The brazier's word for status lines: "" when it is off or idle.
 func brazier_note() -> String:
 	if brazier_lit: return " · Brazier lit"

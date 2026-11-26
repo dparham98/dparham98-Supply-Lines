@@ -209,7 +209,8 @@ func command_gather(node: Node3D) -> void:
 	if not can_gather or is_depot_truck or is_cargo_vehicle or not is_instance_valid(node): return
 	if farmer:
 		if not node.is_in_group("farms"): _farmer_refuses(); return
-		if is_instance_valid(farm) and farm != node and farm.health > 0 and not farm.is_queued_for_deletion():
+		# Only while her Farm still works: a dormant one (no Keep or Hearth-Wain covering it) lets her go.
+		if is_instance_valid(farm) and farm != node and farm.health > 0 and not farm.is_queued_for_deletion() and farm.covered():
 			state = "A Farmer stays on its Farm"; return
 	# A Farm takes one worker (docs/KNIGHTS_ECONOMY.md).
 	if node.has_method("take_worker") and not node.take_worker(self):

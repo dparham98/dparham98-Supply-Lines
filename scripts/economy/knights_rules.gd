@@ -26,11 +26,30 @@ extends Resource
 ## Housing a House adds while it stands inside a friendly Keep's range.
 @export_range(0,100) var house_room := 8
 @export_range(1,100000) var house_health := 300
+@export_group("Hearth-Wain")
+## Round 3 (docs/ROUND3_HEARTH_WAIN.md): a pitched Hearth-Wain is a Knights supply source of this radius, in metres:
+## it pays plans, Chapterhouse and Forge costs and Stoke Braziers from its hold, takes drop-offs, and lets Farms stand
+## and work in its range.
+@export_range(1.0,60.0,0.5) var hearth_radius := 15.0
+## It refills friendly Grail Sentinels within this many metres, `hearth_medic_points` reserve points for each
+## `hearth_medic_food` Food from its hold, at `hearth_medic_rate` points a second.
+@export_range(1.0,30.0,0.5) var hearth_medic_radius := 9.0
+@export_range(0.1,100.0,0.1) var hearth_medic_rate := 12.5
+@export_range(1,100) var hearth_medic_points := 10
+@export_range(0,100) var hearth_medic_food := 1
+@export_group("Living Draught")
+## A Grail Sentinel short of reserve on or within `draught_reach` m of a working Farm (tilled, not raided, covered)
+## gains `draught_points` a `draught_beat_seconds` beat; each one doing so cuts the Farm's next payout by
+## `draught_food` Food.
+@export_range(0.0,20.0,0.5) var draught_reach := 3.0
+@export_range(1,100) var draught_points := 15
+@export_range(0.1,10.0,0.1) var draught_beat_seconds := 1.2
+@export_range(0,10) var draught_food := 1
 @export_group("Housing")
 ## Housing each standing Keep gives.
 @export_range(0,100) var keep_room := 10
 ## Housing each unit takes, by unit id; units not listed take none. There is no upper limit on housing.
-@export var housing := {&"forester_maiden": 1, &"warhound": 1, &"round_table_marine": 2, &"grail_sentinel": 2, &"questing_marine": 2, &"azure_dragon": 4}
+@export var housing := {&"forester_maiden": 1, &"warhound": 1, &"round_table_marine": 2, &"grail_sentinel": 2, &"questing_marine": 2, &"azure_dragon": 4, &"hearth_wain": 1}
 @export_group("Rail")
 ## Knights rail (docs/KNIGHTS_RAIL.md): a standing Dragon Yard (assets/buildings/dragon_yard.tres) lets the side lay
 ## maglev track from a Keep's iron, at the same price per metre as the Cyborgs, and builds the train, which leaves

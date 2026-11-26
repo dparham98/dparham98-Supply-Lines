@@ -42,6 +42,7 @@ const ENTRIES := {
 	"forge": ["res://scenes/gameplay/forge.tscn","","build_forge",215.0,1.0], # docs/FORGE_MODEL.md; open front +Z
 	"dragon_yard": ["res://scenes/gameplay/dragon_yard.tscn","","build_dragon_yard",215.0,1.0], # docs/DRAGON_YARD_MODEL.md; pen +Z
 	"knights_train": ["res://scenes/gameplay/knights_train.tscn","produce_knights_train","",220.0,1.0], # docs/KNIGHTS_TRAIN_MODEL.md
+	"hearth_wain": ["res://scenes/gameplay/hearth_wain.tscn","produce_hearth_wain","",220.0,1.0], # docs/ROUND3_HEARTH_WAIN.md; placeholder model
 	"derailer_buy_mine": ["res://scenes/gameplay/motorcycle.tscn","","buy_mine",215.0,1.0],
 	# Round 3 (docs/ROUND3_SPELLS_AND_RESEARCH.md): the Sentinel's Stimulus, and the Forge's Sundering Lances and Forest
 	# Camouflage, show the unit they work on until drawn cards replace them.

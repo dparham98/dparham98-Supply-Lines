@@ -557,8 +557,8 @@ func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_paye
 		if kind == &"hydro_dam": strip = DAM_NOTICE
 		game.notify(strip if not strip.is_empty() else "A Coal Mine needs a coal seam under it with no mine yet, and cannot overlap another plan." if kind == &"coal_mine" else "Plan needs valid empty terrain and cannot overlap another plan. Iron Mines need a mine site or iron deposit.",team)
 		return null
-	if spec.get("in_keep_range",false) and not keep_covers(start,spec.size,team):
-		game.notify("A %s must stand inside one of your Keeps' range." % spec.title,team)
+	if spec.get("in_keep_range",false) and not keep_covers(start,spec.size,team,kind == &"farm"):
+		game.notify(("A Farm must stand inside one of your Keeps' range or a pitched Hearth-Wain's." if kind == &"farm" else "A %s must stand inside one of your Keeps' range." % spec.title),team)
 		return null
 	if kind in [&"depot",&"keep"] and not depot_spacing_ok(point,team):
 		game.notify(spacing_notice(point,team),team)
@@ -577,9 +577,10 @@ func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_paye
 	else: game.notify("%s plan placed. Deliver %d iron to its footprint, then order Deforesters to construct; a covering stockpile pays the energy as they build." % [spec.title,spec.iron],team)
 	return plan
 ## Depots and deployed Cargo trucks pay plans in their range; rails need a Depot.
-## Whether one of `team`'s Keeps has the whole footprint in its range.
-func keep_covers(start: Vector2i, size: Vector2i, team := "player") -> bool:
-	return covering_sources(start,size,team).any(func(source): return source.is_in_group("keeps"))
+## Whether one of `team`'s Keeps has the whole footprint in its range; with `or_hearth`, a pitched Hearth-Wain will do
+## too (a Forward Farm, docs/ROUND3_HEARTH_WAIN.md).
+func keep_covers(start: Vector2i, size: Vector2i, team := "player", or_hearth := false) -> bool:
+	return covering_sources(start,size,team).any(func(source): return source.is_in_group("keeps") or (or_hearth and source.is_in_group("hearth_wains")))
 func plan_source_valid(plan: Node3D, source) -> bool:
 	if not SupplySource.available(source,plan.team): return false
 	if source.energy < plan.spec.energy or source.iron < plan.spec.iron or source.stockpile.amount(&"food") < plan.spec.get("food",0) or source.stockpile.amount(&"wood") < plan.spec.get("wood",0) or source.stockpile.amount(&"coal") < plan.spec.get("coal",0): return false
@@ -630,7 +631,7 @@ func update_global_preview(point: Vector3) -> bool:
 	var spaced: bool = game.global_plan_kind not in [&"depot",&"keep"] or depot_spacing_ok(point)
 	var hud_node = game.get_node_or_null("Interface")
 	var seen: bool = game.global_plan_kind == &"rail" or (hud_node != null and hud_node.worksite_open) or in_sight(start,spec.size)
-	var in_keep_range: bool = not spec.get("in_keep_range",false) or keep_covers(start,spec.size)
+	var in_keep_range: bool = not spec.get("in_keep_range",false) or keep_covers(start,spec.size,"player",game.global_plan_kind == &"farm")
 	valid = valid and spaced and seen and in_keep_range
 	if preview_material == null:
 		preview_material = ghost.get_node("Footprint").mesh.material.duplicate()
@@ -662,7 +663,7 @@ func update_global_preview(point: Vector3) -> bool:
 		if iron_cost > 0: site_parts.append(("iron %d/%d" if wood_cost > 0 else "iron on site %d/%d") % [on_site.get(&"iron",0),iron_cost])
 		site_line = " · "+", ".join(site_parts)+(" · READY" if covered else "")
 	if not spaced: site_line = " · "+spacing_reason()
-	elif not in_keep_range: site_line = " · must stand inside one of your Keeps' range"
+	elif not in_keep_range: site_line = " · must stand inside one of your Keeps' range"+(" or a pitched Hearth-Wain's" if game.global_plan_kind == &"farm" else "")
 	elif not seen: site_line = " · out of sight: plans need vision of the whole site"
 	elif not valid and game.global_plan_kind == &"hydro_dam": site_line = " · only across a dam channel between lakes"
 	elif not valid and not strip_notice(point,spec.size,game.global_plan_kind).is_empty(): site_line = " · keep the Depot Truck strip clear"

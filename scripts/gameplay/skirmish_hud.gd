@@ -45,7 +45,7 @@ const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 
 	"PrintTruck": 0, "PrintCargo": 1, "PrintTrain": 2,
 	"TrainForester": 0, "TrainWarhound": 1, "LaunchBalloon": 2, "KeepTrain": 4,
 	"PrintInfantry": 0, "ProduceScout": 1, "ProduceGrenadier": 2, "ProduceTank": 3, "ProduceMotorcycle": 4, "ProduceDrone": 5, "ProduceUbermech": 6,
-	"ProduceRoundTableMarine": 0, "ProduceGrailSentinel": 1, "ProduceQuestingMarine": 2, "ProduceAzureDragon": 3,
+	"ProduceRoundTableMarine": 0, "ProduceGrailSentinel": 1, "ProduceQuestingMarine": 2, "ProduceAzureDragon": 3, "ProduceHearthWain": 5,
 	"ToggleGenerator": 0, "FocusAssigned": 1, "StokeBrazier": 8,
 	"Research": 0, "ResearchMines": 1, "MineIron": 7,
 	"Upgrade1": 0, "Upgrade2": 1, "Upgrade3": 2, "Upgrade4": 3, "Upgrade5": 4}
@@ -73,6 +73,7 @@ const UNIT_BUTTONS := {
 	&"grail_sentinel": "ProduceGrailSentinel",
 	&"questing_marine": "ProduceQuestingMarine",
 	&"azure_dragon": "ProduceAzureDragon",
+	&"hearth_wain": "ProduceHearthWain",
 }
 const ARTHURIAN_UNIT_IDS := [&"forester_maiden",&"warhound",&"round_table_marine",&"grail_sentinel",&"questing_marine",&"azure_dragon"]
 func production_button_id(unit_id: StringName) -> String:
@@ -274,7 +275,7 @@ func _ready() -> void:
 	card.get_node("TrainWarhound").pressed.connect(func():
 		if is_instance_valid(shown) and shown.is_in_group("keeps") and shown.team == "player":
 			if not least_busy().request_warhound(): game.notify("Keep lacks Food, Iron or queue space."))
-	for id in ["scout","grenadier","tank","motorcycle","drone","ubermech","round_table_marine","grail_sentinel","questing_marine","azure_dragon"]:
+	for id in ["scout","grenadier","tank","motorcycle","drone","ubermech","round_table_marine","grail_sentinel","questing_marine","azure_dragon","hearth_wain"]:
 		var btn_id := production_button_id(StringName(id))
 		card.get_node(btn_id).pressed.connect(func():
 			if is_instance_valid(shown) and shown.is_in_group("production_buildings"): least_busy().request_unit(StringName(id)))
@@ -340,6 +341,7 @@ func object_name(node: Node3D) -> String:
 	if node.is_in_group("rail_trains"): return "Train"
 	if node.is_in_group("farms"): return "Farm" if node.name == "Farm" else "%s · Farm" % node.name
 	if node.is_in_group("houses"): return "House" if node.name == "House" else "%s · House" % node.name
+	if node.is_in_group("hearth_wains"): return "Hearth-Wain"
 	if node.is_cargo_vehicle: return "Cargo Vehicle"
 	if node.is_depot_truck: return "Depot Truck"
 	if node.get("farmer") == true: return "Farmer"
@@ -575,6 +577,7 @@ func icon_name(node: Node) -> String:
 	if node.is_in_group("energy_generators"): return "generator"
 	if node.is_in_group("hydro_dams"): return "hydro_dam"
 	if node.is_in_group("rail_trains"): return "knights_train" if node.get("coal_fuelled") == true else "train"
+	if node.is_in_group("hearth_wains"): return "hearth_wain"
 	if node.get("is_cargo_vehicle"): return "cargo"
 	if node.get("is_depot_truck"): return "truck"
 	return str(node.unit_stats.unit_id) if node.get("unit_stats") != null else "infantry"
@@ -1117,16 +1120,18 @@ the one shown while it can, else another that can."
 		var tiller = node.worker if node.worker_busy() else null
 		var status: String = ("tilled by "+str(tiller.name)) if tiller != null else "no Farmer"
 		if node.raided: status = "enemy on the field: no Food"
+		if not node.covered(): status = "Dormant · needs Keep or Hearth-Wain in range"
+		elif node._since_provision < 1.5: status += " · Provisioning Grail"
 		state_label.text = "%s · %s" % [team_label(node),status]
 		set_stats([["Food a beat","%d / 1.2 s%s" % [node.food_per_beat()," · lakeside" if node.lakeside else ""]],["Farmer","%d / 1" % (1 if tiller != null else 0)]])
-		info.get_node("Details").text = "A field any unit can walk over. Its Farmer tills it and carries the Food to a Keep. While an enemy ground unit stands on it, it yields nothing."
-		hint_text = "Right-click the Farm with one Forester Maiden: she becomes its Farmer for good and no longer builds, fells or fights. A Farm takes one Farmer. The Food goes to the nearest Keep."
+		info.get_node("Details").text = "A field any unit can walk over. Its Farmer tills it and carries the Food to a Keep or pitched Hearth-Wain. While an enemy ground unit stands on it, it yields nothing. With no Keep or pitched Hearth-Wain covering it, it lies dormant. A Grail Sentinel on or beside it while it works refills its reserve, a Food off each payout."
+		hint_text = "Right-click the Farm with one Forester Maiden: she becomes its Farmer for good and no longer builds, fells or fights. A Farm takes one Farmer; she may leave a dormant one for another Farm. The Food goes to the nearest Keep or pitched Hearth-Wain."
 	elif node.is_in_group("houses"):
 		commands.get_node("Title").text = "HOUSE · HOUSING"
 		state_label.text = "%s · %s" % [team_label(node),"+%d housing" % KnightHousing.rules().house_room if node.housed() else "outside every Keep's range: no housing"]
 		set_stats([["Housing",KnightHousing.text(get_tree(),node.team)]])
 		info.get_node("Details").text = "Housing counts for the whole side while the House stands inside one of its Keeps' range."
-		hint_text = "Knights units take housing: Forester and Warhound 1, Marines and Sentinel 2, Azure Dragon 4. Each Keep gives %d, each House in a Keep's range %d." % [KnightHousing.rules().keep_room,KnightHousing.rules().house_room]
+		hint_text = "Knights units take housing: Forester, Warhound and Hearth-Wain 1, Marines and Sentinel 2, Azure Dragon 4. Each Keep gives %d, each House in a Keep's range %d." % [KnightHousing.rules().keep_room,KnightHousing.rules().house_room]
 	elif node.team != "player":
 		# An enemy unit shows only its health and stats: no state, orders, fuel or cargo (docs/SELECTION_INSPECT.md).
 		state_label.text = team_label(node)
@@ -1162,16 +1167,22 @@ Flies only where its Keep sent it" % node.cargo_text()
 			show_button("ToggleRefuel","Auto-refuel: %s" % ("on" if node.auto_refuel else "off"))
 			set_card(card.get_node("ToggleRefuel"),"auto_refuel_on" if node.auto_refuel else "auto_refuel_off")
 		if node.is_cargo_vehicle:
-			show_button("DeployCargo","Pack up supplies" if node.deployed else "Deploy supplies")
+			var wain: bool = node.is_in_group("hearth_wains")
+			if wain: show_button("DeployCargo","Pack up the Hearth" if node.deployed else "Pitch Hearth")
+			else: show_button("DeployCargo","Pack up supplies" if node.deployed else "Deploy supplies")
 			set_card(card.get_node("DeployCargo"),"pack_supplies" if node.deployed else "deploy_supplies")
 			explain(card.get_node("DeployCargo"),not node.supply_transition.is_empty(),"Wait for deploying or packing to finish.")
 			show_button("Load","Load crates")
 			show_button("Unload","Unload crates")
 			show_button("Trips","Trips: %s" % TRIP_LABELS[node.trips])
 			set_card(card.get_node("Trips"),"trips_"+str(node.trips))
-			if not node.is_in_group("rail_trains"): show_button("Worksite","Worksite")
+			if not node.is_in_group("rail_trains") and not wain: show_button("Worksite","Worksite")
 			elif node.has_method("can_mine"): show_mine_tile(node)
 			hint_text = "Worksite places a building and fetches exactly its materials. Right-click a build site to fetch for it. Load sets a manifest of crates, then picks a Depot. Unload at a Depot to unpack, or on open ground to set crates down. Shift queues stops. Trips: %s." % TRIP_LABELS[node.trips]
+			if wain:
+				var r := KnightHousing.rules()
+				card.get_node("DeployCargo").set_meta("detail","Pitched (%s s), it is a Knights supply of %.0f m paid from its hold: plans, Chapterhouse and Forge costs, Stoke Braziers and drop-offs. Farms may stand and work in its range, and Grail Sentinels within %.0f m refill from its Food: %d points for %d Food." % [_seconds(node.mobile_rules.deploy_seconds),r.hearth_radius,r.hearth_medic_radius,r.hearth_medic_points,r.hearth_medic_food])
+				hint_text = "Pitch Hearth to make it a %.0f m Knights supply from its 100-unit hold: Forward Farms stand and work in its range, and Sentinels near it refill from its Food. Load sets a manifest of crates, then picks a Keep. Packing it up leaves its Forward Farms dormant. Trips: %s." % [r.hearth_radius,TRIP_LABELS[node.trips]]
 		elif node.is_depot_truck:
 			show_button("DeployTruck","Deploy")
 			hint_text = "Deploy on an empty Depot footprint. This vehicle does not carry transferable cargo."
@@ -1192,7 +1203,8 @@ Flies only where its Keep sent it" % node.cargo_text()
 				card.get_node("Repair").tooltip_text = "Restore up to %d HP every %.1fs for %d energy / %d iron from the selected local supply source. No wood is spent." % [node.engineering_rules.repair_hp,node.engineering_rules.repair_interval,node.engineering_rules.repair_energy,node.engineering_rules.repair_iron]
 			if node.can_heal:
 				show_button("Heal","Heal")
-				card.get_node("Heal").tooltip_text = "Heal: %d HP every %.1fs from the carried reserve (%d / %d HP), one point for one HP. Idle or attack-moving, it heals the most hurt friend within %.0f m by itself. The reserve refills inside a friendly Keep's range or beside a %s crate, %d points for %d. Does not heal vehicles." % [node.heal_hp,node.heal_interval,node.med_reserve,node.med_reserve_capacity,node.heal_range,str(node.med_refill_kind).capitalize(),node.med_refill_points,node.med_refill_cost]
+				var k := KnightHousing.rules()
+				card.get_node("Heal").tooltip_text = "Heal: %d HP every %.1fs from the carried reserve (%d / %d HP), one point for one HP. Idle or attack-moving, it heals the most hurt friend within %.0f m by itself. A Keep doesn't refill the reserve: it refills on or beside a working Farm (%d points a %s s beat, a Food off the Farm's next payout), within %.0f m of a pitched Hearth-Wain (%d points for %d of its Food) or beside a %s crate (%d points for %d). Does not heal vehicles." % [node.heal_hp,node.heal_interval,node.med_reserve,node.med_reserve_capacity,node.heal_range,k.draught_points,_seconds(k.draught_beat_seconds),k.hearth_medic_radius,k.hearth_medic_points,k.hearth_medic_food,str(node.med_refill_kind).capitalize(),node.med_refill_points,node.med_refill_cost]
 			if node.can_heal and node.get("spell_rules") != null:
 				var spells: SpellRules = node.spell_rules
 				show_button("Mist","Mist")
@@ -1606,7 +1618,7 @@ func refresh_global_menu() -> void:
 		elif pair[0] == &"farm":
 			set_tile(button,spec.title,"%d W · inside a Keep's range, from its stock · one Forester tills it for Food" % spec.wood)
 		elif pair[0] == &"dragon_yard":
-			set_tile(button,spec.title,"%d W · %d I · inside a Keep's range, from its stock · raises Azure Dragons, builds coal trains and lets your Keeps lay track" % [spec.wood,spec.iron])
+			set_tile(button,spec.title,"%d W · %d I · inside a Keep's range, from its stock · raises Azure Dragons and Hearth-Wains, builds coal trains and lets your Keeps lay track" % [spec.wood,spec.iron])
 		elif pair[0] == &"house":
 			set_tile(button,spec.title,"%d W · +%d housing while inside a Keep's range" % [spec.wood,KnightHousing.rules().house_room])
 		elif pair[0] == &"hydro_dam":

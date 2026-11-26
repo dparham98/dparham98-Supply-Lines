@@ -66,9 +66,19 @@ var coal_hand: Node3D
 @export_range(1,20) var slow_clump := 3
 ## Friends within Mist's radius of a Sentinel before it covers them.
 @export_range(1,20) var mist_group := 4
+@export_group("Sentinel refill")
+## A Grail Sentinel out of a wave with less than this share of its reserve goes and stands on a working Farm
+## (tilled, not raided, covered) to refill from the Living Draught (docs/ROUND3_HEARTH_WAIN.md), and goes back to
+## the rally point once its reserve is full. A Keep no longer refills it.
+@export_range(0.0,1.0,0.05) var sentinel_refill_below := 0.4
+## One wounded below this share of its health goes too, unless its reserve is full: Sentinels parked together
+## heal one another.
+@export_range(0.0,1.0,0.05) var sentinel_wounded_below := 0.5
 @export_group("")
 ## Its casts still running: {kind, point, until}, so two Sentinels don't cast on the same spot.
 var _casts: Array = []
+## Sentinels refilling at a Farm: instance id -> the Farm.
+var _refilling := {}
 func _ready() -> void:
 	# The army waits outside the Keep's range, off the ground its buildings go on.
 	rally_distance = 36.0
@@ -387,10 +397,12 @@ func produce(depot: Node3D = null) -> void:
 func _next_knight() -> StringName:
 	if dragon_every > 0 and _made%dragon_every == dragon_every-1: return &"azure_dragon"
 	return knight_mix[_made%knight_mix.size()]
-## Grail Sentinels heal the most hurt friend near them.
+## Grail Sentinels heal the most hurt friend near them; those short of reserve refill at a Farm first.
 func _medics() -> void:
+	_refill_sentinels()
 	for unit in army:
 		if unit.unit_stats.unit_id != &"grail_sentinel" or unit.order in ["mist","slow","stimulus"]: continue
+		if _refilling.has(unit.get_instance_id()): continue
 		if unit.order == "heal" and is_instance_valid(unit.order_target) and unit.order_target.health < unit.order_target.max_health: continue
 		var best: Node3D
 		var worst := 0.9
@@ -400,6 +412,42 @@ func _medics() -> void:
 			var share: float = float(friend.health)/friend.max_health
 			if share < worst: worst = share; best = friend
 		if best != null: unit.command_heal(best)
+## A Sentinel refilling at a Farm stays off the rally point and out of new waves.
+func kept_off_rally(unit: Node3D) -> bool:
+	return _refilling.has(unit.get_instance_id())
+## Whether the Sentinel should refill: its reserve below `sentinel_refill_below` of full, or it is wounded below
+## `sentinel_wounded_below` and its reserve isn't full.
+func needs_refill(unit: Node3D) -> bool:
+	if unit.med_reserve >= unit.med_reserve_capacity: return false
+	return unit.med_reserve < unit.med_reserve_capacity*sentinel_refill_below or unit.health < unit.max_health*sentinel_wounded_below
+## Sends each Sentinel out of a wave that needs a refill to stand on the nearest working Farm, keeps it there while
+## the Farm works and its reserve isn't full, then lets fight() call it back to the rally point. One in a wave, or
+## with no working Farm, is left alone.
+func _refill_sentinels() -> void:
+	for id in _refilling.keys():
+		var unit = instance_from_id(id)
+		if not is_instance_valid(unit) or not army.has(unit) or wave.has(unit) or unit.med_reserve >= unit.med_reserve_capacity: _refilling.erase(id)
+	var working: Array = farms().filter(func(farm): return farm.provides_draught())
+	for unit in army:
+		if unit.unit_stats.unit_id != &"grail_sentinel" or wave.has(unit) or unit.order in ["mist","slow","stimulus"]: continue
+		var id := unit.get_instance_id()
+		if not _refilling.has(id) and not needs_refill(unit): continue
+		var farm = _refilling.get(id)
+		if not working.has(farm): farm = _nearest(working,unit.global_position)
+		if farm == null:
+			_refilling.erase(id)
+			continue
+		_refilling[id] = farm
+		var reach: float = KnightHousing.rules().draught_reach
+		if farm.distance_to_field(unit.global_position) <= reach*0.5: continue
+		if unit.order == "move" and farm.distance_to_field(unit.move_goal) <= 0.5: continue
+		var offset := Vector3(randf_range(-2,2),0,randf_range(-2,2))
+		unit.command_move(farm.global_position+offset if farm.on_field(farm.global_position+offset) else farm.global_position)
+static func _nearest(nodes: Array, point: Vector3) -> Node3D:
+	var best: Node3D
+	for node in nodes:
+		if best == null or node.global_position.distance_to(point) < best.global_position.distance_to(point): best = node
+	return best
 ## Slow after level 1 of each upgrade line, once the army is big enough; then Sundering Lances
 ## (docs/ROUND3_SPELLS_AND_RESEARCH.md), once home holds its coal, so waiting for coal holds up nothing else.
 func research_wanted() -> Array[StringName]:
