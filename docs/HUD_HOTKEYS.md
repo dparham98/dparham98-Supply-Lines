@@ -25,7 +25,8 @@ The current keys, as set on 2026-11-15. `scripts/tools/setup_command_actions.gd`
 | Generator | R Pause/Resume · W Burn wood · C Burn coal · E Burn either · F Focus Depot |
 | Foundry / Forge (`docs/UPGRADES.md`) | Q, W, E, R: the next level of each upgrade line (Foundry: Infantry Weapons, Infantry Armour, Vehicle Weapons, Vehicle Armour; Forge: Arms, Mail) · X Cancel research |
 | Construction plan | X Cancel plan |
-| Build page (B) and Worksite page | D Depot · G Generator · B Barracks · T Tank Factory · S Temple · O Foundry (docs/UPGRADES.md) · A Iron Mine · C Coal Mine · R Rail · P Pin payer (Build page only) · Esc Back. Knights: K Keep · H Chapterhouse · F Farm · U House (docs/KNIGHTS_ECONOMY.md) · O Forge (docs/UPGRADES.md) |
+| Build page (B) and Worksite page | D Depot · G Generator · B Barracks · T Tank Factory · S Temple · O Foundry (docs/UPGRADES.md) · A Iron Mine · C Coal Mine · R Rail · P Pin payer (Build page only) · Esc Back. Knights: K Keep · H Chapterhouse · F Farm · U House (docs/KNIGHTS_ECONOMY.md) · Y Dragon Yard, then R Rail (docs/KNIGHTS_RAIL.md) · O Forge (docs/UPGRADES.md) |
+| Dragon Yard | D Azure Dragon · T Train (docs/KNIGHTS_RAIL.md) |
 | Laying rail (`docs/RAIL_PLANNING.md`) | click two buildings to connect · the suggested track follows the cursor · click or Enter lays it · Backspace takes back the last pick · Esc stop |
 | Load page | A Iron · E Energy · W Wood · C Coal · X Clear · Esc Cancel. Shift fills free slots |
 | Make crates page | A Iron · E Energy · W Wood · C Coal · Esc Cancel. Shift makes five |

@@ -124,7 +124,10 @@ func power_source(piece, at: Vector3, team: String) -> Node3D:
 		if depot.energy >= 1 and (best == null or depot.global_position.distance_squared_to(at) < best.global_position.distance_squared_to(at)): best = depot
 	return best
 func powered(piece, team: String) -> bool:
-	return is_instance_valid(piece) and power_source(piece,piece.global_position,team) != null
+	if not is_instance_valid(piece): return false
+	# A line joined to a Keep runs coal trains (docs/KNIGHTS_RAIL.md), so it shows as live without energy.
+	if connected_depots(piece,team).any(func(depot): return depot.is_in_group("keeps")): return true
+	return power_source(piece,piece.global_position,team) != null
 ## Compatibility with cell callers: the piece under this tile.
 func piece_at_cell(cell: Vector2i):
 	if not ground.is_tile_in_bounds(cell): return null
@@ -246,7 +249,7 @@ func wreck_at(point, team := "player") -> Node3D:
 ## belongs to the wreck's side and can; else the nearest of that side's Depots that can.
 func wreck_payer(wreck: Node3D, pinned = null) -> Node3D:
 	var need := cost(wreck.kind)
-	var affords := func(depot) -> bool: return is_instance_valid(depot) and depot.is_in_group("depots") and depot.team == wreck.team and depot.health > 0 and depot.iron >= need and depot.energy >= rules.rail_energy_cost
+	var affords := func(depot) -> bool: return is_instance_valid(depot) and depot.is_in_group("depots") and depot.team == wreck.team and depot.health > 0 and depot.iron >= need and depot.energy >= rules.rail_energy_cost and KnightRail.may_pay(depot)
 	if pinned != null: return pinned if affords.call(pinned) else null
 	if affords.call(wreck.assigned_depot): return wreck.assigned_depot
 	var best: Node3D = null
@@ -640,7 +643,7 @@ func connects(kind: String, xf: Transform3D, team := "player") -> bool:
 ## Whether `payer` can lay this piece here: a living friendly Depot whose territory covers every
 ## tile under it, open land with no other track, connected to a Depot, and the iron for it.
 func can_place(kind: String, xf: Transform3D, payer, check_funds := true) -> bool:
-	if not is_instance_valid(payer) or not payer.is_in_group("depots") or payer.team != "player" or payer.health <= 0: return false
+	if not is_instance_valid(payer) or not payer.is_in_group("depots") or payer.team != "player" or payer.health <= 0 or not KnightRail.may_pay(payer): return false
 	var cells := cells_for(kind,xf)
 	if not ground_clear(cells) or not connects(kind,xf): return false
 	for cell in cells:
@@ -1181,7 +1184,7 @@ func show_target_rings(active: bool) -> void:
 func plan_payer(pinned = null) -> Node3D:
 	var need := plan_cost()
 	var energy := rules.rail_energy_cost*pending.size()
-	var affords := func(depot) -> bool: return is_instance_valid(depot) and depot.is_in_group("depots") and depot.team == "player" and depot.health > 0 and depot.iron >= need and depot.energy >= energy
+	var affords := func(depot) -> bool: return is_instance_valid(depot) and depot.is_in_group("depots") and depot.team == "player" and depot.health > 0 and depot.iron >= need and depot.energy >= energy and KnightRail.may_pay(depot)
 	if pinned != null: return pinned if affords.call(pinned) else null
 	var start: Vector3 = (pending[0].transform as Transform3D).origin if not pending.is_empty() else Vector3.ZERO
 	var best: Node3D = null
@@ -1198,7 +1201,7 @@ func plan_blocker(pinned = null) -> String:
 	# Track from one line to another needs no target of its own.
 	var links_track: bool = route_from is RailAnchor and route_to is RailAnchor
 	if targets.size() < 2 and not links_track: return "Planned track must connect two targets (Depots, mines or build sites); it connects %d." % targets.size()
-	if plan_payer(pinned) == null: return "No Depot has the %d iron for this track." % plan_cost()
+	if plan_payer(pinned) == null: return "No Depot has the %d iron for this track%s." % [plan_cost()," (a Keep pays only once you have a Dragon Yard)" if get_tree().get_nodes_in_group("keeps").any(func(k): return k.team == "player") else ""]
 	return ""
 ## Lays every planned piece at once, charging one Depot. Returns the pieces laid.
 func commit_plan(pinned = null) -> Array[Node3D]:

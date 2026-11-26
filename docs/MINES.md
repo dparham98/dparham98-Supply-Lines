@@ -68,10 +68,9 @@ Nothing else detects. Scouts and Sentinels don't (decided in the handoff).
 
 ## Files
 
-- **Rules:** `assets/combat/mine_rules.tres` (`MineRules`) holds the carry limit, iron per mine, load, lay and arm times, trigger and splash radii, damage, splash share and health.
+- **Rules:** `assets/combat/mine_rules.tres` (`MineRules`) holds the carry limit, iron per mine, lay and arm times, trigger and splash radii, damage, splash share and health.
 - **Mine scene:** `scenes/gameplay/land_mine.tscn` runs `scripts/gameplay/land_mine.gd`. Its model (`scenes/models/land_mine_model.tscn`) and blast (`scenes/models/land_mine_blast.tscn`) are in docs/LAND_MINE_MODEL.md.
-- **Derailer:** `scenes/gameplay/motorcycle.tscn` carries `mine_rules` and `mine_scene`. The code is in `unit_agent.gd`, next to Derail: `can_carry_mines`, `buy_mine_blocker`, `command_buy_mine`, `lay_mine_blocker`, `command_lay_mine`.
-  Picking a mine is in `selection_manager.gd` (`pick_object`) and `skirmish.gd` (`pick_enemy_mine`); its card is `skirmish_hud.gd` `show_land_mine`.
+- **Derailer:** `scenes/gameplay/motorcycle.tscn` carries `mine_rules` and `mine_scene`. The code is in `unit_agent.gd`, next to Derail: `can_carry_mines`, `buy_mine_blocker`, `command_buy_mine`, `lay_mine_blocker`, `command_lay_mine`. Picking a mine is in `selection_manager.gd` (`pick_object`) and `skirmish.gd` (`pick_enemy_mine`); its card is `skirmish_hud.gd` `show_land_mine`.
 - **HUD tiles:**
   - BuyMine (Derailer card, slot 10, Q);
   - LayMine (Derailer card, slot 9, E);

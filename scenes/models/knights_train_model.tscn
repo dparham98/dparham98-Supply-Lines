@@ -1,0 +1,7 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/rails/knights_train_model.gd" id="consist"]
+[ext_resource type="PackedScene" path="res://assets/models/units/knights_train_cargo.glb" id="car"]
+[node name="KnightsTrainModel" type="Node3D"]
+script = ExtResource("consist")
+[node name="Car1" parent="." instance=ExtResource("car")]
+transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)

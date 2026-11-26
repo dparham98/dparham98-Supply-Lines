@@ -41,6 +41,8 @@
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_produce_truck.png" id="card_produce_truck"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_produce_cargo.png" id="card_produce_cargo"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_produce_train.png" id="card_produce_train"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_produce_knights_train.png" id="card_produce_knights_train"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_dragon_yard.png" id="card_build_dragon_yard"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_deploy_depot.png" id="card_deploy_depot"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_auto_refuel_on.png" id="card_auto_refuel_on"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_generator_pause.png" id="card_generator_pause"]
@@ -361,6 +363,14 @@ events = [SubResource("key_upgrade_3")]
 action = &"upgrade_4"
 [sub_resource type="Shortcut" id="shortcut_upgrade_4"]
 events = [SubResource("key_upgrade_4")]
+[sub_resource type="InputEventAction" id="key_build_dragon_yard"]
+action = &"build_dragon_yard"
+[sub_resource type="Shortcut" id="shortcut_build_dragon_yard"]
+events = [SubResource("key_build_dragon_yard")]
+[sub_resource type="InputEventAction" id="key_produce_keep_train"]
+action = &"produce_keep_train"
+[sub_resource type="Shortcut" id="shortcut_produce_keep_train"]
+events = [SubResource("key_produce_keep_train")]
 [sub_resource type="InputEventAction" id="key_command_mist"]
 action = &"command_mist"
 [sub_resource type="Shortcut" id="shortcut_command_mist"]
@@ -3536,6 +3546,30 @@ horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
+[node name="KeepTrain" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_produce_keep_train")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_produce_knights_train")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/KeepTrain"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="LaunchBalloon" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
 shortcut = SubResource("shortcut_command_launch_balloon")
@@ -4948,6 +4982,31 @@ icon = ExtResource("card_build_house")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/House"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -34.0
+offset_top = 1.0
+offset_right = -4.0
+offset_bottom = 15.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="DragonYard" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
+visible = false
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_build_dragon_yard")
+layout_mode = 2
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("card_build_dragon_yard")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/DragonYard"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0

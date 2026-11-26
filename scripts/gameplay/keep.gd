@@ -5,6 +5,8 @@ extends "res://scripts/gameplay/depot.gd"
 @export var forester_scene: PackedScene = preload("res://scenes/gameplay/forester_maiden.tscn")
 @export var warhound_scene: PackedScene = preload("res://scenes/gameplay/warhound.tscn")
 @export var balloon_scene: PackedScene = preload("res://scenes/gameplay/air_balloon.tscn")
+## The Knights' coal train (docs/KNIGHTS_RAIL.md): ordered at a Dragon Yard, built here and leaving on this Keep's track.
+@export var knights_train_scene: PackedScene = preload("res://scenes/gameplay/knights_train.tscn")
 
 var _unit_stats_cache := {}
 
@@ -58,6 +60,23 @@ func _request_keep_unit(kind: String) -> bool:
 	game.notify("%s queued at %s." % [stats.display_name, name], team)
 	return true
 
+## Knights rail (docs/KNIGHTS_RAIL.md): why this Keep can't build a train now, or "".
+func train_refusal() -> String:
+	if health <= 0 or not SupplySource.plays(team): return "This Keep can't build a train."
+	if not KnightRail.has_dragon_yard(self,team): return "Build a Dragon Yard first: it builds trains and lets your Keeps lay track."
+	if game.get_node("RailNetwork").loading_pieces(self,team).is_empty(): return "Lay friendly track into this Keep's loading area first."
+	return ""
+## `line`: a piece of the line the train starts on, when the Keep has more than one.
+func request_train(line: Node3D = null) -> bool:
+	var refusal := train_refusal()
+	if not refusal.is_empty(): game.notify(refusal,team); return false
+	if queue >= queue_limit: return false
+	var r := KnightHousing.rules()
+	if not spend_resources({&"food":r.train_food_cost,&"wood":r.train_wood_cost,&"iron":r.train_iron_cost}): return false
+	pending.append("train"); queue += 1
+	train_lines.append(line)
+	game.notify("Train queued at %s." % name,team)
+	return true
 func request_truck() -> bool:
 	game.notify("Keeps train Forester Maidens and Warhounds, not Cyborg Depot trucks.")
 	return false
@@ -111,15 +130,23 @@ func launch_balloon_fx() -> void:
 
 func current_seconds() -> float:
 	if pending.is_empty(): return print_seconds
+	if pending[0] == "train": return KnightHousing.rules().train_build_seconds
 	return unit_stats_for_kind(pending[0]).build_seconds
 
 func _drop_current() -> void:
 	if pending.is_empty(): return
 	var kind: String = pending.pop_front()
-	var stats := unit_stats_for_kind(kind)
 	queue -= 1
 	progress = 0.0
 	cancelling = false
+	if kind == "train":
+		if not train_lines.is_empty(): train_lines.pop_front()
+		var r := KnightHousing.rules()
+		stockpile.deposit(&"food",r.train_food_cost)
+		stockpile.deposit(&"wood",r.train_wood_cost)
+		stockpile.deposit(&"iron",r.train_iron_cost)
+		return
+	var stats := unit_stats_for_kind(kind)
 	if stats.food_cost > 0: stockpile.deposit(&"food", stats.food_cost)
 	if stats.iron_cost > 0: stockpile.deposit(&"iron", stats.iron_cost)
 	if stats.wood_cost > 0: stockpile.deposit(&"wood", stats.wood_cost)
@@ -137,6 +164,9 @@ func _process(delta: float) -> void:
 		return
 	if not SupplySource.plays(team): return
 	var kind: String = pending[0]
+	if kind == "train":
+		_train_tick(delta,model)
+		return
 	var stats := unit_stats_for_kind(kind)
 	var seconds := maxf(0.1, stats.build_seconds)
 	progress = minf(seconds, progress + delta)
@@ -160,3 +190,26 @@ func _process(delta: float) -> void:
 		if model != null and model.has_method("unit_left"): model.unit_left()
 		if kind == "forester_maiden": game.units_printed += 1
 		game.notify("%s ready at %s." % [stats.display_name, name], team)
+## Builds the queued train on friendly track in the loading area, as a Depot does.
+func _train_tick(delta: float, model: Node) -> void:
+	var seconds := maxf(0.1,KnightHousing.rules().train_build_seconds)
+	progress = minf(seconds,progress+delta)
+	if model != null and model.has_method("show_print"): model.show_print(progress/seconds)
+	$Progress.text = "Building train · %d%%" % roundi(progress/seconds*100)
+	if progress < seconds: return
+	var stop: Dictionary = game.get_node("RailNetwork").spawn_stop(self,train_lines.front() if not train_lines.is_empty() else null)
+	if stop.is_empty():
+		$Progress.text = "Train needs friendly track in the Keep's loading area"
+		return
+	pending.pop_front()
+	if not train_lines.is_empty(): train_lines.pop_front()
+	var unit = knights_train_scene.instantiate()
+	if "start_fuelled" in unit: unit.start_fuelled = FuelRules.full_tanks_for(game)
+	unit.position = stop.position
+	unit.team = team
+	game.get_node("Entities/Units").add_child(unit,true)
+	Rally.send(self,unit)
+	queue -= 1
+	progress = 0.0
+	if model != null and model.has_method("unit_left"): model.unit_left()
+	game.notify("Train ready at %s." % name,team)
