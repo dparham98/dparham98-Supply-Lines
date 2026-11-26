@@ -16,7 +16,8 @@ muzzle_bone = &"muzzle"
 cast_library = ExtResource("cast")
 cast_fx = Dictionary[StringName, PackedScene]({
 &"mist": ExtResource("mist_fx"),
-&"slow": ExtResource("slow_fx")
+&"slow": ExtResource("slow_fx"),
+&"stimulus": ExtResource("mist_fx")
 })
 
 [node name="Rig" parent="." instance=ExtResource("rig")]

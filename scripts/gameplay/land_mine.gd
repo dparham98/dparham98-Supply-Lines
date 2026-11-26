@@ -43,12 +43,10 @@ func _show_model() -> void:
 ## Whether `viewer` may see it: its own side always; the other side before it arms (where its fog allows) and,
 ## once armed, only while one of its detectors covers it.
 func shown_to(viewer: String) -> bool:
-	if viewer == team: return true
-	if not armed: return true
-	return Detection.detects(self,viewer,global_position)
-## Whether `side` may target it now (unit_agent.team_sees asks this for a mine).
+	return not Detection.hidden_from(self,viewer)
+## Whether `side` may target it now (unit_agent.team_sees asks Detection the same).
 func detected_by(side: String) -> bool:
-	return side == team or not armed or Detection.detects(self,side,global_position)
+	return not Detection.hidden_from(self,side)
 func _enemy_ground(unit: Node) -> bool:
 	if not is_instance_valid(unit) or unit.is_queued_for_deletion() or not unit.is_in_group("units"): return false
 	if unit.team == team or unit.team == "neutral" or unit.health <= 0: return false

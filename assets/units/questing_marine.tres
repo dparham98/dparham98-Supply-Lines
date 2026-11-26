@@ -21,6 +21,6 @@ damage = 16
 attack_interval = 2.0
 heavy_target_damage = 38
 heavy_target_interval = 2.5
-abilities = Array[StringName]([])
+abilities = Array[StringName]([&"sundering_lances"])
 attack_upgrade_bonus = 2
 heavy_upgrade_bonus = 4

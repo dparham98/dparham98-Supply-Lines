@@ -42,7 +42,7 @@ The 10 iron is taken from that Depot or truck at once. With several Derailers se
 
 ## Detection
 
-A hidden thing is drawn for a side, and can be targeted by it, only while it lies within the detect range of one of that side's detectors. For now the only hidden thing is an armed mine.
+A hidden thing is drawn for a side, and can be targeted by it, only while it lies within the detect range of one of that side's detectors. The hidden things are an armed mine and, since Round 3, a camouflaged Warhound (`Detection.is_camouflaged`, `hidden_from`; `docs/ROUND3_SPELLS_AND_RESEARCH.md`).
 
 Detectors (`scripts/combat/detection.gd`):
 

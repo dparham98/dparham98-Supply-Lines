@@ -32,22 +32,23 @@ func research_blocker(id: StringName) -> String:
 	if elsewhere != null: return "%s is already being researched at %s." % [entry.display_name,elsewhere.name]
 	if entry.level > 1 and not Research.has(self,team,Upgrades.research_id(entry.line,entry.level-1)): return "Research level %d of this line first." % (entry.level-1)
 	if not source_friendly(): return "No friendly Depot's range covers %s." % name
-	if payer_for(entry.energy_cost,entry.iron_cost,entry.food_cost) == null: return "No stockpile in range has %s for %s." % [cost_text(entry),entry.display_name]
+	if payer_for(entry.energy_cost,entry.iron_cost,entry.food_cost,0,entry.coal_cost) == null: return "No stockpile in range has %s for %s." % [cost_text(entry),entry.display_name]
 	return ""
-## "100 E · 150 I" or "100 F · 150 I".
+## "100 E · 150 I", "100 F · 150 I" or "125 F · 150 I · 100 C".
 static func cost_text(entry: ResearchStats) -> String:
 	var parts: Array[String] = []
 	if entry.energy_cost > 0: parts.append("%d E" % entry.energy_cost)
 	if entry.food_cost > 0: parts.append("%d F" % entry.food_cost)
 	if entry.iron_cost > 0: parts.append("%d I" % entry.iron_cost)
+	if entry.coal_cost > 0: parts.append("%d C" % entry.coal_cost)
 	return " · ".join(parts)
 func request_research(id: StringName) -> bool:
 	var blocker := research_blocker(id)
 	if not blocker.is_empty(): game.notify(blocker,team); return false
 	var entry := research_by_id(id)
-	var payer := payer_for(entry.energy_cost,entry.iron_cost,entry.food_cost)
+	var payer := payer_for(entry.energy_cost,entry.iron_cost,entry.food_cost,0,entry.coal_cost)
 	_set_source(payer)
-	if not payer.spend_resources({&"energy":entry.energy_cost,&"iron":entry.iron_cost,&"food":entry.food_cost}): game.notify("%s lacks local resources for research." % payer.name,team); return false
+	if not payer.spend_resources({&"energy":entry.energy_cost,&"iron":entry.iron_cost,&"food":entry.food_cost,&"coal":entry.coal_cost}): game.notify("%s lacks local resources for research." % payer.name,team); return false
 	researching = entry
 	research_progress = 0.0
 	_research_payer = payer
@@ -63,6 +64,7 @@ func cancel_research() -> bool:
 		_research_payer.stockpile.deposit(&"energy",entry.energy_cost)
 		_research_payer.stockpile.deposit(&"iron",entry.iron_cost)
 		if entry.food_cost > 0: _research_payer.stockpile.deposit(&"food",entry.food_cost)
+		if entry.coal_cost > 0: _research_payer.stockpile.deposit(&"coal",entry.coal_cost)
 		game.notify("%s research cancelled; %s went back to %s." % [entry.display_name,cost_text(entry),_research_payer.name],team)
 	else: game.notify("%s research cancelled." % entry.display_name,team)
 	_research_payer = null

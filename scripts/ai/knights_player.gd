@@ -363,7 +363,7 @@ func _next_knight() -> StringName:
 ## Grail Sentinels heal the most hurt friend near them.
 func _medics() -> void:
 	for unit in army:
-		if unit.unit_stats.unit_id != &"grail_sentinel" or unit.order in ["mist","slow"]: continue
+		if unit.unit_stats.unit_id != &"grail_sentinel" or unit.order in ["mist","slow","stimulus"]: continue
 		if unit.order == "heal" and is_instance_valid(unit.order_target) and unit.order_target.health < unit.order_target.max_health: continue
 		var best: Node3D
 		var worst := 0.9
@@ -373,7 +373,8 @@ func _medics() -> void:
 			var share: float = float(friend.health)/friend.max_health
 			if share < worst: worst = share; best = friend
 		if best != null: unit.command_heal(best)
-## Slow after level 1 of each upgrade line, once the army is big enough.
+## Slow after level 1 of each upgrade line, once the army is big enough; then Sundering Lances
+## (docs/ROUND3_SPELLS_AND_RESEARCH.md), once home holds its coal, so waiting for coal holds up nothing else.
 func research_wanted() -> Array[StringName]:
 	var ids := super()
 	if not spells or army.size() < upgrades_army: return ids
@@ -381,7 +382,15 @@ func research_wanted() -> Array[StringName]:
 	for i in range(ids.size()):
 		if upgrade_lines.any(func(line): return ids[i] == Upgrades.research_id(line,1)): at = i+1
 	ids.insert(at,Research.SLOW)
+	var keep := home()
+	var lances := _forge_entry(Research.SUNDERING)
+	if keep != null and lances != null and (Research.has(game,team,Research.SUNDERING) or keep.coal >= lances.coal_cost): ids.insert(at+1,Research.SUNDERING)
 	return ids
+## The research `id` as one of its Forges offers it, or null.
+func _forge_entry(id: StringName) -> ResearchStats:
+	for building in get_tree().get_nodes_in_group("research_buildings"):
+		if building.team == team and building.research_by_id(id) != null: return building.research_by_id(id)
+	return null
 
 # --- Spells ---------------------------------------------------------------------------------------------------------
 
@@ -392,7 +401,7 @@ func _spells() -> void:
 	var foes: Array = get_tree().get_nodes_in_group("units").filter(func(unit): return unit.team == opponent and unit.health > 0 and not unit.is_in_group("rail_trains") and sees(unit.global_position))
 	if foes.is_empty(): return
 	for unit in army:
-		if unit.unit_stats.unit_id != &"grail_sentinel" or unit.spell_rules == null or unit.order in ["mist","slow"]: continue
+		if unit.unit_stats.unit_id != &"grail_sentinel" or unit.spell_rules == null or unit.order in ["mist","slow","stimulus"]: continue
 		var near: Array = foes.filter(func(foe): return foe.global_position.distance_to(unit.global_position) <= unit.spell_rules.cast_range+10.0)
 		if near.is_empty(): continue
 		if not _try_slow(unit,near): _try_mist(unit,near)

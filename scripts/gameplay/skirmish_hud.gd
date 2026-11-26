@@ -39,7 +39,7 @@ var _tip_since := 0.0
 ## Fixed command slots, row-major in the 4 × 3 grid. Commands that never share a card may share a slot.
 const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 4, "Return": 5, "DropMaterials": 6, "Build": 7,
 	"BurnWood": 4, "BurnCoal": 5, "BurnEither": 6, "MakeCrates": 3, "Worksite": 7,
-	"Mist": 4, "Slow": 5,
+	"Mist": 4, "Slow": 5, "Stimulus": 6,
 	"Repair": 8, "Heal": 8, "Derail": 8, "Capture": 9, "LayMine": 9, "BuyMine": 10, "DeployTruck": 10, "Fell": 10, "CancelPlan": 11,
 	"DeployCargo": 2, "Load": 4, "Unload": 5, "Trips": 6,
 	"PrintTruck": 0, "PrintCargo": 1, "PrintTrain": 2,
@@ -48,8 +48,10 @@ const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 
 	"ProduceRoundTableMarine": 0, "ProduceGrailSentinel": 1, "ProduceQuestingMarine": 2, "ProduceAzureDragon": 3,
 	"ToggleGenerator": 0, "FocusAssigned": 1,
 	"Research": 0, "ResearchMines": 1, "MineIron": 7,
-	"Upgrade1": 0, "Upgrade2": 1, "Upgrade3": 2, "Upgrade4": 3}
+	"Upgrade1": 0, "Upgrade2": 1, "Upgrade3": 2, "Upgrade4": 3, "Upgrade5": 4}
 const TILE := 46
+## Research tiles on the Foundry's and Forge's cards: Upgrade1 to Upgrade5.
+const UPGRADE_TILES := 5
 const TRIP_LABELS := {"once": "once", "all": "all available", "repeat": "repeat"}
 ## One icon per stat row (assets/ui/icons).
 const STAT_ICONS := {"Speed": "speed", "Range": "focus", "Damage": "damage", "Vision": "scout", "Vs armour": "depot", "Splash": "splash",
@@ -243,13 +245,14 @@ func _ready() -> void:
 	card.get_node("ResearchMines").pressed.connect(func():
 		if is_instance_valid(shown) and shown.is_in_group("research_buildings"): shown.request_research(Research.MINELAYING))
 	# The Foundry's and Forge's upgrade lines (docs/UPGRADES.md): each tile asks for its line's next level.
-	for n in range(1,5):
+	for n in range(1,UPGRADE_TILES+1):
 		var tile: Button = card.get_node("Upgrade%d" % n)
 		tile.pressed.connect(func():
 			if is_instance_valid(shown) and shown.is_in_group("research_buildings") and tile.has_meta("research"): shown.request_research(tile.get_meta("research")))
 	# The Grail Sentinel's Mist and Slow (docs/MIST_AND_SLOW.md): click a point; a Sentinel walks within range and casts.
 	card.get_node("Mist").pressed.connect(func(): game.pending_unit_command = "mist"; game.notify("Mist: click a point. Units in the 8 m cloud are hidden from anyone more than 8 m away for 8 s. Esc cancels."))
 	card.get_node("Slow").pressed.connect(func(): game.pending_unit_command = "slow"; game.notify("Slow: click a point. Enemy units within 5 m move 40% slower for 5 s. Esc cancels."))
+	card.get_node("Stimulus").pressed.connect(func(): game.pending_unit_command = "stimulus"; game.notify("Stimulus: click a point. Your units within 5 m that aren't vehicles move and attack 25% faster for 7 s. Esc cancels."))
 	card.get_node("MineIron").pressed.connect(func(): game.pending_unit_command = "mine_rail"; game.notify("Mine iron: click an Iron Mine joined to this train's track. Esc cancels."))
 	card.get_node("PrintCargo").pressed.connect(func():
 		if network.owned_selected() and not least_busy().request_cargo(): game.notify("Depot lacks local funds or queue space."))
@@ -657,7 +660,7 @@ func update_unit_sections(node: Node3D, inspect := false) -> void:
 			abilities.insert(0,"Roof gun %d / %.2fs at units within %.0f" % [roof.damage,roof.shot_interval,roof.attack_range])
 	else: abilities.append("Unarmed worker" if node.can_gather else "Attack unavailable · unresolved stats")
 	if node.get("armoured") == true: abilities.append("Armoured")
-	if node.can_heal: abilities.append("Vitality Stimulus · %d HP/s at %.0f m, by itself (%d/%d HP reserve)" % [roundi(node.heal_hp/node.heal_interval),node.heal_range,node.med_reserve,node.med_reserve_capacity])
+	if node.can_heal: abilities.append("Heal · %d HP/s at %.0f m, by itself (%d/%d HP reserve)" % [roundi(node.heal_hp/node.heal_interval),node.heal_range,node.med_reserve,node.med_reserve_capacity])
 	if node.mobility_layer() == MobilityRules.Layer.AIR: abilities.append("Flies on a separate air layer")
 	elif node.unit_stats != null and node.unit_stats.mobility != null and node.unit_stats.mobility.clears_forest: abilities.append("Clears forest")
 	elif node.mobility_layer() == MobilityRules.Layer.FOREST: abilities.append("Moves through forest")
@@ -1173,7 +1176,7 @@ Flies only where its Keep sent it" % node.cargo_text()
 				card.get_node("Repair").tooltip_text = "Restore up to %d HP every %.1fs for %d energy / %d iron from the selected local supply source. No wood is spent." % [node.engineering_rules.repair_hp,node.engineering_rules.repair_interval,node.engineering_rules.repair_energy,node.engineering_rules.repair_iron]
 			if node.can_heal:
 				show_button("Heal","Heal")
-				card.get_node("Heal").tooltip_text = "Vitality Stimulus: heal %d HP every %.1fs from the carried reserve (%d / %d HP), one point for one HP. Idle or attack-moving, it heals the most hurt friend within %.0f m by itself. The reserve refills inside a friendly Keep's range or beside a %s crate, %d points for %d. Does not heal vehicles." % [node.heal_hp,node.heal_interval,node.med_reserve,node.med_reserve_capacity,node.heal_range,str(node.med_refill_kind).capitalize(),node.med_refill_points,node.med_refill_cost]
+				card.get_node("Heal").tooltip_text = "Heal: %d HP every %.1fs from the carried reserve (%d / %d HP), one point for one HP. Idle or attack-moving, it heals the most hurt friend within %.0f m by itself. The reserve refills inside a friendly Keep's range or beside a %s crate, %d points for %d. Does not heal vehicles." % [node.heal_hp,node.heal_interval,node.med_reserve,node.med_reserve_capacity,node.heal_range,str(node.med_refill_kind).capitalize(),node.med_refill_points,node.med_refill_cost]
 			if node.can_heal and node.get("spell_rules") != null:
 				var spells: SpellRules = node.spell_rules
 				show_button("Mist","Mist")
@@ -1182,6 +1185,9 @@ Flies only where its Keep sent it" % node.cargo_text()
 				show_button("Slow","Slow")
 				card.get_node("Slow").set_meta("detail","Slow · %d reserve points: enemy units within %.0f m move %d%% slower for %.0f s. Cast up to %.0f m away. Research it at a Forge." % [spells.slow_cost,spells.slow_radius,roundi((1.0-spells.slow_factor)*100),spells.slow_seconds,spells.cast_range])
 				explain(card.get_node("Slow"),not node.spell_blocker("slow").is_empty(),node.spell_blocker("slow"))
+				show_button("Stimulus","Stimulus")
+				card.get_node("Stimulus").set_meta("detail","Stimulus · %d reserve points: your units within %.0f m that aren't vehicles, the Dragon too, move and attack %d%% faster for %.0f s. Another Stimulus restarts the time. Cast up to %.0f m away." % [spells.stimulus_cost,spells.stimulus_radius,roundi(spells.stimulus_boost*100),spells.stimulus_seconds,spells.stimulus_cast_range])
+				explain(card.get_node("Stimulus"),not node.spell_blocker("stimulus").is_empty(),node.spell_blocker("stimulus"))
 			if node.can_capture_depots: show_button("Capture","Capture")
 			if node.has_ability(&"derail"):
 				show_button("Derail","Derail")
@@ -1288,8 +1294,8 @@ func _research_tile(node: Node3D, tile: String, id: StringName) -> void:
 		set_tile(button,entry.display_name+" · researched",entry.summary)
 		button.disabled = true
 		return
-	var pays = node.payer_for(entry.energy_cost,entry.iron_cost)
-	show_production(tile,"Research "+entry.display_name+" (%s s)" % _seconds(entry.seconds),entry.energy_cost,entry.iron_cost,pays if pays != null else payer)
+	var pays = node.payer_for(entry.energy_cost,entry.iron_cost,entry.food_cost,0,entry.coal_cost)
+	show_production(tile,"Research "+entry.display_name+" (%s s)" % _seconds(entry.seconds),entry.energy_cost,entry.iron_cost,pays if pays != null else payer,entry.food_cost,0,&"",entry.coal_cost)
 	var blocker: String = node.research_blocker(id)
 	button.disabled = node.researching != null or (not blocker.is_empty() and pays != null)
 	if not button.disabled: button.tooltip_text += "\n"+entry.summary
@@ -1300,7 +1306,7 @@ func show_upgrade_building(node: Node3D) -> void:
 	var keep: bool = node.stats.building_id == &"forge"
 	state_label.text = "%s · %s" % [team_label(node),("pays from "+str(payer.name)) if node.source_friendly() else ("no friendly Keep in range" if keep else "no friendly Depot in range")]
 	if node.researching != null: show_progress("Researching · "+node.researching.display_name,"%d%% · %s s left" % [roundi(node.fraction()*100),_seconds(ceilf(node.seconds_left()))],node.fraction())
-	if is_instance_valid(payer): set_stats([["Food",grouped(payer.food)],["Iron",grouped(payer.iron)]] if keep else [["Energy",grouped(payer.energy)],["Iron",grouped(payer.iron)]])
+	if is_instance_valid(payer): set_stats([["Food",grouped(payer.food)],["Iron",grouped(payer.iron)],["Coal",grouped(payer.coal)]] if keep else [["Energy",grouped(payer.energy)],["Iron",grouped(payer.iron)]])
 	var lines: Array[StringName] = []
 	var plain: Array[ResearchStats] = []
 	for entry in node.research:
@@ -1312,7 +1318,7 @@ func show_upgrade_building(node: Node3D) -> void:
 	hint_text = "Each line has three levels, researched in order. Attack adds each weapon's own bonus a level (shown on the unit card); armour takes 1 off every hit a level, never below 1. Paid when started from a covering %s; Cancel gives it back. One research at a time; levels hold for your whole side." % ("Keep" if keep else "Depot")
 	if node.team != "player": return
 	if node.researching != null: show_button("CancelPlan","Cancel research")
-	for i in range(mini(lines.size(),4)):
+	for i in range(mini(lines.size(),UPGRADE_TILES)):
 		var line := lines[i]
 		var id := "Upgrade%d" % (i+1)
 		var button: Button = card.get_node(id)
@@ -1328,16 +1334,17 @@ func show_upgrade_building(node: Node3D) -> void:
 		var entry: ResearchStats = node.research_by_id(Upgrades.research_id(line,have+1))
 		if entry == null: continue
 		button.set_meta("research",entry.research_id)
-		var pays = node.payer_for(entry.energy_cost,entry.iron_cost,entry.food_cost)
-		show_production(id,"Research "+entry.display_name+" (%s s)" % _seconds(entry.seconds),entry.energy_cost,entry.iron_cost,pays if pays != null else payer,entry.food_cost)
+		var pays = node.payer_for(entry.energy_cost,entry.iron_cost,entry.food_cost,0,entry.coal_cost)
+		show_production(id,"Research "+entry.display_name+" (%s s)" % _seconds(entry.seconds),entry.energy_cost,entry.iron_cost,pays if pays != null else payer,entry.food_cost,0,&"",entry.coal_cost)
 		var blocker: String = node.research_blocker(entry.research_id)
 		button.disabled = node.researching != null or (not blocker.is_empty() and pays != null)
 		if not button.disabled: button.tooltip_text += "\n"+entry.summary
 		elif node.researching != null: button.tooltip_text += "\nResearching now."
 		elif not blocker.is_empty(): button.tooltip_text += "\n"+blocker
-	# Research that is not an upgrade line, such as the Forge's Slow (docs/MIST_AND_SLOW.md).
+	# Research that is not an upgrade line: the Forge's Slow, Sundering Lances and Forest Camouflage
+	# (docs/MIST_AND_SLOW.md, docs/ROUND3_SPELLS_AND_RESEARCH.md).
 	for i in range(plain.size()):
-		if lines.size()+i >= 4: break
+		if lines.size()+i >= UPGRADE_TILES: break
 		var entry := plain[i]
 		var id := "Upgrade%d" % (lines.size()+i+1)
 		var button: Button = card.get_node(id)
@@ -1350,12 +1357,13 @@ func show_upgrade_building(node: Node3D) -> void:
 			button.disabled = true
 			continue
 		button.set_meta("research",entry.research_id)
-		var pays = node.payer_for(entry.energy_cost,entry.iron_cost,entry.food_cost)
-		show_production(id,"Research "+entry.display_name+" (%s s)" % _seconds(entry.seconds),entry.energy_cost,entry.iron_cost,pays if pays != null else payer,entry.food_cost)
+		var pays = node.payer_for(entry.energy_cost,entry.iron_cost,entry.food_cost,0,entry.coal_cost)
+		show_production(id,"Research "+entry.display_name+" (%s s)" % _seconds(entry.seconds),entry.energy_cost,entry.iron_cost,pays if pays != null else payer,entry.food_cost,0,&"",entry.coal_cost)
 		var blocker: String = node.research_blocker(entry.research_id)
 		button.disabled = node.researching != null or (not blocker.is_empty() and pays != null)
 		if not button.disabled: button.tooltip_text += "\n"+entry.summary
 		elif node.researching != null: button.tooltip_text += "\nResearching now."
+		elif not blocker.is_empty(): button.tooltip_text += "\n"+blocker
 ## "Infantry Weapons" from the line's level-1 entry.
 func _line_title(node: Node3D, line: StringName) -> String:
 	var entry: ResearchStats = node.research_by_id(Upgrades.research_id(line,1))
@@ -1364,7 +1372,7 @@ func _line_title(node: Node3D, line: StringName) -> String:
 func show_mine_tile(node: Node3D) -> void:
 	show_button("MineIron","Mine iron")
 	explain(card.get_node("MineIron"),not node.can_mine(),"Research Mining Trains at a Temple of Science first.")
-func show_production(id: String, title: String, energy_cost: int, iron_cost: int, payer: Node, food_cost := 0, wood_cost := 0, unit_id: StringName = &"") -> void:
+func show_production(id: String, title: String, energy_cost: int, iron_cost: int, payer: Node, food_cost := 0, wood_cost := 0, unit_id: StringName = &"", coal_cost := 0) -> void:
 	desired_buttons.append(id)
 	var button: Button = card.get_node(id)
 	var missing := []
@@ -1373,15 +1381,17 @@ func show_production(id: String, title: String, energy_cost: int, iron_cost: int
 		if payer.stockpile.amount(&"food") < food_cost: missing.append("%d more food" % (food_cost-payer.stockpile.amount(&"food")))
 		if payer.stockpile.amount(&"wood") < wood_cost: missing.append("%d more wood" % (wood_cost-payer.stockpile.amount(&"wood")))
 		if payer.iron < iron_cost: missing.append("%d more iron" % (iron_cost-payer.iron))
+		if payer.stockpile.amount(&"coal") < coal_cost: missing.append("%d more coal" % (coal_cost-payer.stockpile.amount(&"coal")))
 	# Knights training waits for housing (docs/KNIGHTS_ECONOMY.md).
 	if not unit_id.is_empty() and not KnightHousing.room(get_tree(),"player",unit_id): missing.append("housing (%s used): build a House in a Keep's range" % KnightHousing.text(get_tree(),"player"))
 	var cost_text := "%d E · %d I" % [energy_cost,iron_cost]
-	if food_cost > 0 or wood_cost > 0:
+	if food_cost > 0 or wood_cost > 0 or coal_cost > 0:
 		var parts := PackedStringArray()
 		if food_cost > 0: parts.append("%d F" % food_cost)
 		if wood_cost > 0: parts.append("%d W" % wood_cost)
 		if energy_cost > 0: parts.append("%d E" % energy_cost)
 		if iron_cost > 0: parts.append("%d I" % iron_cost)
+		if coal_cost > 0: parts.append("%d C" % coal_cost)
 		cost_text = " · ".join(parts)
 	if missing.is_empty():
 		button.remove_theme_color_override("icon_normal_color")

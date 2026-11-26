@@ -42,9 +42,14 @@ const ENTRIES := {
 	"dragon_yard": ["res://scenes/gameplay/dragon_yard.tscn","","build_dragon_yard",215.0,1.0], # docs/DRAGON_YARD_MODEL.md; pen +Z
 	"knights_train": ["res://scenes/gameplay/knights_train.tscn","produce_knights_train","",220.0,1.0], # docs/KNIGHTS_TRAIN_MODEL.md
 	"derailer_buy_mine": ["res://scenes/gameplay/motorcycle.tscn","","buy_mine",215.0,1.0],
+	# Round 3 (docs/ROUND3_SPELLS_AND_RESEARCH.md): the Sentinel's Stimulus, and the Forge's Sundering Lances and Forest
+	# Camouflage, show the unit they work on until drawn cards replace them.
+	"sentinel_stimulus": ["res://scenes/gameplay/grail_sentinel.tscn","","stimulus",35.0,1.0],
+	"questing_sundering": ["res://scenes/gameplay/questing_marine.tscn","","research_sundering_lances",35.0,1.0],
+	"warhound_camouflage": ["res://scenes/gameplay/warhound.tscn","","research_forest_camouflage",35.0,1.0],
 }
 ## Entries shot only for their cards: no selection icon or portrait is written for them.
-const CARD_ONLY := ["derailer_mines","derailer_buy_mine"]
+const CARD_ONLY := ["derailer_mines","derailer_buy_mine","sentinel_stimulus","questing_sundering","warhound_camouflage"]
 ## Calls made on an entry's model root before it is shot: method name and arguments.
 const POSES := {"land_mine": ["set_age",[1.6,3.0]],"derailer_mines": ["set_mines",[2]],"derailer_buy_mine": ["pose_mine_drop",[1,0.05]]}
 ## Cards drawn in Blender (Blender/UI/UpgradeCards/render_upgrade_cards.py) and only framed here: the Foundry's

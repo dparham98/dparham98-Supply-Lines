@@ -14,7 +14,9 @@ It needs both merged first.
 
 Both spells go on the Grail Sentinel's card:
 1. Press **Mist** (Q) or **Slow** (W), then click a point. Shift keeps the command armed.
-2. One selected Sentinel that can cast walks to within **20 m** of the point (`cast_range`) and casts at once.
+2. One selected Sentinel that can cast walks to within **24 m** of the point (`cast_range`; 20 m until Round 3) and casts at once.
+
+Round 3 added a third spell, Stimulus (E), and Forge research that costs coal: see `docs/ROUND3_SPELLS_AND_RESEARCH.md`.
 
 **Cost:** the points come out of the healing reserve (`med_reserve`). So every cast means less healing.
 
@@ -42,7 +44,7 @@ Both spells go on the Grail Sentinel's card:
 
 **Effect:** enemy units within 5 m of the point when it's cast move at 60% of their speed for 5 s (`unit_agent.apply_slow`, `speed_scale`).
 - A second Slow on the same unit keeps the stronger factor and the longer time.
-- Trains, which move along track, aren't slowed.
+- Vehicles are slowed too. Trains, which move along track, aren't.
 
 **Scene:** `scenes/gameplay/slow_field.tscn` shows a ground sigil for the 5 s (see Art).
 
@@ -51,7 +53,7 @@ Both spells go on the Grail Sentinel's card:
 - **Mist hides everyone:** it hides units of both sides inside it, not only the caster's. A Mist is cover, not a cloak.
 - **One caster per click:** only one selected Sentinel casts, so a group doesn't spend all their reserves on one click.
 - **Slow research price:** 100 F / 100 I and 60 s. The handoff gave no price.
-- **Cast range:** 20 m. The handoff gave none.
+- **Cast range:** 20 m. The handoff gave none. Round 3 set it to 24 m.
 
 ## Not done
 

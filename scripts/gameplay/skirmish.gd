@@ -634,8 +634,8 @@ func issue_card_order(screen, queued := false) -> void:
 					target = ground.coal_mine_at(cell)
 					if target == null: notify("Build a Mine on this coal seam before gathering coal."); return
 				else: target = ground.coal_source(cell) if ground.get_terrain(cell) == 6 else ground.forest_source(cell)
-	elif pending_unit_command in ["mist","slow"]:
-		# Mist and Slow take a point (docs/MIST_AND_SLOW.md); Grail Sentinels walk within range and cast.
+	elif pending_unit_command in ["mist","slow","stimulus"]:
+		# Mist, Slow and Stimulus take a point (docs/MIST_AND_SLOW.md); Grail Sentinels walk within range and cast.
 		var spot = ground_at(screen)
 		if spot == null: return
 		var ordered := 0

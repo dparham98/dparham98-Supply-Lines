@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ResearchStats" format=3]
+[ext_resource type="Script" path="res://scripts/research/research_stats.gd" id="stats"]
+[resource]
+script = ExtResource("stats")
+research_id = &"forest_camouflage"
+display_name = "Forest Camouflage"
+iron_cost = 100
+food_cost = 75
+coal_cost = 50
+seconds = 45.0
+summary = "Warhounds in forest are hidden from the enemy unless a detector covers them, for 1.5 s after they leave it; attacking shows them for 2 s. Holds for your whole side."
