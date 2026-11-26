@@ -8,8 +8,11 @@ script = ExtResource("animator")
 player_path = NodePath("Rig/AnimationPlayer")
 idle_clip = &"Rest"
 run_clip = &"Run"
+shoot_clip = &"Shoot"
 run_reference_speed = 2.8
 muzzle_bone = &"muzzle"
+gun_sample_time = 0.0
+shot_lead_time = 0.0
 
 [node name="Rig" parent="." instance=ExtResource("rig")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
