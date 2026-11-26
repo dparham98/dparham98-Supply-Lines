@@ -37,12 +37,12 @@ func run() -> void:
 	var network = game.get_node("DepotNetwork")
 	var depot: Node3D = game.depot
 	var spec: Dictionary = network.plan_spec(&"foundry")
-	if not check(spec.get("title") == "Foundry" and spec.get("energy") == 150 and spec.get("iron") == 80 and spec.get("size") == Vector2i(6,6),"Foundry plan spec should be 6 x 6 for 150 E / 80 I: %s" % spec): return
+	if not check(spec.get("title") == "Foundry" and spec.get("energy") == 120 and spec.get("iron") == 100 and spec.get("size") == Vector2i(6,6),"Foundry plan spec should be 6 x 6 for 120 E / 100 I: %s" % spec): return
 	var hud = game.get_node("Interface")
 	if not check(hud.build_menu.get_node_or_null("Actions/Foundry") != null and hud.build_menu.get_node_or_null("Actions/Forge") != null,"The Build page needs Foundry and Forge tiles"): return
 	var plan = place(network,&"foundry",depot)
 	if not check(is_instance_valid(plan),"A Foundry plan could not be queued: "+game.message): return
-	depot.stockpile.deposit(&"iron",80)
+	depot.stockpile.deposit(&"iron",100)
 	var foundry = plan.complete_from_stock()
 	if not check(is_instance_valid(foundry) and foundry.is_in_group("research_buildings") and foundry.research.size() == 12,"The plan should finish as a Foundry with 12 levels to research"): return
 	await process_frame

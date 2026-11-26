@@ -171,8 +171,8 @@ func run() -> void:
 	var covering: Array[Node3D] = building.covering_depots()
 	if not check(not covering.is_empty(),"No Depot covers the mobile-built Barracks"): return
 	var nearest_depot: Node3D = covering[0]
-	nearest_depot.energy = 100; nearest_depot.iron = 20
-	if not check(building.source_friendly() and building.assigned_depot == nearest_depot and building.request_unit(&"infantry") and train.carried_energy == 100 and train.iron == 45,"The Barracks should pay from the covering Depot, not the train"): return
+	nearest_depot.energy = 100; nearest_depot.iron = 25
+	if not check(building.source_friendly() and building.assigned_depot == nearest_depot and building.request_unit(&"infantry") and train.carried_energy == 120 and train.iron == 30,"The Barracks should pay from the covering Depot, not the train"): return
 	if not check(not building.assign_source(depot),"Production reassignment allowed a nonempty queue"): return
 	building._process(building.base_seconds()+0.1)
 	if not check(building.queue == 0,"Explicitly assigned mobile-built Barracks did not produce Infantry"): return
@@ -187,7 +187,7 @@ func run() -> void:
 	nearest_depot = null
 	for candidate in get_nodes_in_group("depots"):
 		if SupplySource.covers(candidate,generator.global_position,"player") and (nearest_depot == null or candidate.global_position.distance_to(generator.global_position) < nearest_depot.global_position.distance_to(generator.global_position)): nearest_depot = candidate
-	if not check(train.carried_energy == 0 and train.iron == 25 and nearest_depot != null and generator.assigned_depot == nearest_depot and generator.source_valid(),"A train-funded Generator should take the covering Depot"): return
+	if not check(train.carried_energy == 20 and train.iron == 10 and nearest_depot != null and generator.assigned_depot == nearest_depot and generator.source_valid(),"A train-funded Generator should take the covering Depot"): return
 	nearest_depot.stockpile.deposit(&"wood",1)
 	if not check(generator.active(),"Assigned Generator did not recognize local wood"): return
 	# Loss of a latched mobile source pauses Infantry rather than using neighboring Depot money.

@@ -28,7 +28,7 @@ func run() -> void:
 	var energy: int = game.depot.energy
 	var iron: int = game.depot.iron
 	if not check(factory.request_unit(&"ubermech"),"The factory refused an Ubermech: "+game.message): return
-	if not check(game.depot.energy == energy-250 and game.depot.iron == iron-60,"The Ubermech was not paid by the Depot"): return
+	if not check(game.depot.energy == energy-240 and game.depot.iron == iron-100,"The Ubermech was not paid by the Depot"): return
 	if not check(factory.request_unit(&"ubermech"),"The Depot should afford a second Ubermech"): return
 	var before := get_nodes_in_group("units").size()
 	factory._process(40.1)

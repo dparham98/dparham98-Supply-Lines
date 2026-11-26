@@ -114,7 +114,7 @@ func run() -> void:
 	if not check(factory.request_unit(&"drone"),"Factory rejected Drone job"): return
 	var old_count: int = get_nodes_in_group("units").size()
 	factory._process(factory.base_seconds())
-	if not check(factory.queue == 0 and get_nodes_in_group("units").size() == old_count+1 and game.depot.energy == 940 and game.depot.iron == 495,"Factory failed paid air launch with blocked ground exits"): return
+	if not check(factory.queue == 0 and get_nodes_in_group("units").size() == old_count+1 and game.depot.energy == 950 and game.depot.iron == 485,"Factory failed paid air launch with blocked ground exits"): return
 	for cell in exits: ground.set_tile_feature(cell,"occupied_by",null)
 	await process_frame
 	game.free()

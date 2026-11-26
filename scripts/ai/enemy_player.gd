@@ -892,8 +892,9 @@ func fight(depot: Node3D) -> void:
 		last_wave = wave.size(); waves_sent += 1
 		for unit in wave: unit.command_attack_move(target)
 	_escort_drones(depot)
-## Keeps each Drone over the centre of the ground units it goes with: the wave's if it is in the wave, else the
-## rest of the army's. A Drone with no ground units to go with is left alone. One low on coal (it burns coal by the
+## Keeps each Drone behind the front Tank of the ground units it goes with (the wave's if it is in the wave, else
+## the rest of the army's), within `drone_behind_front` of it; with no Tank or nowhere to go, over their centre.
+## A Drone with no ground units to go with is left alone. One low on coal (it burns coal by the
 ## second in the air) leaves the wave and flies home to the rally point, inside the Depot's range, to refuel.
 func _escort_drones(depot: Node3D = null, threat: Node3D = null) -> void:
 	var home := is_instance_valid(depot)
@@ -912,9 +913,12 @@ func _escort_drones(depot: Node3D = null, threat: Node3D = null) -> void:
 		var goal: Variant = wave_goal if wave.has(drone) else home_goal
 		var front := tank_front(group,goal)
 		if front != null:
-			# Half of drone_behind_front back from the front Tank, kept within half of it: never ahead, never further.
-			var spot: Vector3 = front.global_position-escort_heading(group,goal)*drone_behind_front*0.5
-			if _flat_distance(drone.global_position,spot) > drone_behind_front*0.5: drone.command_move(spot)
+			# A quarter of drone_behind_front back from the front Tank, sent there again once where it is going
+			# strays a quarter from it: a Tank at 5 m/s moves 5 m between thoughts, so the Drone stays within
+			# drone_behind_front.
+			var spot: Vector3 = front.global_position-escort_heading(group,goal)*drone_behind_front*0.25
+			var bound: Vector3 = drone.move_goal if drone.order == "move" else drone.global_position
+			if _flat_distance(bound,spot) > drone_behind_front*0.25: drone.command_move(spot)
 			continue
 		var centre := _centre(group)
 		if drone.global_position.distance_to(centre) > drone_escort_radius: drone.command_move(centre)

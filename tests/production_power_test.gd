@@ -81,14 +81,15 @@ func run() -> void:
 		var drawn: int = energy-depot.energy
 		if not check(absf(seconds-case[1]) < 0.03 and absi(drawn-case[2]) <= 1,"Infantry at %.0fx: %.1f s and %d E extra (%.2f s, %d E)" % [case[0],case[1],case[2],seconds,drawn]): return
 		if not check(is_equal_approx(barracks.seconds_at_power(),case[1]) and barracks.energy_at_power(barracks.pending[0]) == case[3],"The building should report the time and energy at this power (%d E)" % barracks.energy_at_power(barracks.pending[0])): return
-	# A starved Depot prints at 1x: the work goes on, slower, without spending what it does not have.
+	# A starved Depot prints at 1x: the work goes on, slower, without spending what it does not have. Under 1 E
+	# of extra is drawn on credit before a whole one is owed, so the first few frames may still run at 3x.
 	depot.energy = 0
 	seconds = run_until_produced(barracks,30)
-	if not check(absf(seconds-10.0) < 0.03 and depot.energy == 0,"With no energy the Infantry should print at 1x (%.2f s)" % seconds): return
-	# It picks up the power again once there is energy.
+	if not check(absf(seconds-10.0) < 0.1 and depot.energy == 0,"With no energy the Infantry should print at 1x (%.2f s)" % seconds): return
+	# It picks up the power again once there is energy: half a second at 3x is 1.5 s of work.
 	depot.energy = 5000
 	barracks._process(0.5)
-	if not check(not barracks.power_starved and absf(barracks.progress-2.0) < 0.01,"Power should return with energy (%.2f)" % barracks.progress): return
+	if not check(not barracks.power_starved and absf(barracks.progress-1.5) < 0.01,"Power should return with energy (%.2f)" % barracks.progress): return
 	barracks.pending.clear(); barracks.progress = 0
 	# The fastest Tank, at 3x, takes 9.3 s for 98 E more (140 x 2 x 35%); slower than the fastest Infantry.
 	factory.set_power(factory.stats.max_power)

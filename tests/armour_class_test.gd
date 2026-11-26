@@ -21,7 +21,7 @@ func at(unit: Node3D, point: Vector3) -> void:
 func run() -> void:
 	var mech_stats: UnitStats = load("res://assets/units/ubermech.tres")
 	if not check(mech_stats.validation_errors().is_empty() and mech_stats.max_health == 360 and mech_stats.movement_speed == 4.0 and mech_stats.vision == 24.0 and mech_stats.armoured,"The Ubermech has 360 health, speed 4, sight 24 and is armoured"): return
-	if not check(mech_stats.energy_cost == 250 and mech_stats.iron_cost == 60,"The Ubermech still costs 250 E / 60 I"): return
+	if not check(mech_stats.energy_cost == 240 and mech_stats.iron_cost == 100,"The Ubermech costs 240 E / 100 I (Round 3)"): return
 	game = load("res://scenes/maps/resource_skirmish.tscn").instantiate()
 	root.add_child(game)
 	for i in range(3): await process_frame
