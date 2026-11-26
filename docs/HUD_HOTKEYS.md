@@ -19,7 +19,7 @@ The current keys, as set on 2026-11-15. `scripts/tools/setup_command_actions.gd`
 | Cargo truck / Train | M Move · S Stop · T Auto-refuel · D Deploy/Pack supplies · E Load · V Unload · C Trips · W Worksite (not Trains) |
 | Depot truck | M Move · S Stop · T Auto-refuel · D Deploy |
 | Depot | D Depot truck · V Cargo vehicle · T Train · C Make crates · X Cancel production (the Generator settings are sliders on the Depot panel, docs/DEPOT_PANELS.md) |
-| Keep | F Forester Maiden · W Warhound · L Launch balloon (docs/AIR_BALLOON.md) · T Train (with a Wainwright, docs/KNIGHTS_RAIL.md) · C Make crates · X Cancel production |
+| Keep | F Forester Maiden · W Warhound · L Launch balloon (docs/AIR_BALLOON.md) · C Make crates · X Cancel production |
 | Production building | F Infantry · S Scout · G Grenadier · T Tank · C Derailer · D Drone · Q Übermech |
 | Temple of Science | R Mining Trains · N Minelaying (`docs/MINES.md`) · X Cancel research |
 | Generator | R Pause/Resume · W Burn wood · C Burn coal · E Burn either · F Focus Depot |

@@ -1,6 +1,6 @@
 extends SceneTree
 # Headless, on Two Lakes (docs/KNIGHTS_RAIL.md, docs/KNIGHTS_AI.md): with a second Keep, the Knights AI plans a
-# Wainwright; with one standing, it joins the Keeps with track paid by home, buys a train at home for 60 F / 40 W /
+# Dragon Yard; with one standing, it joins the Keeps with track paid by home, buys a train at home for 60 F / 40 W /
 # 30 I and sends it hauling iron home, and gets coal for it: a Forester carries iron out to a Coal Mine site, and once
 # the mine stands works it while home is short of coal.
 var game: Node3D
@@ -44,24 +44,24 @@ func run() -> void:
 	keep_plan.queue_free()
 	await process_frame
 	if not check(outpost != null and ai.own_keeps().size() == 2,"The enemy should have a second Keep"): return
-	# With two Farms up and no Chapterhouse wanted, the Wainwright is next.
+	# With two Farms up and no Chapterhouse wanted, the Dragon Yard is next.
 	ai.chapterhouses_wanted = 0
 	ai.house_headroom = -100
 	for kind in [&"farm",&"farm"]:
 		if not check(building(ai,keep,kind) != null,"Should place a Farm"): return
 	ai._sort(ai.own_units())
-	if not check(not KnightRail.has_wainwright(keep,"enemy"),"No Wainwright yet"): return
+	if not check(not KnightRail.has_dragon_yard(keep,"enemy"),"No Dragon Yard yet"): return
 	ai.rail_economy(keep)
-	if not check(ai._search.is_empty(),"No track before a Wainwright"): return
+	if not check(ai._search.is_empty(),"No track before a Dragon Yard"): return
 	ai.economy(keep,true)
 	var plan = ai.plans.get(keep.get_instance_id())
-	if not check(is_instance_valid(plan) and plan.kind == &"wainwright","With two Keeps, it plans a Wainwright: %s" % [plan.kind if is_instance_valid(plan) else null]): return
-	if not check(ai.has_building(&"wainwright"),"A planned Wainwright counts"): return
+	if not check(is_instance_valid(plan) and plan.kind == &"dragon_yard","With two Keeps, it plans a Dragon Yard: %s" % [plan.kind if is_instance_valid(plan) else null]): return
+	if not check(ai.has_building(&"dragon_yard"),"A planned Dragon Yard counts"): return
 	network.finish_plan(plan)
 	plan.queue_free()
 	await process_frame
 	ai.plans.clear()
-	if not check(KnightRail.has_wainwright(keep,"enemy"),"The Wainwright stands"): return
+	if not check(KnightRail.has_dragon_yard(keep,"enemy"),"The Dragon Yard stands"): return
 	# Track from home to the second Keep, paid by home.
 	var iron_before: int = keep.iron
 	for round in range(12):

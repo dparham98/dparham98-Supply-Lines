@@ -16,7 +16,7 @@ same day it was moved onto its own branch from main and merged onto main's newer
 | Building | What it does |
 | --- | --- |
 | Keep | The faction's base. It stores Food, Wood and Iron; trains Forester Maidens (F) and Warhounds (W); packs Food, Wood and Iron crates (C); and launches an Air Balloon (L) that flies up to four of those crates to a point (`docs/AIR_BALLOON.md`). It is a kind of Depot (`scripts/gameplay/keep.gd` extends `depot.gd`). |
-| Chapterhouse | Trains Round Table Marines (R), Grail Sentinels (G), Questing Marines (Q) and Azure Dragons (D). Costs 40 Food, 30 Wood and 40 Iron. |
+| Chapterhouse | Trains Round Table Marines (R), Grail Sentinels (G) and Questing Marines (Q). Costs 40 Food, 30 Wood and 40 Iron. Azure Dragons come from the Dragon Yard since 2026-11-25 (docs/KNIGHTS_RAIL.md). |
 
 **Founding a Keep:** Build (B) → Keep (K) plans a Keep anywhere on valid land.
 

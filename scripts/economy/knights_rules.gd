@@ -26,11 +26,9 @@ extends Resource
 ## Housing each unit takes, by unit id; units not listed take none. There is no upper limit on housing.
 @export var housing := {&"forester_maiden": 1, &"warhound": 1, &"round_table_marine": 2, &"grail_sentinel": 2, &"questing_marine": 2, &"azure_dragon": 4}
 @export_group("Rail")
-## Knights rail (docs/KNIGHTS_RAIL.md): a standing Wainwright lets the side lay maglev track from a Keep's iron, at the
-## same price per metre as the Cyborgs, and lets a Keep with friendly track in its loading area build a train.
-@export_range(0,10000) var wainwright_wood_cost := 60
-@export_range(0,10000) var wainwright_iron_cost := 60
-@export var wainwright_footprint := Vector2i(4,4)
+## Knights rail (docs/KNIGHTS_RAIL.md): a standing Dragon Yard (assets/buildings/dragon_yard.tres) lets the side lay
+## maglev track from a Keep's iron, at the same price per metre as the Cyborgs, and builds the train, which leaves
+## from a covering Keep with friendly track in its loading area.
 @export_range(0,10000) var train_food_cost := 60
 @export_range(0,10000) var train_wood_cost := 40
 @export_range(0,10000) var train_iron_cost := 30

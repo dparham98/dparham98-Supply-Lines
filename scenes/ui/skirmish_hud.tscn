@@ -362,10 +362,10 @@ events = [SubResource("key_upgrade_3")]
 action = &"upgrade_4"
 [sub_resource type="Shortcut" id="shortcut_upgrade_4"]
 events = [SubResource("key_upgrade_4")]
-[sub_resource type="InputEventAction" id="key_build_wainwright"]
-action = &"build_wainwright"
-[sub_resource type="Shortcut" id="shortcut_build_wainwright"]
-events = [SubResource("key_build_wainwright")]
+[sub_resource type="InputEventAction" id="key_build_dragon_yard"]
+action = &"build_dragon_yard"
+[sub_resource type="Shortcut" id="shortcut_build_dragon_yard"]
+events = [SubResource("key_build_dragon_yard")]
 [sub_resource type="InputEventAction" id="key_produce_keep_train"]
 action = &"produce_keep_train"
 [sub_resource type="Shortcut" id="shortcut_produce_keep_train"]
@@ -4995,17 +4995,17 @@ horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
-[node name="Wainwright" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
+[node name="DragonYard" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
 visible = false
 theme_type_variation = &"CommandCard"
-shortcut = SubResource("shortcut_build_wainwright")
+shortcut = SubResource("shortcut_build_dragon_yard")
 layout_mode = 2
 text = ""
 custom_minimum_size = Vector2(46,46)
 icon = ExtResource("card_build_wainwright")
 expand_icon = true
 icon_alignment = 1
-[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/Wainwright"]
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/DragonYard"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0

@@ -1,13 +1,15 @@
 [gd_resource type="Resource" script_class="ProductionBuildingStats" format=3]
 
 [ext_resource type="Script" path="res://scripts/production/production_building_stats.gd" id="stats"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/azure_dragon.tscn" id="dragon"]
 
 [resource]
 script = ExtResource("stats")
-building_id = &"wainwright"
-display_name = "Wainwright"
+building_id = &"dragon_yard"
+display_name = "Dragon Yard"
 energy_cost = 0
 iron_cost = 60
 wood_cost = 60
-footprint = Vector2i(4, 4)
+footprint = Vector2i(6, 6)
 max_power = 1.0
+unit_scenes = Array[PackedScene]([ExtResource("dragon")])
