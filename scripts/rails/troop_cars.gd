@@ -17,5 +17,5 @@ static func eligible(unit: Node) -> bool:
 ## Why `unit` can't board `train` now, or "".
 static func refusal(unit: Node, train: Node) -> String:
 	if not eligible(unit): return "Only foot soldiers and workers ride a train."
-	if not is_instance_valid(train) or not train.is_in_group("rail_trains") or train.team != unit.team or train.health <= 0: return "Board a friendly train."
+	if not is_instance_valid(train) or not train.is_in_group("rail_trains") or not train.has_method("board_refusal") or train.team != unit.team or train.health <= 0: return "Board a friendly train."
 	return train.board_refusal()
