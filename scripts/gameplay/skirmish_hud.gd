@@ -41,7 +41,7 @@ const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 
 	"BurnWood": 4, "BurnCoal": 5, "BurnEither": 6, "MakeCrates": 3, "Worksite": 7,
 	"Mist": 4, "Slow": 5, "Stimulus": 6,
 	"Repair": 8, "Heal": 8, "Derail": 8, "Capture": 9, "LayMine": 9, "BuyMine": 10, "DeployTruck": 10, "Fell": 10, "CancelPlan": 11,
-	"DeployCargo": 2, "Load": 4, "Unload": 5, "Trips": 6,
+	"DeployCargo": 2, "Load": 4, "Unload": 5, "Trips": 6, "Disembark": 9,
 	"PrintTruck": 0, "PrintCargo": 1, "PrintTrain": 2,
 	"TrainForester": 0, "TrainWarhound": 1, "LaunchBalloon": 2, "KeepTrain": 4,
 	"PrintInfantry": 0, "ProduceScout": 1, "ProduceGrenadier": 2, "ProduceTank": 3, "ProduceMotorcycle": 4, "ProduceDrone": 5, "ProduceUbermech": 6,
@@ -173,6 +173,10 @@ func _ready() -> void:
 			elif not vehicle.deploy_supplies(): game.notify("Cannot deploy supplies here or during another transition."))
 	for mode in ["load","unload"]:
 		card.get_node(mode.capitalize()).pressed.connect(func(): game.pending_unit_command = mode; game.notify("%s: choose a stop on the map or minimap." % mode.capitalize()))
+	# Troop cars (docs/ROUND3_TROOP_TRAINS.md): every selected train at a station sets its riders down.
+	card.get_node("Disembark").pressed.connect(func():
+		for unit in selected_units():
+			if unit.is_in_group("rail_trains"): unit.disembark())
 	pick.get_node("Cancel").pressed.connect(func(): game.cancel_armed(); game.notify("Command cancelled."))
 	card.get_node("Trips").pressed.connect(func():
 		var vehicle = selected_cargo()
@@ -1178,6 +1182,10 @@ Flies only where its Keep sent it" % node.cargo_text()
 			set_card(card.get_node("Trips"),"trips_"+str(node.trips))
 			if not node.is_in_group("rail_trains") and not wain: show_button("Worksite","Worksite")
 			elif node.has_method("can_mine"): show_mine_tile(node)
+			if node.is_in_group("rail_trains") and not node.passengers.is_empty():
+				show_button("Disembark","Disembark %d rider%s" % [node.passengers.size(),"" if node.passengers.size() == 1 else "s"])
+				card.get_node("Disembark").set_meta("detail","Sets every rider down on open ground round the train. Only while it is stopped at a friendly Depot, Keep or Railhead.")
+				explain(card.get_node("Disembark"),node.station() == null,"Stop at a friendly Depot, Keep or Railhead first.")
 			hint_text = "Worksite places a building and fetches exactly its materials. Right-click a build site to fetch for it. Load sets a manifest of crates, then picks a Depot. Unload at a Depot to unpack, or on open ground to set crates down. Shift queues stops. Trips: %s." % TRIP_LABELS[node.trips]
 			if wain:
 				var r := KnightHousing.rules()

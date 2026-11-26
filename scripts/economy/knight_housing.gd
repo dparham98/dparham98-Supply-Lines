@@ -21,6 +21,11 @@ static func used(tree: SceneTree, team: String) -> int:
 	var total := 0
 	for unit in tree.get_nodes_in_group("units"):
 		if unit.team == team and _standing(unit) and unit.get("unit_stats") != null: total += cost(unit.unit_stats.unit_id)
+	# Riders aboard a train are out of the scene but still housed (docs/ROUND3_TROOP_TRAINS.md).
+	for train in tree.get_nodes_in_group("rail_trains"):
+		if train.team != team or train.get("passengers") == null: continue
+		for rider in train.passengers:
+			if is_instance_valid(rider) and rider.get("unit_stats") != null: total += cost(rider.unit_stats.unit_id)
 	for keep in tree.get_nodes_in_group("keeps"):
 		if keep.team != team: continue
 		for kind in keep.pending: total += cost(StringName(kind))

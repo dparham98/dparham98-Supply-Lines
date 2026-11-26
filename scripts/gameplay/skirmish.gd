@@ -458,6 +458,8 @@ func issue_order(screen, queued := false) -> void:
 		# A damaged vehicle of yours: workers repair it, unless they are bringing cargo to it.
 		elif vehicle and vehicle != unit and unit.can_repair and not (unit.cargo > 0 and vehicle == dropoff): give_order(unit,{kind = "repair", target = vehicle},queued)
 		elif patient and patient != unit and unit.can_heal: give_order(unit,{kind = "heal", target = patient},queued)
+		# A friendly train: foot soldiers and workers with nothing carried board it (docs/ROUND3_TROOP_TRAINS.md).
+		elif is_instance_valid(mobile) and mobile.is_in_group("rail_trains") and mobile.team == unit.team and unit.cargo <= 0 and TroopCars.eligible(unit): give_order(unit,{kind = "board", target = mobile},queued)
 		elif point != null and ground.get_tile_at_position(point) != null and ground.get_terrain(ground.get_tile_at_position(point)) == 3 and unit.can_gather:
 			give_order(unit,{kind = "gather", target = ground.forest_source(ground.get_tile_at_position(point))},queued)
 			forest_ordered = true

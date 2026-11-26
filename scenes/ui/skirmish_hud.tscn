@@ -303,6 +303,10 @@ events = [SubResource("key_command_worksite")]
 action = &"command_unload"
 [sub_resource type="Shortcut" id="shortcut_command_unload"]
 events = [SubResource("key_command_unload")]
+[sub_resource type="InputEventAction" id="key_command_disembark"]
+action = &"command_disembark"
+[sub_resource type="Shortcut" id="shortcut_command_disembark"]
+events = [SubResource("key_command_disembark")]
 [sub_resource type="InputEventAction" id="key_command_trips"]
 action = &"command_trips"
 [sub_resource type="Shortcut" id="shortcut_command_trips"]
@@ -4459,6 +4463,32 @@ icon = ExtResource("card_unload_crates")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Unload"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="Disembark" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+tooltip_text = "Sets every rider down round the train, at a friendly Depot, Keep or Railhead."
+shortcut = SubResource("shortcut_command_disembark")
+layout_mode = 0
+visible = false
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_drop")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Disembark"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0

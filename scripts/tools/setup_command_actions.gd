@@ -8,7 +8,7 @@ func _initialize() -> void:
 		"produce_scout": KEY_S, "produce_grenadier": KEY_G, "produce_tank": KEY_T, "produce_motorcycle": KEY_C, "produce_drone": KEY_D, "produce_ubermech": KEY_Q, "produce_hearth_wain": KEY_H,
 		"control_group_1": KEY_1, "control_group_2": KEY_2, "control_group_3": KEY_3, "control_group_4": KEY_4, "control_group_5": KEY_5, "control_group_6": KEY_6, "control_group_7": KEY_7, "control_group_8": KEY_8, "control_group_9": KEY_9,
 		"playtest_tools": KEY_F10, "map_show_all": KEY_ALT,
-		"command_load": KEY_E, "command_unload": KEY_V, "command_trips": KEY_C,
+		"command_load": KEY_E, "command_unload": KEY_V, "command_disembark": KEY_U, "command_trips": KEY_C,
 		# The Load and Make crates pages, and the Generator card's fuel tiles.
 		"resource_iron": KEY_A, "resource_energy": KEY_E, "resource_wood": KEY_W, "resource_coal": KEY_C,
 		# The Temple of Science's research and the train's Mine iron order (docs/TEMPLE_OF_SCIENCE.md).
