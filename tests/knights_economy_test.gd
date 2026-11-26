@@ -53,8 +53,7 @@ func run() -> void:
 	# Inside the range, a Farm plan builds from the Keep's wood, with nothing carried.
 	keep.stockpile.deposit(&"wood",200)
 	var wood_before: int = keep.stockpile.amount(&"wood")
-	# Near the Keep: its centre 14 m from the Keep's, its near edge 9 m. The Farmer tills from the near edge, so the walk is
-	# the near edge's. Yield falls with the walk (docs/KNIGHTS_ECONOMY.md).
+	# Measure at the same 14 m Farm-to-Keep distance as the economy baseline.
 	var plan: Node3D = null
 	var spot: Vector3
 	for offset in [Vector3(0,0,10),Vector3(0,0,-10),Vector3(10,0,0),Vector3(-10,0,0)]:
@@ -78,11 +77,29 @@ func run() -> void:
 	if not check(farmer.order == "gather","The Forester should take the Farm"): return
 	step([farmer],10.0)
 	var food_before: int = keep.stockpile.amount(&"food")
-	step([farmer],120.0)
+	var picked_cells := {}
+	var saw_basket := false
+	var saw_pick := false
+	var saw_empty_basket := false
+	var model = farmer.get_node("Visuals/Model")
+	for frame in range(120 * 30):
+		var before: int = farmer.cargo
+		farmer._process(1.0 / 30.0)
+		model._process(1.0 / 30.0)
+		if model.current_clip() == &"PickFruit":
+			saw_pick = true
+		if farmer.cargo == 0 and model._kit_meshes[&"FoodBasket"].visible and not model._kit_meshes[&"HarvestGrapes"].visible:
+			saw_empty_basket = true
+		if farmer.cargo > before:
+			if not check(farm.on_field(farmer.global_position),"Fruit must be picked inside the vineyard"): return
+			picked_cells[farmer.grid_position] = true
+		if farmer.order == "return" and model.current_clip() == &"CarryFood":
+			saw_basket = saw_basket or (model._kit_meshes[&"FoodBasket"].visible and model._kit_meshes[&"HarvestGrapes"].visible)
+	if not check(picked_cells.size() >= 7 and saw_pick and saw_basket and saw_empty_basket,"Farmer should harvest different vines and carry her basket to the Keep"): return
 	var per_minute: int = roundi((keep.stockpile.amount(&"food")-food_before)/2.0)
 	print("Farm %.1f m from the Keep's centre: %d Food a minute" % [farm.global_position.distance_to(keep.global_position),per_minute])
 	if not check(per_minute >= 80 and per_minute <= 90,"A Farm with one Forester should yield 80 to 90 Food a minute, gave %d" % per_minute): return
-	if not check(farmer.state in ["Farming","Returning","Returning cargo"] or farmer.order == "gather","The Forester should be farming: '%s'" % farmer.state): return
+	if not check(farmer.state in ["Picking fruit","Returning","Returning cargo"] or farmer.order == "gather","The Forester should be farming: '%s'" % farmer.state): return
 	# A second worker is refused.
 	var second = game.get_node("Entities/Units/ForesterMaiden2")
 	place(second,farm.global_position+Vector3(3,0,4))

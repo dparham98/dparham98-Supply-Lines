@@ -1099,8 +1099,8 @@ the one shown while it can, else another that can."
 		var status: String = ("tilled by "+str(tiller.name)) if tiller != null else "no Farmer"
 		if node.raided: status = "enemy on the field: no Food"
 		state_label.text = "%s · %s" % [team_label(node),status]
-		set_stats([["Food a beat","%d / 1.2 s" % KnightHousing.rules().farm_food_per_beat],["Farmer","%d / 1" % (1 if tiller != null else 0)]])
-		info.get_node("Details").text = "A field any unit can walk over. Its Farmer tills it and carries the Food to a Keep. While an enemy ground unit stands on it, it yields nothing."
+		set_stats([["Food per pick","%d" % KnightHousing.rules().farm_food_per_beat],["Farmer","%d / 1" % (1 if tiller != null else 0)]])
+		info.get_node("Details").text = "A field any unit can walk over. Its Farmer picks grapes along the rows and carries the basket to a Keep. While an enemy ground unit stands on it, it yields nothing."
 		hint_text = "Right-click the Farm with one Forester Maiden: she becomes its Farmer for good and no longer builds, fells or fights. A Farm takes one Farmer. The Food goes to the nearest Keep."
 	elif node.is_in_group("houses"):
 		commands.get_node("Title").text = "HOUSE · HOUSING"
@@ -1568,7 +1568,7 @@ func refresh_global_menu() -> void:
 		elif pair[0] == &"forge":
 			set_tile(button,spec.title,"%d W · %d I · from a covering Keep's stock, else on site · researches Arms and Mail" % [spec.wood,spec.iron])
 		elif pair[0] == &"farm":
-			set_tile(button,spec.title,"%d W · inside a Keep's range, from its stock · one Forester tills it for Food" % spec.wood)
+			set_tile(button,spec.title,"%d W · inside a Keep's range, from its stock · one Forester picks grapes for Food" % spec.wood)
 		elif pair[0] == &"dragon_yard":
 			set_tile(button,spec.title,"%d W · %d I · inside a Keep's range, from its stock · raises Azure Dragons, builds coal trains and lets your Keeps lay track" % [spec.wood,spec.iron])
 		elif pair[0] == &"house":
