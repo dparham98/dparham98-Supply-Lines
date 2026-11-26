@@ -33,7 +33,7 @@ Yield stays at 2 Food a beat, the handoff's settled figure: size sets how much l
 - A Forester tilling shows the state "Farming"; a Farmer waiting out a raid shows "Enemy on the Farm".
 - **Models (2026-11-24, the owner's art):**
   - **Farm:** a walkable 10 x 10 m vineyard (`scenes/models/farm_model.tscn`, `assets/models/buildings/farm.glb`, Blender source in `Blender/Buildings/Farm/`). Its two irrigation carriages water the rows (Work) while its Farmer works it, it rises through Build while it is built, and it plays Die with an irrigation-rupture effect when destroyed.
-  - **House:** a 4 x 4 m timber dwelling (`scenes/models/house_model.tscn`, `assets/models/buildings/house.glb`, `Blender/Buildings/House/`), with Idle, Build and Die.
+  - **House:** a 4 x 4 m timber dwelling (`scenes/models/house_model.tscn`, `assets/models/buildings/house.glb`, `Blender/Buildings/House/`), with Idle, Build and Die. The GLB's front door faces −Z, so `house_model.tscn` turns its `Rig` half round to face +Z, toward the RTS camera, like the Keep and Chapterhouse (2026-11-25; until then the camera saw the plain back). `tests/house_facing_check.gd` (rendered) checks it.
   - Both have their own portraits and Build-page cards. The placeholder boxes are gone.
 
 ## Checks
