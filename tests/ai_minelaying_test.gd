@@ -1,7 +1,7 @@
 extends SceneTree
 # Headless, on Two Lakes (docs/ENEMY_AI.md, docs/MINES.md): the Cyborg AI builds a Temple of Science after its Tank
 # Factory; it researches Minelaying only once it has a Derailer, and after Mining Trains; with Minelaying, a Derailer
-# with mines aboard at home lays them in a row across the way toward the other side, and stops at `mines_wanted`.
+# at home buys mines, then lays them in a row across the way toward the other side, and stops at `mines_wanted`.
 var game: Node3D
 var ai: Node
 func _initialize() -> void: call_deferred("run")
@@ -53,10 +53,9 @@ func run() -> void:
 	ai.known[game.depot.get_instance_id()] = game.depot.global_position
 	ai.mines_wanted = 3
 	derailer.mines = 0
+	var iron_before: int = depot.stockpile.amount(&"iron")
 	ai.lay_mines(depot)
-	if not check(derailer.order != "lay_mine","A Derailer with no mines aboard does not go"): return
-	derailer.mines = 2
-	ai.lay_mines(depot)
+	if not check(derailer.mines == 2 and depot.stockpile.amount(&"iron") == iron_before-20,"Idle at home, a Derailer buys 2 mines for 20 iron (mines %d, iron %d->%d)" % [derailer.mines,iron_before,depot.stockpile.amount(&"iron")]): return
 	if not check(derailer.order == "lay_mine","A Derailer with mines aboard goes to lay one: %s" % derailer.state): return
 	var spot: Vector3 = ai._laying[derailer.get_instance_id()]
 	var way: Vector3 = (game.depot.global_position-depot.global_position)*Vector3(1,0,1)

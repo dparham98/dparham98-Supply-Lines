@@ -14,7 +14,7 @@ provisional and wait on playtesting.
 
 ## Derail
 
-**Using it:** the Derailer's card has a **Derail** tile (key **E**). Click a piece of rail (anyone's, your own
+**Using it:** the Derailer's card has a **Derail** tile (key **R**, E until 2026-11-25). Click a piece of rail (anyone's, your own
 included) and the Derailer:
 
 1. drives to the middle of the piece;

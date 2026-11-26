@@ -332,7 +332,6 @@ func command_return(target: Node3D = null) -> void:
 func _process(delta: float) -> void:
 	if _dead: return
 	if derail_cooldown > 0.0: derail_cooldown = maxf(0.0,derail_cooldown-delta)
-	if mine_rules != null: _mine_load_tick(delta)
 	fuel_tick(delta)
 	if can_heal: MedicalWork.refill_tick(self,delta)
 	_order_process(delta)
@@ -1296,13 +1295,12 @@ func _capture_order() -> void:
 	else: state = "Capturing · stay uncontested"
 
 ## Minelaying (item 9 of the balance handoff, docs/MINES.md). Once its side has researched Minelaying at a Temple
-## of Science, a Derailer carries up to `mine_rules.capacity` mines. Stopped inside a friendly Depot's range or by a
-## deployed Cargo truck, it loads them one at a time for `iron_per_mine` iron each from that stockpile, the way it
-## refuels. Lay mine sends it to a point, where it works `lay_seconds` and leaves a mine (`mine_scene`).
+## of Science, a Derailer carries up to `mine_rules.capacity` mines. Each is bought with Buy mine, for
+## `iron_per_mine` iron from a friendly Depot whose range covers it or a deployed Cargo truck beside it. Lay mine
+## sends it to a point, where it works `lay_seconds` and leaves a mine (`mine_scene`).
 @export var mine_rules: MineRules
 @export var mine_scene: PackedScene
 var mines := 0
-var _mine_load_timer := 0.0
 var _lay_point := Vector3.ZERO
 func can_carry_mines() -> bool:
 	return mine_rules != null and mine_scene != null and has_ability(&"derail") and Research.has(self,team,Research.MINELAYING)
@@ -1310,23 +1308,29 @@ func can_carry_mines() -> bool:
 func lay_mine_blocker() -> String:
 	if mine_rules == null or not has_ability(&"derail"): return "Only a Derailer lays mines."
 	if not Research.has(self,team,Research.MINELAYING): return "Research Minelaying at a Temple of Science first."
-	if mines <= 0: return "No mines aboard. Stop inside a friendly Depot's range, or by a deployed Cargo truck, to load them for %d iron each." % mine_rules.iron_per_mine
+	if mines <= 0: return "No mines aboard. Buy one (Q) inside a friendly Depot's range or by a deployed Cargo truck, for %d iron." % mine_rules.iron_per_mine
 	return ""
+## Why it cannot buy a mine now, or "" when it can.
+func buy_mine_blocker() -> String:
+	if mine_rules == null or not has_ability(&"derail"): return "Only a Derailer carries mines."
+	if not Research.has(self,team,Research.MINELAYING): return "Research Minelaying at a Temple of Science first."
+	if mines >= mine_rules.capacity: return "Full: %d of %d mines aboard." % [mines,mine_rules.capacity]
+	if mine_source() == null: return "Needs a friendly Depot's range, or a deployed Cargo truck beside it, with %d iron." % mine_rules.iron_per_mine
+	return ""
+## Buys one mine from the covering stockpile. Returns whether it did.
+func command_buy_mine() -> bool:
+	if not buy_mine_blocker().is_empty(): return false
+	var source := mine_source()
+	if source.stockpile.withdraw(&"iron",mine_rules.iron_per_mine) != mine_rules.iron_per_mine: return false
+	mines += 1
+	state = "Mine bought · %d of %d aboard" % [mines,mine_rules.capacity]
+	return true
 ## The friendly stockpile it would load from here: a covering Depot or deployed Cargo truck with the iron.
 func mine_source() -> Node3D:
 	if not is_inside_tree(): return null
 	for source in SupplySource.candidates(get_tree(),global_position,team):
 		if source.get("stockpile") != null and source.stockpile.amount(&"iron") >= mine_rules.iron_per_mine: return source
 	return null
-func _mine_load_tick(delta: float) -> void:
-	if not can_carry_mines() or mines >= mine_rules.capacity or not is_stopped() or order != "idle":
-		_mine_load_timer = 0.0
-		return
-	_mine_load_timer += delta
-	if _mine_load_timer < mine_rules.load_seconds: return
-	_mine_load_timer = 0.0
-	var source := mine_source()
-	if source != null and source.stockpile.withdraw(&"iron",mine_rules.iron_per_mine) == mine_rules.iron_per_mine: mines += 1
 func command_lay_mine(point: Vector3) -> void:
 	var blocker := lay_mine_blocker()
 	if not blocker.is_empty(): state = blocker; return

@@ -59,7 +59,7 @@ On Two Lakes the East start mirrors the player's West start:
 - **Mines** (docs/MINES.md). With Minelaying, a Derailer at home with mines aboard and a full tank, not in a wave and with no threat near, lays them (`lay_mines`):
   - **Where:** a row across the way toward what it would attack, `mine_distance` (45 m) out from home, or half way if that's nearer. Spots are `mine_spacing` (5 m) apart, from the middle outward. The way is fixed the first time it knows of somewhere to attack, so the row stays put.
   - **How many:** it keeps `mines_wanted` (6) of its own laid. A spot a Derailer couldn't reach isn't tried again.
-  - **Loading:** Derailers load at the rally point, inside the Depot's range, as the player's do.
+  - **Buying:** a Derailer idle at home buys mines (Buy mine) until it carries two, from the Depot's iron.
   - **Seen in the sim (2026-11-25):** Minelaying done by 9:00 and mines laid by 10:00. With no opponent the Depot ran out of coal by 9:00, and Derailers without fuel then waited at home.
 - **Repair.** A building of its own below `repair_below` (75%) of its health, with none of the player's units seen within 30 m, gets the nearest free worker within 120 m. At most `repairers` (2) repair at once. They pay from the nearest covering stockpile, as the player's do.
 - **Scouting.** Its Scout visits the start sites (`Sites`) it has not seen, nearest first.
