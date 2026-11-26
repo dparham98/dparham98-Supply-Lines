@@ -6,11 +6,14 @@ Run in background Blender:
 Everything is rebuilt each run, so edits here never compound. Faces -Y, Z up, tyres on Z = 0,
 left is +X. Animation and effects are added afterwards by their own scripts.
 """
-import bpy, bmesh, math, os, random
+import bpy, bmesh, math, os, random, sys
 from math import sin, cos, radians, pi
 from mathutils import Vector as V, Matrix
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import rider_helmet
+
 OUT = os.path.join(HERE, "Motorcycle.blend")
 DRONE = os.path.normpath(os.path.join(HERE, "..", "Drone", "Drone.blend"))
 X, Y, Z = V((1, 0, 0)), V((0, 1, 0)), V((0, 0, 1))
@@ -82,6 +85,8 @@ material("moto_amber", (0.30, 0.08, 0.012), 0.0, 0.40, (1.0, 0.2, 0.02), 1.8)
 material("moto_trail", (0.8, 0.8, 0.8), 0.0, 0.5, (1.0, 0.9, 0.7), 1.5)
 for m in FANG_MATS:
     MATS[m.name] = m
+
+rider_helmet.finishes(material)
 
 # ---------------------------------------------------------------- geometry helpers
 
@@ -859,52 +864,27 @@ for s in (1, -1):
         P.rivet(WAIST + S_AX * L * (0.55 + 0.34 * k) - F_AX * 0.205 + X * s * 0.14, -F_AX, 0.011)
 # collar: high at the back and sides, open at the throat
 col_ax = (S_AX + Z).normalized()
-collar = [(0.115, 0.0), (0.14, 0.0), (0.16, 0.055), (0.146, 0.058)]
-P.add(mk_lathe(collar, SHOULDER_C + S_AX * 0.03, col_ax, 12, closed=True, a0=radians(-115), a1=radians(115),
-               ref=Y), "moto_oxblood")
+collar = [(0.115, 0.0), (0.143, 0.0), (0.151, 0.030), (0.165, 0.087), (0.163, 0.094), (0.151, 0.093)]
+for section, finish_material in ((collar, "moto_charcoal"),
+        ([(.158,.068),(.166,.087),(.165,.092),(.160,.093)], "Derailer oxblood enamel"),
+        ([(.145,.015),(.149,.024),(.147,.026),(.144,.025)], "moto_steel")):
+    P.add(mk_lathe(section, SHOULDER_C + S_AX * .03, col_ax, 46, closed=True,
+                  a0=radians(-127), a1=radians(127), ref=Y), finish_material)
 P.cyl("moto_joint", SHOULDER_C + V((0, 0.0, -0.01)), HELM + V((0, 0.03, -0.03)), 0.066, seg=10)
+for s in (-1,1):
+    anchor = SHOULDER_C + S_AX*.015 + F_AX*.122 + X*s*.117
+    clasp = WAIST + S_AX*(L*.81) + F_AX*.178 + X*s*.070
+    P.beam("moto_joint",anchor,clasp,.042,.016,.004)
+    P.box("moto_gunmetal",clasp,(.053,.019,.039),CM,.005)
+    P.box("moto_brass",clasp+F_AX*.011,(.038,.006,.010),CM,.002)
 torso = finish(P, "rider_torso", T(HIP_C + RD), root, shift=RD)
+rider_helmet.project_grain(torso.data)
 
-# head
+# The hand-sculpted plates and optics ride the original steering/death pivot.
 P = Part()
-HY = HELM.y
-HS = (0.125, 0.145, 0.135)
-P.sphere("moto_gunmetal", HELM, 1.0, HS, 14, 9)
-skirt = [(0.108, -0.045), (0.142, -0.125), (0.132, -0.132), (0.10, -0.05)]
-P.add(mk_lathe(skirt, HELM + Y * 0.01, Z, 10, closed=True, a0=radians(-105), a1=radians(105), ref=Y), "moto_gunmetal")
-crest = []
-for a in range(15, 166, 15):
-    ar = radians(a)
-    crest.append((HY + HS[1] * 1.09 * cos(ar), HELM.z + HS[2] * 1.11 * sin(ar)))
-for a in range(165, 14, -15):
-    ar = radians(a)
-    crest.append((HY + HS[1] * 0.97 * cos(ar), HELM.z + HS[2] * 0.97 * sin(ar)))
-P.add(mk_prism(crest, (0, 0, 0), Y, Z, -0.018, 0.018), "moto_charcoal")
-for a in (40, 65, 90, 115, 140):
-    ar = radians(a)
-    for s in (1, -1):
-        P.rivet(V((s * 0.038, HY + HS[1] * 0.96 * cos(ar), HELM.z + HS[2] * 0.97 * sin(ar))),
-                V((s * 0.28, cos(ar), sin(ar))), 0.010)
-# face mask: an angular wedge narrowing to the chin
-face = [(-0.095, 0.05), (-0.142, 0.022), (-0.155, -0.035), (-0.122, -0.135), (-0.05, -0.135), (-0.015, -0.055),
-        (-0.035, 0.05)]
-bm_ = mk_prism([(HY + a, HELM.z + b) for a, b in face], (0, 0, 0), Y, Z, -0.094, 0.094)
-for v in bm_.verts:
-    if v.co.z < HELM.z - 0.08:
-        v.co.x *= 0.5
-    elif v.co.y > HY - 0.05:
-        v.co.x *= 1.12
-bmesh.ops.bevel(bm_, geom=bm_.edges[:], offset=0.012, segments=1, profile=0.5, affect='EDGES')
-P.add(bm_, "moto_steel")
-P.box("moto_charcoal", (0, HY - 0.142, HELM.z - 0.004), (0.16, 0.014, 0.044))
-for s in (1, -1):
-    P.box("moto_amber", (s * 0.043, HY - 0.143, HELM.z - 0.003), (0.056, 0.022, 0.018), rot_y(radians(s * 14)))
-    # cheek port and breather hose, all on the head
-    P.cyl("moto_brass", (s * 0.10, HY - 0.04, 1.425), (s * 0.142, HY - 0.04, 1.425), 0.038, 0.032, seg=10)
-    P.cyl("moto_charcoal", (s * 0.142, HY - 0.04, 1.425), (s * 0.147, HY - 0.04, 1.425), 0.021, seg=8)
-    P.tube("moto_joint", [(s * 0.13, HY - 0.025, 1.425), (s * 0.172, HY + 0.02, 1.412), (s * 0.16, HY + 0.11, 1.405),
-                          (s * 0.08, HY + 0.155, 1.412), (s * 0.03, HY + 0.12, 1.435)], 0.021, 6, 0.04)
+rider_helmet.build_head(P, HELM, mk_loft)
 head = finish(P, "rider_head", T(NECK + RD), torso, shift=RD)
+rider_helmet.project_grain(head.data)
 
 # arms, modelled reaching the grips
 for s, tag in ((1, "L"), (-1, "R")):
@@ -920,8 +900,8 @@ for s, tag in ((1, "L"), (-1, "R")):
     Wr = G - fd * 0.06
     P = Part()
     tilt = rot_y(radians(s * 22))
-    P.sphere("moto_charcoal", SH + V((s * 0.04, 0, 0.045)), 1.0, (0.135, 0.15, 0.082), 12, 7, tilt)
-    P.sphere("moto_oxblood", SH + V((s * 0.085, 0, -0.012)), 1.0, (0.115, 0.135, 0.07), 12, 7, rot_y(radians(s * 40)))
+    rider_helmet.shoulder(P, SH + V((s * .04, 0, .045)), tilt, mk_loft)
+    P.sphere("moto_oxblood", SH + V((s * 0.085, 0, -0.012)), 1.0, (0.115, 0.135, 0.07), 32, 16, rot_y(radians(s * 40)))
     P.rivet(SH + V((s * 0.01, 0, 0.118)), V((-s * 0.37, 0, 0.93)), 0.013)
     P.cyl("moto_charcoal", SH, E, 0.074, 0.064, seg=8)
     P.sphere("moto_joint", E, 0.07, u=10, v=6)
@@ -932,7 +912,8 @@ for s, tag in ((1, "L"), (-1, "R")):
     hy = hz.cross(gd).normalized()
     P.box("moto_joint", G, (0.10, 0.085, 0.09), basis(gd, hy, hz), 0.016)
     P.box("moto_gunmetal", G + hy * 0.014, (0.094, 0.08, 0.102), basis(gd, hy, hz), 0.012)
-    finish(P, "rider_arm_" + tag, T(SH + RD), torso, shift=RD)
+    arm = finish(P, "rider_arm_" + tag, T(SH + RD), torso, shift=RD)
+    rider_helmet.project_grain(arm.data)
 
 # legs, feet on the pegs
 for s, tag in ((1, "L"), (-1, "R")):

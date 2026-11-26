@@ -36,6 +36,17 @@ func run() -> void:
 		if narrow_width > 0.0 and not check(artwork.size.x > narrow_width,"The wide layout should expose more of the shoulders"): return
 		narrow_width = artwork.size.x
 	infantry.set_selected(false)
+	var derailer: Node3D = load("res://scenes/gameplay/motorcycle.tscn").instantiate()
+	derailer.position = game.depot.global_position + Vector3(10,0,12)
+	derailer.team = "player"
+	game.get_node("Entities/Units").add_child(derailer)
+	derailer.set_selected(true)
+	for window_size in [Vector2i(1280,900), Vector2i(1920,1080)]:
+		root.size = window_size
+		for frame in range(3): await process_frame
+		if not check(portrait.visible and portrait.texture != null and portrait.texture.resource_path == "res://assets/ui/portraits/motorcycle.png","Selecting a Derailer should show its rider portrait"): return
+		if not check(portrait.stretch_mode == TextureRect.STRETCH_KEEP_ASPECT_COVERED and portrait.size.aspect() <= portrait.texture.get_size().aspect()+0.001,"The rider's helmet must keep its full height at both HUD widths"): return
+	derailer.set_selected(false)
 	game.selected_building = game.depot
 	for frame in range(3): await process_frame
 	if not check(portrait.visible and portrait.texture != null and portrait.texture.resource_path == "res://assets/ui/portraits/depot.png","The Depot portrait should show"): return
