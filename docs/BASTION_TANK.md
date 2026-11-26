@@ -8,7 +8,7 @@ The Bastion replaces the original tank model. It carries two weapons: the main g
 | --- | --- | --- |
 | Range | 10–30 m | 0–10 m |
 | Targets | Anything hostile, including buildings | Hostile units only |
-| Damage | 12 every 1 s; 50 every 3 s against Tanks and buildings; 3 m splash round the burst; a shell whose target is gone bursts on the ground | 3 every 0.35 s |
+| Damage | 12 every 1 s; 50 every 3 s against Tanks and buildings; 3 m splash round the burst; a shell whose target is gone bursts on the ground | 3 every 0.35 s; 4 with Vehicle Weapons II or III |
 | Round | Shell, damage on impact | Bullet at 18 m/s, damage on impact; a target that moves clear is missed |
 | Orders | Follows attack and attack-move orders | Always on, picks the nearest hostile unit itself |
 
@@ -19,6 +19,7 @@ The Bastion replaces the original tank model. It carries two weapons: the main g
 - Each roof-gun shot shows a barrel flash, a plain round with no tracer, and a small burst where it lands. The flash is `AuxMuzzleFx` in `scenes/models/tank_model.tscn`, the main gun's muzzle flash at 0.45 scale. The burst is `scenes/gameplay/aux_bullet_impact.tscn`, the shell impact at 0.55 scale in a hotter orange; like a shell, the round stops on the near face of what it hits.
 - Its settings are on the `CloseDefense` node in `scenes/gameplay/tank.tscn` (`scripts/components/close_defense.gd`, round `scenes/gameplay/aux_bullet.tscn`).
 - The unit card shows the main gun's range as "10–30" and lists the roof gun on the abilities line.
+- **Upgrades** (2026-11-25, item 1 of the Round 3 handoff): the roof gun gains half a point a level of Vehicle Weapons, rounded down (`upgrade_bonus_per_level`, 0.5): 3 at levels 0 and 1, 4 at levels 2 and 3. Before, it gained nothing, so Mail took its 3 down to 2, 1 and 1. Armour is still taken off in full, also from splash hits.
 
 The roof gun's numbers come from the art package and have not been balance-tested.
 

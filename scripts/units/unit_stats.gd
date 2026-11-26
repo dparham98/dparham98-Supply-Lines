@@ -18,6 +18,13 @@ extends Resource
 @export var combat_notation: String = ""
 ## Combat abilities. Splash radius is provisional balance, measured in map units.
 @export var fire_while_moving := false
+## Melee pursuit (docs/MELEE_PURSUIT.md): a unit that fires on the move with an attack range up to `melee_range`
+## keeps closing on an attack order's target until it is within `pursuit_stop_distance` m, striking as it goes, and
+## re-plans its way every `pursuit_replan_seconds` while within `pursuit_replan_within` m of a moving target.
+@export_range(0, 20, 0.1) var melee_range: float = 4.0
+@export_range(0, 10, 0.1) var pursuit_stop_distance: float = 1.6
+@export_range(0.05, 2, 0.05) var pursuit_replan_seconds: float = 0.15
+@export_range(0, 100, 0.5) var pursuit_replan_within: float = 12.0
 @export_range(0, 100, 0.1) var splash_radius: float = 0.0
 ## -1 uses the base attack. Heavy targets are armoured units and buildings (CombatResolver.is_heavy).
 @export var heavy_target_damage: int = -1

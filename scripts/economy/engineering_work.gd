@@ -9,6 +9,10 @@ static func repairable(target: Node, team: String) -> bool:
 	if not is_instance_valid(target) or target.health <= 0: return false
 	if target.is_in_group("selectable_buildings"): return target.team == team or target.is_in_group("mines")
 	return is_vehicle(target) and target.team == team
+## Whether `payer` is a Knights stockpile (a Keep or a pitched Hearth-Wain). It holds no energy, so it pays for a
+## repair in Wood and Iron.
+static func pays_wood(payer: Node) -> bool:
+	return is_instance_valid(payer) and (payer.is_in_group("keeps") or payer.is_in_group("hearth_wains"))
 static func payer_for(target: Node3D, team: String) -> Node3D:
 	# A vehicle has no Depot of its own: the nearest stockpile whose range covers it.
 	if is_vehicle(target):
@@ -17,6 +21,11 @@ static func payer_for(target: Node3D, team: String) -> Node3D:
 	if target.is_in_group("depots"): return target if target.team == team else null
 	if target.is_in_group("production_buildings") or target.is_in_group("energy_generators"):
 		return target.assigned_depot if is_instance_valid(target.assigned_depot) and target.assigned_depot.team == team else null
+	# A Farm, House or Railhead has no wallet of its own: the nearest friendly Keep or pitched Hearth-Wain covering it.
+	if target.is_in_group("farms") or target.is_in_group("houses") or target.is_in_group("railheads"):
+		for node in SupplySource.candidates(target.get_tree(),target.global_position,team):
+			if pays_wood(node): return node
+		return null
 	# Mines have no fixed production wallet: latch the nearest covering friendly Depot once.
 	var nearest: Node3D
 	var distance := INF
@@ -36,6 +45,9 @@ static func tick(unit: Node3D, target: Node3D, payer: Node3D) -> bool:
 		if target.is_in_group("mines") and payer.global_position.distance_to(target.global_position) > payer.rules.construction_radius: return false
 	if unit.global_position.distance_to(target.global_position) > unit.engineering_rules.repair_range: return false
 	var amount: int = mini(unit.engineering_rules.repair_hp,target.max_health-target.health)
-	if amount <= 0 or not payer.spend_local(unit.engineering_rules.repair_energy,unit.engineering_rules.repair_iron): return false
+	if amount <= 0: return false
+	var rules: EngineeringRules = unit.engineering_rules
+	var paid: bool = payer.spend_resources({&"wood": rules.repair_wood, &"iron": rules.repair_iron}) if pays_wood(payer) else payer.spend_local(rules.repair_energy,rules.repair_iron)
+	if not paid: return false
 	target.health += amount
 	return true

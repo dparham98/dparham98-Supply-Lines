@@ -9,6 +9,11 @@ Asked for on 2026-11-19: Infantry could repair buildings but not vehicles.
 - **Only your own:** enemy vehicles are not repaired. Mines stay repairable by any side, as before.
 - **Rate and cost:** the building rules in `assets/economy/engineering_rules.tres`: 10 HP every second for 2 E and
   1 I, within 7 m.
+- **Knights repairs** (2026-11-25, item 1 of the Round 3 handoff): a Keep holds no energy, so a repair paid by a Keep
+  (or a pitched Hearth-Wain, once it exists) costs **1 Wood and 1 Iron** a tick instead (`repair_wood`). Before, a
+  Forester Maiden repairing anything from a Keep stalled at "local funds unavailable".
+  - A Farm, House or Railhead has no wallet of its own: it is repaired from the nearest friendly Keep covering it.
+  - The Keep itself, and the Chapterhouse, Forge and Dragon Yard, are paid by their Keep as before.
 - **Who pays:** a Depot or deployed Cargo truck whose range covers both the repairer and the vehicle, nearest first.
   A deployed truck pays its energy by burning coal, as for building (docs/MOBILE_SUPPLY.md). With no stockpile in
   range the repair waits.

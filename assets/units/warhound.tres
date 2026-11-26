@@ -20,6 +20,7 @@ turn_rate = 720.0
 combat_notation = "7/1"
 damage = 7
 attack_interval = 1.0
+fire_while_moving = true
 abilities = Array[StringName]([])
 mobility = ExtResource("mobility")
 detect_range = 10.0
