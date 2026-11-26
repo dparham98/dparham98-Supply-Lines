@@ -32,7 +32,7 @@ same day it was moved onto its own branch from main and merged onto main's newer
 | Forester Maiden | 45 | 0 | 45 | Worker: gathers and builds |
 | Warhound | 30 | 5 | 38 | Melee |
 | Round Table Marine | 65 | 25 | 65 | Range 18 |
-| Grail Sentinel | 75 | 20 | 75 | Heals; range 10 |
+| Grail Sentinel | 75 | 20 | 75 | Unarmed. Heals allies within 9 m and casts Mist and Slow |
 | Questing Marine | 75 | 35 | 65 | Range 19 |
 | Azure Dragon | 160 | 60 | 180 | Breath; its Breath_Light shows only while breathing |
 

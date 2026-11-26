@@ -46,6 +46,19 @@ func run() -> void:
 	place(marine,spot)
 	var watcher := spawn("infantry","enemy",spot+Vector3(0,0,14))
 	place(watcher,spot+Vector3(0,0,14))
+	sentinel.command_attack(watcher,true)
+	if not check(sentinel.order == "idle" and not sentinel.fires_at(watcher) and sentinel.projectile_scene == null,"Sentinel must refuse even forced fire"): return
+	marine.health -= 10
+	place(marine,sentinel.global_position + Vector3.RIGHT * 3.0)
+	sentinel.command_heal(marine)
+	sentinel._process(0.1)
+	var caster_model = sentinel.get_node("Visuals/Model")
+	caster_model._process(0.1)
+	if not check(caster_model.current_clip() == &"Heal","The grail should stay offered while tending a patient"): return
+	sentinel._process(1.0)
+	if not check(marine.health == marine.max_health and caster_model.get_node_or_null("GrailPulse") != null,"A successful heal should launch a pulse"): return
+	place(marine,spot)
+	sentinel.med_reserve = 200
 	if fog != null: fog.update_now()
 	if not check(watcher.team_sees(marine),"Before the Mist the enemy 14 m off should see the Marine"): return
 	# Mist.
@@ -56,8 +69,8 @@ func run() -> void:
 	mist.set_process(false)
 	# The art: the Sentinel raises its arm with a burst of light, and the cloud's look follows its seconds.
 	var model = sentinel.get_node("Visuals/Model")
-	if not check(model.acting() and model.current_clip() == &"spells/Cast","The Sentinel should play its Cast clip (%s)" % model.current_clip()): return
-	if not check(model.find_children("*","Node3D",false,false).any(func(n): return n.name.begins_with("SentinelCastMist")),"The Mist cast burst should show on the Sentinel"): return
+	if not check(model.acting() and model.current_clip() == &"Mist","The Sentinel should play its Cast clip (%s)" % model.current_clip()): return
+	if not check(model.grail.get_children().any(func(n): return n.name.begins_with("SentinelCastMist")),"The Mist cast burst should show on the Sentinel"): return
 	var look = mist.get_node("Visuals")
 	if not check(look.progress().x < 0.2 and look.scale.x < mist.radius,"The Mist should start billowing in"): return
 	if not check(not watcher.team_sees(marine),"In the Mist the Marine is hidden from an enemy 14 m off"): return
@@ -78,6 +91,7 @@ func run() -> void:
 	place(near,spot+Vector3(3,0,0))
 	place(far,spot+Vector3(8,0,0))
 	if not check(cast(sentinel,"slow",spot) and sentinel.med_reserve == 135,"Slow should cost 25 reserve points (%d left)" % sentinel.med_reserve): return
+	if not check(model.current_clip() == &"Slow" and model.hourglass.get_child_count() == 1,"Slow uses the shield glass"): return
 	var fields := root.find_children("*","Node3D",true,false).filter(func(n): return n.name.begins_with("SlowField"))
 	if not check(fields.size() == 1 and is_equal_approx(fields[0].radius,5.0),"One Slow sigil of 5 m should mark the point"): return
 	if not check(is_equal_approx(near.speed_scale(),0.6) and is_equal_approx(far.speed_scale(),1.0) and is_equal_approx(marine.speed_scale(),1.0),"Only enemy units within 5 m are slowed to 60%"): return
@@ -91,7 +105,7 @@ func run() -> void:
 	game.selected_building = null
 	for node in get_nodes_in_group("units"): node.set_selected(node == sentinel)
 	hud._process(0)
-	if not check(hud.desired_buttons.has("Mist") and hud.desired_buttons.has("Slow"),"The Sentinel card should show Mist and Slow: %s" % [hud.desired_buttons]): return
+	if not check(not hud.desired_buttons.has("Attack") and hud.desired_buttons.has("Mist") and hud.desired_buttons.has("Slow"),"The Sentinel card should show Mist and Slow: %s" % [hud.desired_buttons]): return
 	for id in {"Mist":"sl_mist.png","Slow":"sl_slow.png"}.keys():
 		var icon: Texture2D = hud.card.get_node(id).icon
 		if not check(icon != null and icon.resource_path.get_file() == "sl_%s.png" % id.to_lower(),"The %s tile should show its own card" % id): return
