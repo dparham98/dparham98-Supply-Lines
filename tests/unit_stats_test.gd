@@ -8,7 +8,7 @@ func _initialize() -> void:
 	unit.apply_unit_stats()
 	assert(unit.max_health == 55 and unit.move_speed == 4 and unit.attack_range == 15 and unit.turn_rate == 540)
 	assert(unit.attack_damage == 8 and unit.shot_interval == 1.0)
-	assert(unit.vision == 20 and unit.energy_cost == 100 and unit.iron_cost == 20)
+	assert(unit.vision == 20 and unit.energy_cost == 90 and unit.iron_cost == 25)
 	unit.use_prototype_combat_for_unresolved_stats = false
 	unit.apply_unit_stats()
 	assert(unit._attack_enabled)

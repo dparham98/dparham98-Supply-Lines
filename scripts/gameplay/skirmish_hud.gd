@@ -85,7 +85,7 @@ func has_arthurian_faction() -> bool:
 		if unit.get("team") == "player" and unit.get("unit_stats") != null and unit.unit_stats.unit_id in ARTHURIAN_UNIT_IDS: return true
 	return false
 ## Build-page buildings only the Cyborgs see; Keep and Chapterhouse are the Knights'. Mines are for both.
-const CYBORG_BUILDINGS := [&"depot",&"generator",&"barracks",&"tank_factory",&"temple_of_science",&"foundry",&"rail"]
+const CYBORG_BUILDINGS := [&"depot",&"generator",&"hydro_dam",&"barracks",&"tank_factory",&"temple_of_science",&"foundry",&"rail"]
 const KNIGHT_BUILDINGS := [&"keep",&"chapterhouse",&"farm",&"house",&"forge",&"dragon_yard"]
 ## True when the player builds as the Cyborgs: the match setup's faction, or, in a scene run straight from the
 ## editor or a test, any Depot of the player's that is not a Keep, or no Knights presence at all.
@@ -273,7 +273,7 @@ func _ready() -> void:
 		var btn_id := production_button_id(StringName(id))
 		card.get_node(btn_id).pressed.connect(func():
 			if is_instance_valid(shown) and shown.is_in_group("production_buildings"): least_busy().request_unit(StringName(id)))
-	for pair in [["Depot",&"depot"],["Generator",&"generator"],["Barracks",&"barracks"],["TankFactory",&"tank_factory"],["Temple",&"temple_of_science"],["Foundry",&"foundry"],["Mine",&"iron_mine"],["CoalMine",&"coal_mine"],["Rail",&"rail"],["Keep",&"keep"],["Chapterhouse",&"chapterhouse"],["Farm",&"farm"],["House",&"house"],["Forge",&"forge"],["DragonYard",&"dragon_yard"]]:
+	for pair in [["Depot",&"depot"],["Generator",&"generator"],["HydroDam",&"hydro_dam"],["Barracks",&"barracks"],["TankFactory",&"tank_factory"],["Temple",&"temple_of_science"],["Foundry",&"foundry"],["Mine",&"iron_mine"],["CoalMine",&"coal_mine"],["Rail",&"rail"],["Keep",&"keep"],["Chapterhouse",&"chapterhouse"],["Farm",&"farm"],["House",&"house"],["Forge",&"forge"],["DragonYard",&"dragon_yard"]]:
 		build_menu.get_node("Actions/"+pair[0]).pressed.connect(begin_global_placement.bind(pair[1]))
 	build_menu.get_node("Actions/Pin").pressed.connect(toggle_pin)
 	card.get_node("DeployTruck").pressed.connect(func(): game.pending_unit_command = "deploy"; game.notify("Click a site for the Depot. Only an empty Depot footprint is accepted; Shift queues."))
@@ -331,6 +331,7 @@ func object_name(node: Node3D) -> String:
 	if node.is_in_group("keeps"): return "Keep" if node.name == "Keep" else "%s · Keep" % node.name
 	if node.is_in_group("depots"): return "Depot" if node.name == "Depot" else "%s · Depot" % node.name
 	if node.is_in_group("energy_generators"): return "%s · Generator" % node.name
+	if node.is_in_group("hydro_dams"): return "Hydro Dam" if node.name == "HydroDam" else "%s · Hydro Dam" % node.name
 	if node.is_in_group("rail_trains"): return "Train"
 	if node.is_in_group("farms"): return "Farm" if node.name == "Farm" else "%s · Farm" % node.name
 	if node.is_in_group("houses"): return "House" if node.name == "House" else "%s · House" % node.name
@@ -412,7 +413,7 @@ func _process(_delta: float) -> void:
 func context_depot(node: Node3D) -> Node3D:
 	if not is_instance_valid(node): return null
 	if node.is_in_group("depots"): return node if node.team == "player" and node.health > 0 else null
-	if not (node.is_in_group("energy_generators") or node.is_in_group("production_buildings") or node.is_in_group("mines") or node.is_in_group("construction_plans")): return null
+	if not (node.is_in_group("energy_generators") or node.is_in_group("hydro_dams") or node.is_in_group("production_buildings") or node.is_in_group("mines") or node.is_in_group("construction_plans")): return null
 	if not node.is_in_group("mines") and node.get("team") != null and node.team != "player": return null
 	var own = node.get("assigned_depot")
 	if is_instance_valid(own) and own.team == "player" and own.health > 0: return own
@@ -567,6 +568,7 @@ func icon_name(node: Node) -> String:
 		if node.stats.building_id == &"dragon_yard": return "dragon_yard"
 		return "barracks" if str(node.scene_file_path).ends_with("barracks.tscn") else "tank_factory"
 	if node.is_in_group("energy_generators"): return "generator"
+	if node.is_in_group("hydro_dams"): return "hydro_dam"
 	if node.is_in_group("rail_trains"): return "knights_train" if node.get("coal_fuelled") == true else "train"
 	if node.get("is_cargo_vehicle"): return "cargo"
 	if node.get("is_depot_truck"): return "truck"
@@ -1096,6 +1098,14 @@ the one shown while it can, else another that can."
 			show_fuel_tile("BurnCoal","Burn coal","coal",node.fuel_preference)
 			show_fuel_tile("BurnEither","Burn either (wood first)","either",node.fuel_preference)
 		if is_instance_valid(node.assigned_depot): show_button("FocusAssigned","Focus Depot")
+	elif node.is_in_group("hydro_dams"):
+		commands.get_node("Title").text = "HYDRO DAM · LOCAL POWER"
+		var dam_depot = node.assigned_depot if node.source_valid() else null
+		state_label.text = "%s · %s" % [team_label(node),node.describe_state()]
+		set_stats([["Output","%.1f E/s" % node.output_rate()],["Beat","%.1f / %.1fs" % [node.beat_elapsed,node.stats.beat_seconds]]])
+		info.get_node("Details").text = "Assigned Depot: %s" % (dam_depot.name if dam_depot != null else "none")
+		hint_text = "Stands across a dam channel and burns nothing: every %s s it banks %d E into the friendly Depot whose range covers it, while that Depot has room." % [str(node.stats.beat_seconds),node.stats.energy_per_beat]
+		if dam_depot != null: show_button("FocusAssigned","Focus Depot")
 	elif node.is_in_group("farms"):
 		commands.get_node("Title").text = "FARM · FOOD"
 		var tiller = node.worker if node.worker_busy() else null
@@ -1548,6 +1558,8 @@ func refresh_global_menu() -> void:
 	build_menu.get_node("Actions/DragonYard").visible = arthurian
 	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"foundry","Foundry"]]:
 		build_menu.get_node("Actions/"+pair[1]).visible = build_kind_offered(pair[0])
+	# The Hydro Dam is offered only on a map with dam channels, and trucks cannot unload on water.
+	build_menu.get_node("Actions/HydroDam").visible = build_kind_offered(&"hydro_dam") and not worksite_open and dam_sites_exist()
 	if worksite_open:
 		build_menu.get_node("Bank").text = "DELIVERS: EXACT MATERIALS"
 		build_menu.get_node("Bank").tooltip_text = "The selected trucks load exactly what the building needs and unload it on the footprint. A covering stockpile pays the energy as Deforesters build."
@@ -1564,7 +1576,7 @@ func refresh_global_menu() -> void:
 	build_menu.get_node("Bank").tooltip_text = "One covering Depot or deployed Cargo truck pays each plan's energy as Deforesters build it. Iron must be delivered to the footprint first. Rails pay fully from Depots. No pooled resources."
 	set_card(build_menu.get_node("Actions/Pin"),"unpin_payer" if global_pinned else "pin_payer")
 	set_tile(build_menu.get_node("Actions/Pin"),"Unpin payer (back to Auto)" if global_pinned else "Pin payer","New plans pay from the nearest covering stockpile that can pay." if global_pinned else "Pick one Depot or deployed Cargo truck on the map or minimap; new plans pay only from it.")
-	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"foundry","Foundry"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"],[&"rail","Rail"],[&"keep","Keep"],[&"chapterhouse","Chapterhouse"],[&"farm","Farm"],[&"house","House"],[&"forge","Forge"],[&"dragon_yard","DragonYard"]]:
+	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"hydro_dam","HydroDam"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"foundry","Foundry"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"],[&"rail","Rail"],[&"keep","Keep"],[&"chapterhouse","Chapterhouse"],[&"farm","Farm"],[&"house","House"],[&"forge","Forge"],[&"dragon_yard","DragonYard"]]:
 		var spec: Dictionary = network.plan_spec(pair[0])
 		var button: Button = build_menu.get_node("Actions/"+pair[1])
 		button.disabled = false
@@ -1583,7 +1595,14 @@ func refresh_global_menu() -> void:
 			set_tile(button,spec.title,"%d W · %d I · inside a Keep's range, from its stock · raises Azure Dragons, builds coal trains and lets your Keeps lay track" % [spec.wood,spec.iron])
 		elif pair[0] == &"house":
 			set_tile(button,spec.title,"%d W · +%d housing while inside a Keep's range" % [spec.wood,KnightHousing.rules().house_room])
+		elif pair[0] == &"hydro_dam":
+			var dam: HydroDamStats = network.HYDRO_DAM_STATS
+			set_tile(button,spec.title,"%d I · across a dam channel between lakes · iron delivered to the site · banks %d E every %s s into the Depot whose range covers it" % [spec.iron,dam.energy_per_beat,str(dam.beat_seconds)])
 		else: set_tile(button,spec.title,"%d E · %d I · iron delivered to the site, energy as built" % [spec.energy,spec.iron])
+## Whether this map has dam channels for the Hydro Dam (TerrainGrid.dam_channels).
+func dam_sites_exist() -> bool:
+	var channels = game.ground.get("dam_channels") if game.ground != null else null
+	return channels != null and not channels.is_empty()
 func toggle_pin() -> void:
 	if not global_pinned:
 		game.global_plan_kind = &""

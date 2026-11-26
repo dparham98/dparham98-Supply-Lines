@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="HydroDamStats" format=3]
+
+[ext_resource type="Script" path="res://scripts/economy/hydro_dam_stats.gd" id="1_stats"]
+
+[resource]
+script = ExtResource("1_stats")
+display_name = "Hydro Dam"
+energy_cost = 0
+iron_cost = 90
+footprint = Vector2i(8, 3)
+max_health = 600
+energy_per_beat = 12
+beat_seconds = 3.0

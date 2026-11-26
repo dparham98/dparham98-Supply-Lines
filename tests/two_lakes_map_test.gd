@@ -34,16 +34,22 @@ func run() -> void:
 		if not rect in sites: sites.append(rect)
 	if not check(sites.size() == 20,"Expected twenty mine sites: %d" % sites.size()): return
 	var built := 0
+	var tiers := {}
 	for site in sites:
 		var facing: Vector2i = ground.mine_site_facing(site.position,site.size)
 		if not check(facing != Vector2i.ZERO and facing != Vector2i(0,-1),"Site %s faces north or nowhere" % site): return
 		var iron := 0
 		for dz in range(site.size.y):
 			for dx in range(site.size.x): iron += ground.iron_amount(site.position+Vector2i(dx,dz))
-		if not check(iron == 7500,"Site %s holds %d iron" % [site,iron]): return
+		# Each site's mine sets its tier's reserve over the site (home 2,250, expansion 3,500, pass and gate 5,000,
+		# crag 8,000).
+		var reserve: int = ground.iron_mines[site.position].site_reserve if ground.iron_mines.has(site.position) else -1
+		if not check(reserve in [2250,3500,5000,8000] and iron == reserve,"Site %s holds %d iron, not its tier's %d" % [site,iron,reserve]): return
+		tiers[reserve] = tiers.get(reserve,0)+1
 		if ground.iron_mines.has(site.position): built += 1
 	# Every site has its mine from the start, and no coal lumps stand on the seams.
 	if not check(built == 20,"Every mine site should start with its mine: %d of 20" % built): return
+	if not check(tiers == {2250:6,3500:6,5000:6,8000:2},"Expected 6 home, 6 expansion, 6 pass or gate and 2 crag sites: %s" % tiers): return
 	if not check(not game.get_node("Terrain").has_node("Landmarks/CoalDeposits"),"Coal should lie in the ground, with no lumps on it"): return
 	# The forest tiles read the match's clearing mask, so their leaves thin over coal (docs/COAL_LOOK.md).
 	var batch: MultiMeshInstance3D = game.get_node("Terrain/Landmarks/Forests").get_child(0)

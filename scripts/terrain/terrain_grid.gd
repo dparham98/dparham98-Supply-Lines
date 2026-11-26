@@ -147,6 +147,26 @@ func is_footprint_valid(pos: Vector2i, size: Vector2i, allow_units := false) -> 
 			if not open or tile.has("rail") or tile.has("apron") or tile.has("mine_front") or tile.has("field"): return false
 	return true
 
+## Round 3 (docs/ROUND3_CYBORG_ECONOMY.md): water channels between lakes where a Cyborg Hydro Dam may stand,
+## crossing each one along x. Set per map on its TerrainGrid; a map with none has no dam sites.
+@export var dam_channels: Array[Rect2i] = []
+## The dam channel holding `cell`, or within `margin` cells of it; an empty Rect2i if none.
+func dam_channel_at(cell: Vector2i, margin := 0) -> Rect2i:
+	for channel in dam_channels:
+		if channel.grow(margin).has_point(cell): return channel
+	return Rect2i()
+## Whether a Hydro Dam footprint fits: it lies inside one dam channel, and every cell is open water with nothing on
+## it (no other dam, no track).
+func dam_site_valid(start: Vector2i, size: Vector2i) -> bool:
+	var rect := Rect2i(start,size)
+	if not is_tile_in_bounds(start) or not is_tile_in_bounds(start+size-Vector2i.ONE): return false
+	if not dam_channels.any(func(channel: Rect2i): return channel.encloses(rect)): return false
+	for z in range(start.y,start.y+size.y):
+		for x in range(start.x,start.x+size.x):
+			var tile: Dictionary = tiles[z*grid_size.x+x]
+			if int(tile.terrain) != Terrain.WATER or tile.occupied_by != null or tile.has("rail"): return false
+	return true
+
 ## A Farm's field (docs/KNIGHTS_ECONOMY.md): any unit walks over it, nothing is built on it.
 func is_field(pos: Vector2i) -> bool:
 	return is_tile_in_bounds(pos) and tiles[pos.y * grid_size.x + pos.x].has("field")
@@ -522,6 +542,9 @@ func mine_site_facing(start: Vector2i, size: Vector2i) -> Vector2i:
 			if get_terrain(behind) != Terrain.MOUNTAIN or not (get_terrain(front) in [Terrain.GRASS,Terrain.DESERT]): backed = false
 		if backed: return facing
 	return Vector2i.ZERO
+## Sets the iron left in a cell (a mine's `site_reserve`).
+func set_iron_amount(cell: Vector2i, amount: int) -> void:
+	iron_reserves[cell] = maxi(0,amount)
 func extract_iron(cell: Vector2i, requested: int) -> int:
 	var taken := mini(maxi(0,requested),iron_amount(cell))
 	iron_reserves[cell] = iron_amount(cell)-taken

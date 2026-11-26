@@ -260,6 +260,12 @@ func _job_cost(kind: String) -> Vector2i:
 	return Vector2i.ZERO
 func spend_local(energy_cost: int, iron_cost: int) -> bool:
 	return stockpile.spend({&"energy":energy_cost,&"iron":iron_cost})
+## The raw materials that count toward the ceiling: Iron, Wood and Coal (a Keep counts only Iron and Wood).
+func raw_material_total() -> int:
+	return iron+wood+coal
+## Whether workers' Iron and Wood drop-offs wait here: its raw materials are at the ceiling (DepotRules).
+func raw_ceiling_reached() -> bool:
+	return rules != null and rules.raw_material_ceiling > 0 and raw_material_total() >= rules.raw_material_ceiling
 func spend_resources(costs: Dictionary) -> bool:
 	return stockpile.spend(costs)
 func request_truck() -> bool:

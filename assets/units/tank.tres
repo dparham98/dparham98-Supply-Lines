@@ -8,8 +8,8 @@
 script = ExtResource("stats")
 unit_id = &"tank"
 display_name = "Tank"
-energy_cost = 150
-iron_cost = 35
+energy_cost = 140
+iron_cost = 55
 build_seconds = 28.0
 max_health = 150
 movement_speed = 5.0

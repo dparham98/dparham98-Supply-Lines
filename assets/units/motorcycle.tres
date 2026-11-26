@@ -6,8 +6,8 @@
 script = ExtResource("stats")
 unit_id = &"motorcycle"
 display_name = "Derailer"
-energy_cost = 70
-iron_cost = 15
+energy_cost = 60
+iron_cost = 25
 build_seconds = 14.0
 max_health = 45
 movement_speed = 12.0

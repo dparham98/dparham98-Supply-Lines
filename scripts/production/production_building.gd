@@ -94,9 +94,10 @@ func seconds_at_power(scene: PackedScene = null) -> float:
 ## How far the head unit is, 0 to 1.
 func fraction() -> float:
 	return clampf(progress/base_seconds(),0.0,1.0) if not pending.is_empty() else 0.0
-## Energy a unit costs in all at the power set now: its base cost times the power.
+## Energy a unit costs in all at the power set now: its base cost, and (power - 1) x the building's
+## extra_power_energy_scale of it on top (docs/PRODUCTION_POWER.md).
 func energy_at_power(scene: PackedScene) -> int:
-	return roundi(unit_stats_for(scene).energy_cost*power)
+	return roundi(unit_stats_for(scene).energy_cost*(1.0+(power-1.0)*stats.extra_power_energy_scale))
 ## Stats are read once per unit scene: instantiating a unit (and its model) every frame is costly.
 static var _stats_cache := {}
 func unit_stats_for(scene: PackedScene) -> UnitStats:
@@ -151,13 +152,14 @@ func _process(delta: float) -> void:
 	var queued_stats := unit_stats_for(pending[0])
 	var build: float = queued_stats.build_seconds
 	# Power above 1 does that much more work a second and draws the extra energy as it goes: a whole unit
-	# at power p costs (p-1) times its base energy on top. With too little energy it prints at 1x.
+	# at power p costs (p-1) x extra_power_energy_scale of its base energy on top. With too little energy it
+	# prints at 1x.
 	# Only the work that is left is done and paid for, so a long frame does not overcharge the last one.
 	var work := minf(delta,build-progress)
 	power_starved = false
 	if power > 1.0 and progress < build:
 		var fast := minf(delta*power,build-progress)
-		var owed := _energy_owed+fast*(power-1.0)*queued_stats.energy_cost/build
+		var owed := _energy_owed+fast*(power-1.0)*stats.extra_power_energy_scale*queued_stats.energy_cost/build
 		var whole := floori(owed)
 		if whole == 0 or assigned_depot.spend_local(whole,0):
 			_energy_owed = owed-whole

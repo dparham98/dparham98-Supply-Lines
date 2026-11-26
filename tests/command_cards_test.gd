@@ -35,8 +35,9 @@ func run() -> void:
 	# 62 with the Arthurian Knights (docs/ARTHURIAN_KNIGHTS.md): Keep and Chapterhouse build tiles, the Food crate, Heal,
 	# the Keep's two units and the Chapterhouse's four. 64 with the Farm and House build tiles (docs/KNIGHTS_ECONOMY.md). 65 with the Keep's Launch balloon (docs/AIR_BALLOON.md). 67 with the Derailer's Lay mine and the Temple's Minelaying (docs/MINES.md). 68 with Buy mine.
 	# 78 with the Dragon Yard build tile and its train tile (docs/KNIGHTS_RAIL.md) and the Sentinel's Mist and Slow (docs/MIST_AND_SLOW.md).
-	# 80 with the Sentinel's Stimulus and the Forge's fifth research tile (docs/ROUND3_SPELLS_AND_RESEARCH.md).
-	if not check(tiles == 80,"Expected 80 card tiles, found %d" % tiles): return
+	# 80 with the Sentinel's Stimulus and the Forge's fifth research tile (docs/ROUND3_SPELLS_AND_RESEARCH.md). 81 with the
+	# Hydro Dam's build tile (docs/ROUND3_CYBORG_ECONOMY.md).
+	if not check(tiles == 81,"Expected 81 card tiles, found %d" % tiles): return
 	# Commands with their own art.
 	var names := {"Return":"sl_deliver.png","DropMaterials":"sl_drop.png","DeployTruck":"sl_deploy_depot.png","ProduceUbermech":"sl_produce_ubermech.png","PrintTruck":"sl_produce_truck.png","Derail":"sl_derail.png","Research":"sl_research_mining_trains.png","MineIron":"sl_mine_iron.png","LayMine":"sl_lay_mine.png","BuyMine":"sl_buy_mine.png","ResearchMines":"sl_research_minelaying.png","Upgrade1":"sl_upgrade_infantry_weapons.png","Upgrade2":"sl_upgrade_infantry_armour.png","Upgrade3":"sl_upgrade_vehicle_weapons.png","Upgrade4":"sl_upgrade_vehicle_armour.png","KeepTrain":"sl_produce_knights_train.png"}
 	for id in names:

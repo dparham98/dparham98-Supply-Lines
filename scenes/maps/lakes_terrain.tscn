@@ -54,6 +54,7 @@ material_override = ExtResource("surface")
 mesh = SubResource("ground_mesh")
 script = ExtResource("grid")
 cells_path = "res://assets/maps/lakes/terrain_cells.bin"
+dam_channels = Array[Rect2i]([Rect2i(34, 80, 8, 10), Rect2i(458, 80, 8, 10), Rect2i(18, 282, 8, 8), Rect2i(474, 282, 8, 8), Rect2i(32, 422, 8, 9), Rect2i(460, 422, 8, 9), Rect2i(210, 195, 8, 4), Rect2i(282, 195, 8, 4), Rect2i(220, 302, 8, 4), Rect2i(272, 302, 8, 4), Rect2i(246, 298, 8, 8)])
 harvesting_rules = ExtResource("harvesting")
 
 [node name="GroundCollision" type="StaticBody3D" parent="Ground"]

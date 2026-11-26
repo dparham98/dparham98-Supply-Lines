@@ -4,7 +4,7 @@
 script = ExtResource("stats")
 building_id = &"foundry"
 display_name = "Foundry"
-energy_cost = 150
-iron_cost = 80
+energy_cost = 120
+iron_cost = 100
 footprint = Vector2i(6,6)
 queue_limit = 1

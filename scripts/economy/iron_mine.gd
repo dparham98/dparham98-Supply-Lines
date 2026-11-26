@@ -4,6 +4,9 @@ extends "res://scripts/gameplay/resource_node.gd"
 @export var team := "neutral"
 ## Seconds the pithead keeps winding after the last iron taken from it (docs/IRON_MINE_MODEL.md).
 @export_range(0,10,0.1) var work_hold := 2.5
+## Iron the site holds at the start, shared over its cells, in place of the usual iron_per_site_tile each
+## (Round 3, Two Lakes' tiers: docs/ROUND3_CYBORG_ECONOMY.md). -1 keeps the usual amount.
+@export_range(-1,100000) var site_reserve := -1
 var health := 1000
 var _work_left := 0.0
 var _wreck: Node3D
@@ -35,6 +38,8 @@ func _ready() -> void:
 	var facing: Vector2i = ground.mine_site_facing(start,footprint) if ground.get_terrain(start) == ground.Terrain.MINE_SITE else Vector2i.ZERO
 	if facing != Vector2i.ZERO and has_node("Visuals"): $Visuals.rotation.y = atan2(facing.x,facing.y)
 	on_coal = ground.get_terrain(start) == ground.Terrain.COAL
+	if site_reserve >= 0 and not on_coal:
+		for i in range(cells.size()): ground.set_iron_amount(cells[i],site_reserve/cells.size()+(1 if i < site_reserve%cells.size() else 0))
 	if on_coal: resource_kind = &"coal"; resource_name = "Shared coal mine"
 	add_to_group("mines"); add_to_group("selectable_buildings")
 	# The ore rocks drawn on and around the footprint give way to the pithead.

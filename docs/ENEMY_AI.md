@@ -29,11 +29,13 @@ On Two Lakes the East start mirrors the player's West start:
   - **Sight.** A site it sees is planned as the player plans from the Build page. A site it can't see yet is planned as a Cargo truck's Worksite, which needs no sight because the truck drives out to it. Since main gained the sight rule, the Coal Mine's seam 62 m out was otherwise never planned.
   - The Cargo truck fetches each site's iron (`command_fetch`). If the truck is lost while a site is short of iron, home prints another (100 E / 20 I), saving up for it first; without one the site would wait for its iron for good. Up to two workers build once the iron is on site. A mine out in the woods gets one worker early, to fell a way in.
   - When it has nothing to do, the truck parks beside the Depot. A truck left standing in a felled lane walled the workers in.
+  - **Hydro Dams** (Round 3, `docs/ROUND3_CYBORG_ECONOMY.md`). Once `dam_after_step` (2) steps of `build_order` are done, it plans a Hydro Dam across any dam channel that one of its Depots' range covers and that has no dam yet. The dam comes ahead of the rest of the order and doesn't use up a step. One worker goes early to fell a way through the forest that walls the channel. On Two Lakes its start Depot covers no channel, so it builds one only if one of its Depots stands near a channel.
 - **Workers.** The first `workers_wanted` (4) Infantry gather and build. The Barracks makes those before anything else. They are shared out by need each round:
   - iron, while the next building is short of it;
   - one on coal once it has a Coal Mine (`coal_wanted` 150);
   - one on wood while its Generators want fuel (`wood_wanted` 120);
   - every worker not on coal, once iron reaches `iron_plenty` (250) and wood is short. Without this its energy starved while iron piled up.
+  - **At the raw-material ceiling** (1,400 Iron, Wood and Coal; `docs/ROUND3_CYBORG_ECONOMY.md`), nobody new goes to iron or wood. Free workers go to coal while it is below `coal_wanted`; the rest hold what they carry until the ceiling clears.
 - **Production.** The Barracks and Tank Factory each keep two units queued (`queue_depth`).
   - Each building works through its mix in turn. The Barracks makes one Scout, then Infantry and Grenadiers; the Tank Factory makes Tanks, Motorcycles, Drones and Ubermechs.
   - **Saving up.** Units other than workers leave the Depot what it is saving for (`held_back`): the iron and energy the site being built still needs, and, for the round, a Depot Truck, a train, found track or the research. Before this, the army spent all the energy and the Tank Factory stood half built.
@@ -69,6 +71,9 @@ On Two Lakes the East start mirrors the player's West start:
 - **The army.** Units that are neither workers nor the Scout wait at a rally point `rally_distance` (18 m) from the Depot, toward the middle of the map. It was 24 m; with the spread round it, vehicles stood outside the Depot's 26.25 m range and couldn't refuel.
 - **Waves.** After `first_wave_seconds` (480), the whole army attack-moves on a target once it has at least `first_wave_size` (6) units. Each later wave waits for `wave_growth` (2) more units than the last.
   - Vehicles low on fuel stay behind to fill up, and don't count toward the wave's size.
+  - **Drones** keep over the ground units they go with: the wave's, or the rest of the army's.
+    - **With Tanks** (since Round 3): a Drone keeps behind the frontmost Tank, the one furthest toward the wave's target or toward a threat at home. It stays at most `drone_behind_front` (10 m) behind it and never ahead of it.
+    - **Without Tanks:** it keeps within `drone_escort_radius` (6 m) of the group's centre, as before.
   - **The target** is the nearest of the player's buildings it remembers. If it remembers none, the target is the nearest start site it has not seen.
   - A wave that clears a target moves on to the next.
   - A wave down to its last unit, or with nothing left to find, comes home and joins the next one.
