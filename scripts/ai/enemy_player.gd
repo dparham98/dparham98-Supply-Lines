@@ -802,6 +802,10 @@ func lay_mines(depot: Node3D) -> void:
 			_laying.erase(id)
 	if not minelaying or not Research.has(game,team,Research.MINELAYING) or _threat() != null: return
 	var down := own_mines().size()+_laying.size()
+	# A Derailer idle at home buys mines until it is full (Buy mine, docs/MINES.md).
+	for unit in army:
+		if _is_derailer(unit) and _idle(unit) and not wave.has(unit):
+			while unit.command_buy_mine(): pass
 	for unit in army:
 		if down >= mines_wanted: return
 		# Only a full tank leaves: a Derailer with too little coal would stop at the edge of the Depot's range.

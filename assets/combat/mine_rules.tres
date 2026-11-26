@@ -6,7 +6,6 @@
 script = ExtResource("rules")
 capacity = 2
 iron_per_mine = 10
-load_seconds = 1.0
 lay_seconds = 2.0
 arm_seconds = 3.0
 trigger_radius = 2.0

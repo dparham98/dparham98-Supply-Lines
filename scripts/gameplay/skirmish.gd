@@ -297,6 +297,10 @@ func place_global_plan(point: Vector3, queued := false) -> Node3D:
 	# Rail stays armed so a line can be laid tile by tile; Esc or right-click finishes.
 	if global_plan_kind != &"rail": global_plan_kind = &""
 	return plan
+## The other side's land mine under the pointer that the player's side has detected, if any (docs/MINES.md).
+func pick_enemy_mine(screen) -> Node3D:
+	var mine := pick_target(screen,"land_mines")
+	return mine if is_instance_valid(mine) and mine.team != "player" and mine.is_visible_in_tree() and mine.detected_by("player") else null
 ## The friendly crate under the pointer, if any.
 ## `screen` in the picking helpers below is the pointer's screen position, or a MapPick from the minimap.
 func pick_crate(screen) -> Node3D:
@@ -423,6 +427,7 @@ func issue_order(screen, queued := false) -> void:
 	var from_map: bool = screen is MapPick
 	if rally_building() != null: set_rally(screen,queued); return
 	var enemy := pick_target(screen,"enemies")
+	if enemy == null and not from_map: enemy = pick_enemy_mine(screen)
 	var resource := pick_target(screen,"resources",48)
 	var dropoff := pick_target(screen,"depots",50)
 	var mobile := pick_target(screen,"mobile_supplies",34)
@@ -611,6 +616,7 @@ func issue_card_order(screen, queued := false) -> void:
 		return
 	if pending_unit_command == "attack":
 		target = pick_target(screen,"enemies")
+		if target == null and not from_map: target = pick_enemy_mine(screen)
 		if target == null:
 			var building = pick_target(screen,"selectable_buildings",50)
 			if is_instance_valid(building) and (building.team not in ["player","neutral"] or (building.is_in_group("mines") and not (from_map and building.team == "player"))): target = building

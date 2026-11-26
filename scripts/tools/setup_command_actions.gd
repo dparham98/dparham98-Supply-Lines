@@ -3,7 +3,7 @@ extends SceneTree
 # so a key works only while its button is visible and enabled. Actions sharing a key belong
 # to different cards, which are never shown together.
 func _initialize() -> void:
-	var keys := {"command_move": KEY_M, "command_attack": KEY_A, "command_gather": KEY_G, "command_fell": KEY_F, "command_stop": KEY_S, "command_return": KEY_V, "command_repair": KEY_R, "command_capture": KEY_C, "command_derail": KEY_E, "command_drop": KEY_X, "command_refuel": KEY_T, "command_deploy": KEY_D, "command_cancel": KEY_X, "command_pause": KEY_R, "command_focus_assigned": KEY_F,
+	var keys := {"command_move": KEY_M, "command_attack": KEY_A, "command_gather": KEY_G, "command_fell": KEY_F, "command_stop": KEY_S, "command_return": KEY_V, "command_repair": KEY_R, "command_capture": KEY_C, "command_derail": KEY_R, "command_drop": KEY_X, "command_refuel": KEY_T, "command_deploy": KEY_D, "command_cancel": KEY_X, "command_pause": KEY_R, "command_focus_assigned": KEY_F,
 		"produce_infantry": KEY_F, "produce_depot_truck": KEY_D, "produce_cargo": KEY_V, "produce_train": KEY_T,
 		"produce_scout": KEY_S, "produce_grenadier": KEY_G, "produce_tank": KEY_T, "produce_motorcycle": KEY_C, "produce_drone": KEY_D, "produce_ubermech": KEY_Q,
 		"control_group_1": KEY_1, "control_group_2": KEY_2, "control_group_3": KEY_3, "control_group_4": KEY_4, "control_group_5": KEY_5, "control_group_6": KEY_6, "control_group_7": KEY_7, "control_group_8": KEY_8, "control_group_9": KEY_9,
@@ -12,7 +12,7 @@ func _initialize() -> void:
 		# The Load and Make crates pages, and the Generator card's fuel tiles.
 		"resource_iron": KEY_A, "resource_energy": KEY_E, "resource_wood": KEY_W, "resource_coal": KEY_C,
 		# The Temple of Science's research and the train's Mine iron order (docs/TEMPLE_OF_SCIENCE.md).
-		"research_mining_trains": KEY_R, "research_minelaying": KEY_N, "command_lay_mine": KEY_N, "command_mine_iron": KEY_I,
+		"research_mining_trains": KEY_R, "research_minelaying": KEY_N, "command_lay_mine": KEY_E, "command_buy_mine": KEY_Q, "command_mine_iron": KEY_I,
 		# The Foundry's and Forge's upgrade lines (docs/UPGRADES.md), one tile per line.
 		# The Grail Sentinel's Mist and Slow (docs/MIST_AND_SLOW.md).
 		"command_mist": KEY_Q, "command_slow": KEY_W,
