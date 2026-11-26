@@ -115,7 +115,8 @@ The AI doesn't train Hearth-Wains yet.
 **Existing tests updated:**
 - `arthurian_faction_test`: no Keep refill; a Food crate gives 8 points;
 - `command_cards_test`: 83 tiles;
-- `knights_coal_and_lakeside_test`: a lakeside Farm with no Keep over it pays nothing.
+- `knights_coal_and_lakeside_test`: a lakeside Farm with no Keep over it pays nothing;
+- `knights_rail_test`: the Dragon Yard raises Azure Dragons and Hearth-Wains.
 
 ## Not done
 
