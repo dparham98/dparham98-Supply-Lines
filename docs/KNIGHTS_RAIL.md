@@ -33,7 +33,7 @@ Ordered from the Dragon Yard card's **Train** tile (T). It is built at, paid by 
 When a Keep has several lines, the player clicks the line to start on, as at a Depot.
 
 **Fuel** (`assets/economy/fuel_knights_train.tres`):
-- **Burn:** 0.05 coal a metre from its own 60-coal tank, so a full tank runs 1200 m. It draws no Depot energy.
+- **Burn:** 0.08 coal a metre from its own 60-coal tank, so a full tank runs 750 m (Round 3; it was 0.05 and 1200 m, `docs/ROUND3_KNIGHTS_COAL.md`). It draws no Depot energy.
 - **Running out:** an empty train stops: "Out of coal · refuel at a Keep".
 - **Refuelling:** stopped, it refuels at 5 coal a second from a covering Keep's or Depot's coal, a deployed Cargo truck's coal, or a coal crate beside it, as other vehicles do (`docs/FUEL_BATCH.md`).
 - **Maps without vehicle fuel:** it burns nothing.
@@ -43,7 +43,7 @@ When a Keep has several lines, the player clicks the line to start on, as at a D
 ## Decided here
 
 - **The Keep's menu:** the handoff's "Decided" list says the Keep's menu has no truck, train or track. Since 2026-11-25 the train is ordered from the Dragon Yard, so the Keep's menu has none again; the Keep is still where the train is built and leaves from.
-- **Coal per metre:** 0.05 a metre (a third of the Cyborg vehicles' 0.15), with a 60 tank. The handoff gave no number.
+- **Coal per metre:** 0.05 a metre (a third of the Cyborg vehicles' 0.15), with a 60 tank. The handoff gave no number. Round 3 raised it to 0.08.
 - **Build time:** 30 s. The handoff gave no number.
 - **Keeps only:** the Dragon Yard enables track and trains at Keeps only. A Cyborg Depot captured by the Knights works as it always has.
 - **Art:** the Dragon Yard (docs/DRAGON_YARD_MODEL.md) and the Knights train (docs/KNIGHTS_TRAIN_MODEL.md) have their own models, icons, portraits and cards (`sl_build_dragon_yard.png`, `sl_produce_knights_train.png`).

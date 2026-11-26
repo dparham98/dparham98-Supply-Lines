@@ -112,10 +112,13 @@ func run() -> void:
 	if not check(is_instance_valid(forge) and forge.is_in_group("research_buildings") and forge.research.size() == 9,"The plan should finish as a Forge with 6 levels, Slow, Sundering Lances and Forest Camouflage (docs/MIST_AND_SLOW.md, docs/ROUND3_SPELLS_AND_RESEARCH.md)"): return
 	await process_frame
 	forge.set_process(false)
+	# Forge research burns Coal too (Round 3, docs/ROUND3_KNIGHTS_COAL.md).
+	keep.stockpile.deposit(&"coal",100)
 	var food: int = keep.food
 	iron = keep.iron
+	var coal: int = keep.coal
 	if not check(forge.request_research(&"arms_1"),"Arms I was refused: "+game.message): return
-	if not check(keep.food == food-100 and keep.iron == iron-150,"Arms I should cost 100 F / 150 I from the Keep (food %d -> %d, iron %d -> %d)" % [food,keep.food,iron,keep.iron]): return
+	if not check(keep.food == food-100 and keep.iron == iron-150 and keep.coal == coal-75,"Arms I should cost 100 F / 150 I / 75 C from the Keep (food %d -> %d, iron %d -> %d, coal %d -> %d)" % [food,keep.food,iron,keep.iron,coal,keep.coal]): return
 	forge._process(61.0)
 	if not check(Upgrades.level(forge,"player",Upgrades.ARMS) == 1,"Arms I should be done after 60 s"): return
 	game.selected_building = forge
@@ -131,6 +134,7 @@ func run() -> void:
 	var camo_icon: Texture2D = forge_hud.card.get_node("Upgrade5").icon
 	if not check(lances_icon.resource_path.get_file() == "sl_research_sundering_lances.png" and camo_icon.resource_path.get_file() == "sl_research_forest_camouflage.png","Sundering Lances and Forest Camouflage should show their own cards"): return
 	if not check(forge_hud.card.get_node("Upgrade4").tooltip_text.contains("100 C"),"The Sundering Lances tile should show its coal: '%s'" % forge_hud.card.get_node("Upgrade4").tooltip_text): return
+	if not check(forge_hud.card.get_node("Upgrade2").tooltip_text.contains("75 C"),"The Mail I tile should show its coal: '%s'" % forge_hud.card.get_node("Upgrade2").tooltip_text): return
 	game.selected_building = null
 	var marine := spawn("round_table_marine","player",keep.global_position+Vector3(6,0,6))
 	if not check(Upgrades.with_attack(marine,6,1) == 7,"Arms I: a Marine's 6 (+1) becomes 7"): return

@@ -46,6 +46,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_deploy_depot.png" id="card_deploy_depot"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_auto_refuel_on.png" id="card_auto_refuel_on"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_generator_pause.png" id="card_generator_pause"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_stoke_brazier.png" id="card_stoke_brazier"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_focus_depot.png" id="card_focus_depot"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_cancel_plan.png" id="card_cancel_plan"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_deploy_supplies.png" id="card_deploy_supplies"]
@@ -476,6 +477,10 @@ events = [SubResource("key_command_move")]
 action = &"command_pause"
 [sub_resource type="Shortcut" id="shortcut_command_pause"]
 events = [SubResource("key_command_pause")]
+[sub_resource type="InputEventAction" id="key_command_stoke_brazier"]
+action = &"command_stoke_brazier"
+[sub_resource type="Shortcut" id="shortcut_command_stoke_brazier"]
+events = [SubResource("key_command_stoke_brazier")]
 [sub_resource type="InputEventAction" id="key_command_refuel"]
 action = &"command_refuel"
 [sub_resource type="Shortcut" id="shortcut_command_refuel"]
@@ -4246,6 +4251,31 @@ icon = ExtResource("card_generator_pause")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ToggleGenerator"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="StokeBrazier" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+tooltip_text = "Light or put out the Stoke Brazier."
+shortcut = SubResource("shortcut_command_stoke_brazier")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_stoke_brazier")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/StokeBrazier"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0

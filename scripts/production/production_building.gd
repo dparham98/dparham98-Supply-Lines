@@ -22,6 +22,14 @@ var _energy_owed := 0.0
 var power_starved := false
 ## True while a finished unit waits for a free exit cell (shown on the map).
 var exit_blocked := false
+## Stoke Brazier (docs/ROUND3_KNIGHTS_COAL.md): set by the player on a building whose stats allow it.
+var brazier_on := false
+## Whether the brazier burns now: on, working, with its coal paid.
+var brazier_lit := false
+## On and working, but no Coal to burn: it works at 1x.
+var brazier_starved := false
+## Seconds of stoked work its last Coal still pays for.
+var _brazier_paid := 0.0
 var cells: Array[Vector2i] = []
 @onready var ground = get_tree().get_first_node_in_group("terrain_grid")
 @onready var game = get_tree().get_first_node_in_group("skirmish")
@@ -81,6 +89,30 @@ func _source_changed() -> void:
 	pending.clear()
 	progress = 0
 	_energy_owed = 0.0
+## Lights or puts out the Stoke Brazier, where the building has one.
+func set_brazier(on: bool) -> void:
+	brazier_on = on and stats.can_stoke_brazier
+	if not brazier_on: brazier_lit = false; brazier_starved = false
+## How much faster the work goes this frame: `stoked_speed` while the brazier burns, else 1. Called only while it
+## works. A Coal from the paying Keep pays for `brazier_coal_interval` s of burning, taken as the last one runs out;
+## with none, it works at 1x and the queue goes on.
+func brazier_scale(delta: float) -> float:
+	brazier_lit = false
+	brazier_starved = false
+	if not brazier_on or not stats.can_stoke_brazier: return 1.0
+	if _brazier_paid <= 0.0:
+		if not is_instance_valid(assigned_depot) or assigned_depot.coal < 1 or not assigned_depot.spend_resources({&"coal": 1}):
+			brazier_starved = true
+			return 1.0
+		_brazier_paid += stats.brazier_coal_interval
+	_brazier_paid -= delta
+	brazier_lit = true
+	return stats.stoked_speed
+## The brazier's word for status lines: "" when it is off or idle.
+func brazier_note() -> String:
+	if brazier_lit: return " · Brazier lit"
+	if brazier_starved: return " · Brazier unlit · needs Coal"
+	return ""
 ## Sets the production power, snapped to the step and kept between 1 and the most.
 func set_power(value: float) -> void:
 	power = clampf(snappedf(value,stats.power_step),1.0,stats.max_power)
@@ -116,19 +148,21 @@ func request_unit(id: StringName) -> bool:
 		if not KnightHousing.room(get_tree(),team,resource.unit_id):
 			game.notify("No housing for a %s (%s used): build a House inside a Keep's range." % [resource.display_name,KnightHousing.text(get_tree(),team)],team)
 			return false
-		var payer := payer_for(resource.energy_cost,resource.iron_cost,resource.food_cost,resource.wood_cost)
+		var payer := payer_for(resource.energy_cost,resource.iron_cost,resource.food_cost,resource.wood_cost,resource.coal_cost)
 		if payer == null:
-			if resource.food_cost > 0 or resource.wood_cost > 0: game.notify("No Keep in range has %d F, %d W and %d I for a %s." % [resource.food_cost,resource.wood_cost,resource.iron_cost,resource.display_name],team)
+			if resource.coal_cost > 0: game.notify("No Keep in range has %d F, %d I and %d C for a %s." % [resource.food_cost,resource.iron_cost,resource.coal_cost,resource.display_name],team)
+			elif resource.food_cost > 0 or resource.wood_cost > 0: game.notify("No Keep in range has %d F, %d W and %d I for a %s." % [resource.food_cost,resource.wood_cost,resource.iron_cost,resource.display_name],team)
 			else: game.notify("No Depot in range has %d E and %d I for a %s." % [resource.energy_cost,resource.iron_cost,resource.display_name],team)
 			return false
 		_set_source(payer)
 		var paid := false
-		if resource.food_cost > 0 or resource.wood_cost > 0:
+		if resource.food_cost > 0 or resource.wood_cost > 0 or resource.coal_cost > 0:
 			var costs := {}
 			if resource.energy_cost > 0: costs[&"energy"] = resource.energy_cost
 			if resource.iron_cost > 0: costs[&"iron"] = resource.iron_cost
 			if resource.food_cost > 0: costs[&"food"] = resource.food_cost
 			if resource.wood_cost > 0: costs[&"wood"] = resource.wood_cost
+			if resource.coal_cost > 0: costs[&"coal"] = resource.coal_cost
 			paid = assigned_depot.spend_resources(costs)
 		else: paid = assigned_depot.spend_local(resource.energy_cost,resource.iron_cost)
 		if not paid: game.notify("%s lacks local production resources." % assigned_depot.name,team); return false
@@ -146,6 +180,7 @@ func _process(delta: float) -> void:
 		return
 	if pending.is_empty():
 		progress = 0
+		brazier_lit = false; brazier_starved = false
 		_show_model(&"show_idle")
 		$Status.text = "%s → %s" % [stats.display_name,assigned_depot.name]
 		return
@@ -155,10 +190,12 @@ func _process(delta: float) -> void:
 	# at power p costs (p-1) x extra_power_energy_scale of its base energy on top. With too little energy it
 	# prints at 1x.
 	# Only the work that is left is done and paid for, so a long frame does not overcharge the last one.
-	var work := minf(delta,build-progress)
+	# A lit Stoke Brazier speeds the work as power does, paid in Coal (docs/ROUND3_KNIGHTS_COAL.md).
+	var stoke := brazier_scale(delta) if progress < build else 1.0
+	var work := minf(delta*stoke,build-progress)
 	power_starved = false
 	if power > 1.0 and progress < build:
-		var fast := minf(delta*power,build-progress)
+		var fast := minf(delta*power*stoke,build-progress)
 		var owed := _energy_owed+fast*(power-1.0)*stats.extra_power_energy_scale*queued_stats.energy_cost/build
 		var whole := floori(owed)
 		if whole == 0 or assigned_depot.spend_local(whole,0):
@@ -190,7 +227,7 @@ func _process(delta: float) -> void:
 		progress = 0
 		_show_model(&"unit_left")
 		game.notify("%s ready at %s." % [unit.unit_stats.display_name,name],team)
-	$Status.text = "%s · %d queued · %d%%" % [stats.display_name,queue,roundi(fraction()*100)]
+	$Status.text = "%s · %d queued · %d%%%s" % [stats.display_name,queue,roundi(fraction()*100),brazier_note()]
 ## The model a unit scene wears (its Visuals slot's model_scene), read from the packed scene without building
 ## the unit, so a factory can show the unit being made.
 static func unit_model_scene(scene: PackedScene) -> PackedScene:

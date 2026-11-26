@@ -453,6 +453,7 @@ func depot_rules() -> DepotRules:
 const PLAN_SCENE = preload("res://scenes/gameplay/construction_plan.tscn")
 const FARM_SCENE = preload("res://scenes/gameplay/farm.tscn")
 const HOUSE_SCENE = preload("res://scenes/gameplay/house.tscn")
+const FarmScript = preload("res://scripts/economy/farm.gd")
 const HYDRO_DAM_SCENE = preload("res://scenes/gameplay/hydro_dam.tscn")
 const HYDRO_DAM_STATS: HydroDamStats = preload("res://assets/buildings/hydro_dam.tres")
 ## How many cells off a dam channel the cursor may be and still snap a Hydro Dam plan onto it.
@@ -496,7 +497,7 @@ func plan_spec(kind: StringName) -> Dictionary:
 	var model: PackedScene = visuals.model_scene if visuals != null and "model_scene" in visuals else null
 	preview.free()
 	# The Dragon Yard stands inside a Keep's range, as a Farm does.
-	return {"title":stats.display_name,"size":stats.footprint,"energy":stats.energy_cost,"food":stats.food_cost,"wood":stats.wood_cost,"iron":stats.iron_cost,"scene":scene,"model":model,"keep_stock":stats.food_cost > 0 or stats.wood_cost > 0,"in_keep_range":kind == &"dragon_yard"}
+	return {"title":stats.display_name,"size":stats.footprint,"energy":stats.energy_cost,"food":stats.food_cost,"wood":stats.wood_cost,"coal":stats.coal_cost,"iron":stats.iron_cost,"scene":scene,"model":model,"keep_stock":stats.food_cost > 0 or stats.wood_cost > 0 or stats.coal_cost > 0,"in_keep_range":kind == &"dragon_yard"}
 var _model_scenes := {}
 ## The model a building scene shows in its Visuals slot, so its construction site can stand it up.
 func _model_scene(scene: PackedScene) -> PackedScene:
@@ -581,7 +582,7 @@ func keep_covers(start: Vector2i, size: Vector2i, team := "player") -> bool:
 	return covering_sources(start,size,team).any(func(source): return source.is_in_group("keeps"))
 func plan_source_valid(plan: Node3D, source) -> bool:
 	if not SupplySource.available(source,plan.team): return false
-	if source.energy < plan.spec.energy or source.iron < plan.spec.iron or source.stockpile.amount(&"food") < plan.spec.get("food",0) or source.stockpile.amount(&"wood") < plan.spec.get("wood",0): return false
+	if source.energy < plan.spec.energy or source.iron < plan.spec.iron or source.stockpile.amount(&"food") < plan.spec.get("food",0) or source.stockpile.amount(&"wood") < plan.spec.get("wood",0) or source.stockpile.amount(&"coal") < plan.spec.get("coal",0): return false
 	if plan.kind == &"hydro_dam": return range_covers_footprint(source,plan.start,plan.spec.size)
 	return can_place_mine(plan.global_position,source) if is_mine_kind(plan.kind) else can_place_size(plan.global_position,source,plan.spec.size)
 func plan_payer(plan: Node3D) -> Node3D:
@@ -605,7 +606,7 @@ func complete_plan(plan: Node3D, payer: Node3D) -> Node3D:
 	elif is_mine_kind(plan.kind): building.rules = engineering_rules
 	else: building.assigned_depot = payer if payer.is_in_group("depots") else null
 	var costs := {}
-	for k in [&"energy",&"iron",&"food",&"wood"]:
+	for k in [&"energy",&"iron",&"food",&"wood",&"coal"]:
 		var v: int = plan.spec.get(str(k),0)
 		if v > 0: costs[k] = v
 	if not payer.stockpile.spend(costs): building.free(); return null
@@ -669,6 +670,10 @@ func update_global_preview(point: Vector3) -> bool:
 	elif valid and not labor_ok: site_line += " · no %s in range has %d %s" % ["pinned payer" if pinned != null else "stockpile",labor_cost,"F" if labor_kind == &"food" else "E"]
 	elif valid and not iron_ok: site_line += " · %d iron short in range" % (iron_cost-on_site.get(&"iron",0)-stock[&"iron"])
 	elif valid and not wood_ok: site_line += " · %d wood short in range" % (wood_cost-on_site.get(&"wood",0)-stock[&"wood"])
+	# A Farm with lake water near its field yields more (docs/ROUND3_KNIGHTS_COAL.md).
+	if game.global_plan_kind == &"farm" and valid and FarmScript.lakeside_at(game.ground,start,spec.size):
+		var r := KnightHousing.rules()
+		site_line += " · Lakeside bonus: +%d%% Food" % roundi(100.0*(r.lakeside_food_per_beat-r.farm_food_per_beat)/r.farm_food_per_beat)
 	var area := stock_line(stock) if not sources.is_empty() else ("No Keep range here" if labor_kind == &"food" else "No Depot range here")
 	var cost_str := "%d E / %d I" % [energy_cost,iron_cost] if wood_cost == 0 and food_cost == 0 else "%d F / %d W / %d I" % [food_cost,wood_cost,iron_cost]
 	_set_placement("PLAN "+str(spec.title).to_upper(),"%s · %s · %s%s\n%s" % [placement_word(valid,affordable),spec.title,cost_str,site_line,area],valid,affordable)

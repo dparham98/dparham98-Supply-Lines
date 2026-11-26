@@ -11,6 +11,7 @@ energy_cost = 0
 iron_cost = 60
 food_cost = 160
 wood_cost = 0
+coal_cost = 25
 build_seconds = 40.0
 max_health = 240
 movement_speed = 5.5

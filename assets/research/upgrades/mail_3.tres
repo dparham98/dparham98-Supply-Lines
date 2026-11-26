@@ -6,6 +6,7 @@ research_id = &"mail_3"
 display_name = "Mail III"
 iron_cost = 350
 food_cost = 200
+coal_cost = 225
 seconds = 120.0
 line = &"mail"
 level = 3

@@ -15,7 +15,7 @@ Both work as the Temple of Science does (`docs/TEMPLE_OF_SCIENCE.md`, `scripts/b
 - one research at a time per building;
 - a finished level holds for the whole side.
 
-**Who pays:** the Foundry pays in Energy and Iron from a Depot. The Forge pays in Food and Iron from a Keep.
+**Who pays:** the Foundry pays in Energy and Iron from a Depot. The Forge pays in Food, Iron and Coal from a Keep (Coal since Round 3, `docs/ROUND3_KNIGHTS_COAL.md`). Its Stoke Brazier (Z) researches 1.6x as fast for 1 Coal every 4 s.
 
 **Models:** each has its own model, with Idle, Research, Build and Die clips: the Foundry's works hall (docs/FOUNDRY_MODEL.md) and the Forge's open smithy (docs/FORGE_MODEL.md). While a level is being researched the building plays its Research loop. The selection icon, portrait and Build card are their own too.
 
@@ -25,9 +25,9 @@ Each line has three levels, researched in order. Level n needs level n−1 first
 
 | Level | Foundry pays | Forge pays | Time |
 | --- | --- | --- | --- |
-| I | 100 E / 150 I | 100 F / 150 I | 60 s |
-| II | 150 E / 250 I | 150 F / 250 I | 90 s |
-| III | 200 E / 350 I | 200 F / 350 I | 120 s |
+| I | 100 E / 150 I | 100 F / 150 I / 75 C | 60 s |
+| II | 150 E / 250 I | 150 F / 250 I / 150 C | 90 s |
+| III | 200 E / 350 I | 200 F / 350 I / 225 C | 120 s |
 
 Each level is its own research, `assets/research/upgrades/<line>_<n>.tres` (for example `infantry_weapons_2`). `ResearchStats` gained `food_cost`, `line` and `level`.
 
