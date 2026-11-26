@@ -1072,16 +1072,10 @@ func _shoot(target: Node3D) -> void:
 	_cooldown = CombatResolver.interval_for(self,target,weapon)
 	if animator and (lead <= 0.0 or not animator.acting()): animator.play_action(&"shoot",lead)
 	_aim_body(target,turret,animator)
-	var target_height: Vector3 = target.get_node("Visuals").position if target.has_node("Visuals") else Vector3.ZERO
 	var model := $Visuals.get_node_or_null("Model")
 	var muzzle: Vector3 = model.muzzle_position() if model != null and model.has_method("muzzle_position") else global_position+Vector3.UP*1.7+$Visuals.position
 	if turret and turret.has_method("fire"): turret.fire()
-	var end := _shot_end(muzzle,target,target.global_position+Vector3.UP*1.7+target_height)
-	var shot: Node3D
-	if model != null and model.has_method("show_weapon_shot"):
-		shot = model.show_weapon_shot(game,end,team)
-	else:
-		shot = game.show_shot(muzzle,end,team,projectile_scene)
+	var shot := _show_weapon_shot(model,muzzle,target)
 	var forced := _forced_on(target)
 	# A shell or grenade hurts when it gets there; a shooter gone by then takes its shot with it.
 	if shot != null and shot.get("damage_on_impact") == true:
@@ -1091,6 +1085,14 @@ func _shoot(target: Node3D) -> void:
 	if is_instance_valid(target) and game.has_method("mark_attacked"): game.mark_attacked(target)
 	if is_instance_valid(target) and target.is_in_group("selectable_buildings") and target.get("team") == "player" and team != "player" and game.has_method("alert"):
 		game.alert("%s under attack" % target.name,target.global_position,"attack:%d" % target.get_instance_id(),"attack")
+## Returns the visual projectile if the weapon uses one. An instantaneous attack can return null.
+func _show_weapon_shot(model: Node3D, muzzle: Vector3, target: Node3D) -> Node3D:
+	var target_height: Vector3 = target.get_node("Visuals").position if target.has_node("Visuals") else Vector3.ZERO
+	var end := _shot_end(muzzle,target,target.global_position+Vector3.UP*1.7+target_height)
+	if model != null and model.has_method("show_weapon_shot"):
+		return model.show_weapon_shot(game,end,team)
+	return game.show_shot(muzzle,end,team,projectile_scene)
+
 ## A shell's or grenade's damage, when it bursts: the target if it is still there, and splash round the burst. The
 ## target may have died or gone meanwhile, so it is untyped: a freed Node3D fails a typed argument before this
 ## body can check it.

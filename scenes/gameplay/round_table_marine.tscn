@@ -1,9 +1,8 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/gameplay/unit_agent.gd" id="agent"]
+[ext_resource type="Script" path="res://scripts/units/round_table_marine.gd" id="agent"]
 [ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
 [ext_resource type="PackedScene" path="res://scenes/models/round_table_marine_model.tscn" id="model"]
-[ext_resource type="PackedScene" path="res://scenes/gameplay/infantry_bullet.tscn" id="bullet"]
 [ext_resource type="Resource" path="res://assets/units/round_table_marine.tres" id="stats"]
 [ext_resource type="Material" path="res://assets/materials/units/team_marker.tres" id="team_marker"]
 
@@ -14,7 +13,6 @@ size = Vector2(1.7, 1.7)
 [node name="RoundTableMarine" type="Node3D"]
 script = ExtResource("agent")
 unit_stats = ExtResource("stats")
-projectile_scene = ExtResource("bullet")
 can_construct = false
 can_repair = false
 can_gather = false

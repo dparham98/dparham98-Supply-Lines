@@ -1,0 +1,18 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/burst_effect.gd" id="burst"]
+[ext_resource type="PackedScene" path="res://assets/models/projectiles/round_table_muzzle_fx.glb" id="model"]
+[ext_resource type="Material" path="res://assets/materials/round_table_hot_metal.tres" id="hot"]
+
+[node name="RoundTableMuzzleFX" type="Node3D"]
+script = ExtResource("burst")
+clip = &"Fire"
+flash_path = NodePath("Model")
+one_shot = true
+
+[node name="Model" parent="." instance=ExtResource("model")]
+
+[node name="Facets" parent="Model/EffectRoot/Skeleton3D" index="0"]
+material_override = ExtResource("hot")
+
+[editable path="Model"]

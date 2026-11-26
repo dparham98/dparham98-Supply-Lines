@@ -11,8 +11,14 @@ run_clip = &"Run"
 shoot_clip = &"Shoot"
 run_reference_speed = 2.8
 muzzle_bone = &"muzzle"
-gun_sample_time = 0.25
-shot_lead_time = 0.21
+gun_rest_axis = Vector3(0.932, -0.310, 0.190)
+gun_sample_time = 0.0833333
+shot_lead_time = 0.0833333
 
 [node name="Rig" parent="." instance=ExtResource("rig")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
+
+[node name="MuzzleSocket" type="BoneAttachment3D" parent="Rig/Marine_Rig/Skeleton3D"]
+bone_name = "muzzle"
+
+[editable path="Rig"]
