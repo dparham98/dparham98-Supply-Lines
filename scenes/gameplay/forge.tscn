@@ -10,7 +10,7 @@
 [ext_resource type="Resource" path="res://assets/research/upgrades/mail_2.tres" id="mail_2"]
 [ext_resource type="Resource" path="res://assets/research/upgrades/mail_3.tres" id="mail_3"]
 [ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
-[ext_resource type="PackedScene" path="res://scenes/models/chapterhouse_model.tscn" id="model"]
+[ext_resource type="PackedScene" path="res://scenes/models/forge_model.tscn" id="model"]
 [ext_resource type="Material" path="res://assets/materials/units/team_marker.tres" id="team_marker"]
 [sub_resource type="PlaneMesh" id="team_marker_mesh"]
 material = ExtResource("team_marker")

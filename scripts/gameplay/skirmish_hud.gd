@@ -542,7 +542,10 @@ func icon_name(node: Node) -> String:
 	if node.is_in_group("farms"): return "farm"
 	if node.is_in_group("houses"): return "house"
 	if node.is_in_group("mines"): return "mine" if str(node.scene_file_path).ends_with("site_mine.tscn") else "pithead"
-	if node.is_in_group("research_buildings"): return "temple"
+	if node.is_in_group("research_buildings"):
+		# The Foundry and Forge have their own models (docs/FOUNDRY_MODEL.md, docs/FORGE_MODEL.md).
+		var building_id := str(node.stats.building_id) if node.get("stats") != null else ""
+		return building_id if building_id in ["foundry","forge"] else "temple"
 	if node.is_in_group("production_buildings"): return "barracks" if str(node.scene_file_path).ends_with("barracks.tscn") else "tank_factory"
 	if node.is_in_group("energy_generators"): return "generator"
 	if node.is_in_group("rail_trains"): return "train"
@@ -1269,7 +1272,7 @@ func show_upgrade_building(node: Node3D) -> void:
 		var line := lines[i]
 		var id := "Upgrade%d" % (i+1)
 		var button: Button = card.get_node(id)
-		set_card(button,"attack" if line in [Upgrades.INFANTRY_WEAPONS,Upgrades.VEHICLE_WEAPONS,Upgrades.ARMS] else "repair")
+		set_card(button,"upgrade_"+str(line))
 		var have := Upgrades.level(node,node.team,line)
 		if have >= Upgrades.LEVELS:
 			desired_buttons.append(id)
