@@ -3,17 +3,17 @@
   blender --background --python build_forge.py
 
 Everything is rebuilt each run. The open front faces -Y, Z up, base on Z = 0, inside the 6 x 6 m footprint.
-The palette is the Keep's and Chapterhouse's: ivory stone, silver, heraldic brass and the team-blue roof,
+The palette is the Keep's and Chapterhouse's: ivory stone, silver, heraldic brass and a team-painted gable,
 with timber, leather and amber glass. Helpers come from ../../Foundry/build/building_kit.py. Clips are
 added by animate_forge.py.
 
 Layout: a stone hearth with its hood and tall chimney at the back left, the bellows beside it, and a
-lean-to roof over the back half only, so the work reads from above. In the open yard: the anvil with the
+slate roof over the rear workshop, so the work reads from above. In the open yard: the anvil with the
 smith at it, a stone quench trough (right), a mail hauberk on its stand (left), a rack of swords and
 lances against the back wall (right), and two banners at the front corners.
 """
 import bpy, os, sys, random
-from math import sin, cos, radians, pi
+from math import sin, cos, radians, pi, atan2, sqrt
 from mathutils import Vector as V, Matrix
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -48,8 +48,14 @@ material("frg_hot", (0.9, 0.55, 0.15), 0.0, 0.4, (1.0, 0.6, 0.2), 5.0)
 material("frg_spark", (1.0, 0.85, 0.5), 0.0, 0.4, (1.0, 0.8, 0.4), 8.0)
 material("frg_amber_glass", (1.0, 0.69, 0.29), 0.14, 0.2, (1.0, 0.65, 0.22), 2.2)
 material("frg_water", (0.04, 0.08, 0.10), 0.3, 0.08)
-material("frg_smoke", (0.17, 0.16, 0.15), 0.0, 1.0)
-material("frg_steam", (0.62, 0.62, 0.62), 0.0, 1.0)
+material("frg_smoke", (0.29, 0.28, 0.26), 0.0, 1.0, alpha=0.22)
+material("frg_steam", (0.72, 0.74, 0.74), 0.0, 1.0, alpha=0.28)
+
+material("frg_flag", (0.32, 0.27, 0.22), 0.0, 0.90)
+material("frg_flag_light", (0.40, 0.34, 0.27), 0.0, 0.86)
+material("frg_slate", (0.09, 0.12, 0.155), 0.16, 0.62)
+material("frg_slate_light", (0.14, 0.17, 0.19), 0.16, 0.62)
+material("frg_firebrick", (0.28, 0.115, 0.058), 0.0, 0.85)
 
 C = bpy.data.collections.new("forge")
 bpy.context.scene.collection.children.link(C)
@@ -63,21 +69,34 @@ def fin(P, name, world, parent=None):
 # ================================================================= plinth: stone flags and a cobbled yard
 P = Part()
 P.box("frg_stone_dark", (0, 0, B0 / 2), (5.96, 5.96, B0), None, 0.03)
-for i in range(6):
-    for j in range(6):
-        x, y = -2.5 + i, -2.5 + j
-        P.box("frg_stone" if (i + j) % 3 else "frg_ivory", (x + random.uniform(-0.03, 0.03), y, B0 + 0.01),
-              (0.94, 0.94, 0.03), rot_z(radians(random.uniform(-2, 2))), 0.01)
+# Staggered flagstones, with a curb and knee walls enclosing the smith's working yard.
+for course in range(10):
+    start = -2.94
+    while start < 2.9:
+        end = min(2.94, start + (0.50 if course % 2 and start == -2.94 else 0.98))
+        P.box(random.choice(["frg_flag", "frg_flag_light", "frg_flag"]), ((start+end)/2, -2.65+course*0.59, B0),
+              (end-start-0.018, 0.575, 0.055), None, 0.009)
+        start = end
+for x in (-2.81, 2.81):
+    for i in range(5):
+        y = -2.46 + i * 0.72
+        P.box("frg_stone_dark", (x,y,B0+0.19), (0.29,0.71,0.38), None,0.02)
+        P.box("frg_stone", (x,y,B0+0.40), (0.34,0.71,0.08), None,0.018)
 plinth = fin(P, "plinth", Matrix.Identity(4))
 
 # ================================================================= hearth, hood and chimney (back left)
 HX, HY = -1.55, 2.05
 P = Part()
-P.box("frg_stone", (HX, HY + 0.05, B0 + 0.55), (2.1, 1.5, 1.1), None, 0.03)              # hearth block
-P.box("frg_interior", (HX, HY - 0.55, B0 + 0.72), (1.3, 0.5, 0.62))                      # fire mouth
-P.box("frg_ivory", (HX, HY - 0.72, B0 + 1.08), (1.6, 0.14, 0.12), None, 0.02)            # lintel
-for sx in (-1, 1):
-    P.box("frg_ivory", (HX + sx * 0.72, HY - 0.72, B0 + 0.55), (0.16, 0.14, 1.1), None, 0.02)
+P.box("frg_firebrick", (HX, HY+0.36, B0+0.65), (2.1,0.75,1.3), None,0.04)
+P.box("frg_coal", (HX,HY-0.14,B0+0.34), (1.55,1.02,0.42), None,0.04)
+for side in (-1, 1):
+    P.box("frg_stone", (HX+side*0.85,HY,B0+0.54), (0.48,1.45,1.08),None,0.03)
+# Individual voussoirs span an open, firebrick-lined hearth.
+for i in range(9):
+    a0, a1 = i*pi/9+0.012, (i+1)*pi/9-0.012
+    arch = [(r*cos(angle), .72+r*.80*sin(angle)) for r,angle in
+            ((.63,a0),(.94,a0),(.94,a1),(.63,a1))]
+    P.add(mk_prism(arch,(HX,HY-.59,B0),X,Z,-.03,.21),"frg_stone" if i%3 else "frg_ivory",True)
 P.add(mk_loft([[V((HX - 1.05, HY - 0.7, B0 + 1.1)), V((HX + 1.05, HY - 0.7, B0 + 1.1)), V((HX + 1.05, HY + 0.8, B0 + 1.1)),
                 V((HX - 1.05, HY + 0.8, B0 + 1.1))],
                [V((HX - 0.45, HY - 0.05, 2.6)), V((HX + 0.45, HY - 0.05, 2.6)), V((HX + 0.45, HY + 0.65, 2.6)),
@@ -85,6 +104,13 @@ P.add(mk_loft([[V((HX - 1.05, HY - 0.7, B0 + 1.1)), V((HX + 1.05, HY - 0.7, B0 +
 P.box("frg_stone", (HX, HY + 0.3, 3.85), (0.9, 0.7, 2.5), None, 0.02)                    # chimney
 for z in (2.7, 3.9, 5.0):
     P.box("frg_ivory", (HX, HY + 0.3, z), (1.0, 0.8, 0.1), None, 0.02)
+# Soot-dark masonry courses break up the tall working flue.
+for course in range(9):
+    z = 2.69 + course*.264
+    for half in (-1,1):
+        P.box("frg_stone_dark" if (course+half)%4 == 0 else "frg_flag",
+              (HX+half*.22,HY-.061,z), (.422,.045,.246),None,.013)
+    P.box("frg_flag", (HX+.46,HY+.30,z), (.045,.68,.245),None,.012)
 P.box("brass", (HX, HY + 0.3, 5.12), (0.8, 0.6, 0.06))
 P.box("frg_interior", (HX, HY + 0.3, 5.14), (0.62, 0.42, 0.04))
 for k in range(5):                                                                       # coal heap beside it
@@ -115,7 +141,7 @@ P.cyl("frg_timber_dark", (BX + 0.5, BY, B0 + 0.65), (BX + 0.75, BY, B0 + 1.25), 
 P.box("brass", (BX + 0.2, BY, B0 + 0.65), (0.18, 0.2, 0.02))
 fin(P, "bellows_board", T((BX - 0.45, BY, B0 + 0.62)), bellows)
 
-# ================================================================= timber frame and lean-to roof over the back half
+# ================================================================= braced timber hall and slate roof
 P = Part()
 for x in (-2.75, 0.0, 2.75):
     P.box("frg_timber", (x, 0.55, (B0 + 2.55) / 2), (0.2, 0.2, 2.55 - B0), None, 0.015)
@@ -130,18 +156,52 @@ P.box("frg_stone", (1.4, 2.82, B0 + 0.7), (2.7, 0.26, 1.4), None, 0.02)
 P.box("frg_ivory", (1.4, 2.82, B0 + 1.42), (2.8, 0.32, 0.08), None, 0.01)
 P.box("frg_amber_glass", (2.3, 2.68, B0 + 0.95), (0.4, 0.02, 0.5))
 P.box("frg_timber_dark", (2.3, 2.67, B0 + 0.95), (0.46, 0.02, 0.04))
+# End walls and braced oak street-front bays. The smith and anvil remain outside the eave.
+for x in (-2.75, 2.75):
+    P.add(mk_prism([(.42,B0+.42),(2.82,B0+.42),(2.82,2.53),(1.64,3.75),(.42,2.53)],
+                   (x,0,0),Y,Z,-.076,.076),"frg_ivory",True)
+    face = x + (.09 if x>0 else -.09)
+    P.beam("frg_timber",(face,.45,2.51),(face,2.82,2.51),.13,.13)
+    P.beam("frg_timber",(face,1.64,B0+.42),(face,1.64,3.69),.13,.13)
+    for end in (.54,2.72):
+        P.beam("frg_timber",(face,end,B0+.48),(face,1.64,2.43),.12,.12)
+for x in (-2.74,0,2.74):
+    for direction in (-1,1):
+        if abs(x+direction*.63)<2.8:
+            P.beam("frg_timber",(x,.48,1.96),(x+direction*.63,.48,2.56),.15,.15,.015)
 frame = fin(P, "frame", Matrix.Identity(4))
 P = Part()
-P.add(mk_loft([[V((-3.0, 0.35, 2.68)), V((3.0, 0.35, 2.68)), V((3.0, 0.35, 2.78)), V((-3.0, 0.35, 2.78))],
-               [V((-3.0, 2.98, 3.48)), V((3.0, 2.98, 3.48)), V((3.0, 2.98, 3.58)), V((-3.0, 2.98, 3.58))]]),
-      "team_color", True)
-for k in range(9):                                                                       # slate courses
-    y = 0.5 + k * 0.28
-    z = 2.78 + (y - 0.35) * 0.8 / 2.63
-    P.box("team_color_shadow", (0, y, z + 0.012), (6.0, 0.03, 0.012), rot_x(radians(17)))
-P.box("brass", (0, 0.33, 2.73), (6.04, 0.05, 0.14), None, 0.01)
-for sx in (-1, 1):
-    P.box("brass", (sx * 3.0, 1.66, 3.15), (0.05, 2.75, 0.12), rot_x(radians(17)), 0.01)
+# Individually laid, staggered slate courses on both slopes. Keep team paint to the
+# ridge, finials and gable so repainted roofs retain their stone and slate values.
+ridge_y, ridge_z = 1.56, 4.04
+for eave_y in (-.38,2.98):
+    eave_z = 2.59
+    dy, dz = ridge_y-eave_y, ridge_z-eave_z
+    angle = atan2(dz,dy)
+    P.box("frg_timber_dark",(0,(eave_y+ridge_y)/2,(eave_z+ridge_z)/2),
+          (5.98,sqrt(dy*dy+dz*dz),.12),rot_x(angle))
+    for course in range(7):
+        start = -2.99
+        while start < 2.98:
+            end = min(2.99,start+(.29 if course%2 and start == -2.99 else .60))
+            u = (course+.5)/7
+            P.box(random.choice(["frg_slate","frg_slate","frg_slate_light"]),((start+end)/2,eave_y+dy*u,eave_z+dz*u+.076),
+                  (end-start-.008,sqrt(dy*dy+dz*dz)/7+.035,.048),rot_x(angle),.008)
+            start=end
+    for x in (-2.95,2.95):
+        P.beam("frg_timber",(x,eave_y,eave_z),(x,ridge_y,ridge_z+.05),.13,.16,.012)
+P.cyl("brass",(-2.99,ridge_y,ridge_z+.10),(2.99,ridge_y,ridge_z+.10),.093,seg=10)
+# A projecting guild gable shelters the bellows bay and carries a wrought anvil sign.
+gx=.94
+P.add(mk_prism([(-.93,2.49),(.93,2.49),(0,3.64)],(gx,-.56,0),X,Z,-.18,.06),"team_color",True)
+for side in (-1,1):
+    P.add(mk_loft([[V((gx,y,3.70)),V((gx+side*1.04,y,2.53)),V((gx+side*1.04,y,2.44)),V((gx,y,3.61))]
+                   for y in (-.72,.97)]),"frg_slate",True)
+    P.beam("brass",(gx+side*1.03,-.73,2.51),(gx,-.73,3.71),.075,.085)
+P.box("frg_timber",(gx,-.64,2.48),(1.96,.17,.15),None,.015)
+anvil_sign=[(-.46,.11),(.40,.11),(.36,-.015),(.15,-.04),(.08,-.14),(.22,-.21),
+            (.22,-.25),(-.20,-.25),(-.20,-.20),(-.09,-.13),(-.15,-.025),(-.30,-.015)]
+P.add(mk_prism(anvil_sign,(gx,-.64,2.92),X,Z,0,.048),"brass",True)
 roof = fin(P, "roof", T((0, 1.66, 2.68)))
 
 # weapon rack against the back wall: swords and lances
@@ -214,8 +274,10 @@ fin(P, "smith_arm", T(SH), smith)
 # ================================================================= quench trough (front right) and hauberk (front left)
 QX, QY = 1.85, -1.25
 P = Part()
-P.box("frg_stone", (QX, QY, B0 + 0.3), (1.2, 0.6, 0.6), None, 0.03)
-P.box("frg_ivory", (QX, QY, B0 + 0.62), (1.28, 0.68, 0.05), None, 0.01)
+P.box("frg_stone_dark",(QX,QY,B0+.18),(1.18,.62,.36),None,.035)
+for side in (-1,1):
+    P.box("frg_stone",(QX,QY+side*.28,B0+.43),(1.22,.09,.36),None,.025)
+    P.box("frg_stone",(QX+side*.56,QY,B0+.43),(.10,.51,.36),None,.025)
 P.box("frg_timber_dark", (QX + 0.5, QY - 0.2, B0 + 0.9), (0.05, 0.05, 0.5))              # a bucket and tongs
 trough = fin(P, "trough", Matrix.Identity(4))
 P = Part()

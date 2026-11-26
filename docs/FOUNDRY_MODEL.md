@@ -4,20 +4,20 @@ Asked for on 2026-11-25. This is the Cyborgs' upgrade building (docs/UPGRADES.md
 
 ## The model
 
-- **Size.** True scale in metres. The plinth fills 5.9 x 5.9 m of the 6 x 6 footprint. The stacks reach about 4.7 m.
+- **Size.** True scale in metres. The plinth fills 5.9 x 5.9 m of the 6 x 6 footprint. The jacketed cupola reaches 5.09 m.
 - **Facing.** In Blender the door side faces -Y. In the game that is +Z, toward the default camera, as for the other buildings.
-- **Budget.** About 10,800 triangles, with flat PBR materials and no image textures.
+- **Budget.** About 17,160 triangles, with flat PBR materials and no image textures.
 
 The parts (object names in the GLB):
 
-- `plinth`: the stepped base, with hazard edging along the front.
+- `plinth`: the stepped base with casting-cart rails, drainage grilles and hazard edging.
 - `hall`, with `hall_badge` and the faction fang `hall_fang` (from the Drone): the riveted works hall at the back. `hall_roof` carries the `vent_fan`.
-- `stack_1`..`stack_3`: the cooling stacks, with brass bands. `smoke_1`..`smoke_9` are the smoke puffs above them.
+- `stack_1`..`stack_3`: a copper-banded cupola and two finned exhausts. A charging duct runs down to the brazier. `smoke_1`..`smoke_9` are the smoke puffs above them.
 - `furnace`, with `furnace_glow`: the brazier under the crucible gantry (`crucible_gantry`).
 - `crucible`, with `crucible_melt`: it pivots on its trunnions to pour. `pour_stream` runs from its spout into the `mould`, and `mould_glow` fills the mould.
 - `press_frame`: the stamping press. `press_ram` moves up and down, `press_plate` is the armour plate it stamps, and `press_sparks` fly from the plate.
 - `lathe`: the rifling lathe. `lathe_barrel` turns, while `lathe_tool` and `lathe_sparks` slide along it.
-- `plate_rack`: finished plates, ready to ship.
+- `plate_rack`: finished plates, ready to ship. The hoist runway links the casting and pressing bays and is built with the press frame.
 
 `foundry_death_fx.glb` holds `Flash_Foundry`, `fx_fire_*`, `fx_smoke_*`, `fx_plate_*` (thrown armour plates) and `fx_spill` (molten metal).
 
