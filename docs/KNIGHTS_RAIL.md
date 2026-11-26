@@ -63,6 +63,6 @@ When a Keep has several lines, the player clicks the line to start on, as at a D
 - track at 2 I a metre from the Keep;
 - the train's cost, its refund and its build;
 - 12 m/s;
-- 5 coal per 100 m;
+- 8 coal per 100 m (5 before Round 3);
 - stopping when empty and refuelling from the Keep's coal;
 - the Keep card and Build page tiles.

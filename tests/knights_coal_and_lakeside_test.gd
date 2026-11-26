@@ -14,9 +14,7 @@ func check(value: bool, message: String) -> bool:
 	if value: return true
 	push_error(message); quit(1); return false
 func open(path: String) -> void:
-	if is_instance_valid(game):
-		game.queue_free()
-		await process_frame
+	if is_instance_valid(game): game.free()
 	game = load(path).instantiate()
 	root.add_child(game)
 	for frame in range(3): await process_frame
@@ -50,7 +48,7 @@ func house_for(id: StringName, keep: Node3D, team := "player") -> bool:
 ## Queues a Marine, first clearing away the ones already made so housing never runs short.
 func marine(hall: Node3D, keep: Node3D) -> bool:
 	for unit in get_nodes_in_group("units"):
-		if unit.team == "player" and unit.get("unit_stats") != null and unit.unit_stats.unit_id == &"round_table_marine": unit.free()
+		if unit.team == "player" and unit.get("unit_stats") != null and unit.unit_stats.unit_id == &"round_table_marine": unit.queue_free()
 	return house_for(&"round_table_marine",keep) and hall.request_unit(&"round_table_marine")
 ## Seconds of 1/60 s frames until `building` hands over its head unit.
 func run_until_produced(building: Node3D, limit: float, during := Callable()) -> float:
@@ -66,12 +64,14 @@ func empty(keep: Node3D, kind: StringName) -> void:
 	if held > 0: keep.stockpile.withdraw(kind,held)
 func run() -> void:
 	setup = root.get_node("MatchSetup")
-	if not data(): return
 	if not await forge_and_dragon(): return
 	if not await brazier(): return
 	if not await lakeside(): return
 	if not await ai(): return
+	# The data last: loading these stats before the first map left a script (fuel_rules.gd) in use at exit.
+	if not data(): return
 	setup.configured = false
+	game.free()
 	print("KNIGHTS_COAL_AND_LAKESIDE_TEST_PASSED")
 	quit(0)
 func data() -> bool:

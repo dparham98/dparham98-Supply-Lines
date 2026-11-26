@@ -104,7 +104,8 @@ Existing tests updated:
 - `command_cards_test`: 82 tiles;
 - `upgrades_test`: Arms I takes 75 Coal, and the Mail tile shows its Coal;
 - `mist_slow_test`: Slow 100 F / 125 I / 75 C;
-- `ai_upgrades_test`: home holds Coal for Arms I and Mail I.
+- `ai_upgrades_test`: home holds Coal for Arms I and Mail I;
+- `knights_rail_test`: 100 m burns 8 Coal (was 5).
 
 ## Not done
 
