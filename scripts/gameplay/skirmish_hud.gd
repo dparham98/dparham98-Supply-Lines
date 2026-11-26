@@ -270,12 +270,13 @@ func _ready() -> void:
 		if is_instance_valid(shown) and shown.is_in_group("keeps") and shown.team == "player":
 			if not least_busy().request_forester(): game.notify("Keep lacks Food or queue space."))
 	# Launch balloon (docs/AIR_BALLOON.md): arms a click on the map for the selected Keep's balloon.
+	# It opens the Load tiles as the balloon's manifest of crates from the Keep's stock (docs/ROUND3_SKY_PAVILION.md).
 	card.get_node("LaunchBalloon").pressed.connect(func():
 		if not is_instance_valid(shown) or not shown.is_in_group("keeps") or shown.team != "player": return
-		var refusal: String = shown.balloon_refusal()
+		var refusal: String = shown.balloon_keep_refusal()
 		if not refusal.is_empty(): game.notify(refusal); return
 		game.pending_unit_command = "launch_balloon"
-		game.notify("Launch balloon: click where %s should set its crates down. Esc cancels." % shown.name))
+		game.notify("Launch balloon: add up to %d crates from the Keep's stock, then click explored land. Esc cancels." % KnightHousing.rules().balloon_crates))
 	# Found Keep (docs/ROUND3_SKY_PAVILION.md): arms a click on the map for the selected Keep's Sky-Pavilion.
 	card.get_node("FoundKeep").pressed.connect(func():
 		if not is_instance_valid(shown) or not shown.is_in_group("keeps") or shown.team != "player": return
@@ -405,7 +406,7 @@ func _process(_delta: float) -> void:
 		if pick.get_node("Prompt").text != prompt: pick.get_node("Prompt").text = prompt
 	# Load is a page of tiles. Its instructions and the manifest sit in the Context column. The Depot's
 	# Make crates page uses the same tiles, without Clear or the manifest.
-	var loading: bool = pick.visible and game.pending_unit_command == "load"
+	var loading: bool = pick.visible and (game.pending_unit_command == "load" or balloon_keep() != null)
 	var crating: bool = pick.visible and crate_page_open
 	load_tiles.visible = loading or crating
 	load_tiles.get_node("Clear").visible = loading
@@ -1046,9 +1047,9 @@ func update_contents() -> void:
 				show_production("TrainWarhound",hound_stats.display_name,hound_stats.energy_cost,hound_stats.iron_cost,node,hound_stats.food_cost,hound_stats.wood_cost,hound_stats.unit_id)
 				var balloon_button: Button = card.get_node("LaunchBalloon")
 				var aboard: Array[Node3D] = node.balloon_crates()
-				balloon_button.set_meta("detail","%d Wood. Takes up to %d full crates packed beside the Keep (%d ready) to a point you see, sets them down and is gone; inside a Keep's range it unloads into that Keep. 40 health: shot down, it drops nothing." % [KnightHousing.rules().balloon_wood_cost,KnightHousing.rules().balloon_crates,aboard.size()])
+				balloon_button.set_meta("detail","%d Wood. Takes up to %d crates of 25 to land you have explored, sets them down and is gone; inside a Keep's range it unloads into that Keep. Opens a manifest of crates from the Keep's stock (%s); with none set it takes the full crates packed beside the Keep (%d ready). 40 health: shot down, it drops nothing." % [KnightHousing.rules().balloon_wood_cost,KnightHousing.rules().balloon_crates,"%d set" % node.balloon_manifest_total() if node.balloon_manifest_total() > 0 else "none set",aboard.size()])
 				show_button("LaunchBalloon","Launch balloon")
-				var refusal: String = node.balloon_refusal()
+				var refusal: String = node.balloon_keep_refusal()
 				explain(balloon_button,not refusal.is_empty(),refusal)
 				var pavilion: UnitStats = node.unit_stats_for_kind("sky_pavilion")
 				show_production("FoundKeep","Found Keep",pavilion.energy_cost,pavilion.iron_cost,node,pavilion.food_cost,pavilion.wood_cost,pavilion.unit_id)
@@ -1511,22 +1512,43 @@ func return_units() -> void:
 			unit.command_return(unit.supply_payer if unit.supply_payer_explicit else nearest_depot(unit))
 			# Only a stockpile the player chose stays the drop-off for later trips.
 			unit.return_explicit = unit.supply_payer_explicit
-# The Load page: a manifest of crates for the selected vehicles (docs/CRATE_MANIFESTS.md).
+## The player's Keep whose balloon manifest the Load page shows while Launch balloon is armed, or null.
+func balloon_keep() -> Node3D:
+	if game.pending_unit_command != "launch_balloon" or not is_instance_valid(shown) or not shown.is_in_group("keeps") or shown.team != "player": return null
+	return shown
+# The Load page: a manifest of crates for the selected vehicles (docs/CRATE_MANIFESTS.md), or for the selected
+# Keep's balloon while Launch balloon is armed.
 func edit_manifest(kind: StringName, fill := false) -> void:
+	var keep := balloon_keep()
+	if keep != null:
+		if not (keep.balloon_manifest_fill(kind) if fill else keep.balloon_manifest_add(kind)): game.notify("A balloon carries %d crates. Take one off to change the mix." % KnightHousing.rules().balloon_crates)
+		return
 	var changed := false
 	for unit in selected_units():
 		if unit.is_cargo_vehicle and (unit.manifest_fill(kind) if fill else unit.manifest_add(kind)): changed = true
 	if not changed: game.notify("The manifest is full. Clear it to change the mix.")
 func lower_manifest(kind: StringName, every := false) -> void:
+	var keep := balloon_keep()
+	if keep != null:
+		if not keep.balloon_manifest_remove(kind,every): game.notify("No %s crates on the balloon's manifest to take off." % kind)
+		return
 	var changed := false
 	for unit in selected_units():
 		if unit.is_cargo_vehicle and unit.manifest_remove(kind,every): changed = true
 	if not changed: game.notify("No %s crates on the manifest to take off." % kind)
 func clear_manifest() -> void:
+	var keep := balloon_keep()
+	if keep != null: keep.balloon_manifest.clear()
 	for unit in selected_units():
 		if unit.is_cargo_vehicle: unit.manifest.clear()
 func update_manifest_panel() -> void:
+	var keep := balloon_keep()
+	if keep != null:
+		_update_balloon_manifest(keep)
+		return
 	var vehicle := selected_cargo()
+	manifest_panel.get_node("Head/Label").text = "Load manifest"
+	manifest_panel.get_node("Hint").text = "Add crates, then left-click a Depot on the map or minimap. Click a crate to pick it up instead. Shift queues."
 	manifest_panel.get_node("Head/Value").text = "%d / %d crates" % [vehicle.manifest_total(),vehicle.crate_slots()]
 	var planned: Array[Dictionary] = []
 	for kind in ResourceStockpile.KINDS:
@@ -1535,8 +1557,27 @@ func update_manifest_panel() -> void:
 	for pair in [["Iron","Iron"],["Energy","Energy"],["Wood","Wood"],["Coal","Coal"],["Food","Food"]]:
 		set_tile(load_tiles.get_node(pair[0]),pair[1]+" crate","Adds one crate to the manifest. Shift fills every free slot.\nRight-click takes one off; Shift+right-click takes them all off.")
 		load_tiles.get_node(pair[0]).disabled = false
+		load_tiles.get_node(pair[0]).visible = true
 	load_tiles.get_node("Food").visible = has_arthurian_faction()
 	set_tile(load_tiles.get_node("Clear"),"Clear manifest","Removes every crate from the manifest.")
+## The Load page as the balloon's manifest: up to `balloon_crates` crates of Food, Wood, Iron or Coal from the Keep.
+func _update_balloon_manifest(keep: Node3D) -> void:
+	var slots: int = KnightHousing.rules().balloon_crates
+	var set_up: int = keep.balloon_manifest_total()
+	manifest_panel.get_node("Head/Label").text = "Balloon manifest"
+	manifest_panel.get_node("Hint").text = "Add crates from the Keep's stock, then left-click explored land on the map or minimap. Left empty, it takes the crates packed beside the Keep."
+	manifest_panel.get_node("Head/Value").text = "%d / %d crates" % [set_up,slots] if set_up > 0 else "%d beside the Keep" % keep.balloon_crates().size()
+	var planned: Array[Dictionary] = []
+	for kind in keep.BALLOON_KINDS:
+		for i in range(keep.balloon_manifest.get(kind,0)): planned.append({kind = kind, amount = ResourceStockpile.CRATE})
+	manifest_panel.get_node("Pips").show_crates(planned,slots)
+	for pair in [["Iron",&"iron"],["Wood",&"wood"],["Coal",&"coal"],["Food",&"food"]]:
+		var tile: Button = load_tiles.get_node(pair[0])
+		set_tile(tile,"%s crate" % str(pair[1]).capitalize(),"Puts a crate of 25 %s from %s's stock (%d) on the balloon. Shift fills every free slot.\nRight-click takes one off; Shift+right-click takes them all off." % [str(pair[1]).capitalize(),keep.name,keep.stockpile.amount(pair[1])])
+		tile.disabled = false
+		tile.visible = true
+	load_tiles.get_node("Energy").visible = false
+	set_tile(load_tiles.get_node("Clear"),"Clear manifest","Empties the balloon's manifest: it then takes the full crates packed beside the Keep.")
 func show_fuel_tile(id: String, label: String, mode: String, current: String) -> void:
 	show_button(id,label)
 	var button: Button = card.get_node(id)
@@ -1682,6 +1723,8 @@ func pick_prompt() -> String:
 	match game.pending_unit_command:
 		"load":
 			if selected_cargo() != null: return "LOAD · CHOOSE A STOP"
+		"launch_balloon":
+			if balloon_keep() != null: return "LAUNCH BALLOON · CHOOSE A POINT"
 		"unload":
 			if selected_cargo() != null: return "UNLOAD · CHOOSE A STOP\nLeft-click a Depot on the map or minimap to unpack there, a build site to deliver its materials, or open ground to set crates down. Shift queues. Right-click or Esc cancels."
 		"pin":
@@ -1689,7 +1732,8 @@ func pick_prompt() -> String:
 	return ""
 func pick_stops() -> Array[Node3D]:
 	var stops: Array[Node3D] = []
-	if pick_prompt().is_empty() or crate_page_open: return stops
+	# The balloon's manifest page waits for a point, not a stop.
+	if pick_prompt().is_empty() or crate_page_open or balloon_keep() != null: return stops
 	var vehicle := selected_cargo()
 	for group in ["depots","mobile_supplies"]:
 		for node in get_tree().get_nodes_in_group(group):

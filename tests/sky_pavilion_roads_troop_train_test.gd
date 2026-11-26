@@ -8,6 +8,9 @@ extends SceneTree
 # - Sky-Pavilion (docs/ROUND3_SKY_PAVILION.md): Found Keep (P) charters one for 50 W / 50 I / 45 F and 1 housing. It
 #   flies only to land the side has explored, unfolds there into an empty Keep with a Forester Maiden, and on a site
 #   blocked by the time it lands sets down 2 Wood and 2 Iron crates and the Maiden instead.
+# - Supply Balloon manifest: Launch balloon opens the Load tiles as a manifest of up to 4 crates from the Keep's
+#   stock (Food, Wood, Iron, Coal); the balloon carries them to explored land out of sight. With no manifest set
+#   it still takes the crates packed beside the Keep.
 var game: Node3D
 var network: Node
 var rails: Node
@@ -105,6 +108,7 @@ func run() -> void:
 	if not await troop_train(): return
 	if not await railhead(): return
 	if not await pavilion(): return
+	if not await balloon(): return
 	game.free()
 	print("SKY_PAVILION_ROADS_TROOP_TRAIN_TEST_PASSED")
 	quit(0)
@@ -317,3 +321,78 @@ func pavilion() -> bool:
 ## Distance on the ground, ignoring height.
 func flat(a: Vector3, b: Vector3) -> float:
 	return Vector2(a.x-b.x,a.z-b.z).length()
+## The Supply Balloon's manifest, on the Two Lakes match the Sky-Pavilion section left open.
+func balloon() -> bool:
+	var keep := keep_of("player")
+	var fog: Node = game.fog_of_war()
+	var rules := KnightHousing.rules()
+	for crate in CrateYard.beside(keep): crate.queue_free()
+	await process_frame
+	keep.balloon_manifest.clear()
+	for kind in [&"food",&"wood",&"iron",&"coal"]: keep.stockpile.deposit(kind,200)
+	if not check(keep.balloon_refusal().contains("manifest"),"With no manifest and no crates beside it the Keep should say so: %s" % keep.balloon_refusal()): return false
+	# The tile opens the Load tiles as the balloon's manifest.
+	var hud = game.get_node("Interface")
+	game.selected_building = keep
+	hud._process(0.0)
+	var tile: Button = hud.card.get_node("LaunchBalloon")
+	if not check(hud.desired_buttons.has("LaunchBalloon") and not tile.disabled,"With nothing set the Launch balloon tile should still open"): return false
+	tile.pressed.emit()
+	hud._process(0.0)
+	if not check(game.pending_unit_command == "launch_balloon" and hud.balloon_keep() == keep,"Launch balloon should arm for the Keep"): return false
+	if not check(hud.pick_prompt().begins_with("LAUNCH BALLOON") and hud.load_tiles.visible and hud.manifest_panel.visible,"The Load tiles and manifest should show"): return false
+	if not check(not hud.load_tiles.get_node("Energy").visible and hud.load_tiles.get_node("Food").visible and hud.load_tiles.get_node("Coal").visible,"Food, Wood, Iron and Coal fly; Energy doesn't"): return false
+	hud.edit_manifest(&"food")
+	hud.edit_manifest(&"coal")
+	hud.edit_manifest(&"iron",true)
+	if not check(keep.balloon_manifest_total() == rules.balloon_crates and keep.balloon_manifest.get(&"iron",0) == 2,"Shift fills the free slots: %s" % keep.balloon_manifest): return false
+	hud.edit_manifest(&"wood")
+	if not check(keep.balloon_manifest_total() == 4 and not keep.balloon_manifest.has(&"wood"),"A fifth crate is refused"): return false
+	hud.lower_manifest(&"iron")
+	hud.edit_manifest(&"wood")
+	if not check(keep.balloon_manifest == {&"food": 1, &"coal": 1, &"iron": 1, &"wood": 1},"Right-click takes one off: %s" % keep.balloon_manifest): return false
+	hud._process(0.0)
+	if not check(hud.manifest_panel.get_node("Head/Value").text == "4 / 4 crates","The manifest panel counts the balloon's crates"): return false
+	# Explored land out of every Keep's range.
+	var drop = null
+	for d in [80.0,100.0,120.0,140.0]:
+		for angle in range(0,360,20):
+			var point: Vector3 = keep.global_position+Vector3.FORWARD.rotated(Vector3.UP,deg_to_rad(angle))*d
+			if game.ground.get_tile_at_position(point) == null or CrateYard.free_cell(self,point,0,8) == null or fog.explored_by("player",point): continue
+			if get_nodes_in_group("keeps").any(func(k): return SupplySource.covers(k,point,"player")): continue
+			drop = point; break
+		if drop != null: break
+	if not check(drop != null,"There should be unexplored open land out of the Keeps' range"): return false
+	if not check(keep.balloon_refusal(drop).contains("explored") and not keep.launch_balloon(drop),"Unexplored land is refused"): return false
+	fog._stamp("player",drop,12.0)
+	var before := {}
+	for kind in [&"food",&"wood",&"iron",&"coal"]: before[kind] = keep.stockpile.amount(kind)
+	game.cancel_armed()
+	if not check(keep.launch_balloon(drop),"Explored land takes the balloon: %s" % keep.balloon_refusal(drop)): return false
+	var spent := {}
+	for kind in before: spent[kind] = before[kind]-keep.stockpile.amount(kind)
+	if not check(spent == {&"food": 25, &"wood": 25+rules.balloon_wood_cost, &"iron": 25, &"coal": 25},"It takes the four crates and its Wood from the stock: %s" % spent): return false
+	var flying: Node3D = null
+	for node in get_nodes_in_group("air_balloons"):
+		if not node.is_in_group("sky_pavilions") and not node.landed: flying = node
+	if not check(flying != null and flying.crates.size() == 4,"A balloon carrying four crates should be up"): return false
+	flying.set_process(false)
+	if not check(await fly(flying),"The balloon should land and be gone"): return false
+	var landed := {}
+	for crate in get_nodes_in_group("supply_crates"):
+		if crate.team == "player" and flat(crate.global_position,drop) < 10.0 and crate.amount == 25: landed[crate.resource_kind] = landed.get(crate.resource_kind,0)+1
+	if not check(landed == {&"food": 1, &"wood": 1, &"iron": 1, &"coal": 1},"It sets the four crates down: %s" % landed): return false
+	if not check(keep.balloon_manifest_total() == 4,"The manifest stays set for the next balloon"): return false
+	# Short of a manifest kind: refused, naming it.
+	keep.stockpile.withdraw(&"coal",keep.stockpile.amount(&"coal"))
+	if not check(keep.balloon_refusal().contains("Coal"),"Short of Coal the manifest is refused: %s" % keep.balloon_refusal()): return false
+	# Cleared, it falls back on the crates packed beside the Keep.
+	game.selected_building = keep
+	tile.pressed.emit()
+	hud.clear_manifest()
+	game.cancel_armed()
+	if not check(keep.balloon_manifest.is_empty() and keep.balloon_refusal().contains("beside"),"Cleared, it needs crates beside the Keep"): return false
+	var cell = CrateYard.free_cell(self,keep.global_position,0,12)
+	CrateYard.spawn(self,cell,&"iron",ResourceStockpile.CRATE,"player")
+	if not check(keep.balloon_crates().size() == 1 and keep.balloon_refusal().is_empty(),"A crate beside the Keep can go up: %s" % keep.balloon_refusal()): return false
+	return true

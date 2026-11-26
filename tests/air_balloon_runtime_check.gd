@@ -1,6 +1,7 @@
 extends SceneTree
 ## Rendered (docs/AIR_BALLOON.md): the Air Balloon lifting off the Keep's dock with the Keep's Launch balloon tile, in
-## flight with its card, and the four crates it set down.
+## flight with its card, the four crates it set down, and the Launch balloon page's manifest of crates from the Keep's
+## stock (docs/ROUND3_SKY_PAVILION.md).
 const TestOutput = preload("res://tests/test_output.gd")
 var game: Node3D
 var hud: CanvasLayer
@@ -47,5 +48,15 @@ func run() -> void:
 	while is_instance_valid(balloon) and waited < 60*40: await process_frame; waited += 1
 	look(drop,22.0)
 	await shot("air_balloon_crates")
+	# 4. The Launch balloon page: the Load tiles as a manifest of crates from the Keep's stock.
+	for u in get_nodes_in_group("units"): u.set_selected(false)
+	for kind in [&"food",&"coal",&"iron"]: keep.stockpile.deposit(kind,100)
+	game.selected_building = keep
+	hud._process(0)
+	hud.card.get_node("LaunchBalloon").pressed.emit()
+	for kind in [&"food",&"coal",&"iron",&"iron"]: hud.edit_manifest(kind)
+	look(keep.global_position,30.0)
+	await shot("air_balloon_manifest")
+	if not hud.load_tiles.visible or keep.balloon_manifest_total() != 4: push_error("The balloon's manifest page should show four crates"); quit(1); return
 	print("AIR_BALLOON_RUNTIME_CHECK_PASSED")
 	quit(TestOutput.exit_code())

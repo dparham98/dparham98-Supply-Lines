@@ -89,22 +89,59 @@ func request_cargo() -> bool:
 	game.notify("Keeps use Wood/Food logistics instead of Cyborg Cargo vehicles.")
 	return false
 
-## Launch balloon (docs/AIR_BALLOON.md): the full crates packed beside this Keep, up to `balloon_crates`, go up in
-## an Air Balloon to `point`. The player must see `point`, and there must be open land near it for the crates.
+## Launch balloon (docs/AIR_BALLOON.md): an Air Balloon takes up to `balloon_crates` crates to `point`, land the
+## side has explored with open land near it for the crates. It carries the balloon's manifest, crates of 25 taken
+## from this Keep's stock (docs/ROUND3_SKY_PAVILION.md), or, with no manifest set, the full crates packed beside it.
+var balloon_manifest := {}
+const BALLOON_KINDS: Array[StringName] = [&"food",&"wood",&"iron",&"coal"]
+func balloon_manifest_total() -> int:
+	var total := 0
+	for kind in balloon_manifest: total += balloon_manifest[kind]
+	return total
+## Adds a crate of `kind` to the manifest; false when it is full or `kind` doesn't fly.
+func balloon_manifest_add(kind: StringName) -> bool:
+	if kind not in BALLOON_KINDS or balloon_manifest_total() >= KnightHousing.rules().balloon_crates: return false
+	balloon_manifest[kind] = balloon_manifest.get(kind,0)+1
+	return true
+func balloon_manifest_fill(kind: StringName) -> bool:
+	var added := false
+	while balloon_manifest_add(kind): added = true
+	return added
+func balloon_manifest_remove(kind: StringName, every := false) -> bool:
+	if balloon_manifest.get(kind,0) <= 0: return false
+	balloon_manifest[kind] = 0 if every else balloon_manifest[kind]-1
+	if balloon_manifest[kind] <= 0: balloon_manifest.erase(kind)
+	return true
+## What a launch takes from the Keep's stock: the manifest's crates, if set, and the balloon's Wood.
+func balloon_stock_cost() -> Dictionary:
+	var costs := {}
+	for kind in balloon_manifest: costs[kind] = balloon_manifest[kind]*ResourceStockpile.CRATE
+	costs[&"wood"] = costs.get(&"wood",0)+KnightHousing.rules().balloon_wood_cost
+	return costs
 func balloon_crates() -> Array[Node3D]:
 	var result: Array[Node3D] = []
 	for crate in CrateYard.beside(self):
 		if crate.amount > 0 and result.size() < KnightHousing.rules().balloon_crates: result.append(crate)
 	return result
+## Why this Keep can't send up balloons at all, or "" (the Launch balloon tile, which opens the manifest).
+func balloon_keep_refusal() -> String:
+	if health <= 0 or not SupplySource.plays(team): return "This Keep can't launch a balloon."
+	return ""
 ## Why a balloon can't be launched to `point` now, or "" when it can. `point` null checks only the Keep.
 func balloon_refusal(point = null) -> String:
 	var rules := KnightHousing.rules()
-	if health <= 0 or not SupplySource.plays(team): return "This Keep can't launch a balloon."
-	if balloon_crates().is_empty(): return "Pack crates beside the Keep first: Make crates, then Launch balloon."
-	if stockpile.amount(&"wood") < rules.balloon_wood_cost: return "A balloon costs %d Wood from the Keep." % rules.balloon_wood_cost
+	var refusal := balloon_keep_refusal()
+	if not refusal.is_empty(): return refusal
+	if balloon_manifest.is_empty() and balloon_crates().is_empty(): return "Set the balloon's manifest from the Keep's stock, or pack crates beside the Keep."
+	if balloon_manifest.is_empty():
+		if stockpile.amount(&"wood") < rules.balloon_wood_cost: return "A balloon costs %d Wood from the Keep." % rules.balloon_wood_cost
+	else:
+		var costs := balloon_stock_cost()
+		for kind in costs:
+			if stockpile.amount(kind) < costs[kind]: return "The Keep lacks %d %s for the manifest%s." % [costs[kind]-stockpile.amount(kind),str(kind).capitalize()," and the balloon's %d Wood" % rules.balloon_wood_cost if kind == &"wood" else ""]
 	if point == null: return ""
 	var fog = game.fog_of_war() if game.has_method("fog_of_war") else null
-	if fog != null and not fog.visible_to(team,point): return "Send the balloon to a point you can see."
+	if fog != null and not fog.explored_by(team,point): return "Send the balloon to land you have explored."
 	if ground.get_tile_at_position(point) == null or CrateYard.free_cell(get_tree(),point,0,8) == null: return "The balloon needs open land to set its crates on."
 	return ""
 ## Launches the balloon to `point`; false, with the reason told to the player, if it can't go.
@@ -113,11 +150,16 @@ func launch_balloon(point: Vector3) -> bool:
 	if not refusal.is_empty():
 		game.notify(refusal,team)
 		return false
-	if not stockpile.spend({&"wood": KnightHousing.rules().balloon_wood_cost}): return false
 	var cargo: Array[Dictionary] = []
-	for crate in balloon_crates():
-		cargo.append({kind = crate.resource_kind, amount = crate.amount})
-		crate.extract(crate.amount)
+	if not balloon_manifest.is_empty():
+		if not stockpile.spend(balloon_stock_cost()): return false
+		for kind in BALLOON_KINDS:
+			for i in range(balloon_manifest.get(kind,0)): cargo.append({kind = kind, amount = ResourceStockpile.CRATE})
+	else:
+		if not stockpile.spend({&"wood": KnightHousing.rules().balloon_wood_cost}): return false
+		for crate in balloon_crates():
+			cargo.append({kind = crate.resource_kind, amount = crate.amount})
+			crate.extract(crate.amount)
 	var balloon: Node3D = balloon_scene.instantiate()
 	balloon.team = team
 	balloon.position = global_position
