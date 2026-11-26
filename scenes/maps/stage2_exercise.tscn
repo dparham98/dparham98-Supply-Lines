@@ -1,0 +1,117 @@
+[gd_scene format=3]
+[ext_resource type="PackedScene" path="res://scenes/maps/lakes_skirmish.tscn" id="base"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/keep.tscn" id="keep"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/temple_of_science.tscn" id="temple"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/foundry.tscn" id="foundry"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/forge.tscn" id="forge"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/wainwright.tscn" id="wainwright"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/infantry.tscn" id="infantry"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/grenadier.tscn" id="grenadier"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/tank.tscn" id="tank"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/motorcycle.tscn" id="motorcycle"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/drone.tscn" id="drone"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/ubermech.tscn" id="ubermech"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/grail_sentinel.tscn" id="sentinel"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/round_table_marine.tscn" id="round_table"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/questing_marine.tscn" id="questing"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/forester_maiden.tscn" id="forester"]
+
+[node name="Stage2Exercise" instance=ExtResource("base")]
+editor_description = "Built by scripts/tools/build_stage2_exercise.gd (docs/STAGE2_EXERCISE.md): Two Lakes with both factions' Stage 2 and 3 buildings and units on the player's side, and an enemy guard to try them on."
+message = "Stage 2/3 exercise: Cyborgs by the Depot, Knights by the Keeps to the north. Enemy guard to the east. See docs/STAGE2_EXERCISE.md."
+[node name="Depot" parent="Entities/Buildings"]
+storage_capacity_override = 6000
+initial_energy = 2000
+initial_iron = 1200
+initial_wood = 300
+initial_coal = 300
+[node name="TempleOfScience" parent="Entities/Buildings" instance=ExtResource("temple")]
+position = Vector3(-185, 0, 1)
+assigned_depot_path = NodePath("../Depot")
+[node name="Foundry" parent="Entities/Buildings" instance=ExtResource("foundry")]
+position = Vector3(-193, 0, -10)
+assigned_depot_path = NodePath("../Depot")
+[node name="Keep" parent="Entities/Buildings" instance=ExtResource("keep")]
+position = Vector3(-202, 0, -60)
+storage_capacity_override = 6000
+initial_food = 1500
+initial_iron = 1200
+initial_wood = 600
+initial_coal = 300
+[node name="KeepB" parent="Entities/Buildings" instance=ExtResource("keep")]
+position = Vector3(-164, 0, -100)
+storage_capacity_override = 2000
+initial_food = 300
+initial_iron = 400
+initial_wood = 100
+initial_coal = 0
+[node name="Forge" parent="Entities/Buildings" instance=ExtResource("forge")]
+position = Vector3(-202, 0, -69)
+assigned_depot_path = NodePath("../Keep")
+[node name="Wainwright" parent="Entities/Buildings" instance=ExtResource("wainwright")]
+position = Vector3(-194, 0, -65)
+assigned_depot_path = NodePath("../Keep")
+[node name="Motorcycle1" parent="Entities/Units" instance=ExtResource("motorcycle")]
+position = Vector3(-191.5, 0, 14)
+[node name="Motorcycle2" parent="Entities/Units" instance=ExtResource("motorcycle")]
+position = Vector3(-188.5, 0, 14)
+[node name="Drone1" parent="Entities/Units" instance=ExtResource("drone")]
+position = Vector3(-185.5, 0, 14)
+[node name="Ubermech1" parent="Entities/Units" instance=ExtResource("ubermech")]
+position = Vector3(-182.5, 0, 14)
+[node name="Tank1" parent="Entities/Units" instance=ExtResource("tank")]
+position = Vector3(-179.5, 0, 14)
+[node name="Tank2" parent="Entities/Units" instance=ExtResource("tank")]
+position = Vector3(-176.5, 0, 14)
+[node name="Grenadier1" parent="Entities/Units" instance=ExtResource("grenadier")]
+position = Vector3(-191.5, 0, 11)
+[node name="Grenadier2" parent="Entities/Units" instance=ExtResource("grenadier")]
+position = Vector3(-188.5, 0, 11)
+[node name="Infantry1" parent="Entities/Units" instance=ExtResource("infantry")]
+position = Vector3(-185.5, 0, 11)
+[node name="Infantry2" parent="Entities/Units" instance=ExtResource("infantry")]
+position = Vector3(-182.5, 0, 11)
+[node name="Infantry3" parent="Entities/Units" instance=ExtResource("infantry")]
+position = Vector3(-179.5, 0, 11)
+[node name="Infantry4" parent="Entities/Units" instance=ExtResource("infantry")]
+position = Vector3(-176.5, 0, 11)
+[node name="Sentinel1" parent="Entities/Units" instance=ExtResource("sentinel")]
+position = Vector3(-200.5, 0, -24)
+[node name="Sentinel2" parent="Entities/Units" instance=ExtResource("sentinel")]
+position = Vector3(-198, 0, -24)
+[node name="Sentinel3" parent="Entities/Units" instance=ExtResource("sentinel")]
+position = Vector3(-195.5, 0, -24)
+[node name="RoundTable1" parent="Entities/Units" instance=ExtResource("round_table")]
+position = Vector3(-208, 0, -66.5)
+[node name="RoundTable2" parent="Entities/Units" instance=ExtResource("round_table")]
+position = Vector3(-200.5, 0, -21.5)
+[node name="RoundTable3" parent="Entities/Units" instance=ExtResource("round_table")]
+position = Vector3(-198, 0, -21.5)
+[node name="RoundTable4" parent="Entities/Units" instance=ExtResource("round_table")]
+position = Vector3(-195.5, 0, -21.5)
+[node name="Questing1" parent="Entities/Units" instance=ExtResource("questing")]
+position = Vector3(-208, 0, -69)
+[node name="Questing2" parent="Entities/Units" instance=ExtResource("questing")]
+position = Vector3(-195.5, 0, -69)
+[node name="Forester1" parent="Entities/Units" instance=ExtResource("forester")]
+position = Vector3(-195.5, 0, -19)
+[node name="Forester2" parent="Entities/Units" instance=ExtResource("forester")]
+position = Vector3(-208, 0, -71.5)
+[node name="GuardInfantry1" parent="Entities/Units" instance=ExtResource("infantry")]
+position = Vector3(-113, 0, -8)
+team = "enemy"
+[node name="GuardInfantry2" parent="Entities/Units" instance=ExtResource("infantry")]
+position = Vector3(-111.5, 0, -8)
+team = "enemy"
+[node name="GuardInfantry3" parent="Entities/Units" instance=ExtResource("infantry")]
+position = Vector3(-110, 0, -8)
+team = "enemy"
+[node name="GuardInfantry4" parent="Entities/Units" instance=ExtResource("infantry")]
+position = Vector3(-108, 0, -8)
+team = "enemy"
+[node name="GuardGrenadier1" parent="Entities/Units" instance=ExtResource("grenadier")]
+position = Vector3(-106.5, 0, -8)
+team = "enemy"
+[node name="GuardGrenadier2" parent="Entities/Units" instance=ExtResource("grenadier")]
+position = Vector3(-105, 0, -8)
+team = "enemy"
