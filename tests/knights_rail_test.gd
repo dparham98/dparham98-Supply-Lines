@@ -53,7 +53,8 @@ func run() -> void:
 	if not check(is_instance_valid(yard) and yard.stats.building_id == &"dragon_yard","The plan should finish as a Dragon Yard"): return
 	await process_frame
 	if not check(KnightRail.has_dragon_yard(keep,"player"),"The side should now have a Dragon Yard"): return
-	if not check(yard.stats.unit_scenes.size() == 1 and yard.unit_stats_for(yard.stats.unit_scenes[0]).unit_id == &"azure_dragon","The Dragon Yard raises Azure Dragons"): return
+	# Round 3 item 6 added the Hearth-Wain (docs/ROUND3_HEARTH_WAIN.md).
+	if not check(yard.stats.unit_scenes.size() == 2 and yard.unit_stats_for(yard.stats.unit_scenes[0]).unit_id == &"azure_dragon" and yard.unit_stats_for(yard.stats.unit_scenes[1]).unit_id == &"hearth_wain","The Dragon Yard raises Azure Dragons and Hearth-Wains"): return
 	# Its art (docs/DRAGON_YARD_MODEL.md): its own model, whose Work clip loops while it raises a dragon, and icon.
 	var yard_model = yard.get_node("Visuals/Model")
 	if not check(yard_model.scene_file_path.ends_with("dragon_yard_model.tscn") and yard_model.print_loops and yard_model.player.has_animation(&"Work"),"The Dragon Yard should wear its own model, with a looping Work clip"): return

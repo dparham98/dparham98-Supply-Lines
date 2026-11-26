@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="SupplyRules" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/economy/supply_rules.gd" id="rules"]
+
+[resource]
+script = ExtResource("rules")
+cargo_energy_cost = 0
+cargo_iron_cost = 0
+cargo_capacity = 100
+cargo_speed = 5.5
+cargo_health = 110
+transfer_seconds = 2.0

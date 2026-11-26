@@ -1,4 +1,5 @@
 [gd_scene format=3]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_produce_hearth_wain.png" id="card_produce_hearth_wain"]
 [ext_resource type="Script" path="res://scripts/gameplay/skirmish_hud.gd" id="hud"]
 [ext_resource type="Script" path="res://scripts/ui/tactical_minimap.gd" id="map_script"]
 [ext_resource type="Texture2D" path="res://assets/maps/source_map.png" id="map"]
@@ -609,6 +610,10 @@ events = [SubResource("key_produce_questing_marine")]
 action = &"produce_azure_dragon"
 [sub_resource type="Shortcut" id="shortcut_produce_azure_dragon"]
 events = [SubResource("key_produce_azure_dragon")]
+[sub_resource type="InputEventAction" id="key_produce_hearth_wain"]
+action = &"produce_hearth_wain"
+[sub_resource type="Shortcut" id="shortcut_produce_hearth_wain"]
+events = [SubResource("key_produce_hearth_wain")]
 [sub_resource type="InputEventAction" id="key_resource_food"]
 action = &"resource_food"
 [sub_resource type="Shortcut" id="shortcut_resource_food"]
@@ -3719,6 +3724,30 @@ icon = ExtResource("card_produce_ubermech")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ProduceAzureDragon"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="ProduceHearthWain" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_produce_hearth_wain")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_produce_hearth_wain")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/ProduceHearthWain"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0

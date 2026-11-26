@@ -24,7 +24,7 @@ heal_interval = 1.0
 med_reserve_capacity = 200
 med_refill_kind = &"food"
 med_refill_cost = 1
-med_refill_points = 5
+med_refill_points = 8
 can_gather = false
 can_capture_depots = true
 

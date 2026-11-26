@@ -3,6 +3,9 @@ extends "res://scripts/gameplay/resource_node.gd"
 ## worker mines: each work beat gives `farm_food_per_beat` Food, and it never runs out. A second worker is refused.
 ## It is a flat field: any unit walks over it and nothing is built on it. While an enemy ground unit stands on it,
 ## it yields nothing. With `farmers_permanent` its worker is its Farmer for good (unit_agent.gd).
+## Round 3 (docs/ROUND3_HEARTH_WAIN.md): it works only while a friendly Keep or pitched Hearth-Wain covers its centre
+## (`covered`); otherwise it is dormant. A Grail Sentinel on or beside it while it works refills its reserve there,
+## and each one doing so takes `draught_food` Food off the Farm's next payout (the Living Draught).
 const RULES := preload("res://assets/economy/knights_rules.tres")
 @export var team := "player"
 var health := 300
@@ -17,6 +20,12 @@ var _work_left := 0.0
 var raided := false
 var _raid_wait := 0.0
 var _rect := Rect2i()
+## Sentinels that drew on its Living Draught since its last payout, by instance id; each cuts that payout.
+var _provisioned := {}
+## Seconds since a Sentinel last drew on it, for its status.
+var _since_provision := INF
+## Whether it was dormant at its last check (no Keep or pitched Hearth-Wain covering it), for its label.
+var dormant := false
 ## Lake water lies within `lakeside_water_distance` of its field: it gives `lakeside_food_per_beat` a beat
 ## (Round 3, docs/ROUND3_KNIGHTS_COAL.md). Set when it is built.
 var lakeside := false
@@ -73,7 +82,28 @@ func take_worker(unit: Node3D) -> bool:
 	worker = unit
 	return true
 func can_extract(asking: String) -> bool:
-	return asking == team and health > 0 and not is_queued_for_deletion() and not raided
+	return asking == team and health > 0 and not is_queued_for_deletion() and not raided and covered()
+## Whether a living friendly Keep or a pitched friendly Hearth-Wain covers its centre (a Forward Farm needs the Wain).
+func covered() -> bool:
+	for group in ["keeps","hearth_wains"]:
+		for node in get_tree().get_nodes_in_group(group):
+			if SupplySource.covers(node,global_position,team): return true
+	return false
+## Whether a Sentinel may draw on it now: tilled, not raided and covered.
+func provides_draught() -> bool:
+	return health > 0 and not is_queued_for_deletion() and not raided and worker_busy() and covered()
+## How far `point` is from the field, flat, in metres: 0 on it.
+func distance_to_field(point: Vector3) -> float:
+	var tile: float = ground.tile_size
+	var low: Vector3 = ground.tile_to_world(_rect.position)-Vector3(tile,0,tile)*0.5
+	var high: Vector3 = ground.tile_to_world(_rect.end-Vector2i.ONE)+Vector3(tile,0,tile)*0.5
+	var dx := maxf(0.0,maxf(low.x-point.x,point.x-high.x))
+	var dz := maxf(0.0,maxf(low.z-point.z,point.z-high.z))
+	return Vector2(dx,dz).length()
+## A Sentinel drew a beat of its Living Draught: its next payout is `draught_food` less for each one.
+func provision(healer: Node3D) -> void:
+	_provisioned[healer.get_instance_id()] = true
+	_since_provision = 0.0
 ## The field's cells; its Farmer tills it from the near edge (unit_agent.gd).
 func field_rect() -> Rect2i:
 	return _rect
@@ -91,17 +121,22 @@ func enemy_on_field() -> bool:
 func extract(requested: int, asking := "") -> int:
 	if not can_extract(asking): return 0
 	_work_left = 1.5
-	return mini(maxi(0,requested),food_per_beat())
+	var cut: int = _provisioned.size()*RULES.draught_food
+	_provisioned.clear()
+	return mini(maxi(0,requested),maxi(0,food_per_beat()-cut))
 func update_label() -> void:
 	if not has_node("Label"): return
-	var status := "enemy on the field: no Food" if raided else ("tilled" if worker_busy() else "no worker")
+	var status := "Dormant · needs Keep or Hearth-Wain in range" if dormant else ("enemy on the field: no Food" if raided else ("tilled" if worker_busy() else "no worker"))
+	if not dormant and not raided and _since_provision < 1.5: status += " · Provisioning Grail"
 	$Label.text = "%s · %s · %d/%d HP" % ["LAKESIDE FARM · %d Food/beat" % food_per_beat() if lakeside else "FARM",status,health,max_health]
 func _process(delta: float) -> void:
 	_work_left = maxf(0.0,_work_left-delta)
+	_since_provision += delta
 	_raid_wait -= delta
 	if _raid_wait <= 0.0:
 		_raid_wait = RULES.farm_raid_check_seconds
 		raided = enemy_on_field()
+		dormant = not covered()
 	update_label()
 	var model := get_node_or_null("Visuals/Model")
 	# The vineyard's irrigation carriages water the rows while its Farmer works it (scenes/models/farm_model.tscn).

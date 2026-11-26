@@ -14,6 +14,12 @@ Item 5 of `docs/BALANCE_IMPLEMENTATION_HANDOFF.md` (2026-11-23). This branch is 
   - **Training:** the Keep trains Foresters without a pause to `foresters_wanted` (14 at home, 10 at an outpost).
 - **A second Keep** at `expand_at` (300 s), or sooner if it runs out of building room. Two home Foresters carry 50 iron and 50 wood onto a site beside the nearest free iron mine and build it.
 - **The army:** the Chapterhouses train `knight_mix` in turn, 10 Round Table Marines to 3 Questing Marines to 3 Grail Sentinels. It keeps 45 Food for workers while a Keep has fewer than `early_workers` (6). A Warhound scouts after 90 s. Grail Sentinels heal the most hurt friend within 22 m.
+- **Sentinel refill** (Round 3, `docs/ROUND3_HEARTH_WAIN.md`): a Keep no longer refills a Sentinel.
+  - **When it goes:** a Sentinel out of a wave goes to stand on the nearest working Farm when either:
+    - its reserve is below `sentinel_refill_below` (40%);
+    - or it is wounded below `sentinel_wounded_below` (50%) and its reserve isn't full.
+  - **While it refills:** fight() neither calls it back to the rally point nor takes it into a wave (`kept_off_rally`). A threat at home still calls it to fight.
+  - **Let go:** once its reserve is full it goes back to the rally point.
 - **The Forge** (docs/UPGRADES.md): once home has its Chapterhouses (or no room for another), it plans a Forge there (60 W / 80 I). The Forge then researches Arms and Mail in turn, level 1 of each, then 2, then 3, once the army has `upgrades_army` (6) units. While it saves for a level, home's Chapterhouses leave it that Food and Iron. `forge_wanted` or `upgrades` off leaves it out.
 - **Rail** (docs/KNIGHTS_RAIL.md), once it has a second Keep (`rail_wanted`):
   - **Dragon Yard:** the first Keep with room plans one (60 W / 60 I). It doesn't raise Dragons from it (`dragon_every` stays 0).

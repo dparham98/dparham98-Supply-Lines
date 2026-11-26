@@ -84,12 +84,13 @@ func inside(point: Vector3) -> bool:
 func site_stores() -> Array[Node3D]:
 	return network.stores_inside(footprint())
 ## A Knights plan (spec "keep_stock") inside the range of one of its side's Keeps builds from that Keep's stock,
-## with nothing carried (docs/KNIGHTS_ECONOMY.md); outside every Keep's range its materials must be on the site.
-## Cyborg plans always need theirs on the site.
+## with nothing carried (docs/KNIGHTS_ECONOMY.md); inside a pitched Hearth-Wain's range, from the Wain's hold
+## (docs/ROUND3_HEARTH_WAIN.md), a Keep first. Outside both its materials must be on the site. Cyborg plans always
+## need theirs on the site.
 func stock_keep() -> Node3D:
 	if not spec.get("keep_stock",false): return null
 	for source in SupplySource.candidates(get_tree(),global_position,team):
-		if source.is_in_group("keeps") and network.source_covers_plan(source,self): return source
+		if (source.is_in_group("keeps") or source.is_in_group("hearth_wains")) and network.source_covers_plan(source,self): return source
 	return null
 func on_site(material: StringName) -> int:
 	var total := 0

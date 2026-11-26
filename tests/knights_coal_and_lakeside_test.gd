@@ -190,7 +190,9 @@ func lakeside() -> bool:
 	var lake_farm := farm_at(wet,size,"player")
 	var inland_farm := farm_at(dry,size,"player")
 	if not check(lake_farm.lakeside and not inland_farm.lakeside,"Only the field by the lake is lakeside"): return false
-	if not check(lake_farm.food_per_beat() == 3 and lake_farm.extract(10,"player") == 3,"A lakeside Farm gives 3 Food a beat"): return false
+	# Since item 6 a Farm with no Keep or pitched Hearth-Wain over it lies dormant and pays nothing
+	# (tests/hearth_wain_and_forward_farm_test.gd); the starting Keep covers the inland field.
+	if not check(lake_farm.food_per_beat() == 3 and lake_farm.extract(10,"player") == (3 if lake_farm.covered() else 0),"A lakeside Farm gives 3 Food a beat"): return false
 	if not check(inland_farm.food_per_beat() == 2 and inland_farm.extract(10,"player") == 2,"An inland Farm gives 2 Food a beat"): return false
 	lake_farm.update_label(); inland_farm.update_label()
 	if not check(lake_farm.get_node("Label").text.begins_with("LAKESIDE FARM · 3 Food/beat") and inland_farm.get_node("Label").text.begins_with("FARM ·"),"Labels: '%s' / '%s'" % [lake_farm.get_node("Label").text,inland_farm.get_node("Label").text]): return false

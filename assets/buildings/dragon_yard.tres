@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/production/production_building_stats.gd" id="stats"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/azure_dragon.tscn" id="dragon"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/hearth_wain.tscn" id="wain"]
 
 [resource]
 script = ExtResource("stats")
@@ -13,4 +14,4 @@ wood_cost = 60
 footprint = Vector2i(6, 6)
 can_stoke_brazier = true
 max_power = 1.0
-unit_scenes = Array[PackedScene]([ExtResource("dragon")])
+unit_scenes = Array[PackedScene]([ExtResource("dragon"), ExtResource("wain")])

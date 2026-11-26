@@ -21,7 +21,8 @@ extends Resource
 @export var unit_scenes: Array[PackedScene] = []
 @export_group("Stoke Brazier")
 ## Round 3 (docs/ROUND3_KNIGHTS_COAL.md): the player can light a brazier here. While lit and working, training or
-## research goes `stoked_speed` times as fast and burns 1 Coal every `brazier_coal_interval` s from the paying Keep.
+## research goes `stoked_speed` times as fast and burns 1 Coal every `brazier_coal_interval` s from the paying Keep, or a
+## covering pitched Hearth-Wain (docs/ROUND3_HEARTH_WAIN.md).
 @export var can_stoke_brazier := false
 @export_range(1.0,4.0,0.05) var stoked_speed := 1.6
 @export_range(0.5,60.0,0.5) var brazier_coal_interval := 4.0

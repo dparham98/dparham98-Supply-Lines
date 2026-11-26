@@ -16,11 +16,21 @@ house_wood_cost = 40
 house_footprint = Vector2i(4, 4)
 house_room = 8
 house_health = 300
+hearth_radius = 15.0
+hearth_medic_radius = 9.0
+hearth_medic_rate = 12.5
+hearth_medic_points = 10
+hearth_medic_food = 1
+draught_reach = 3.0
+draught_points = 15
+draught_beat_seconds = 1.2
+draught_food = 1
 keep_room = 10
 housing = {
 &"azure_dragon": 4,
 &"forester_maiden": 1,
 &"grail_sentinel": 2,
+&"hearth_wain": 1,
 &"questing_marine": 2,
 &"round_table_marine": 2,
 &"warhound": 1

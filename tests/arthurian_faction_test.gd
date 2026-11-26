@@ -4,7 +4,7 @@ extends SceneTree
 # - Keep model animations (Idle, Build, Train, LaunchBalloon, Die + KeepDeathFx)
 # - Keep founding from 50 Wood + 50 Iron site materials with zero covering stockpile/payer
 # - Keep training Forester Maiden & Warhound; Chapterhouse training all 4 units with Food + Iron
-# - Grail Sentinel medical healing (Keep Food -> carried 120 HP reserve -> refuses vehicles -> stops dry -> crate refill)
+# - Grail Sentinel medical healing (carried 200 HP reserve -> no Keep refill -> refuses vehicles -> stops dry -> crate refill)
 # - Warhound Forest mobility + Arthurian HUD command cards, StoragePanel Food legend & unit portraits.
 
 const TeamPaint = preload("res://scripts/components/team_paint.gd")
@@ -189,8 +189,9 @@ func run() -> void:
 		if not check(chapterhouse.queue == 0 and get_nodes_in_group("units").size() == prev_count + 1, "Chapterhouse did not finish training %s" % uid): return
 
 	# 7. Grail Sentinel Vitality Stimulus (item 6 of the balance handoff): heals from its carried reserve, one point for
-	# one HP, 10 HP a second; the reserve refills inside a friendly Keep's range or beside a Food crate, 5 points for 1
-	# Food, healing or not; no free regeneration; idle, it heals the most hurt friend within 9 m by itself.
+	# one HP, 10 HP a second; since Round 3 a Keep never refills the reserve (docs/ROUND3_HEARTH_WAIN.md): a Food crate
+	# beside it does, 8 points for 1 Food, healing or not; no free regeneration; idle, it heals the most hurt friend
+	# within 9 m by itself. Farm and Hearth-Wain refills: tests/hearth_wain_and_forward_farm_test.gd.
 	marine.health = 20 # needs 45 HP
 	for c in sentinel._claimed.duplicate(): sentinel._release(c)
 	for c in marine._claimed.duplicate(): marine._release(c)
@@ -210,7 +211,7 @@ func run() -> void:
 	sentinel.order = "idle"; sentinel.order_target = null
 	for _r in range(3):
 		sentinel._process(1.0)
-	if not check(sentinel.med_reserve == 170 and keep.food == keep_food_before - 3, "Inside the Keep's range the reserve should refill 5 points for 1 Food (res=%d, food=%d->%d)" % [sentinel.med_reserve, keep_food_before, keep.food]): return
+	if not check(sentinel.med_reserve == 155 and keep.food == keep_food_before, "Inside the Keep's range the reserve should not refill since Round 3 (res=%d, food=%d->%d)" % [sentinel.med_reserve, keep_food_before, keep.food]): return
 
 	# Field healing far away from Keep uses carried reserve, then stops completely when empty!
 	sentinel.global_position = keep.global_position + Vector3(-120.0, 0, 0)
@@ -230,7 +231,7 @@ func run() -> void:
 	var food_crate := CrateYard.spawn(self, game.ground.get_tile_at_position(sentinel.global_position + Vector3(2, 0, 0)), &"food", 5, "player")
 	for _r in range(3):
 		sentinel._process(1.0)
-	if not check(sentinel.med_reserve == 15 and food_crate.amount == 2, "Sentinel should refill carried reserve from nearby Food crate (res=%d, crate=%d)" % [sentinel.med_reserve, food_crate.amount]): return
+	if not check(sentinel.med_reserve == 24 and food_crate.amount == 2, "Sentinel should refill carried reserve from nearby Food crate, 8 points for 1 Food (res=%d, crate=%d)" % [sentinel.med_reserve, food_crate.amount]): return
 
 	# By itself: idle, it takes the most hurt friend within 9 m and heals it.
 	sentinel.heal_autocast = true

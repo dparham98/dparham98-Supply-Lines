@@ -1,0 +1,79 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/economy/hearth_wain.gd" id="agent"]
+[ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
+[ext_resource type="PackedScene" path="res://scenes/models/hearth_wain_model.tscn" id="model"]
+
+[ext_resource type="Resource" path="res://assets/economy/hearth_wain_rules.tres" id="stats"]
+[ext_resource type="Resource" path="res://assets/units/hearth_wain.tres" id="unit"]
+
+
+[ext_resource type="Resource" path="res://assets/economy/mobile_supply_rules.tres" id="mobile"]
+
+[ext_resource type="Material" path="res://assets/materials/units/team_marker.tres" id="team_marker"]
+
+[sub_resource type="StandardMaterial3D" id="r1"]
+albedo_color = Color(0.2,1,0.6,1)
+roughness = 0.85
+shading_mode = 0
+
+[sub_resource type="TorusMesh" id="supply_ring"]
+inner_radius = 0.985
+outer_radius = 1.0
+rings = 64
+ring_segments = 6
+material = SubResource("r1")
+
+[sub_resource type="PlaneMesh" id="team_marker_mesh"]
+material = ExtResource("team_marker")
+size = Vector2(2.4, 5.4)
+
+[node name="HearthWain" type="Node3D"]
+script = ExtResource("agent")
+unit_stats = ExtResource("unit")
+supply_rules = ExtResource("stats")
+mobile_rules = ExtResource("mobile")
+max_health = 110
+move_speed = 5.5
+turn_rate = 180.0
+attack_damage = 0
+use_prototype_combat_for_unresolved_stats = false
+
+[node name="Visuals" type="Node3D" parent="."]
+scale = Vector3(1,1,1)
+script = ExtResource("slot")
+model_scene = ExtResource("model")
+
+[node name="Model" parent="Visuals" instance=ExtResource("model")]
+
+[node name="TeamMarker" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 0.06, 0)
+cast_shadow = 0
+mesh = SubResource("team_marker_mesh")
+instance_shader_parameters/half_size = Vector2(1.2, 2.7)
+metadata/not_selectable = true
+
+[node name="Status" type="Label3D" parent="."]
+position = Vector3(0,3.3,0)
+billboard = 1
+no_depth_test = true
+font_size = 30
+pixel_size = 0.04
+outline_size = 6
+modulate = Color(0.65,0.95,1,1)
+text = "HEARTH-WAIN · 110/110"
+
+[node name="Cargo" type="Label3D" parent="."]
+position = Vector3(0,4.0,0)
+billboard = 1
+no_depth_test = true
+font_size = 27
+pixel_size = 0.04
+outline_size = 6
+modulate = Color(1,0.8,0.35,1)
+text = ""
+
+[node name="SupplyRadius" type="MeshInstance3D" parent="."]
+position = Vector3(0,0.12,0)
+visible = false
+mesh = SubResource("supply_ring")

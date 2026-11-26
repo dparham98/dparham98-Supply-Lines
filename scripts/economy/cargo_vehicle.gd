@@ -22,6 +22,8 @@ var dropoff_range: float:
 	get: return mobile_rules.dropoff_radius()
 ## Trains override this with their track position.
 func on_friendly_track() -> bool: return true
+## How far its supplies reach while deployed: half a Depot's range (the Hearth-Wain overrides it).
+func supply_radius() -> float: return mobile_rules.supply_radius()
 func supplies_available() -> bool:
 	if is_in_group("rail_trains") and not on_friendly_track(): return false
 	return deployed and supply_transition.is_empty() and health > 0 and not _dead and (not route_active or route_paused) and _route.is_empty() and _moving_to.x < 0
@@ -649,7 +651,7 @@ func _vehicle_process(delta: float) -> void:
 	fuel_tick(delta)
 	if advance_supplies(delta): return
 	$SupplyRadius.visible = supplies_available() and (is_selected or game.get_node("DepotNetwork").selected == self)
-	$SupplyRadius.scale = Vector3.ONE*mobile_rules.supply_radius()
+	$SupplyRadius.scale = Vector3.ONE*supply_radius()
 	if supplies_available():
 		state = "Supplies deployed"
 		_update_display()
@@ -703,7 +705,7 @@ func _vehicle_process(delta: float) -> void:
 	_update_display()
 func _update_display() -> void:
 	$SupplyRadius.visible = supplies_available() and (is_selected or game.get_node("DepotNetwork").selected == self)
-	$SupplyRadius.scale = Vector3.ONE*mobile_rules.supply_radius()
+	$SupplyRadius.scale = Vector3.ONE*supply_radius()
 	$Status.text = "CARGO · %d/%d · %s" % [health,max_health,state]
 	$Cargo.visible = stockpile.total() > 0
 	$Cargo.text = "E %d / I %d / W %d / C %d" % [carried_energy,carried_iron,carried_wood,carried_coal]+(" · %d/%d crates" % [crates.size(),crate_slots()] if not crates.is_empty() else "")

@@ -262,6 +262,10 @@ func _cargo_truck() -> Node3D:
 	return null
 func _idle(unit: Node3D) -> bool:
 	return unit.order == "idle" or unit.order == ""
+## Whether a faction AI has given the army unit work of its own off the rally point (a Knights Sentinel refilling at
+## a Farm): fight() neither calls it to the rally point nor takes it into a new wave. None here.
+func kept_off_rally(_unit: Node3D) -> bool:
+	return false
 
 # --- Building -------------------------------------------------------------------------------------------------------
 
@@ -881,13 +885,13 @@ func fight(depot: Node3D) -> void:
 				if _idle(unit): unit.command_attack_move(target)
 	var rally := rally_point(depot)
 	for unit in army:
-		if not wave.has(unit) and _idle(unit) and unit.global_position.distance_to(rally) > 14.0:
+		if not wave.has(unit) and not kept_off_rally(unit) and _idle(unit) and unit.global_position.distance_to(rally) > 14.0:
 			unit.command_move(rally+Vector3(randf_range(-6,6),0,randf_range(-6,6)))
 	if wave.is_empty() and elapsed >= first_wave_seconds and army.size() >= next_wave_size():
 		var target = wave_target(rally)
 		if target == null: return
 		# Vehicles low on fuel stay and fill up at the rally point, inside the Depot's range.
-		wave = army.filter(func(unit): return not unit.has_method("fuel_low") or not unit.fuel_low())
+		wave = army.filter(func(unit): return not kept_off_rally(unit) and (not unit.has_method("fuel_low") or not unit.fuel_low()))
 		if wave.size() < next_wave_size(): wave.clear(); return
 		last_wave = wave.size(); waves_sent += 1
 		for unit in wave: unit.command_attack_move(target)

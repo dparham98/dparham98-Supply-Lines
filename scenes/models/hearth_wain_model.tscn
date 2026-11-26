@@ -1,0 +1,112 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="wood"]
+albedo_color = Color(0.45,0.3,0.17,1)
+roughness = 0.9
+[sub_resource type="StandardMaterial3D" id="canvas"]
+resource_name = "team_color"
+albedo_color = Color(0.78,0.72,0.55,1)
+roughness = 0.95
+[sub_resource type="StandardMaterial3D" id="iron"]
+albedo_color = Color(0.32,0.32,0.34,1)
+metallic = 0.6
+roughness = 0.5
+[sub_resource type="StandardMaterial3D" id="steed"]
+albedo_color = Color(0.36,0.25,0.18,1)
+roughness = 0.85
+[sub_resource type="StandardMaterial3D" id="barding"]
+albedo_color = Color(0.2,0.32,0.62,1)
+roughness = 0.7
+[sub_resource type="StandardMaterial3D" id="fire"]
+albedo_color = Color(1,0.55,0.15,1)
+emission_enabled = true
+emission = Color(1,0.45,0.1,1)
+emission_energy_multiplier = 2.0
+[sub_resource type="BoxMesh" id="bed"]
+size = Vector3(1.8,0.5,3.0)
+material = SubResource("wood")
+[sub_resource type="CylinderMesh" id="hood"]
+top_radius = 0.95
+bottom_radius = 0.95
+height = 2.8
+radial_segments = 12
+material = SubResource("canvas")
+[sub_resource type="CylinderMesh" id="wheel"]
+top_radius = 0.55
+bottom_radius = 0.55
+height = 0.18
+radial_segments = 14
+material = SubResource("iron")
+[sub_resource type="BoxMesh" id="body"]
+size = Vector3(0.75,0.85,1.7)
+material = SubResource("barding")
+[sub_resource type="BoxMesh" id="leg"]
+size = Vector3(0.2,0.8,0.2)
+material = SubResource("steed")
+[sub_resource type="BoxMesh" id="neck"]
+size = Vector3(0.35,0.9,0.4)
+material = SubResource("steed")
+[sub_resource type="BoxMesh" id="shaft"]
+size = Vector3(0.08,0.08,1.6)
+material = SubResource("wood")
+[sub_resource type="CylinderMesh" id="brazier"]
+top_radius = 0.22
+bottom_radius = 0.14
+height = 0.3
+radial_segments = 10
+material = SubResource("iron")
+[sub_resource type="SphereMesh" id="flame"]
+radius = 0.16
+height = 0.32
+material = SubResource("fire")
+
+[node name="HearthWainModel" type="Node3D"]
+
+[node name="Bed" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0.6)
+mesh = SubResource("bed")
+[node name="Hood" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 1.15, 0.6)
+mesh = SubResource("hood")
+[node name="WheelFL" type="MeshInstance3D" parent="."]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, -0.98, 0.55, -0.4)
+mesh = SubResource("wheel")
+[node name="WheelFR" type="MeshInstance3D" parent="."]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0.98, 0.55, -0.4)
+mesh = SubResource("wheel")
+[node name="WheelBL" type="MeshInstance3D" parent="."]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, -0.98, 0.55, 1.6)
+mesh = SubResource("wheel")
+[node name="WheelBR" type="MeshInstance3D" parent="."]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0.98, 0.55, 1.6)
+mesh = SubResource("wheel")
+[node name="ShaftL" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.45, 0.85, -1.6)
+mesh = SubResource("shaft")
+[node name="ShaftR" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.45, 0.85, -1.6)
+mesh = SubResource("shaft")
+[node name="Steed" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, -2.2)
+mesh = SubResource("body")
+[node name="Neck" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.87, -0.5, 0, 0.5, 0.87, 0, 1.85, -3.0)
+mesh = SubResource("neck")
+[node name="LegFL" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.4, -2.85)
+mesh = SubResource("leg")
+[node name="LegFR" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.4, -2.85)
+mesh = SubResource("leg")
+[node name="LegBL" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.4, -1.55)
+mesh = SubResource("leg")
+[node name="LegBR" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.4, -1.55)
+mesh = SubResource("leg")
+[node name="Brazier" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.15, 2.3)
+mesh = SubResource("brazier")
+[node name="Flame" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 2.3)
+mesh = SubResource("flame")
