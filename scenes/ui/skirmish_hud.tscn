@@ -39,7 +39,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_produce_cargo.png" id="card_produce_cargo"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_produce_train.png" id="card_produce_train"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_produce_knights_train.png" id="card_produce_knights_train"]
-[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_wainwright.png" id="card_build_wainwright"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_dragon_yard.png" id="card_build_dragon_yard"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_deploy_depot.png" id="card_deploy_depot"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_auto_refuel_on.png" id="card_auto_refuel_on"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_generator_pause.png" id="card_generator_pause"]
@@ -4704,7 +4704,7 @@ shortcut = SubResource("shortcut_build_dragon_yard")
 layout_mode = 2
 text = ""
 custom_minimum_size = Vector2(46,46)
-icon = ExtResource("card_build_wainwright")
+icon = ExtResource("card_build_dragon_yard")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/DragonYard"]

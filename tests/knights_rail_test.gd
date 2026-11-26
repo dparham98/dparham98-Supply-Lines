@@ -54,6 +54,10 @@ func run() -> void:
 	await process_frame
 	if not check(KnightRail.has_dragon_yard(keep,"player"),"The side should now have a Dragon Yard"): return
 	if not check(yard.stats.unit_scenes.size() == 1 and yard.unit_stats_for(yard.stats.unit_scenes[0]).unit_id == &"azure_dragon","The Dragon Yard raises Azure Dragons"): return
+	# Its art (docs/DRAGON_YARD_MODEL.md): its own model, whose Work clip loops while it raises a dragon, and icon.
+	var yard_model = yard.get_node("Visuals/Model")
+	if not check(yard_model.scene_file_path.ends_with("dragon_yard_model.tscn") and yard_model.print_loops and yard_model.player.has_animation(&"Work"),"The Dragon Yard should wear its own model, with a looping Work clip"): return
+	if not check(game.get_node("Interface").icon_name(yard) == "dragon_yard","The Dragon Yard's selection icon is its own"): return
 	if not check(KnightRail.train_keep(yard) == null and not KnightRail.yard_train_refusal(yard).is_empty(),"With no track at a Keep, the yard can't build a train yet"): return
 	# Track from the Keep at 2 iron a metre.
 	var iron: int = keep.iron
@@ -101,6 +105,7 @@ func run() -> void:
 	game.selected_building = null
 	hud.refresh_global_menu()
 	if not check(hud.build_menu.get_node("Actions/DragonYard").visible and hud.build_menu.get_node("Actions/Rail").visible,"The Knights Build page should show the Dragon Yard and, with one standing, Rail"): return
+	if not check(hud.build_menu.get_node("Actions/DragonYard").icon.resource_path.ends_with("sl_build_dragon_yard.png"),"The Dragon Yard tile should show its own card"): return
 	game.queue_free()
 	await process_frame
 	print("KNIGHTS_RAIL_TEST_PASSED")

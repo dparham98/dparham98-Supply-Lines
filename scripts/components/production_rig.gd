@@ -35,6 +35,9 @@ extends Node3D
 @export var lift_height := 2.4
 ## The vehicle door. A flying unit leaves through the roof, so the door is held shut while it is made.
 @export var door_node := &""
+## A production clip that loops (the Dragon Yard's Work, docs/DRAGON_YARD_MODEL.md) plays at its own speed for as
+## long as something is being made, instead of being scrubbed by progress, and the building idles once it is done.
+@export var print_loops := false
 @onready var player: AnimationPlayer = get_node(player_path)
 var _dying := false
 var _closing := false
@@ -73,6 +76,9 @@ func show_construction(fraction: float) -> void:
 ## Production progress 0..1 of the unit being made. At 1 it waits at the open door.
 func show_print(fraction: float) -> void:
 	if _dying or _closing: return
+	if print_loops:
+		if not (player.is_playing() and player.assigned_animation == print_clip): player.play(print_clip)
+		return
 	var seconds := clampf(fraction,0.0,1.0)*print_spawn_seconds
 	_pose(print_clip,seconds)
 	if _wanted_unit != _unit_scene: _stand_unit(_wanted_unit)
@@ -91,6 +97,9 @@ func show_unit(model_scene: PackedScene, flight_to = null) -> void:
 ## through the roof with the door shut, so the building idles at once.
 func unit_left() -> void:
 	if _dying: return
+	if print_loops:
+		show_idle()
+		return
 	var flew := _lifted
 	_clear_unit()
 	if flew:

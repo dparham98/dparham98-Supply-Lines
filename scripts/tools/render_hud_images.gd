@@ -33,7 +33,7 @@ const ENTRIES := {
 	"mine": ["res://scenes/gameplay/site_mine.tscn","","build_mine",20.0,1.0],
 	"pithead": ["res://scenes/gameplay/iron_mine.tscn","","build_coal_mine",35.0,1.0],
 	"temple": ["res://scenes/gameplay/temple_of_science.tscn","","build_temple",215.0,1.0], # its door faces +Z
-	"wainwright": ["res://scenes/gameplay/wainwright.tscn","","build_wainwright",215.0,1.0], # docs/WAINWRIGHT_MODEL.md; yard +Z
+	"dragon_yard": ["res://scenes/gameplay/dragon_yard.tscn","","build_dragon_yard",215.0,1.0], # docs/DRAGON_YARD_MODEL.md; pen +Z
 	"knights_train": ["res://scenes/gameplay/knights_train.tscn","produce_knights_train","",220.0,1.0], # docs/KNIGHTS_TRAIN_MODEL.md
 }
 ## More cards made from an entry's render (docs/TEMPLE_OF_SCIENCE.md): the Temple's Mining Trains research shows the

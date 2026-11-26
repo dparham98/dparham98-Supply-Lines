@@ -523,7 +523,7 @@ func icon_name(node: Node) -> String:
 	if node.is_in_group("mines"): return "mine" if str(node.scene_file_path).ends_with("site_mine.tscn") else "pithead"
 	if node.is_in_group("research_buildings"): return "temple"
 	if node.is_in_group("production_buildings"):
-		if str(node.scene_file_path).ends_with("wainwright.tscn"): return "wainwright"
+		if node.stats.building_id == &"dragon_yard": return "dragon_yard"
 		return "barracks" if str(node.scene_file_path).ends_with("barracks.tscn") else "tank_factory"
 	if node.is_in_group("energy_generators"): return "generator"
 	if node.is_in_group("rail_trains"): return "knights_train" if node.get("coal_fuelled") == true else "train"

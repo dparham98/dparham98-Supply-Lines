@@ -1,6 +1,6 @@
 extends SceneTree
-# Rendered check (docs/WAINWRIGHT_MODEL.md, docs/KNIGHTS_TRAIN_MODEL.md): the Wainwright half built, idle at two
-# moments and dying, then the Knights train car running (fire and smoke), standing and out of coal. Saves one
+# Rendered check (docs/DRAGON_YARD_MODEL.md, docs/KNIGHTS_TRAIN_MODEL.md): the Dragon Yard half built, idle, at work
+# raising a dragon and dying, then the Knights train car running (fire and smoke), standing and out of coal. Saves one
 # sheet, knights_rail_art.png. The models are stepped by hand.
 const TestOutput = preload("res://tests/test_output.gd")
 const TILE := Vector2i(480,360)
@@ -37,23 +37,31 @@ func run() -> void:
 	close.fov = 40
 	close.make_current()
 	var origin := Vector3(180,0,180)
-	# The Wainwright.
-	var shop: Node3D = load("res://scenes/models/wainwright_model.tscn").instantiate()
+	# The Dragon Yard.
+	var shop: Node3D = load("res://scenes/models/dragon_yard_model.tscn").instantiate()
 	game.get_node("Entities").add_child(shop)
 	shop.global_position = origin
 	shop.set_process(false)
 	for frame in range(2): await process_frame
 	var player: AnimationPlayer = shop.get_node("Rig/AnimationPlayer")
-	if not check(player.get_animation(&"Idle").loop_mode == Animation.LOOP_LINEAR,"The Wainwright's Idle should loop"): return
-	look(origin+Vector3(5,6,7.5),origin+Vector3(0,1.0,0))
+	for clip in [&"Idle",&"Work"]:
+		if not check(player.get_animation(clip).loop_mode == Animation.LOOP_LINEAR,"The Dragon Yard's %s should loop" % clip): return
+	look(origin+Vector3(7,8,10),origin+Vector3(0,1.4,0))
 	shop.show_construction(0.55)
 	await grab()
 	at(player,&"Idle",0.5)
 	await grab()
-	at(player,&"Idle",0.99)
+	# Raising a dragon: Work loops at its own pace whatever the progress, and Idle comes back once the unit leaves.
+	shop.show_print(0.1)
+	if not check(player.is_playing() and player.current_animation == "Work","Producing, the Dragon Yard should play Work"): return
+	shop.show_print(0.6)
+	if not check(player.current_animation == "Work","Work should keep looping through production"): return
+	at(player,&"Work",0.5)
 	await grab()
+	shop.unit_left()
+	if not check(player.current_animation == "Idle","With the dragon gone, the Yard should idle again"): return
 	shop.play_death()
-	if not check(shop.get_children().any(func(c): return c.get("clip") == &"Death"),"The Wainwright's Die should spawn its death effects"): return
+	if not check(shop.get_children().any(func(c): return c.get("clip") == &"Death"),"The Dragon Yard's Die should spawn its death effects"): return
 	player.seek(0.9,true)
 	player.pause()
 	for child in shop.get_children():
