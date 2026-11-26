@@ -62,7 +62,7 @@ Nothing else detects. Scouts and Sentinels don't (decided in the handoff).
 
 ## Selecting and attacking a mine
 
-- **Selecting:** click a mine you can see (your own, or the other side's while detected) to select it. Its card shows its side, whether it is armed, its health and what it does. It has no commands.
+- **Selecting:** click a mine you can see (your own, or the other side's while detected) to select it. Its card shows its side, whether it is armed, its health and what it does. It has no commands. The card shows the mine's own icon and portrait (`assets/ui/renders/land_mine.png`, `assets/ui/portraits/land_mine.png`), and its meshes are what the click picks (`selection_bounds.gd`): the 0.91 m disc and its prongs.
 - **Attacking:** right-click a detected enemy mine with units selected, or use Attack (A) and click it. The units shoot it until it is destroyed. An undetected mine can't be clicked; an attack ordered while it was detected waits for it to be detected again before firing.
 - Units still fire at a detected enemy mine in range by themselves, as before.
 
@@ -76,7 +76,7 @@ Nothing else detects. Scouts and Sentinels don't (decided in the handoff).
   - LayMine (Derailer card, slot 9, E);
   - ResearchMines (Temple card, slot 1, N).
 
-  Their cards are `sl_lay_mine.png` (a mine arming) and `sl_research_minelaying.png` (the Derailer with a mine in each tray), rendered by `scripts/tools/render_hud_images.gd`.
+  Their cards are `sl_buy_mine.png` (a mine dropping into the Derailer's tray), `sl_lay_mine.png` (a mine arming) and `sl_research_minelaying.png` (the Derailer with a mine in each tray), rendered by `scripts/tools/render_hud_images.gd`.
 - **Map click:** `skirmish.gd` (`lay_mine`).
 - **Check:** `tests/minelaying_test.gd` (headless) covers:
   - the Derailer's price and the research;

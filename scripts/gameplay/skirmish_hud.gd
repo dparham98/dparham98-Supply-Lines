@@ -543,6 +543,9 @@ func update_portrait(node) -> void:
 		var unit_id := str(node.unit_stats.unit_id) if node.is_in_group("units") and node.get("unit_stats") != null else ""
 		if not unit_id.is_empty() and unit_id != id and ResourceLoader.exists(PORTRAIT_PATH % unit_id): id = unit_id
 		path = PORTRAIT_PATH % id
+	elif is_instance_valid(node) and node.is_in_group("land_mines"):
+		id = "land_mine"
+		path = PORTRAIT_PATH % id
 	if path.is_empty() or not ResourceLoader.exists(path): frame.visible = false; return
 	frame.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED if COMPOSED_PORTRAITS.has(id) else TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	if not _icons.has(path): _icons[path] = load(path)
@@ -907,6 +910,7 @@ func show_cell(node: Node3D) -> void:
 func show_land_mine(node: Node3D) -> void:
 	var own: bool = node.team == "player"
 	name_label.text = "Land mine"
+	set_icon("land_mine")
 	commands.get_node("Title").text = "LAND MINE"
 	state_label.text = "%s · %s" % [team_label(node),"armed" if node.armed else "arming"]
 	info.get_node("Health").visible = true

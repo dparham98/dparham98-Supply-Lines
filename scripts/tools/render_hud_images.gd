@@ -33,23 +33,27 @@ const ENTRIES := {
 	"mine": ["res://scenes/gameplay/site_mine.tscn","","build_mine",20.0,1.0],
 	"pithead": ["res://scenes/gameplay/iron_mine.tscn","","build_coal_mine",35.0,1.0],
 	"temple": ["res://scenes/gameplay/temple_of_science.tscn","","build_temple",215.0,1.0], # its door faces +Z
-	# Minelaying (docs/MINES.md): the Derailer's Lay mine shows a mine arming; the Temple's research the Derailer
-	# with a mine in each tray.
+	# Minelaying (docs/MINES.md): the land mine's own icon and portrait, and the Derailer's Lay mine, show a mine arming; its
+	# Buy mine a mine dropping into its tray, and the Temple's research the Derailer with a mine in each tray.
 	"land_mine": ["res://scenes/gameplay/land_mine.tscn","","lay_mine",20.0,1.0],
 	"derailer_mines": ["res://scenes/gameplay/motorcycle.tscn","","research_minelaying",235.0,1.0],
 	"foundry": ["res://scenes/gameplay/foundry.tscn","","build_foundry",215.0,1.0], # docs/FOUNDRY_MODEL.md; door +Z
 	"forge": ["res://scenes/gameplay/forge.tscn","","build_forge",215.0,1.0], # docs/FORGE_MODEL.md; open front +Z
 	"wainwright": ["res://scenes/gameplay/dragon_yard.tscn","","build_wainwright",215.0,1.0], # the Dragon Yard, with the Wainwright model for now (docs/WAINWRIGHT_MODEL.md); yard +Z
 	"knights_train": ["res://scenes/gameplay/knights_train.tscn","produce_knights_train","",220.0,1.0], # docs/KNIGHTS_TRAIN_MODEL.md
+	"derailer_buy_mine": ["res://scenes/gameplay/motorcycle.tscn","","buy_mine",215.0,1.0],
 }
 ## Entries shot only for their cards: no selection icon or portrait is written for them.
-const CARD_ONLY := ["land_mine","derailer_mines"]
+const CARD_ONLY := ["derailer_mines","derailer_buy_mine"]
 ## Calls made on an entry's model root before it is shot: method name and arguments.
-const POSES := {"land_mine": ["set_age",[1.6,3.0]],"derailer_mines": ["set_mines",[2]]}
+const POSES := {"land_mine": ["set_age",[1.6,3.0]],"derailer_mines": ["set_mines",[2]],"derailer_buy_mine": ["pose_mine_drop",[1,0.05]]}
 ## Cards drawn in Blender (Blender/UI/UpgradeCards/render_upgrade_cards.py) and only framed here: the Foundry's
 ## and Forge's upgrade lines (docs/UPGRADES.md). Asked for with the id "upgrade_cards".
 const ART_CARDS := ["upgrade_infantry_weapons","upgrade_infantry_armour","upgrade_vehicle_weapons","upgrade_vehicle_armour","upgrade_arms","upgrade_mail"]
 const ART_CARD_PATH := "res://Blender/UI/UpgradeCards/renders/%s.png"
+## Entries framed on one part of the model rather than the whole: the node's name and how far to widen the view
+## around it (a share of its size).
+const FOCUS := {"derailer_buy_mine": ["mine_slot_1",0.2]}
 ## More cards made from an entry's render (docs/TEMPLE_OF_SCIENCE.md): the Temple's Mining Trains research shows the
 ## train, and the train's Mine iron order the portal mine.
 ## Cards drawn in Blender (Blender/UI/SpellCards/render_spell_cards.py) and only framed here: the Grail Sentinel's
@@ -169,6 +173,9 @@ func render(id: String, entry: Array) -> void:
 			if player.has_animation(clip): player.play(clip); player.seek(0.4,true); break
 	await process_frame
 	var box := bounds(model)
+	if FOCUS.has(id):
+		box = bounds(model.find_child(FOCUS[id][0],true,false))
+		box = box.grow(box.size.length()*FOCUS[id][1])
 	# Icon: the whole model, three-quarter view, clear background.
 	frame_box(box,entry[3],1.0,0.98)
 	var icon := await shoot(ICON_SIZE)
