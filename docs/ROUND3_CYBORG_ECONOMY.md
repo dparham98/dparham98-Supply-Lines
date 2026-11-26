@@ -102,7 +102,7 @@ The numbers are on `assets/buildings/hydro_dam.tres` (`HydroDamStats`); the scri
 - **Prices:** it reads its prices from the same stats, so the new ones apply as they are.
 - **Hydro Dam:** once `dam_after_step` (2) steps of its build order are done, it plans a dam across any channel one of its Depots covers. The dam comes ahead of the rest of the order.
 - **Ceiling:** at the ceiling, no new workers go to iron or wood. Free ones go to coal while it is short.
-- **Drone escort:** with Tanks in the group, a Drone keeps behind the frontmost one, at most `drone_behind_front` (10 m) back and never ahead.
+- **Drone escort:** with Tanks in the group, a Drone keeps behind the frontmost one, at most `drone_behind_front` (10 m) back and never ahead. It is sent a quarter of that (2.5 m) behind the Tank whenever where it is headed strays that far, so at a Tank's 5 m/s it stays within 10 m between the AI's thoughts (1 s).
 
 ## Checks
 
@@ -132,10 +132,12 @@ The numbers are on `assets/buildings/hydro_dam.tres` (`HydroDamStats`); the scri
   - one ahead drops back.
 
 Existing tests updated:
-- `production_power_test`: 3x, +35%, Infantry 90 E;
+- `production_power_test`: 3x, +35%, Infantry 90 E. Under 1 E of power is drawn on credit before a whole one is owed, so a starved Depot's unit may finish a few frames early (10 s within 0.1);
 - `two_lakes_map_test`: tiered reserves;
 - `unit_stats_test`: Infantry 90 / 25;
-- `command_cards_test`: 81 tiles.
+- `command_cards_test`: 81 tiles;
+- `knights_tidy_test`: its Drone now stays within 10 m of the front Tank and never ahead of it, instead of within 15 m of the wave's centre;
+- at the new prices: `armour_class_test`, `minelaying_test`, `mobile_supply_test`, `pending_construction_test`, `production_batch_test`, `see_to_shoot_test`, `skirmish_test` (it gathers 85 iron for a Barracks and an Infantry, was 65), `terrain_abilities_test`, `ubermech_exercise_test` and `upgrades_test`.
 
 ## Not done
 
