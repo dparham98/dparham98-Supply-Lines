@@ -8,6 +8,10 @@ extends Resource
 @export var farm_footprint := Vector2i(10,10)
 ## Food a Forester takes from the Farm each work beat (1.2 s). One Forester only.
 @export_range(1,100) var farm_food_per_beat := 2
+## Round 3 (docs/ROUND3_KNIGHTS_COAL.md): a Farm with lake water within this many metres of its field is lakeside,
+## and gives `lakeside_food_per_beat` a beat instead.
+@export_range(0.0,50.0,0.5) var lakeside_water_distance := 8.0
+@export_range(1,100) var lakeside_food_per_beat := 3
 @export_range(1,100000) var farm_health := 300
 ## A Forester sent to a Farm becomes its Farmer for good: it works only a Farm, and builds, fells and goes nowhere
 ## else. When its Farm is lost it may take over an empty Farm and nothing else.

@@ -6,6 +6,7 @@ research_id = &"arms_3"
 display_name = "Arms III"
 iron_cost = 350
 food_cost = 200
+coal_cost = 225
 seconds = 120.0
 line = &"arms"
 level = 3

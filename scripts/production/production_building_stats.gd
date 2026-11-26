@@ -6,6 +6,8 @@ extends Resource
 @export var iron_cost := 0
 @export var food_cost := 0
 @export var wood_cost := 0
+## Coal the building costs, paid like its Wood (Round 3, docs/ROUND3_KNIGHTS_COAL.md). 0 for none.
+@export var coal_cost := 0
 ## Provisional dimensions, HP and queue cap, not historical balance.
 @export var footprint := Vector2i(6,6)
 @export var max_health := 1000
@@ -17,3 +19,10 @@ extends Resource
 @export_range(0.0, 2.0, 0.05) var extra_power_energy_scale := 0.35
 @export_range(0.1, 2.0, 0.1) var power_step := 0.5
 @export var unit_scenes: Array[PackedScene] = []
+@export_group("Stoke Brazier")
+## Round 3 (docs/ROUND3_KNIGHTS_COAL.md): the player can light a brazier here. While lit and working, training or
+## research goes `stoked_speed` times as fast and burns 1 Coal every `brazier_coal_interval` s from the paying Keep.
+@export var can_stoke_brazier := false
+@export_range(1.0,4.0,0.05) var stoked_speed := 1.6
+@export_range(0.5,60.0,0.5) var brazier_coal_interval := 4.0
+@export_group("")

@@ -63,6 +63,7 @@ func materials() -> Dictionary:
 	var result := {}
 	if spec.get("iron",0) > 0: result[&"iron"] = spec.iron
 	if spec.get("wood",0) > 0: result[&"wood"] = spec.wood
+	if spec.get("coal",0) > 0: result[&"coal"] = spec.coal
 	return result
 func needed(material: StringName) -> int:
 	return maxi(0,materials().get(material,0)-added.get(material,0))
@@ -305,6 +306,7 @@ func _cost_summary() -> String:
 	if spec.get("food",0) > 0: parts.append("%d F" % spec.food)
 	if spec.get("wood",0) > 0: parts.append("%d W" % spec.wood)
 	if spec.get("iron",0) > 0: parts.append("%d I" % spec.iron)
+	if spec.get("coal",0) > 0: parts.append("%d C" % spec.coal)
 	return " / ".join(parts) if not parts.is_empty() else "0 I"
 func refresh_label() -> void:
 	if kind == &"rail":

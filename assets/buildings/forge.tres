@@ -8,4 +8,5 @@ energy_cost = 0
 iron_cost = 80
 wood_cost = 60
 footprint = Vector2i(6,6)
+can_stoke_brazier = true
 queue_limit = 1

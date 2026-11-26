@@ -4,7 +4,8 @@
 script = ExtResource("stats")
 research_id = &"slow"
 display_name = "Slow"
-iron_cost = 100
+iron_cost = 125
 food_cost = 100
+coal_cost = 75
 seconds = 60.0
 summary = "Grail Sentinels can cast Slow: for 25 reserve points, enemy units in a 5 m circle move 40% slower for 5 s. Holds for your whole side."

@@ -38,7 +38,7 @@ Round 3 added a third spell, Stimulus (E), and Forge research that costs coal: s
 
 ## Slow
 
-**Research:** at the Forge (Research.SLOW, `assets/research/slow.tres`): 100 F / 100 I, 60 s. It is the Forge card's third tile, after Arms and Mail.
+**Research:** at the Forge (Research.SLOW, `assets/research/slow.tres`): 100 F / 125 I / 75 C, 60 s (Round 3, `docs/ROUND3_KNIGHTS_COAL.md`; it was 100 F / 100 I). It is the Forge card's third tile, after Arms and Mail.
 
 **Cost:** 25 points.
 

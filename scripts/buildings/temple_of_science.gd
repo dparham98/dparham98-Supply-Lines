@@ -71,8 +71,10 @@ func cancel_research() -> bool:
 	return true
 func fraction() -> float:
 	return clampf(research_progress/researching.seconds,0.0,1.0) if researching != null else 0.0
+## Seconds until it is done at the pace it goes now: faster while its Stoke Brazier burns.
 func seconds_left() -> float:
-	return maxf(0.0,researching.seconds-research_progress) if researching != null else 0.0
+	if researching == null: return 0.0
+	return maxf(0.0,researching.seconds-research_progress)/(stats.stoked_speed if brazier_lit else 1.0)
 ## A captured paying Depot loses the research it paid for, as a production queue is lost (production_building).
 func _source_changed() -> void:
 	super._source_changed()
@@ -85,10 +87,12 @@ func _process(delta: float) -> void:
 		_show_model(&"show_research",[false])
 		return
 	if researching == null:
+		brazier_lit = false; brazier_starved = false
 		$Status.text = "%s → %s" % [stats.display_name,assigned_depot.name]
 		_show_model(&"show_research",[false])
 		return
-	research_progress = minf(researching.seconds,research_progress+delta)
+	# A lit Stoke Brazier speeds research too (docs/ROUND3_KNIGHTS_COAL.md).
+	research_progress = minf(researching.seconds,research_progress+delta*brazier_scale(delta))
 	_show_model(&"show_research",[true])
 	if research_progress >= researching.seconds:
 		var entry := researching
@@ -99,4 +103,4 @@ func _process(delta: float) -> void:
 		game.notify("%s researched at %s." % [entry.display_name,name],team)
 		$Status.text = "%s → %s" % [stats.display_name,assigned_depot.name]
 		return
-	$Status.text = "%s · %s · %d%%" % [stats.display_name,researching.display_name,roundi(fraction()*100)]
+	$Status.text = "%s · %s · %d%%%s" % [stats.display_name,researching.display_name,roundi(fraction()*100),brazier_note()]

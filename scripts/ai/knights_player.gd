@@ -49,6 +49,9 @@ var first_army_at := -1.0
 ## works it while home holds less than `train_coal_wanted`.
 @export var rail_wanted := true
 @export_range(0,1000,10) var train_coal_wanted := 60
+@export_group("Coal")
+## Round 3 (docs/ROUND3_KNIGHTS_COAL.md): its Stoke Braziers burn while the paying Keep holds more Coal than this.
+@export_range(0,1000,10) var brazier_coal_above := 100
 @export_group("")
 ## Its Coal Mine plan, and the Forester that builds it and then works it.
 var coal_plan: Node3D
@@ -84,6 +87,8 @@ func think() -> void:
 	for keep in own_keeps(): economy(keep,keep == depot)
 	found_keep(depot)
 	research()
+	coal_economy(depot)
+	_braziers()
 	rail_economy(depot)
 	produce()
 	fight(depot)
@@ -249,15 +254,36 @@ func rail_economy(depot: Node3D) -> void:
 	if not rail_wanted or rails == null or own_keeps().size() < 2 or not KnightRail.has_dragon_yard(depot,team): return
 	rail(depot)
 	run_trains(depot)
-	_coal(depot)
 ## No build order holds iron back: each Keep's plans pay as they are placed.
 func _iron_held() -> int:
 	return 0
 func _buy_train(depot: Node3D, line: Node3D) -> void:
 	var r := Supply.rules()
 	if depot.food >= r.train_food_cost and depot.wood >= r.train_wood_cost and depot.iron >= r.train_iron_cost: depot.request_train(line)
+## Round 3 (docs/ROUND3_KNIGHTS_COAL.md): Forge research, the Dragon and the Braziers burn Coal, so home gets a Coal
+## Mine and a coal hand once a second Keep, a Forge or a Dragon Yard is started, not only once trains run.
+func coal_economy(depot: Node3D) -> void:
+	if own_keeps().size() < 2 and not has_forge() and not has_building(&"dragon_yard"): return
+	_coal(depot)
+## The Coal home gathers up to: the trains' (twice `train_coal_wanted`), or the next Forge research's Coal on top of
+## what the Braziers keep burning on, whichever is more.
+func coal_target() -> int:
+	var research_coal := 0
+	for id in research_wanted():
+		if Research.has(game,team,id): continue
+		var entry := _forge_entry(id)
+		if entry != null:
+			research_coal = entry.coal_cost
+			break
+	return maxi(train_coal_wanted*2,research_coal+brazier_coal_above)
+## Its Stoke Braziers burn while the Keep paying for the building holds more than `brazier_coal_above` Coal.
+func _braziers() -> void:
+	for building in get_tree().get_nodes_in_group("production_buildings"):
+		if building.get("team") != team or building.get("stats") == null or not building.stats.can_stoke_brazier: continue
+		var keep = building.assigned_depot
+		building.set_brazier(is_instance_valid(keep) and keep.coal > brazier_coal_above)
 ## One home Forester carries iron out to a Coal Mine site near home and builds it, then gathers coal while home
-## holds less than `train_coal_wanted` (up to twice that), and goes back to the Keep's own work after.
+## holds less than half of `coal_target` (up to all of it), and goes back to the Keep's own work after.
 func _coal(depot: Node3D) -> void:
 	if coal_hand != null and (not is_instance_valid(coal_hand) or not workers.has(coal_hand)): coal_hand = null
 	var coal := _nearest_mine(depot.global_position,&"coal")
@@ -268,11 +294,12 @@ func _coal(depot: Node3D) -> void:
 		if site == null: return
 		coal_plan = network.queue_plan(site,&"coal_mine",depot,true,false,team)
 		if coal_plan == null: return
-	if coal != null and depot.coal >= train_coal_wanted*2:
+	var target := coal_target()
+	if coal != null and depot.coal >= target:
 		if coal_hand != null and coal_hand.order == "gather" and is_instance_valid(coal_hand.source) and coal_hand.source.resource_kind == &"coal": coal_hand._stop_route(); coal_hand.order = "idle"
 		coal_hand = null
 		return
-	if coal != null and depot.coal >= train_coal_wanted and coal_hand == null: return
+	if coal != null and depot.coal*2 >= target and coal_hand == null: return
 	if coal_hand == null:
 		var best: Node3D
 		for unit in workers:

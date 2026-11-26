@@ -26,7 +26,7 @@ func run() -> void:
 	var forge = load("res://scenes/gameplay/forge.tscn").instantiate()
 	var research: Array = forge.research
 	forge.free()
-	if not check(research.any(func(r): return r.research_id == Research.SLOW and r.food_cost == 100 and r.iron_cost == 100),"The Forge should research Slow for 100 F / 100 I"): return
+	if not check(research.any(func(r): return r.research_id == Research.SLOW and r.food_cost == 100 and r.iron_cost == 125 and r.coal_cost == 75),"The Forge should research Slow for 100 F / 125 I / 75 C (Round 3)"): return
 	game = load("res://scenes/maps/arthurian_skirmish.tscn").instantiate()
 	root.add_child(game)
 	for i in range(3): await process_frame

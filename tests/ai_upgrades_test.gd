@@ -62,6 +62,8 @@ func run() -> void:
 	keep.stockpile.deposit(&"wood",300)
 	keep.stockpile.deposit(&"iron",400)
 	keep.stockpile.deposit(&"food",400)
+	# Forge research costs Coal too (Round 3, docs/ROUND3_KNIGHTS_COAL.md): enough for Arms I and Mail I.
+	keep.stockpile.deposit(&"coal",150)
 	ai._sort(ai.own_units())
 	# Two Farms and its one Chapterhouse up: the Forge is next. (Plans from its first round are dropped.)
 	for old in ai.plans.values():

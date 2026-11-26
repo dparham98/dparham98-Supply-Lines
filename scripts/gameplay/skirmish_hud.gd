@@ -46,7 +46,7 @@ const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 
 	"TrainForester": 0, "TrainWarhound": 1, "LaunchBalloon": 2, "KeepTrain": 4,
 	"PrintInfantry": 0, "ProduceScout": 1, "ProduceGrenadier": 2, "ProduceTank": 3, "ProduceMotorcycle": 4, "ProduceDrone": 5, "ProduceUbermech": 6,
 	"ProduceRoundTableMarine": 0, "ProduceGrailSentinel": 1, "ProduceQuestingMarine": 2, "ProduceAzureDragon": 3,
-	"ToggleGenerator": 0, "FocusAssigned": 1,
+	"ToggleGenerator": 0, "FocusAssigned": 1, "StokeBrazier": 8,
 	"Research": 0, "ResearchMines": 1, "MineIron": 7,
 	"Upgrade1": 0, "Upgrade2": 1, "Upgrade3": 2, "Upgrade4": 3, "Upgrade5": 4}
 const TILE := 46
@@ -156,6 +156,11 @@ func _ready() -> void:
 		var header: Button = $Bottom/Body/Header.get_node(id)
 		if not hotkey_text(header).is_empty(): header.text += " · "+hotkey_text(header)
 		header.shortcut_in_tooltip = false
+	card.get_node("StokeBrazier").pressed.connect(func():
+		if is_instance_valid(shown) and shown.has_method("set_brazier") and shown.team == "player":
+			var on: bool = not shown.brazier_on
+			for node in same_buildings():
+				if node.has_method("set_brazier"): node.set_brazier(on))
 	card.get_node("ToggleGenerator").pressed.connect(func():
 		if is_instance_valid(shown) and shown.is_in_group("energy_generators"):
 			var on: bool = not shown.enabled
@@ -1059,7 +1064,7 @@ func update_contents() -> void:
 		var payer = node.assigned_depot
 		state_label.text = "%s · %s" % [team_label(node),("pays from "+str(payer.name)) if node.source_friendly() else "no friendly Depot in range"]
 		if node.queue > 0 and not node.pending.is_empty():
-			show_progress("Producing · "+node.unit_stats_for(node.pending[0]).display_name,"%d%%%s" % [roundi(node.fraction()*100)," · %d more queued" % (node.queue-1) if node.queue > 1 else ""],node.fraction())
+			show_progress("Producing · "+node.unit_stats_for(node.pending[0]).display_name,"%d%%%s%s" % [roundi(node.fraction()*100)," · %d more queued" % (node.queue-1) if node.queue > 1 else "",node.brazier_note()],node.fraction())
 		if is_instance_valid(payer):
 			# A Keep pays in Food (docs/ARTHURIAN_KNIGHTS.md); a Depot in energy.
 			var primary := ["Food",grouped(payer.food)] if payer.is_in_group("keeps") else ["Energy",grouped(payer.energy)]
@@ -1072,8 +1077,8 @@ the one shown while it can, else another that can."
 			for scene in node.stats.unit_scenes:
 				var stats = node.unit_stats_for(scene)
 				# The tile names the Depot that would pay: the current one, or another covering one that can.
-				var pays = node.payer_for(stats.energy_cost,stats.iron_cost,stats.food_cost,stats.wood_cost)
-				show_production(production_button_id(stats.unit_id),stats.display_name,stats.energy_cost,stats.iron_cost,pays if pays != null else node.assigned_depot,stats.food_cost,stats.wood_cost,stats.unit_id)
+				var pays = node.payer_for(stats.energy_cost,stats.iron_cost,stats.food_cost,stats.wood_cost,stats.coal_cost)
+				show_production(production_button_id(stats.unit_id),stats.display_name,stats.energy_cost,stats.iron_cost,pays if pays != null else node.assigned_depot,stats.food_cost,stats.wood_cost,stats.unit_id,stats.coal_cost)
 		# The Dragon Yard's train (docs/KNIGHTS_RAIL.md): paid by and leaving from a covering Keep with track.
 		if node.stats.building_id == &"dragon_yard" and node.team == "player":
 			var r := KnightHousing.rules()
@@ -1083,6 +1088,7 @@ the one shown while it can, else another that can."
 			if not train_refusal.is_empty(): explain(card.get_node("KeepTrain"),true,train_refusal)
 			else: card.get_node("KeepTrain").tooltip_text += "\nBuilt at %s and leaves on its track." % train_at.name
 		hint_text = "Production pays from a friendly Depot (or Keep) whose range covers this building, picked for you: the one it has while that one can pay, otherwise the nearest covering one that can. Drone attacks and tentative abilities remain unspecified."
+		_brazier_tile(node)
 	elif node.is_in_group("energy_generators"):
 		commands.get_node("Title").text = "GENERATOR · LOCAL POWER"
 		var source = node.assigned_depot
@@ -1107,12 +1113,12 @@ the one shown while it can, else another that can."
 		hint_text = "Stands across a dam channel and burns nothing: every %s s it banks %d E into the friendly Depot whose range covers it, while that Depot has room." % [str(node.stats.beat_seconds),node.stats.energy_per_beat]
 		if dam_depot != null: show_button("FocusAssigned","Focus Depot")
 	elif node.is_in_group("farms"):
-		commands.get_node("Title").text = "FARM · FOOD"
+		commands.get_node("Title").text = "LAKESIDE FARM · %d Food/beat" % node.food_per_beat() if node.lakeside else "FARM · FOOD"
 		var tiller = node.worker if node.worker_busy() else null
 		var status: String = ("tilled by "+str(tiller.name)) if tiller != null else "no Farmer"
 		if node.raided: status = "enemy on the field: no Food"
 		state_label.text = "%s · %s" % [team_label(node),status]
-		set_stats([["Food a beat","%d / 1.2 s" % KnightHousing.rules().farm_food_per_beat],["Farmer","%d / 1" % (1 if tiller != null else 0)]])
+		set_stats([["Food a beat","%d / 1.2 s%s" % [node.food_per_beat()," · lakeside" if node.lakeside else ""]],["Farmer","%d / 1" % (1 if tiller != null else 0)]])
 		info.get_node("Details").text = "A field any unit can walk over. Its Farmer tills it and carries the Food to a Keep. While an enemy ground unit stands on it, it yields nothing."
 		hint_text = "Right-click the Farm with one Forester Maiden: she becomes its Farmer for good and no longer builds, fells or fights. A Farm takes one Farmer. The Food goes to the nearest Keep."
 	elif node.is_in_group("houses"):
@@ -1281,7 +1287,7 @@ func show_research_building(node: Node3D) -> void:
 	if node.research.any(func(r): return r.level > 0): show_upgrade_building(node); return
 	var payer = node.assigned_depot
 	state_label.text = "%s · %s" % [team_label(node),("pays from "+str(payer.name)) if node.source_friendly() else "no friendly Depot in range"]
-	if node.researching != null: show_progress("Researching · "+node.researching.display_name,"%d%% · %s s left" % [roundi(node.fraction()*100),_seconds(ceilf(node.seconds_left()))],node.fraction())
+	if node.researching != null: show_progress("Researching · "+node.researching.display_name,"%d%% · %s s left%s" % [roundi(node.fraction()*100),_seconds(ceilf(node.seconds_left())),node.brazier_note()],node.fraction())
 	if is_instance_valid(payer): set_stats([["Energy",grouped(payer.energy)],["Iron",grouped(payer.iron)]])
 	var done_names: Array[String] = []
 	for entry in node.research:
@@ -1292,6 +1298,13 @@ func show_research_building(node: Node3D) -> void:
 	if node.researching != null: show_button("CancelPlan","Cancel research")
 	for pair in [["Research",Research.MINING_TRAINS],["ResearchMines",Research.MINELAYING]]:
 		_research_tile(node,pair[0],pair[1])
+## The Stoke Brazier tile (docs/ROUND3_KNIGHTS_COAL.md) on a building of yours that has one: on or off, and burning or not.
+func _brazier_tile(node: Node3D) -> void:
+	if node.team != "player" or not node.stats.can_stoke_brazier: return
+	var button: Button = card.get_node("StokeBrazier")
+	var now := "Burning: %sx speed." % _seconds(node.stats.stoked_speed) if node.brazier_lit else ("Unlit: no Coal in the paying Keep, so it works at 1x." if node.brazier_starved else ("Lit while it works." if node.brazier_on else "Off."))
+	button.set_meta("detail","While it trains or researches, %sx speed for 1 Coal every %s s from the paying Keep. With no Coal it works at 1x and the queue goes on.\n%s" % [_seconds(node.stats.stoked_speed),_seconds(node.stats.brazier_coal_interval),now])
+	show_button("StokeBrazier","Stoke Brazier: %s" % ("on" if node.brazier_on else "off"))
 ## One research tile on the Temple's card (docs/TEMPLE_OF_SCIENCE.md).
 func _research_tile(node: Node3D, tile: String, id: StringName) -> void:
 	var entry: ResearchStats = node.research_by_id(id)
@@ -1315,7 +1328,7 @@ func show_upgrade_building(node: Node3D) -> void:
 	var payer = node.assigned_depot
 	var keep: bool = node.stats.building_id == &"forge"
 	state_label.text = "%s · %s" % [team_label(node),("pays from "+str(payer.name)) if node.source_friendly() else ("no friendly Keep in range" if keep else "no friendly Depot in range")]
-	if node.researching != null: show_progress("Researching · "+node.researching.display_name,"%d%% · %s s left" % [roundi(node.fraction()*100),_seconds(ceilf(node.seconds_left()))],node.fraction())
+	if node.researching != null: show_progress("Researching · "+node.researching.display_name,"%d%% · %s s left%s" % [roundi(node.fraction()*100),_seconds(ceilf(node.seconds_left())),node.brazier_note()],node.fraction())
 	if is_instance_valid(payer): set_stats([["Food",grouped(payer.food)],["Iron",grouped(payer.iron)],["Coal",grouped(payer.coal)]] if keep else [["Energy",grouped(payer.energy)],["Iron",grouped(payer.iron)]])
 	var lines: Array[StringName] = []
 	var plain: Array[ResearchStats] = []
@@ -1328,6 +1341,7 @@ func show_upgrade_building(node: Node3D) -> void:
 	hint_text = "Each line has three levels, researched in order. Attack adds each weapon's own bonus a level (shown on the unit card); armour takes 1 off every hit a level, never below 1. Paid when started from a covering %s; Cancel gives it back. One research at a time; levels hold for your whole side." % ("Keep" if keep else "Depot")
 	if node.team != "player": return
 	if node.researching != null: show_button("CancelPlan","Cancel research")
+	_brazier_tile(node)
 	for i in range(mini(lines.size(),UPGRADE_TILES)):
 		var line := lines[i]
 		var id := "Upgrade%d" % (i+1)

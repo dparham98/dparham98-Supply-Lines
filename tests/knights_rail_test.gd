@@ -85,7 +85,7 @@ func run() -> void:
 	train.set_process(false)
 	train.fuel = 10.0
 	train._pay_for_power(train,100.0)
-	if not check(is_equal_approx(train.fuel,5.0),"100 m should burn 5 coal (%.2f left)" % train.fuel): return
+	if not check(is_equal_approx(train.fuel,2.0),"100 m should burn 8 coal (Round 3, 0.08 a metre; %.2f left)" % train.fuel): return
 	train._pay_for_power(train,200.0)
 	if not check(train.fuel <= 0.0 and train.power_source() == null,"An empty train should not move"): return
 	var coal: int = keep.stockpile.amount(&"coal")

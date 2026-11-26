@@ -17,6 +17,9 @@ var _work_left := 0.0
 var raided := false
 var _raid_wait := 0.0
 var _rect := Rect2i()
+## Lake water lies within `lakeside_water_distance` of its field: it gives `lakeside_food_per_beat` a beat
+## (Round 3, docs/ROUND3_KNIGHTS_COAL.md). Set when it is built.
+var lakeside := false
 @onready var ground = get_tree().get_first_node_in_group("terrain_grid")
 func _ready() -> void:
 	resource_kind = &"food"; resource_name = "Farm"
@@ -32,12 +35,29 @@ func _ready() -> void:
 			cells.append(cell)
 			ground.set_field(cell,_key(),true)
 	_rect = Rect2i(start,size)
+	lakeside = lakeside_at(ground,start,size)
 	add_to_group("farms"); add_to_group("selectable_buildings")
 	super._ready()
 	remove_from_group("iron_deposits")
 	if not is_in_group("resources"): add_to_group("resources")
 	preload("res://scripts/components/team_paint.gd").apply(get_node_or_null("Visuals/Model"),team)
 func _key() -> String: return "farm_%s" % get_instance_id()
+## Whether a field of `size` at `start` has lake water within `lakeside_water_distance` of its edge.
+static func lakeside_at(grid: Node, start: Vector2i, size: Vector2i) -> bool:
+	var reach: float = RULES.lakeside_water_distance
+	var tile: float = grid.tile_size
+	var margin := ceili(reach/tile)
+	for z in range(start.y-margin,start.y+size.y+margin):
+		for x in range(start.x-margin,start.x+size.x+margin):
+			var cell := Vector2i(x,z)
+			if not grid.is_tile_in_bounds(cell) or grid.get_terrain(cell) != grid.Terrain.WATER: continue
+			var dx := maxi(0,maxi(start.x-x,x-(start.x+size.x-1)))
+			var dz := maxi(0,maxi(start.y-z,z-(start.y+size.y-1)))
+			if Vector2(dx,dz).length()*tile <= reach: return true
+	return false
+## Food a work beat gives: more on a lakeside Farm.
+func food_per_beat() -> int:
+	return RULES.lakeside_food_per_beat if lakeside else RULES.farm_food_per_beat
 ## Whether `unit` may work it: the side's own worker, and no other worker already on it.
 func accepts(unit: Node3D) -> bool:
 	if not is_instance_valid(unit) or unit.get("team") != team: return false
@@ -71,11 +91,11 @@ func enemy_on_field() -> bool:
 func extract(requested: int, asking := "") -> int:
 	if not can_extract(asking): return 0
 	_work_left = 1.5
-	return mini(maxi(0,requested),RULES.farm_food_per_beat)
+	return mini(maxi(0,requested),food_per_beat())
 func update_label() -> void:
 	if not has_node("Label"): return
 	var status := "enemy on the field: no Food" if raided else ("tilled" if worker_busy() else "no worker")
-	$Label.text = "FARM · %s · %d/%d HP" % [status,health,max_health]
+	$Label.text = "%s · %s · %d/%d HP" % ["LAKESIDE FARM · %d Food/beat" % food_per_beat() if lakeside else "FARM",status,health,max_health]
 func _process(delta: float) -> void:
 	_work_left = maxf(0.0,_work_left-delta)
 	_raid_wait -= delta

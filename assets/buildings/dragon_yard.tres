@@ -11,5 +11,6 @@ energy_cost = 0
 iron_cost = 60
 wood_cost = 60
 footprint = Vector2i(6, 6)
+can_stoke_brazier = true
 max_power = 1.0
 unit_scenes = Array[PackedScene]([ExtResource("dragon")])

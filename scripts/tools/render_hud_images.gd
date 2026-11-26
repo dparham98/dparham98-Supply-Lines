@@ -48,9 +48,11 @@ const ENTRIES := {
 	"sentinel_stimulus": ["res://scenes/gameplay/grail_sentinel.tscn","","stimulus",35.0,1.0],
 	"questing_sundering": ["res://scenes/gameplay/questing_marine.tscn","","research_sundering_lances",35.0,1.0],
 	"warhound_camouflage": ["res://scenes/gameplay/warhound.tscn","","research_forest_camouflage",35.0,1.0],
+	# Round 3 (docs/ROUND3_KNIGHTS_COAL.md): the Stoke Brazier shows the Forge, whose fire it stokes.
+	"forge_brazier": ["res://scenes/gameplay/forge.tscn","","stoke_brazier",215.0,1.0],
 }
 ## Entries shot only for their cards: no selection icon or portrait is written for them.
-const CARD_ONLY := ["derailer_mines","derailer_buy_mine","sentinel_stimulus","questing_sundering","warhound_camouflage"]
+const CARD_ONLY := ["derailer_mines","derailer_buy_mine","sentinel_stimulus","questing_sundering","warhound_camouflage","forge_brazier"]
 ## Calls made on an entry's model root before it is shot: method name and arguments.
 const POSES := {"land_mine": ["set_age",[1.6,3.0]],"derailer_mines": ["set_mines",[2]],"derailer_buy_mine": ["pose_mine_drop",[1,0.05]]}
 ## Cards drawn in Blender (Blender/UI/UpgradeCards/render_upgrade_cards.py) and only framed here: the Foundry's
