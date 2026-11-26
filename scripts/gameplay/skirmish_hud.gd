@@ -1309,7 +1309,7 @@ func show_upgrade_building(node: Node3D) -> void:
 	var levels: Array[String] = []
 	for line in lines: levels.append("%s %d/%d" % [_line_title(node,line),Upgrades.level(node,node.team,line),Upgrades.LEVELS])
 	info.get_node("Details").text = "Levels: "+" · ".join(levels)
-	hint_text = "Each line has three levels, researched in order. Attack adds 10%% of base weapon damage a level; armour takes 1 off every hit a level, never below 1. Paid when started from a covering %s; Cancel gives it back. One research at a time; levels hold for your whole side." % ("Keep" if keep else "Depot")
+	hint_text = "Each line has three levels, researched in order. Attack adds each weapon's own bonus a level (shown on the unit card); armour takes 1 off every hit a level, never below 1. Paid when started from a covering %s; Cancel gives it back. One research at a time; levels hold for your whole side." % ("Keep" if keep else "Depot")
 	if node.team != "player": return
 	if node.researching != null: show_button("CancelPlan","Cancel research")
 	for i in range(mini(lines.size(),4)):

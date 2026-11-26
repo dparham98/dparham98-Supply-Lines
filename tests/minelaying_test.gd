@@ -71,11 +71,11 @@ func run() -> void:
 	drone.global_position = mine.global_position+Vector3(25,0,0)
 	if not check(not mine.shown_to("enemy"),"A Drone 25 m off does not"): return
 	drone.queue_free()
-	var hound := spawn("warhound","enemy",mine.global_position+Vector3(12,0,0))
+	var hound := spawn("warhound","enemy",mine.global_position+Vector3(18,0,0))
+	hound.global_position = mine.global_position+Vector3(18,0,0)
+	if not check(not mine.shown_to("enemy"),"A Warhound 18 m off does not detect it"): return
 	hound.global_position = mine.global_position+Vector3(12,0,0)
-	if not check(not mine.shown_to("enemy"),"A Warhound 12 m off does not detect it"): return
-	hound.global_position = mine.global_position+Vector3(8,0,0)
-	if not check(mine.shown_to("enemy"),"A Warhound within 10 m does"): return
+	if not check(mine.shown_to("enemy"),"A Warhound within 15 m does"): return
 	var scout := spawn("scout","enemy",mine.global_position+Vector3(30,0,0))
 	hound.global_position = mine.global_position+Vector3(80,0,0)
 	if not check(not scout.team_sees(mine),"An undetected mine can't be targeted"): return

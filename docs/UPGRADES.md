@@ -34,7 +34,7 @@ Each level is its own research, `assets/research/upgrades/<line>_<n>.tres` (for 
 ## Effects
 
 `scripts/research/upgrades.gd` (`Upgrades`):
-- **Attack:** each level adds 10% of the weapon's base damage, rounded, at least 1 (`with_attack`). With two levels a 4 becomes 6 and a 20 becomes 24. It applies in `CombatResolver.splash_damage`, so it covers splash and heavy damage too.
+- **Attack:** each level adds the weapon's own bonus (`with_attack`; Round 3, `docs/ROUND3_UNIT_STATS.md`). The bonus is `attack_upgrade_bonus`, `heavy_upgrade_bonus` for heavy damage, or `second_upgrade_bonus` for a second weapon, on the unit's stats; each defaults to 1. With two levels a Grenadier's 20 becomes 24 and its 40 becomes 48. It applies in `CombatResolver.splash_damage`, so it covers splash and heavy damage too. (Until Round 3 each level added 10% of the base damage, at least 1.)
 - **Armour:** each level takes 1 off every hit the unit takes, never below 1 (`after_armour`). It applies in `unit_agent.take_damage`, so it covers every source of damage.
 
 **Which units a line covers:**

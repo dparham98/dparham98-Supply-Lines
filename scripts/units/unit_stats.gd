@@ -27,6 +27,9 @@ extends Resource
 ## Armour class (item 8 of the balance handoff): every unit is light or armoured; buildings are their own class.
 ## Armoured: Tank, Ubermech, Azure Dragon, and trains and trucks (set on their scenes, which have no UnitStats).
 @export var armoured := false
+## A giant (the Azure Dragon): a light target, so heavy damage doesn't apply, but big enough that Sundering Lances
+## mark it and it can't ride a troop train (Round 3 handoff, docs/ROUND3_UNIT_STATS.md).
+@export var giant := false
 ## What the main weapon fires at (CombatResolver target classes). All four by default.
 @export_flags("Light", "Armoured", "Flyer", "Building") var targets: int = 15
 ## A second weapon (the Ubermech's missile pods), fired at the targets it suits instead of the main weapon, between
@@ -43,6 +46,18 @@ extends Resource
 @export_range(0, 100000, 1) var iron_cost: int = 0
 @export_range(0, 100000, 1) var food_cost: int = 0
 @export_range(0, 100000, 1) var wood_cost: int = 0
+## Coal a unit costs (the Azure Dragon, once Knights coal costs land; docs/ROUND3_UNIT_STATS.md). 0 for none.
+@export_range(0, 100000, 1) var coal_cost: int = 0
+## What each level of the side's attack upgrades adds to a hit (docs/UPGRADES.md): to the main weapon's damage, its
+## heavy damage (against armoured units and buildings) and the second weapon's.
+@export_range(0, 100, 1) var attack_upgrade_bonus: int = 1
+@export_range(0, 100, 1) var heavy_upgrade_bonus: int = 1
+@export_range(0, 100, 1) var second_upgrade_bonus: int = 1
+## Defensive only (the Forester Maiden): it never picks a target by itself, idle or working. It fights back when hit,
+## and attacks when ordered to.
+@export var defensive_only := false
+## Seconds a defensive unit remembers who hit it, to fight back.
+@export_range(0, 30, 0.5) var retaliate_seconds: float = 5.0
 ## Seconds a production building takes to print this unit at its base energy cost (1x power;
 ## docs/PRODUCTION_POWER.md). More power divides it.
 @export_range(0.5, 600, 0.5) var build_seconds: float = 10.0
@@ -50,7 +65,7 @@ extends Resource
 @export var abilities: Array[StringName] = []
 @export var mobility: MobilityRules
 ## Detects hidden things (armed mines) within this many metres for its side (Detection, docs/MINES.md). 0 for
-## none: only the Drone (20) and the Warhound (10) detect, besides Depots and Keeps at their range.
+## none: only the Drone (20) and the Warhound (15) detect, besides Depots and Keeps at their range.
 @export_range(0, 200, 0.5) var detect_range: float = 0.0
 
 func has_resolved_attack() -> bool:

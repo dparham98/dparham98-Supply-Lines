@@ -29,12 +29,12 @@ same day it was moved onto its own branch from main and merged onto main's newer
 
 | Unit | Food | Iron | Health | Notes |
 | --- | --- | --- | --- | --- |
-| Forester Maiden | 45 | 0 | 45 | Worker: gathers and builds |
-| Warhound | 30 | 5 | 38 | Melee |
+| Forester Maiden | 45 | 0 | 45 | Worker: gathers and builds; fights back only (5 every 1.2 s at 2.4 m) |
+| Warhound | 30 | 5 | 38 | Melee, 5 every 1 s at 3.2 m; detects at 15 m |
 | Round Table Marine | 65 | 25 | 65 | Range 18 |
 | Grail Sentinel | 75 | 20 | 75 | Heals; range 10 |
-| Questing Marine | 75 | 35 | 65 | Range 19 |
-| Azure Dragon | 160 | 60 | 180 | Breath; its Breath_Light shows only while breathing |
+| Questing Marine | 75 | 35 | 65 | Range 21, sight 15 |
+| Azure Dragon | 160 | 60 | 240 | Breath 32 every 2.4 s at 9 m; a giant, not armoured; its Breath_Light shows only while breathing |
 
 ## Mechanics
 

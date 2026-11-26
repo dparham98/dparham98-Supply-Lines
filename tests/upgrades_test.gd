@@ -2,7 +2,7 @@ extends SceneTree
 # Headless (item 11 of docs/BALANCE_IMPLEMENTATION_HANDOFF.md, docs/UPGRADES.md): the Cyborgs' Foundry researches
 # Infantry and Vehicle Weapons and Armour, and the Knights' Forge researches Arms and Mail, three levels each in
 # order. A level is paid when it starts: Energy and Iron from a covering Depot, or Food and Iron from a covering
-# Keep. Attack adds 10% of base damage a level (at least 1); armour takes 1 off every hit a level, never below 1.
+# Keep. Attack adds the weapon's own bonus a level; armour takes 1 off every hit a level, never below 1.
 var game: Node3D
 func _initialize() -> void: call_deferred("run")
 func check(value: bool, message: String) -> bool:
@@ -79,11 +79,11 @@ func run() -> void:
 		if not check(card_art == "sl_upgrade_%s.png" % ["infantry_weapons","infantry_armour","vehicle_weapons","vehicle_armour"][n-1],"Upgrade%d has the wrong card: %s" % [n,card_art]): return
 	if not check(hud.icon_name(foundry) == "foundry","The Foundry should use its own icon, not %s" % hud.icon_name(foundry)): return
 	game.selected_building = null
-	# Attack: +10% of base a level, at least 1. Infantry lines leave vehicles alone, and the other way round.
+	# Attack: each level adds the weapon's own bonus (Round 3). Infantry lines leave vehicles alone, and the other way round.
 	var deforester := spawn("infantry","player",depot.global_position+Vector3(6,0,6))
 	var tank := spawn("tank","player",depot.global_position+Vector3(8,0,6))
 	Research.complete(game,"player",&"infantry_weapons_2")
-	if not check(Upgrades.with_attack(deforester,20) == 24 and Upgrades.with_attack(deforester,4) == 6 and Upgrades.with_attack(tank,20) == 20,"Infantry Weapons II: 20 -> 24, 4 -> 6, tanks unchanged (%d, %d, %d)" % [Upgrades.with_attack(deforester,20),Upgrades.with_attack(deforester,4),Upgrades.with_attack(tank,20)]): return
+	if not check(Upgrades.with_attack(deforester,20,2) == 24 and Upgrades.with_attack(deforester,8,1) == 10 and Upgrades.with_attack(tank,20,2) == 20,"Infantry Weapons II: 20 (+2) -> 24, 8 (+1) -> 10, tanks unchanged (%d, %d, %d)" % [Upgrades.with_attack(deforester,20,2),Upgrades.with_attack(deforester,8,1),Upgrades.with_attack(tank,20,2)]): return
 	# Armour: -1 a hit a level, never below 1.
 	for n in range(1,4): Research.complete(game,"player",Upgrades.research_id(Upgrades.VEHICLE_ARMOUR,n))
 	if not check(Upgrades.after_armour(tank,10) == 7 and Upgrades.after_armour(tank,2) == 1 and Upgrades.after_armour(deforester,10) == 10,"Vehicle Armour III: 10 -> 7, 2 -> 1, infantry unchanged"): return
@@ -129,7 +129,7 @@ func run() -> void:
 	if not check(slow_icon != null and slow_icon.resource_path.get_file() == "sl_research_slow.png","The Slow research tile should show its own card"): return
 	game.selected_building = null
 	var marine := spawn("round_table_marine","player",keep.global_position+Vector3(6,0,6))
-	if not check(Upgrades.with_attack(marine,30) == 33,"Arms I: a Marine's 30 becomes 33"): return
+	if not check(Upgrades.with_attack(marine,6,1) == 7,"Arms I: a Marine's 6 (+1) becomes 7"): return
 	Research.complete(game,"player",&"mail_1")
 	if not check(Upgrades.after_armour(marine,10) == 9,"Mail I: 10 -> 9 on a Marine"): return
 	game.queue_free()

@@ -96,7 +96,7 @@ func run() -> void:
 	var mid_cells: Array[Vector2i] = [mid]
 	if not check(not game.get_node("RailNetwork").ground_clear(mid_cells),"Track should not be laid across a Farm"): return
 	if not check(network.queue_plan(farm.global_position,&"house",null,false,false) == null,"A House should not be planned on a Farm"): return
-	# An enemy ground unit standing on the field stops its Food; the Farmer waits and does not leave.
+	# An enemy ground unit standing on the field stops its Food; the Farmer shelters by the Keep (Round 3) and goes back.
 	var raider = load("res://scenes/gameplay/scout.tscn").instantiate()
 	raider.team = "enemy"
 	game.get_node("Entities/Units").add_child(raider)
@@ -109,6 +109,7 @@ func run() -> void:
 	step([farmer,farm],30.0)
 	if not check(farm.raided and keep.stockpile.amount(&"food")-raid_before <= farmer.carry_capacity,"A raided Farm should yield nothing: raided %s, +%d Food" % [farm.raided,keep.stockpile.amount(&"food")-raid_before]): return
 	if not check(farmer.order in ["gather","return"] and farmer.source == farm,"A Farmer should wait out a raid: %s '%s'" % [farmer.order,farmer.state]): return
+	if not check(farmer.global_position.distance_to(keep.global_position) <= rules.farm_raid_shelter_distance+0.5 and farmer.state.begins_with("Farm raided"),"A raided Farm's Farmer should shelter within %.0f m of the Keep: %.1f m, '%s'" % [rules.farm_raid_shelter_distance,farmer.global_position.distance_to(keep.global_position),farmer.state]): return
 	raider.queue_free()
 	await process_frame
 	var after_raid: int = keep.stockpile.amount(&"food")

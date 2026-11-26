@@ -111,7 +111,7 @@ func run() -> void:
 
 	if not check(keep.is_in_group("keeps") and keep.is_in_group("depots") and keep.food == 150, "Keep missing group or initial Food (150, docs/KNIGHTS_ECONOMY.md)"): return
 	if not check(chapterhouse.assigned_depot == keep and chapterhouse.source_friendly(), "Chapterhouse should be assigned to Keep"): return
-	if not check(forester.can_gather and forester.can_construct and not forester._attack_enabled, "Forester Maiden should be unarmed gather/builder worker"): return
+	if not check(forester.can_gather and forester.can_construct and forester._attack_enabled and forester.unit_stats.defensive_only, "Forester Maiden should be a gather/builder worker who only fights back (Round 3)"): return
 	if not check(warhound.mobility_layer() == MobilityRules.Layer.FOREST, "Warhound should use FOREST mobility"): return
 	if not check(sentinel.can_heal and sentinel.med_reserve == 200 and sentinel.heal_range == 9.0 and sentinel.heal_hp == 10, "Grail Sentinel should carry a 200 HP reserve and heal 10 HP a second at 9 m (docs/ARTHURIAN_KNIGHTS.md)"): return
 	if not check(questing != null and dragon != null, "Missing Questing Marine or Azure Dragon"): return

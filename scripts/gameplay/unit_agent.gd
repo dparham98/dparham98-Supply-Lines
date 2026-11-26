@@ -81,6 +81,9 @@ var _attack_enabled := true
 @export var armoured := false
 ## The weapon of the shot being resolved: 0 the main weapon, 1 the second (UnitStats.second_*).
 var firing_weapon := 0
+## The last hostile that hit it, for a defensive unit to fight back against (docs/ROUND3_UNIT_STATS.md).
+var _provoker: Node3D
+var _provoked_left := 0.0
 @export var attack_damage := 16
 @export var shot_interval := 0.7
 ## What a shot looks like in flight; empty uses the map's plain tracer.
@@ -412,6 +415,9 @@ func _order_process(delta: float) -> void:
 	_cooldown = maxf(0,_cooldown-delta)
 	_retry = maxf(0,_retry-delta)
 	_scan_wait -= delta
+	_provoked_left = maxf(0,_provoked_left-delta)
+	# A defensive unit (the Forester Maiden) fights back when hit, leaving its work.
+	if _retaliates(): command_attack(_provoker); _provoker = null
 	if order == "attack" and (not is_instance_valid(order_target) or not _may_hit(order_target)):
 		_stop_route()
 		order = "idle"
@@ -440,6 +446,10 @@ func _order_process(delta: float) -> void:
 	if order == "return" and return_explicit and not _crate_receiver(return_depot) and not SupplySource.can_receive(return_depot,team):
 		_stop_route(); state = "Delivery paused · selected supply source unavailable"; _update_display(); return
 	if order == "gather": _source_left()
+	if order == "gather" and farmer and is_instance_valid(source) and source.is_in_group("farms") and source.get("raided") == true:
+		_shelter_from_raid(delta)
+		_update_display()
+		return
 	if order == "gather" and is_instance_valid(source) and not source.can_extract(team):
 		_stop_route()
 		_gather(delta)
@@ -491,8 +501,8 @@ func _order_process(delta: float) -> void:
 		_:
 			var unreachable := state == "Trees unreachable"
 			state = "Out of fuel · landed" if fuel_landed else "Idle"
-			# Hold ground and defend even when deselected; working units keep working.
-			var enemy = _acquire()
+			# Hold ground and defend even when deselected; working units keep working. A defensive unit only fights back.
+			var enemy = _acquire() if unit_stats == null or not unit_stats.defensive_only else null
 			if enemy: _shoot(enemy)
 			elif fell_autocast and order_queue.is_empty() and not out_of_fuel:
 				if unreachable: _auto_wait = 10.0
@@ -1015,6 +1025,12 @@ func team_sees(target: Node3D) -> bool:
 	# A Mist hides the units in it from anyone not close by (docs/MIST_AND_SLOW.md), with or without fog.
 	if MistCloud.hides(target,team): return false
 	return _fog == null or _fog.visible_to(team,target.global_position)
+## The map's fog of war, or null on a map without one.
+func _fog_node() -> Node:
+	if not _fog_looked or (_fog != null and not is_instance_valid(_fog)):
+		_fog = get_tree().get_first_node_in_group("fog_of_war") if is_inside_tree() else null
+		_fog_looked = true
+	return _fog
 func _nearest_opponent() -> Node3D:
 	var closest: Node3D
 	var distance := weapon_reach()
@@ -1068,6 +1084,8 @@ func _shoot(target: Node3D) -> void:
 	if turret and turret.has_method("on_target") and not turret.on_target(): return
 	firing_weapon = weapon
 	_cooldown = CombatResolver.interval_for(self,target,weapon)
+	# The muzzle flash shows where it stands to the other side for a moment.
+	if _fog_node() != null: _fog.reveal_shot(self)
 	if animator and (lead <= 0.0 or not animator.acting()): animator.play_action(&"shoot",lead)
 	_aim_body(target,turret,animator)
 	var target_height: Vector3 = target.get_node("Visuals").position if target.has_node("Visuals") else Vector3.ZERO
@@ -1115,7 +1133,7 @@ func _aim_body(target: Node3D, turret: Node3D, animator: Node) -> void:
 	if animator and animator.has_method("aim_yaw"): $Visuals.rotation.y = animator.aim_yaw(to_local(target.global_position))
 	else: _face(target.global_position)
 func _fire_during_movement() -> void:
-	if unit_stats == null or not unit_stats.fire_while_moving or not _attack_enabled: return
+	if unit_stats == null or not unit_stats.fire_while_moving or unit_stats.defensive_only or not _attack_enabled: return
 	# Keep navigation/facing under the movement order; firing does not redirect the route.
 	var facing: float = $Visuals.rotation.y
 	var target = _acquire()
@@ -1126,6 +1144,30 @@ func _in_moving_arc(target: Node3D, facing: float) -> bool:
 	if unit_stats == null or unit_stats.moving_fire_arc >= 360.0: return true
 	var to: Vector3 = target.global_position-global_position
 	return absf(angle_difference(facing,atan2(-to.x,-to.z))) <= deg_to_rad(unit_stats.moving_fire_arc*0.5)
+## A hostile hit it (CombatResolver): a defensive unit remembers it, to fight back.
+func provoked_by(attacker: Node3D) -> void:
+	if unit_stats == null or not unit_stats.defensive_only or not is_instance_valid(attacker) or attacker.get("team") in [null,team,"neutral"]: return
+	_provoker = attacker
+	_provoked_left = unit_stats.retaliate_seconds
+## A defensive unit hit lately by a hostile unit it can fight, when idle or working and not a Farmer or carrying.
+func _retaliates() -> bool:
+	if unit_stats == null or not unit_stats.defensive_only or not _attack_enabled or farmer or carrying(): return false
+	if _provoked_left <= 0.0 or not is_instance_valid(_provoker) or _provoker.get("health") == null or _provoker.health <= 0: return false
+	if not _provoker.is_in_group("units") or not order in ["idle","gather","fell","construct","repair"]: return false
+	return _may_hit(_provoker)
+## A Farmer whose Farm is raided walks to the Keep (or pitched Hearth-Wain) covering it and waits there until the
+## raid clears, then goes back to work (docs/ROUND3_UNIT_STATS.md).
+func _shelter_from_raid(delta: float) -> void:
+	var shelter: Node3D = null
+	for node in SupplySource.candidates(get_tree(),source.global_position,team):
+		if node.is_in_group("keeps") or node.is_in_group("hearth_wains"): shelter = node; break
+	if shelter == null: _stop_route(); state = "Farm raided · no Keep to shelter at"; return
+	var near: float = KnightHousing.rules().farm_raid_shelter_distance
+	if global_position.distance_to(shelter.global_position) <= near:
+		_stop_route(); state = "Farm raided · sheltering at "+str(shelter.name); return
+	state = "Farm raided · to "+str(shelter.name)
+	if not _route.is_empty() or _moving_to.x >= 0: _walk(delta)
+	elif _retry <= 0 and not _route_near(shelter,near): state = "Farm raided · can't reach "+str(shelter.name)
 func take_damage(amount: int) -> void:
 	if _dead: return
 	# Armour upgrades take 1 a level off every hit, never below 1 (docs/UPGRADES.md).

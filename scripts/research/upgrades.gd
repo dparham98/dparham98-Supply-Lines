@@ -3,7 +3,8 @@ extends RefCounted
 ## Attack and armour upgrades (item 11 of the balance handoff, docs/UPGRADES.md). Each line has three levels,
 ## researched in order at a Foundry (Cyborgs) or a Forge (Knights), and holds for the whole side. Level n of a line
 ## is the research `<line>_<n>`.
-## - Attack: each level adds 10% of a weapon's base damage, rounded, at least 1.
+## - Attack: each level adds the weapon's own bonus (`attack_upgrade_bonus`, `heavy_upgrade_bonus` and
+##   `second_upgrade_bonus` on UnitStats; Round 3 handoff). Before, it added 10% of base damage, at least 1.
 ## - Armour: each level takes 1 off every hit the unit takes, never below 1.
 const INFANTRY_WEAPONS := &"infantry_weapons"
 const INFANTRY_ARMOUR := &"infantry_armour"
@@ -34,11 +35,11 @@ static func armour_level(unit: Node) -> int:
 	var team: String = unit.team
 	var cyborg := VEHICLE_ARMOUR if EngineeringWork.is_vehicle(unit) else INFANTRY_ARMOUR
 	return level(unit,team,cyborg)+level(unit,team,MAIL)
-## `base` damage from `attacker` with its attack upgrades.
-static func with_attack(attacker: Node, base: int) -> int:
+## `base` damage from `attacker` with its attack upgrades: `bonus` a level.
+static func with_attack(attacker: Node, base: int, bonus := 1) -> int:
 	var n := attack_level(attacker)
 	if n <= 0 or base <= 0: return base
-	return base+n*maxi(1,roundi(base*0.1))
+	return base+n*bonus
 ## A hit of `amount` on `unit` after its armour upgrades.
 static func after_armour(unit: Node, amount: int) -> int:
 	var n := armour_level(unit)
