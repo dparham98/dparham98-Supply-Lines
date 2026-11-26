@@ -20,7 +20,7 @@ Item 5 of `docs/BALANCE_IMPLEMENTATION_HANDOFF.md` (2026-11-23). This branch is 
   - **Track and trains:** with a Dragon Yard standing, it uses the Cyborg AI's rail and train code with Keeps for Depots. Track joins home to each other Keep within `expand_reach`, paid by home. Home buys a train (60 F / 40 W / 30 I) for each line that has none, and the train hauls that Keep's iron home, pausing while home is full.
   - **Coal:** the Keep starts with none and the trains burn it. One home Forester (`coal_hand`) mines iron, carries it out to a Coal Mine site near home and builds it. It then works the mine while home holds less than `train_coal_wanted` (60), up to twice that, and goes back to the Keep's own work after.
   - It runs no mining trains, which need a Temple.
-- **Spells** (docs/MIST_AND_SLOW.md, `spells`): the Forge researches Slow after level 1 of Arms and Mail. Each round, a Grail Sentinel with the other side's units it sees within 30 m:
+- **Spells** (docs/MIST_AND_SLOW.md, `spells`): the Forge researches Slow after level 1 of Arms and Mail. Then it researches Sundering Lances (Round 3, docs/ROUND3_SPELLS_AND_RESEARCH.md), once home holds its 100 coal; until then it leaves it out, so nothing else waits for coal. Each round, a Grail Sentinel with the other side's units it sees within 30 m:
   - casts **Slow** on the point with the most of them within Slow's 5 m, if that is at least `slow_clump` (3);
   - else casts **Mist** over the friends round it, if there are at least `mist_group` (4) within 8 m and every foe in reach is further than 16 m from their centre (beyond Mist's 8 m sight into it);
   - keeps `spell_keep` (40) reserve for healing after a cast;

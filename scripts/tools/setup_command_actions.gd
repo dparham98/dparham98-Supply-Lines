@@ -15,8 +15,8 @@ func _initialize() -> void:
 		"research_mining_trains": KEY_R, "research_minelaying": KEY_N, "command_lay_mine": KEY_E, "command_buy_mine": KEY_Q, "command_mine_iron": KEY_I,
 		# The Foundry's and Forge's upgrade lines (docs/UPGRADES.md), one tile per line.
 		# The Grail Sentinel's Mist and Slow (docs/MIST_AND_SLOW.md).
-		"command_mist": KEY_Q, "command_slow": KEY_W,
-		"upgrade_1": KEY_Q, "upgrade_2": KEY_W, "upgrade_3": KEY_E, "upgrade_4": KEY_R,
+		"command_mist": KEY_Q, "command_slow": KEY_W, "command_stimulus": KEY_E,
+		"upgrade_1": KEY_Q, "upgrade_2": KEY_W, "upgrade_3": KEY_E, "upgrade_4": KEY_R, "upgrade_5": KEY_T,
 		"command_make_crates": KEY_C, "command_worksite": KEY_W, "command_burn_either": KEY_E,
 		# Build page tiles (the card is hidden there, so letters can repeat) and header actions.
 		"build_depot": KEY_D, "build_generator": KEY_G, "build_barracks": KEY_B, "build_tank_factory": KEY_T, "build_mine": KEY_A, "build_coal_mine": KEY_C, "build_rail": KEY_R, "build_temple": KEY_S, "build_dragon_yard": KEY_Y, "produce_keep_train": KEY_T, "build_foundry": KEY_O, "build_forge": KEY_O, "build_pin": KEY_P, "build_back": KEY_ESCAPE,

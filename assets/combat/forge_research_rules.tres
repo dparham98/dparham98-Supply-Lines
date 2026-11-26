@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="ForgeResearchRules" format=3]
+[ext_resource type="Script" path="res://scripts/combat/forge_research_rules.gd" id="rules"]
+[resource]
+script = ExtResource("rules")
+sunder_seconds = 4.0
+sunder_bonus = 3
+camo_leave_grace = 1.5
+camo_attack_break = 2.0

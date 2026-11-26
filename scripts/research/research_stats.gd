@@ -8,6 +8,8 @@ extends Resource
 @export var iron_cost := 0
 ## Food, for research paid by a Keep (the Knights' Forge).
 @export var food_cost := 0
+## Coal, for the Forge's Sundering Lances and Forest Camouflage (docs/ROUND3_SPELLS_AND_RESEARCH.md).
+@export var coal_cost := 0
 ## An upgrade level (docs/UPGRADES.md): the line it belongs to and its level, 1 to 3. Level n needs n-1 first.
 @export var line: StringName
 @export_range(0,3,1) var level := 0

@@ -109,7 +109,7 @@ func run() -> void:
 	plan = place(network,&"forge",keep)
 	if not check(is_instance_valid(plan),"A Forge plan could not be queued: "+game.message): return
 	var forge = plan.complete_from_stock()
-	if not check(is_instance_valid(forge) and forge.is_in_group("research_buildings") and forge.research.size() == 7,"The plan should finish as a Forge with 6 levels and Slow (docs/MIST_AND_SLOW.md)"): return
+	if not check(is_instance_valid(forge) and forge.is_in_group("research_buildings") and forge.research.size() == 9,"The plan should finish as a Forge with 6 levels, Slow, Sundering Lances and Forest Camouflage (docs/MIST_AND_SLOW.md, docs/ROUND3_SPELLS_AND_RESEARCH.md)"): return
 	await process_frame
 	forge.set_process(false)
 	var food: int = keep.food
@@ -121,12 +121,16 @@ func run() -> void:
 	game.selected_building = forge
 	game.get_node("Interface")._process(0)
 	var tiles: Array = game.get_node("Interface").desired_buttons
-	if not check(tiles.has("Upgrade1") and tiles.has("Upgrade2") and tiles.has("Upgrade3") and not tiles.has("Upgrade4"),"The Forge card should show two upgrade tiles and Slow: %s" % [tiles]): return
+	if not check(tiles.has("Upgrade1") and tiles.has("Upgrade2") and tiles.has("Upgrade3") and tiles.has("Upgrade4") and tiles.has("Upgrade5"),"The Forge card should show two upgrade tiles, Slow, Sundering Lances and Forest Camouflage: %s" % [tiles]): return
 	var forge_hud = game.get_node("Interface")
 	if not check(str(forge_hud.card.get_node("Upgrade1").icon.resource_path).get_file() == "sl_upgrade_arms.png" and str(forge_hud.card.get_node("Upgrade2").icon.resource_path).get_file() == "sl_upgrade_mail.png","The Forge's tiles should show the Arms and Mail cards"): return
 	if not check(forge_hud.icon_name(forge) == "forge","The Forge should use its own icon"): return
 	var slow_icon: Texture2D = game.get_node("Interface").card.get_node("Upgrade3").icon
 	if not check(slow_icon != null and slow_icon.resource_path.get_file() == "sl_research_slow.png","The Slow research tile should show its own card"): return
+	var lances_icon: Texture2D = forge_hud.card.get_node("Upgrade4").icon
+	var camo_icon: Texture2D = forge_hud.card.get_node("Upgrade5").icon
+	if not check(lances_icon.resource_path.get_file() == "sl_research_sundering_lances.png" and camo_icon.resource_path.get_file() == "sl_research_forest_camouflage.png","Sundering Lances and Forest Camouflage should show their own cards"): return
+	if not check(forge_hud.card.get_node("Upgrade4").tooltip_text.contains("100 C"),"The Sundering Lances tile should show its coal: '%s'" % forge_hud.card.get_node("Upgrade4").tooltip_text): return
 	game.selected_building = null
 	var marine := spawn("round_table_marine","player",keep.global_position+Vector3(6,0,6))
 	if not check(Upgrades.with_attack(marine,6,1) == 7,"Arms I: a Marine's 6 (+1) becomes 7"): return

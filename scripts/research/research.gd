@@ -9,6 +9,9 @@ const MINING_TRAINS := &"mining_trains"
 const MINELAYING := &"minelaying"
 ## Slow (docs/MIST_AND_SLOW.md): researched at the Forge, it lets Grail Sentinels cast Slow.
 const SLOW := &"slow"
+## Sundering Lances and Forest Camouflage (docs/ROUND3_SPELLS_AND_RESEARCH.md), researched at the Forge.
+const SUNDERING := &"sundering_lances"
+const CAMOUFLAGE := &"forest_camouflage"
 static func _game(from: Node) -> Node:
 	if from == null or not from.is_inside_tree(): return null
 	return from if from.is_in_group("skirmish") else from.get_tree().get_first_node_in_group("skirmish")

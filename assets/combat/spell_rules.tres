@@ -2,7 +2,7 @@
 [ext_resource type="Script" path="res://scripts/combat/spell_rules.gd" id="rules"]
 [resource]
 script = ExtResource("rules")
-cast_range = 20.0
+cast_range = 24.0
 mist_cost = 40
 mist_seconds = 8.0
 mist_radius = 8.0
@@ -11,3 +11,8 @@ slow_cost = 25
 slow_seconds = 5.0
 slow_radius = 5.0
 slow_factor = 0.6
+stimulus_cost = 35
+stimulus_cast_range = 14.0
+stimulus_seconds = 7.0
+stimulus_radius = 5.0
+stimulus_boost = 0.25

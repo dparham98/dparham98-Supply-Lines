@@ -20,10 +20,21 @@ var repair_payer: Node3D
 @export var spell_rules: SpellRules = preload("res://assets/combat/spell_rules.tres")
 @export var mist_scene: PackedScene = preload("res://scenes/gameplay/mist_cloud.tscn")
 @export var slow_scene: PackedScene = preload("res://scenes/gameplay/slow_field.tscn")
+@export var stimulus_scene: PackedScene = preload("res://scenes/gameplay/stimulus_field.tscn")
 var _cast_point := Vector3.ZERO
 ## A Slow on this unit: seconds left and the share of its speed it keeps.
 var _slow_left := 0.0
 var _slow_factor := 1.0
+## A Stimulus on this unit: seconds left and how much faster it moves and attacks meanwhile.
+var _stimulus_left := 0.0
+var _stimulus_boost := 0.0
+## Sundering Lances and Forest Camouflage (docs/ROUND3_SPELLS_AND_RESEARCH.md).
+@export var forge_rules: ForgeResearchRules = preload("res://assets/combat/forge_research_rules.tres")
+## Seconds this unit stays sundered: every hit on it deals `forge_rules.sunder_bonus` more after armour.
+var _sundered_left := 0.0
+## Forest Camouflage: seconds it stays hidden after leaving forest, and seconds an attack keeps it showing.
+var _camo_left := 0.0
+var _camo_broken := 0.0
 ## The reserve refills from a covering friendly Keep or an adjacent crate: `med_refill_points` points for
 ## `med_refill_cost` of `med_refill_kind` every `med_refill_interval` s. A cost of 0 refills for nothing.
 @export var med_refill_kind := &"food"
@@ -363,6 +374,11 @@ func _process(delta: float) -> void:
 	if _slow_left > 0.0:
 		_slow_left = maxf(0.0,_slow_left-delta)
 		if _slow_left <= 0.0: _slow_factor = 1.0
+	if _stimulus_left > 0.0:
+		_stimulus_left = maxf(0.0,_stimulus_left-delta)
+		if _stimulus_left <= 0.0: _stimulus_boost = 0.0
+	if _sundered_left > 0.0: _sundered_left = maxf(0.0,_sundered_left-delta)
+	_camouflage_tick(delta)
 	fuel_tick(delta)
 	_ease_flight(delta)
 	if can_heal:
@@ -497,7 +513,7 @@ func _order_process(delta: float) -> void:
 		"construct": _construct(delta)
 		"derail": _derail_order(delta)
 		"lay_mine": _lay_mine_order(delta)
-		"mist", "slow": _spell_order()
+		"mist", "slow", "stimulus": _spell_order()
 		_:
 			var unreachable := state == "Trees unreachable"
 			state = "Out of fuel · landed" if fuel_landed else "Idle"
@@ -532,6 +548,7 @@ func run_order(entry: Dictionary) -> void:
 		"lay_mine": command_lay_mine(entry.point)
 		"mist": command_spell("mist",entry.point)
 		"slow": command_spell("slow",entry.point)
+		"stimulus": command_spell("stimulus",entry.point)
 		"attack_move": command_attack_move(entry.point)
 		"deploy": command_deploy_at(entry.point)
 		"load", "unload":
@@ -1017,8 +1034,8 @@ var _fog: Node
 var _fog_looked := false
 func team_sees(target: Node3D) -> bool:
 	if not is_instance_valid(target): return false
-	# A mine is hidden once armed: seen only while one of the side's detectors covers it (docs/MINES.md).
-	if target.is_in_group("land_mines") and not target.detected_by(team): return false
+	# An armed mine or a camouflaged unit is seen only while one of the side's detectors covers it (docs/MINES.md).
+	if Detection.hidden_from(target,team): return false
 	if not _fog_looked or (_fog != null and not is_instance_valid(_fog)):
 		_fog = get_tree().get_first_node_in_group("fog_of_war") if is_inside_tree() else null
 		_fog_looked = true
@@ -1083,7 +1100,10 @@ func _shoot(target: Node3D) -> void:
 	# A turret fires only once it is round on the target (docs/TURRET_AIM.md); the reload is done meanwhile.
 	if turret and turret.has_method("on_target") and not turret.on_target(): return
 	firing_weapon = weapon
-	_cooldown = CombatResolver.interval_for(self,target,weapon)
+	# A Stimulus shortens the reload (docs/ROUND3_SPELLS_AND_RESEARCH.md).
+	_cooldown = CombatResolver.interval_for(self,target,weapon)/attack_rate_scale()
+	# Attacking shows a camouflaged unit for a while.
+	if forge_rules != null: _camo_broken = forge_rules.camo_attack_break
 	# The muzzle flash shows where it stands to the other side for a moment.
 	if _fog_node() != null: _fog.reveal_shot(self)
 	if animator and (lead <= 0.0 or not animator.acting()): animator.play_action(&"shoot",lead)
@@ -1172,6 +1192,8 @@ func take_damage(amount: int) -> void:
 	if _dead: return
 	# Armour upgrades take 1 a level off every hit, never below 1 (docs/UPGRADES.md).
 	amount = Upgrades.after_armour(self,amount)
+	# A sundered unit takes more from every hit, after armour (Sundering Lances).
+	if sundered(): amount += forge_rules.sunder_bonus
 	health = maxi(0,health-maxi(0,amount))
 	_update_display()
 	if health <= 0:
@@ -1309,18 +1331,52 @@ func command_heal(target: Node3D) -> void:
 	_heal_resume = Vector3.INF
 	order = "heal"
 	state = "Healing ordered"
-## Mist and Slow (docs/MIST_AND_SLOW.md). The share of its speed a unit keeps now: less while it is slowed.
+## Mist and Slow (docs/MIST_AND_SLOW.md). The share of its speed a unit has now: less while it is slowed, more while
+## a Stimulus is on it (both can be on at once).
 func speed_scale() -> float:
-	return _slow_factor if _slow_left > 0.0 else 1.0
+	return (_slow_factor if _slow_left > 0.0 else 1.0)*attack_rate_scale()
+## How much faster than usual it attacks and moves: 1 + the boost while a Stimulus is on it.
+func attack_rate_scale() -> float:
+	return 1.0+_stimulus_boost if _stimulus_left > 0.0 else 1.0
+func stimulated() -> bool:
+	return _stimulus_left > 0.0
+## A Stimulus: `boost` faster for `seconds`. Another one restarts the time; boosts don't add up.
+func apply_stimulus(seconds: float, boost: float) -> void:
+	_stimulus_left = maxf(_stimulus_left,seconds)
+	_stimulus_boost = maxf(_stimulus_boost,boost)
+## Whether a Stimulus may be put on it: a living friendly unit that is not a vehicle (the Azure Dragon is not one).
+func takes_stimulus() -> bool:
+	return health > 0 and not is_cargo_vehicle and not is_depot_truck and not EngineeringWork.is_vehicle(self)
+## Sundering Lances: marked for `seconds`; a fresh mark restarts the time.
+func sunder(seconds: float) -> void:
+	_sundered_left = maxf(_sundered_left,seconds)
+func sundered() -> bool:
+	return _sundered_left > 0.0 and forge_rules != null
+## Forest Camouflage: whether it is hidden now from the other side's units that do not detect it (Detection).
+func camouflaged() -> bool:
+	return _camo_left > 0.0 and _camo_broken <= 0.0 and health > 0
+## In forest, with the research done, the camouflage holds; out of it, it lasts `camo_leave_grace` s.
+func _camouflage_tick(delta: float) -> void:
+	_camo_broken = maxf(0.0,_camo_broken-delta)
+	if forge_rules == null or not has_ability(&"forest_camouflage"): return
+	if ground != null and ground.forest_amount(grid_position) > 0 and Research.has(self,team,Research.CAMOUFLAGE):
+		_camo_left = forge_rules.camo_leave_grace
+	else: _camo_left = maxf(0.0,_camo_left-delta)
 ## Slows this unit for `seconds` to `factor` of its speed; a stronger or longer Slow replaces a weaker one.
 func apply_slow(seconds: float, factor: float) -> void:
 	_slow_factor = minf(_slow_factor,factor) if _slow_left > 0.0 else factor
 	_slow_left = maxf(_slow_left,seconds)
 func spell_cost(kind: String) -> int:
-	return spell_rules.mist_cost if kind == "mist" else spell_rules.slow_cost
+	match kind:
+		"mist": return spell_rules.mist_cost
+		"stimulus": return spell_rules.stimulus_cost
+	return spell_rules.slow_cost
+## How near the point it must be to cast `kind`.
+func spell_range(kind: String) -> float:
+	return spell_rules.stimulus_cast_range if kind == "stimulus" else spell_rules.cast_range
 ## Why this unit can't cast `kind` now, or "" when it can.
 func spell_blocker(kind: String) -> String:
-	if not can_heal or spell_rules == null: return "Only Grail Sentinels cast Mist and Slow."
+	if not can_heal or spell_rules == null: return "Only Grail Sentinels cast Mist, Slow and Stimulus."
 	if kind == "slow" and not Research.has(self,team,Research.SLOW): return "Research Slow at a Forge first."
 	if med_reserve < spell_cost(kind): return "Needs %d reserve points (%d / %d)." % [spell_cost(kind),med_reserve,med_reserve_capacity]
 	return ""
@@ -1338,7 +1394,7 @@ func _spell_order() -> void:
 	var kind := order
 	if not spell_blocker(kind).is_empty(): state = spell_blocker(kind); order = "idle"; return
 	var flat := Vector2(global_position.x-_cast_point.x,global_position.z-_cast_point.z).length()
-	if flat > spell_rules.cast_range:
+	if flat > spell_range(kind):
 		if _retry <= 0:
 			state = "To cast %s" % kind.capitalize()
 			if not _route_to_point(_cast_point): order = "idle"; state = "Can't reach the spot"
@@ -1356,14 +1412,24 @@ func _spell_order() -> void:
 		mist.seconds = spell_rules.mist_seconds
 		parent.add_child(mist)
 		mist.global_position = _cast_point
+	elif kind == "stimulus":
+		var boost = stimulus_scene.instantiate()
+		boost.seconds = spell_rules.stimulus_seconds
+		boost.radius = spell_rules.stimulus_radius
+		parent.add_child(boost)
+		boost.global_position = _cast_point
+		for unit in get_tree().get_nodes_in_group("units"):
+			if unit.get("team") != team or not unit.has_method("takes_stimulus") or not unit.takes_stimulus(): continue
+			if Vector2(unit.global_position.x-_cast_point.x,unit.global_position.z-_cast_point.z).length() <= spell_rules.stimulus_radius: unit.apply_stimulus(spell_rules.stimulus_seconds,spell_rules.stimulus_boost)
 	else:
 		var field = slow_scene.instantiate()
 		field.seconds = spell_rules.slow_seconds
 		field.radius = spell_rules.slow_radius
 		parent.add_child(field)
 		field.global_position = _cast_point
+		# Vehicles are slowed too; trains, on their track, are not.
 		for unit in get_tree().get_nodes_in_group("units"):
-			if unit.get("team") == team or not unit.has_method("apply_slow") or unit.get("health") == null or unit.health <= 0: continue
+			if unit.get("team") == team or not unit.has_method("apply_slow") or unit.get("health") == null or unit.health <= 0 or unit.is_in_group("rail_trains"): continue
 			if Vector2(unit.global_position.x-_cast_point.x,unit.global_position.z-_cast_point.z).length() <= spell_rules.slow_radius: unit.apply_slow(spell_rules.slow_seconds,spell_rules.slow_factor)
 	order = "idle"
 	state = "%s cast · %d / %d reserve" % [kind.capitalize(),med_reserve,med_reserve_capacity]

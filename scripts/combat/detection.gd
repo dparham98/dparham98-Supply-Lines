@@ -1,11 +1,26 @@
 class_name Detection
 extends RefCounted
-## Detection (item 9 of the balance handoff, docs/MINES.md). A hidden thing, for now only an armed land mine, is
-## drawn for a side and can be targeted by it only while it lies within the detect range of one of that side's
-## detectors:
+## Detection (item 9 of the balance handoff, docs/MINES.md). A hidden thing is drawn for the other side and can be
+## targeted by it only while it lies within the detect range of one of that side's detectors. Hidden things
+## (`is_camouflaged`):
+## - an armed land mine;
+## - a unit camouflaged now: a Warhound in forest once its side has Forest Camouflage
+##   (docs/ROUND3_SPELLS_AND_RESEARCH.md).
+## Detectors:
 ## - a Depot or Keep, at its own range (SupplySource.radius, 26.25 m);
-## - a unit whose UnitStats.detect_range is set: the Drone (20 m) and the Warhound (10 m).
+## - a unit whose UnitStats.detect_range is set: the Drone (20 m) and the Warhound (15 m).
 ## Nothing else detects.
+
+## Whether `node` is hidden from the other side now, unless a detector covers it.
+static func is_camouflaged(node: Node) -> bool:
+	if not is_instance_valid(node): return false
+	if node.is_in_group("land_mines"): return node.get("armed") == true
+	return node.has_method("camouflaged") and node.camouflaged()
+## Whether `side` can't see `node` now for its camouflage: another side's hidden thing that no detector of `side`
+## covers.
+static func hidden_from(node: Node, side: String) -> bool:
+	if not is_instance_valid(node) or node.get("team") == side or not is_camouflaged(node): return false
+	return not detects(node,side,node.global_position)
 
 ## Whether `team` has a detector covering `point`. `from` is any node in the map.
 static func detects(from: Node, team: String, point: Vector3) -> bool:

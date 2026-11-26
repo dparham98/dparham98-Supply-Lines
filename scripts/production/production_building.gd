@@ -67,15 +67,15 @@ func _set_source(depot: Node3D) -> void:
 	assigned_depot = depot
 	if is_instance_valid(assigned_depot) and not assigned_depot.ownership_changed.is_connected(_source_changed): assigned_depot.ownership_changed.connect(_source_changed)
 ## The Depot to pay `energy` and `iron` now: the current one if it can, else the nearest covering one that can.
-func payer_for(energy: int, iron: int, food := 0, wood := 0) -> Node3D:
+func payer_for(energy: int, iron: int, food := 0, wood := 0, coal := 0) -> Node3D:
 	if not source_friendly(): return null
-	if _can_pay(assigned_depot,energy,iron,food,wood): return assigned_depot
+	if _can_pay(assigned_depot,energy,iron,food,wood,coal): return assigned_depot
 	for depot in covering_depots():
-		if _can_pay(depot,energy,iron,food,wood): return depot
+		if _can_pay(depot,energy,iron,food,wood,coal): return depot
 	return null
 ## Whether a Depot (or Keep, which pays in Food) holds the whole cost.
-func _can_pay(depot: Node3D, energy: int, iron: int, food: int, wood: int) -> bool:
-	return depot.energy >= energy and depot.iron >= iron and depot.food >= food and depot.wood >= wood
+func _can_pay(depot: Node3D, energy: int, iron: int, food: int, wood: int, coal := 0) -> bool:
+	return depot.energy >= energy and depot.iron >= iron and depot.food >= food and depot.wood >= wood and depot.coal >= coal
 func _source_changed() -> void:
 	# Preserve the existing Depot policy: paid queue cancellation without refund on source capture.
 	pending.clear()

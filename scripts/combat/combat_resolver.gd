@@ -57,6 +57,16 @@ static func strike(attacker: Node3D, primary: Node3D, forced := false) -> void:
 		if can_hit(attacker,victim) or (forced and victim == primary and can_force(attacker,victim)):
 			if victim.has_method("provoked_by"): victim.provoked_by(attacker)
 			victim.take_damage(splash_damage(attacker,victim,primary))
+			sunder(attacker,victim)
+## Sundering Lances (docs/ROUND3_SPELLS_AND_RESEARCH.md): a hit from a unit with the ability, once its side has the
+## research, marks an armoured or giant unit sundered. The mark counts from the next hit.
+static func sunder(attacker: Node3D, victim: Node3D) -> void:
+	if not is_instance_valid(attacker) or not is_instance_valid(victim) or not victim.has_method("sunder") or victim.health <= 0: return
+	if not attacker.has_method("has_ability") or not attacker.has_ability(&"sundering_lances"): return
+	if not Research.has(attacker,attacker.team,Research.SUNDERING): return
+	var stats = victim.get("unit_stats")
+	if target_class(victim) != ARMOURED and not (stats != null and stats.giant): return
+	victim.sunder(attacker.forge_rules.sunder_seconds if attacker.get("forge_rules") != null else 4.0)
 ## Damage to `victim`: the full hit for the target aimed at, the attacker's splash share of it for other units.
 static func splash_damage(attacker: Node3D, victim: Node3D, primary) -> int:
 	# Attack upgrades add to the weapon's base damage (docs/UPGRADES.md).
@@ -76,3 +86,4 @@ static func strike_at(attacker: Node3D, primary, point: Vector3, forced := false
 		if can_hit(attacker,victim) or (forced and victim == primary and can_force(attacker,victim)):
 			if victim.has_method("provoked_by"): victim.provoked_by(attacker)
 			victim.take_damage(splash_damage(attacker,victim,primary))
+			sunder(attacker,victim)
