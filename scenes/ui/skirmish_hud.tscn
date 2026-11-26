@@ -318,6 +318,10 @@ events = [SubResource("key_research_minelaying")]
 action = &"command_lay_mine"
 [sub_resource type="Shortcut" id="shortcut_command_lay_mine"]
 events = [SubResource("key_command_lay_mine")]
+[sub_resource type="InputEventAction" id="key_command_buy_mine"]
+action = &"command_buy_mine"
+[sub_resource type="Shortcut" id="shortcut_command_buy_mine"]
+events = [SubResource("key_command_buy_mine")]
 [sub_resource type="InputEventAction" id="key_research_mining_trains"]
 action = &"research_mining_trains"
 [sub_resource type="Shortcut" id="shortcut_research_mining_trains"]
@@ -3239,6 +3243,31 @@ icon = ExtResource("card_lay_mine")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/LayMine"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="BuyMine" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+tooltip_text = "Buy mine: one mine for iron from a covering Depot or deployed Cargo truck. Needs Minelaying researched."
+shortcut = SubResource("shortcut_command_buy_mine")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_derail")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/BuyMine"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0

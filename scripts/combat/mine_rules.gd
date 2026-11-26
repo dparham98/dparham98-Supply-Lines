@@ -4,11 +4,9 @@ extends Resource
 
 ## Mines a Derailer carries once its side has researched Minelaying.
 @export_range(0,20,1) var capacity := 2
-## Iron one mine costs, taken where it is loaded: a friendly Depot whose range covers the stopped Derailer, or a
-## deployed Cargo truck beside it.
+## Iron one mine costs, paid when it is bought (Buy mine on the Derailer's card): from a friendly Depot whose range
+## covers the Derailer, or a deployed Cargo truck beside it.
 @export_range(0,1000,1) var iron_per_mine := 10
-## Seconds between loading one mine and the next, as a vehicle refuels a little at a time.
-@export_range(0.1,30,0.1) var load_seconds := 1.0
 ## Seconds the Derailer works to lay one.
 @export_range(0.1,30,0.1) var lay_seconds := 2.0
 ## Seconds after it is laid before it arms and is hidden.

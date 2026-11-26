@@ -39,7 +39,7 @@ var _tip_since := 0.0
 ## Fixed command slots, row-major in the 4 × 3 grid. Commands that never share a card may share a slot.
 const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 4, "Return": 5, "DropMaterials": 6, "Build": 7,
 	"BurnWood": 4, "BurnCoal": 5, "BurnEither": 6, "MakeCrates": 3, "Worksite": 7,
-	"Repair": 8, "Heal": 8, "Derail": 8, "Capture": 9, "LayMine": 9, "DeployTruck": 10, "Fell": 10, "CancelPlan": 11,
+	"Repair": 8, "Heal": 8, "Derail": 8, "Capture": 9, "LayMine": 9, "BuyMine": 10, "DeployTruck": 10, "Fell": 10, "CancelPlan": 11,
 	"DeployCargo": 2, "Load": 4, "Unload": 5, "Trips": 6,
 	"PrintTruck": 0, "PrintCargo": 1, "PrintTrain": 2,
 	"TrainForester": 0, "TrainWarhound": 1, "LaunchBalloon": 2,
@@ -213,6 +213,15 @@ func _ready() -> void:
 			return
 		game.pending_unit_command = "lay_mine"
 		game.notify("Lay mine: click where the Derailer should lay it. Esc cancels."))
+	# Buy mine (docs/MINES.md): each selected Derailer that can buys one.
+	card.get_node("BuyMine").pressed.connect(func():
+		var bought := 0
+		for unit in selected_units():
+			if unit.has_method("command_buy_mine") and unit.command_buy_mine(): bought += 1
+		if bought > 0: game.notify("%d mine%s bought." % [bought,"" if bought == 1 else "s"])
+		else:
+			var first = selected_units().front() if not selected_units().is_empty() else null
+			game.notify(first.buy_mine_blocker() if first != null and first.has_method("buy_mine_blocker") else "Select a Derailer."))
 	# Right-click on the Fell card switches autocast (docs/FELL.md).
 	card.get_node("Fell").gui_input.connect(func(event: InputEvent):
 		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
@@ -277,6 +286,8 @@ func selected_object() -> Node3D:
 	if node.is_in_group("units"): return node if node.team != "player" and node.health > 0 else null
 	# So is a Forest or Coal tile, until it is cut or dug out (docs/CURSORS.md).
 	if node.is_in_group("forest_cells") or node.is_in_group("coal_cells"): return node if node.remaining > 0 else null
+	# A land mine, while it lies there and the viewer sees it (docs/MINES.md).
+	if node.is_in_group("land_mines"): return node if node.health > 0 and node.is_visible_in_tree() else null
 	return node if node.is_in_group("selectable_buildings") or node.is_in_group("construction_plans") else null
 ## Your selected buildings of the shown building's type (docs/SELECTION_INSPECT.md), the shown one first.
 func same_buildings() -> Array[Node3D]:
@@ -860,6 +871,18 @@ func show_cell(node: Node3D) -> void:
 		whole = "This seam: %d coal left" % node.field_remaining()
 	info.get_node("Details").text = "Tile %s × %s m · cell %d, %d\n%s" % [_metres(side),_metres(side),node.cell.x,node.cell.y,whole]
 	hint_text = "Right-click with Deforesters to gather its wood, or Fell (F) to clear it without carrying the wood home." if wood else ("Build a Coal Mine on the seam, then Deforesters gather from the mine." if ground.harvesting_rules.coal_needs_mine else "Right-click with Deforesters to dig coal here.")
+## A land mine's card (docs/MINES.md): read-only; enemies attack it from their own card.
+func show_land_mine(node: Node3D) -> void:
+	var own: bool = node.team == "player"
+	name_label.text = "Land mine"
+	commands.get_node("Title").text = "LAND MINE"
+	state_label.text = "%s · %s" % [team_label(node),"armed" if node.armed else "arming"]
+	info.get_node("Health").visible = true
+	info.get_node("Health").max_value = node.max_health
+	info.get_node("Health").value = node.health
+	info.get_node("HealthText").text = "%d / %d HP" % [node.health,node.max_health]
+	info.get_node("Details").text = "Sets off under an enemy ground unit within %.0f m: %d damage, %d to others within %.0f m. A train on it derails." % [node.rules.trigger_radius,node.rules.damage,roundi(node.rules.damage*node.rules.splash_share),node.rules.splash_radius]
+	hint_text = "Yours: hidden from the other side once armed, except near its detectors." if own else "Detected: right-click it with units, or Attack (A) it, to shoot it before something drives over it."
 func _metres(value: float) -> String:
 	return str(int(value)) if is_equal_approx(value,roundf(value)) else "%.1f" % value
 func update_contents() -> void:
@@ -907,6 +930,9 @@ func update_contents() -> void:
 		return
 	if is_instance_valid(node) and (node.is_in_group("forest_cells") or node.is_in_group("coal_cells")):
 		show_cell(node)
+		return
+	if is_instance_valid(node) and node.is_in_group("land_mines"):
+		show_land_mine(node)
 		return
 	if is_instance_valid(node) and node.is_in_group("construction_plans"):
 		info.get_node("Health").visible = false
@@ -1110,11 +1136,16 @@ Flies only where its Keep sent it" % node.cargo_text()
 				show_button("Derail","Derail")
 				explain(card.get_node("Derail"),node.derail_cooldown > 0.0,"Recharging: %d s" % ceili(node.derail_cooldown))
 				if node.get("mine_rules") != null:
+					show_button("BuyMine","Buy mine")
+					var buy: Button = card.get_node("BuyMine")
+					var buy_blocker: String = node.buy_mine_blocker()
+					explain(buy,not buy_blocker.is_empty(),buy_blocker)
+					if buy_blocker.is_empty(): buy.tooltip_text = "Buy mine (Q): %d iron from the covering stockpile. %d of %d mines aboard." % [node.mine_rules.iron_per_mine,node.mines,node.mine_rules.capacity]
 					show_button("LayMine","Lay mine")
 					var lay: Button = card.get_node("LayMine")
 					var blocker: String = node.lay_mine_blocker()
 					explain(lay,not blocker.is_empty(),blocker)
-					if blocker.is_empty(): lay.tooltip_text = "Lay mine (N): click a point, track included. %d of %d mines aboard. It arms after %.0f s and is then hidden from the other side except near its detectors (Depots, Keeps, Drones, Warhounds). An enemy ground unit within %.0f m sets it off for %d damage; a train on it derails." % [node.mines,node.mine_rules.capacity,node.mine_rules.arm_seconds,node.mine_rules.trigger_radius,node.mine_rules.damage]
+					if blocker.is_empty(): lay.tooltip_text = "Lay mine (E): click a point, track included. %d of %d mines aboard. It arms after %.0f s and is then hidden from the other side except near its detectors (Depots, Keeps, Drones, Warhounds). An enemy ground unit within %.0f m sets it off for %d damage; a train on it derails." % [node.mines,node.mine_rules.capacity,node.mine_rules.arm_seconds,node.mine_rules.trigger_radius,node.mine_rules.damage]
 			hint_text = "Right-click to move, gather or attack. Workers pay from and deliver to the nearest stockpile unless you right-click a Depot. Build plans with B."
 			if node.get("farmer") == true: hint_text = "A Farmer works its Farm for good and carries the Food to the nearest Keep. It does not build, fell or fight. If its Farm is lost, right-click an empty Farm."
 # Card art that follows the state of a button. Unchanged art is not reassigned, so buttons do not redraw each frame.
