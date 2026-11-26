@@ -670,7 +670,6 @@ func _route_near(target: Node3D, radius: float) -> bool:
 	_retry = 1
 	return false
 const CoalApproach := preload("res://scripts/terrain/coal_approach.gd")
-const Grid := preload("res://scripts/terrain/terrain_grid.gd")
 const FellLane := preload("res://scripts/terrain/fell_lane.gd")
 const Approach := preload("res://scripts/units/interaction_approach.gd")
 ## Route cells looked ahead for a straight run, and half the width of the lane a run must keep clear.
@@ -1360,7 +1359,7 @@ func camouflaged() -> bool:
 func _camouflage_tick(delta: float) -> void:
 	_camo_broken = maxf(0.0,_camo_broken-delta)
 	if forge_rules == null or not has_ability(&"forest_camouflage"): return
-	if ground != null and ground.get_terrain(grid_position) == Grid.Terrain.FOREST and Research.has(self,team,Research.CAMOUFLAGE):
+	if ground != null and ground.forest_amount(grid_position) > 0 and Research.has(self,team,Research.CAMOUFLAGE):
 		_camo_left = forge_rules.camo_leave_grace
 	else: _camo_left = maxf(0.0,_camo_left-delta)
 ## Slows this unit for `seconds` to `factor` of its speed; a stronger or longer Slow replaces a weaker one.

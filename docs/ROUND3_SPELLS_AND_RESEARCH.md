@@ -58,7 +58,7 @@ The marking happens in `CombatResolver.sunder`, called after each hit in `strike
 ### Forest Camouflage
 
 The Warhound carries the `forest_camouflage` ability. Once its side has the research:
-- **Hidden in forest:** a Warhound standing on a forest cell is hidden from the other side. The only exception is a detector covering it: a Depot or Keep at its range, a Drone within 20 m, or a Warhound within 15 m.
+- **Hidden in forest:** a Warhound standing on a forest cell that still holds wood (`forest_amount > 0`) is hidden from the other side. The only exception is a detector covering it: a Depot or Keep at its range, a Drone within 20 m, or a Warhound within 15 m.
 - **Grace:** after it leaves the forest it stays hidden for 1.5 s (`camo_leave_grace`).
 - **Attacking:** a bite shows it for 2 s (`camo_attack_break`).
 - **Hidden means:**
@@ -108,7 +108,7 @@ They stand in until drawn cards replace them, as Mist and Slow's were.
 - out of the forest it shows after 1.5 s;
 - a bite shows it for 2 s.
 
-`upgrades_test` now expects the Forge's 9 research entries, its five tiles, the new cards and the coal on the tile.
+`upgrades_test` now expects the Forge's 9 research entries, its five tiles, the new cards and the coal on the tile. `command_cards_test` counts 80 card tiles.
 
 ## Not done
 
