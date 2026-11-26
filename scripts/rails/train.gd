@@ -195,7 +195,7 @@ func _plan(goal: Vector2i) -> bool:
 ## A train loads and unloads anywhere on track touching a Depot's rail ring (docs/RAIL_PLANNING.md), which is
 ## wider than the ground loading area.
 func stop_reach(target: Node3D) -> float:
-	if target.is_in_group("depots") and target.get("rules") != null:
+	if (target.is_in_group("depots") and target.get("rules") != null) or target.is_in_group("railheads"):
 		return rail_network.depot_reach(target)+rail_network.probe("straight").half_width()+0.1
 	return target.dropoff_range
 func _route_to_interaction(target: Node3D, radius: float) -> bool:

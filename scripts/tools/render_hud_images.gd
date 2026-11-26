@@ -41,6 +41,7 @@ const ENTRIES := {
 	"foundry": ["res://scenes/gameplay/foundry.tscn","","build_foundry",215.0,1.0], # docs/FOUNDRY_MODEL.md; door +Z
 	"forge": ["res://scenes/gameplay/forge.tscn","","build_forge",215.0,1.0], # docs/FORGE_MODEL.md; open front +Z
 	"dragon_yard": ["res://scenes/gameplay/dragon_yard.tscn","","build_dragon_yard",215.0,1.0], # docs/DRAGON_YARD_MODEL.md; pen +Z
+	"railhead": ["res://scenes/gameplay/railhead.tscn","","build_railhead",215.0,1.0], # docs/ROUND3_TROOP_TRAINS.md; placeholder model
 	"knights_train": ["res://scenes/gameplay/knights_train.tscn","produce_knights_train","",220.0,1.0], # docs/KNIGHTS_TRAIN_MODEL.md
 	"hearth_wain": ["res://scenes/gameplay/hearth_wain.tscn","produce_hearth_wain","",220.0,1.0], # docs/ROUND3_HEARTH_WAIN.md; placeholder model
 	"derailer_buy_mine": ["res://scenes/gameplay/motorcycle.tscn","","buy_mine",215.0,1.0],

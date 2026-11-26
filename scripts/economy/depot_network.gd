@@ -453,6 +453,8 @@ func depot_rules() -> DepotRules:
 const PLAN_SCENE = preload("res://scenes/gameplay/construction_plan.tscn")
 const FARM_SCENE = preload("res://scenes/gameplay/farm.tscn")
 const HOUSE_SCENE = preload("res://scenes/gameplay/house.tscn")
+const RAILHEAD_SCENE = preload("res://scenes/gameplay/railhead.tscn")
+const RAILHEAD_NOTICE := "A Railhead must stand beside your track."
 const FarmScript = preload("res://scripts/economy/farm.gd")
 const HYDRO_DAM_SCENE = preload("res://scenes/gameplay/hydro_dam.tscn")
 const HYDRO_DAM_STATS: HydroDamStats = preload("res://assets/buildings/hydro_dam.tres")
@@ -480,6 +482,10 @@ func plan_spec(kind: StringName) -> Dictionary:
 		preview.free()
 		return {"title":"Keep","size":size,"energy":0,"food":0,"wood":50,"iron":50,"scene":_keep_scene(),"model":_model_scene(_keep_scene()),"keep_stock":true}
 	if kind == &"farm": return {"title":"Farm","size":KnightHousing.rules().farm_footprint,"energy":0,"food":0,"wood":KnightHousing.rules().farm_wood_cost,"iron":0,"scene":FARM_SCENE,"model":_model_scene(FARM_SCENE),"keep_stock":true,"in_keep_range":true}
+	# Either side (docs/ROUND3_TROOP_TRAINS.md); a Knights one in a Keep's range builds from its stock.
+	if kind == &"railhead":
+		var rail_rules: RailRules = load("res://assets/economy/rail_rules.tres")
+		return {"title":"Railhead","size":rail_rules.railhead_footprint,"energy":0,"food":0,"wood":0,"iron":rail_rules.railhead_iron_cost,"scene":RAILHEAD_SCENE,"model":_model_scene(RAILHEAD_SCENE),"keep_stock":true}
 	if kind == &"house": return {"title":"House","size":KnightHousing.rules().house_footprint,"energy":0,"food":0,"wood":KnightHousing.rules().house_wood_cost,"iron":0,"scene":HOUSE_SCENE,"model":_model_scene(HOUSE_SCENE),"keep_stock":true}
 	if kind == &"hydro_dam": return {"title":HYDRO_DAM_STATS.display_name,"size":HYDRO_DAM_STATS.footprint,"energy":HYDRO_DAM_STATS.energy_cost,"iron":HYDRO_DAM_STATS.iron_cost,"scene":HYDRO_DAM_SCENE,"model":_model_scene(HYDRO_DAM_SCENE)}
 	if kind == &"generator": return {"title":"Generator","size":supply_rules.generator_footprint,"energy":supply_rules.generator_energy_cost,"iron":supply_rules.generator_iron_cost,"scene":generator_scene,"model":_model_scene(generator_scene)}
@@ -563,6 +569,9 @@ func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_paye
 	if kind in [&"depot",&"keep"] and not depot_spacing_ok(point,team):
 		game.notify(spacing_notice(point,team),team)
 		return null
+	if kind == &"railhead" and not game.get_node("RailNetwork").track_beside(start,spec.size,team):
+		game.notify(RAILHEAD_NOTICE,team)
+		return null
 	if needs_sight and not in_sight(start,spec.size,team):
 		game.notify(OUT_OF_SIGHT,team)
 		return null
@@ -632,7 +641,8 @@ func update_global_preview(point: Vector3) -> bool:
 	var hud_node = game.get_node_or_null("Interface")
 	var seen: bool = game.global_plan_kind == &"rail" or (hud_node != null and hud_node.worksite_open) or in_sight(start,spec.size)
 	var in_keep_range: bool = not spec.get("in_keep_range",false) or keep_covers(start,spec.size,"player",game.global_plan_kind == &"farm")
-	valid = valid and spaced and seen and in_keep_range
+	var by_track: bool = game.global_plan_kind != &"railhead" or game.get_node("RailNetwork").track_beside(start,spec.size,"player")
+	valid = valid and spaced and seen and in_keep_range and by_track
 	if preview_material == null:
 		preview_material = ghost.get_node("Footprint").mesh.material.duplicate()
 		ghost.get_node("Footprint").material_override = preview_material
