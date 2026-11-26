@@ -15,7 +15,7 @@ The current keys, as set on 2026-11-15. `scripts/tools/setup_command_actions.gd`
 
 | Card or page | Keys |
 | --- | --- |
-| Infantry and combat units | M Move · S Stop · A Attack · G Gather · F Fell (`docs/FELL.md`) · V Deliver · X Drop materials · R Repair · C Capture · R Derail · E Lay mine · Q Buy mine (Derailer, `docs/DERAILER.md`, `docs/MINES.md`; changed 2026-11-25) · T Auto-refuel (vehicles) |
+| Infantry and combat units | M Move · S Stop · A Attack · G Gather · F Fell (`docs/FELL.md`) · V Deliver · X Drop materials · R Repair · C Capture · R Derail · E Lay mine · Q Buy mine (Derailer, `docs/DERAILER.md`, `docs/MINES.md`; changed 2026-11-25) · Q Mist, W Slow (Grail Sentinel, `docs/MIST_AND_SLOW.md`) · T Auto-refuel (vehicles) |
 | Cargo truck / Train | M Move · S Stop · T Auto-refuel · D Deploy/Pack supplies · E Load · V Unload · C Trips · W Worksite (not Trains) |
 | Depot truck | M Move · S Stop · T Auto-refuel · D Deploy |
 | Depot | D Depot truck · V Cargo vehicle · T Train · C Make crates · X Cancel production (the Generator settings are sliders on the Depot panel, docs/DEPOT_PANELS.md) |

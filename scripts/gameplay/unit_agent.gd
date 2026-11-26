@@ -16,6 +16,14 @@ var repair_payer: Node3D
 @export var heal_hp := 10
 @export var heal_interval := 1.0
 @export var med_reserve_capacity := 200
+## Mist and Slow (docs/MIST_AND_SLOW.md): cast by a unit that heals, from the same reserve.
+@export var spell_rules: SpellRules = preload("res://assets/combat/spell_rules.tres")
+@export var mist_scene: PackedScene = preload("res://scenes/gameplay/mist_cloud.tscn")
+@export var slow_scene: PackedScene = preload("res://scenes/gameplay/slow_field.tscn")
+var _cast_point := Vector3.ZERO
+## A Slow on this unit: seconds left and the share of its speed it keeps.
+var _slow_left := 0.0
+var _slow_factor := 1.0
 ## The reserve refills from a covering friendly Keep or an adjacent crate: `med_refill_points` points for
 ## `med_refill_cost` of `med_refill_kind` every `med_refill_interval` s. A cost of 0 refills for nothing.
 @export var med_refill_kind := &"food"
@@ -349,6 +357,9 @@ func command_return(target: Node3D = null) -> void:
 func _process(delta: float) -> void:
 	if _dead: return
 	if derail_cooldown > 0.0: derail_cooldown = maxf(0.0,derail_cooldown-delta)
+	if _slow_left > 0.0:
+		_slow_left = maxf(0.0,_slow_left-delta)
+		if _slow_left <= 0.0: _slow_factor = 1.0
 	fuel_tick(delta)
 	_ease_flight(delta)
 	if can_heal:
@@ -476,6 +487,7 @@ func _order_process(delta: float) -> void:
 		"construct": _construct(delta)
 		"derail": _derail_order(delta)
 		"lay_mine": _lay_mine_order(delta)
+		"mist", "slow": _spell_order()
 		_:
 			var unreachable := state == "Trees unreachable"
 			state = "Out of fuel · landed" if fuel_landed else "Idle"
@@ -508,6 +520,8 @@ func run_order(entry: Dictionary) -> void:
 		"construct": command_construct(entry.target)
 		"derail": command_derail(entry.target)
 		"lay_mine": command_lay_mine(entry.point)
+		"mist": command_spell("mist",entry.point)
+		"slow": command_spell("slow",entry.point)
 		"attack_move": command_attack_move(entry.point)
 		"deploy": command_deploy_at(entry.point)
 		"load", "unload":
@@ -642,7 +656,7 @@ func _walk(delta: float) -> void:
 		_moving_to = _route.pop_front()
 		_aim_ahead()
 	var point: Vector3 = ground.tile_to_world(_moving_to)
-	var step := move_speed*delta*_turn_speed(_turn_toward(point,delta))
+	var step := move_speed*speed_scale()*delta*_turn_speed(_turn_toward(point,delta))
 	if fuel_active():
 		powered_by = _depot_power()
 		if powered_by == null:
@@ -998,6 +1012,8 @@ func team_sees(target: Node3D) -> bool:
 	if not _fog_looked or (_fog != null and not is_instance_valid(_fog)):
 		_fog = get_tree().get_first_node_in_group("fog_of_war") if is_inside_tree() else null
 		_fog_looked = true
+	# A Mist hides the units in it from anyone not close by (docs/MIST_AND_SLOW.md), with or without fog.
+	if MistCloud.hides(target,team): return false
 	return _fog == null or _fog.visible_to(team,target.global_position)
 func _nearest_opponent() -> Node3D:
 	var closest: Node3D
@@ -1251,6 +1267,64 @@ func command_heal(target: Node3D) -> void:
 	_heal_resume = Vector3.INF
 	order = "heal"
 	state = "Healing ordered"
+## Mist and Slow (docs/MIST_AND_SLOW.md). The share of its speed a unit keeps now: less while it is slowed.
+func speed_scale() -> float:
+	return _slow_factor if _slow_left > 0.0 else 1.0
+## Slows this unit for `seconds` to `factor` of its speed; a stronger or longer Slow replaces a weaker one.
+func apply_slow(seconds: float, factor: float) -> void:
+	_slow_factor = minf(_slow_factor,factor) if _slow_left > 0.0 else factor
+	_slow_left = maxf(_slow_left,seconds)
+func spell_cost(kind: String) -> int:
+	return spell_rules.mist_cost if kind == "mist" else spell_rules.slow_cost
+## Why this unit can't cast `kind` now, or "" when it can.
+func spell_blocker(kind: String) -> String:
+	if not can_heal or spell_rules == null: return "Only Grail Sentinels cast Mist and Slow."
+	if kind == "slow" and not Research.has(self,team,Research.SLOW): return "Research Slow at a Forge first."
+	if med_reserve < spell_cost(kind): return "Needs %d reserve points (%d / %d)." % [spell_cost(kind),med_reserve,med_reserve_capacity]
+	return ""
+func command_spell(kind: String, point: Vector3) -> void:
+	var blocker := spell_blocker(kind)
+	if not blocker.is_empty(): state = blocker; return
+	_stop_route()
+	order_target = null
+	source = null
+	_cast_point = Vector3(point.x,0.0,point.z)
+	order = kind
+	state = "To cast %s" % kind.capitalize()
+## Walks within cast range of the point, then casts at once.
+func _spell_order() -> void:
+	var kind := order
+	if not spell_blocker(kind).is_empty(): state = spell_blocker(kind); order = "idle"; return
+	var flat := Vector2(global_position.x-_cast_point.x,global_position.z-_cast_point.z).length()
+	if flat > spell_rules.cast_range:
+		if _retry <= 0:
+			state = "To cast %s" % kind.capitalize()
+			if not _route_to_point(_cast_point): order = "idle"; state = "Can't reach the spot"
+		return
+	_stop_route()
+	med_reserve -= spell_cost(kind)
+	var animator := _animator()
+	if animator != null and animator.has_method("play_cast"): animator.play_cast(StringName(kind))
+	var parent: Node = game.get_node("Entities")
+	if kind == "mist":
+		var mist = mist_scene.instantiate()
+		mist.team = team
+		mist.radius = spell_rules.mist_radius
+		mist.reveal = spell_rules.mist_reveal
+		mist.seconds = spell_rules.mist_seconds
+		parent.add_child(mist)
+		mist.global_position = _cast_point
+	else:
+		var field = slow_scene.instantiate()
+		field.seconds = spell_rules.slow_seconds
+		field.radius = spell_rules.slow_radius
+		parent.add_child(field)
+		field.global_position = _cast_point
+		for unit in get_tree().get_nodes_in_group("units"):
+			if unit.get("team") == team or not unit.has_method("apply_slow") or unit.get("health") == null or unit.health <= 0: continue
+			if Vector2(unit.global_position.x-_cast_point.x,unit.global_position.z-_cast_point.z).length() <= spell_rules.slow_radius: unit.apply_slow(spell_rules.slow_seconds,spell_rules.slow_factor)
+	order = "idle"
+	state = "%s cast · %d / %d reserve" % [kind.capitalize(),med_reserve,med_reserve_capacity]
 ## Heals by itself: idle or attack-moving with reserve left, it takes the most hurt friend within heal range.
 func _autocast_heal(delta: float) -> void:
 	if not heal_autocast or med_reserve <= 0 or not order in ["idle","attack_move"]: return

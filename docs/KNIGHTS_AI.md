@@ -15,6 +15,11 @@ Item 5 of `docs/BALANCE_IMPLEMENTATION_HANDOFF.md` (2026-11-23). This branch is 
 - **A second Keep** at `expand_at` (300 s), or sooner if it runs out of building room. Two home Foresters carry 50 iron and 50 wood onto a site beside the nearest free iron mine and build it.
 - **The army:** the Chapterhouses train `knight_mix` in turn, 10 Round Table Marines to 3 Questing Marines to 3 Grail Sentinels. It keeps 45 Food for workers while a Keep has fewer than `early_workers` (6). A Warhound scouts after 90 s. Grail Sentinels heal the most hurt friend within 22 m.
 - **The Forge** (docs/UPGRADES.md): once home has its Chapterhouses (or no room for another), it plans a Forge there (60 W / 80 I). The Forge then researches Arms and Mail in turn, level 1 of each, then 2, then 3, once the army has `upgrades_army` (6) units. While it saves for a level, home's Chapterhouses leave it that Food and Iron. `forge_wanted` or `upgrades` off leaves it out.
+- **Spells** (docs/MIST_AND_SLOW.md, `spells`): the Forge researches Slow after level 1 of Arms and Mail. Each round, a Grail Sentinel with the other side's units it sees within 30 m:
+  - casts **Slow** on the point with the most of them within Slow's 5 m, if that is at least `slow_clump` (3);
+  - else casts **Mist** over the friends round it, if there are at least `mist_group` (4) within 8 m and every foe in reach is further than 16 m from their centre (beyond Mist's 8 m sight into it);
+  - keeps `spell_keep` (40) reserve for healing after a cast;
+  - doesn't cast where another of its casts is still running.
 - **Waves:** as the Cyborg AI's, the first after `first_wave_seconds` (480 s, 8:00). The rally point is 36 m out, beyond the Keep's range, so the army stands off the ground its buildings go on.
 
 **From the main menu** an AI side can now be the Knights (`MatchSetup.FACTIONS`). A Knights East start gets the Keep and two Forester Maidens in place of the Cyborg start, as the West does (`_knights_start(game, "enemy")`). The East's `EnemyPlayer` node, or the West's `PlayerAI` when spectating, is replaced by a Knights AI node with the same name, side and switch (`_knights_ai`). It is replaced rather than given a new script, so its ready-time lookups run again.

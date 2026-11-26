@@ -35,7 +35,8 @@ func run() -> void:
 	# 62 with the Arthurian Knights (docs/ARTHURIAN_KNIGHTS.md): Keep and Chapterhouse build tiles, the Food crate, Heal,
 	# the Keep's two units and the Chapterhouse's four. 64 with the Farm and House build tiles (docs/KNIGHTS_ECONOMY.md). 65 with the Keep's Launch balloon (docs/AIR_BALLOON.md). 67 with the Derailer's Lay mine and the Temple's Minelaying (docs/MINES.md). 68 with Buy mine.
 	# 74 with the Foundry and Forge build tiles and the four upgrade-line tiles (docs/UPGRADES.md).
-	if not check(tiles == 74,"Expected 74 card tiles, found %d" % tiles): return
+	# 76 with the Grail Sentinel's Mist and Slow (docs/MIST_AND_SLOW.md).
+	if not check(tiles == 76,"Expected 76 card tiles, found %d" % tiles): return
 	# Commands with their own art.
 	var names := {"Return":"sl_deliver.png","DropMaterials":"sl_drop.png","DeployTruck":"sl_deploy_depot.png","ProduceUbermech":"sl_produce_ubermech.png","PrintTruck":"sl_produce_truck.png","Derail":"sl_derail.png","Research":"sl_research_mining_trains.png","MineIron":"sl_mine_iron.png","LayMine":"sl_lay_mine.png","BuyMine":"sl_buy_mine.png","ResearchMines":"sl_research_minelaying.png","Upgrade1":"sl_upgrade_infantry_weapons.png","Upgrade2":"sl_upgrade_infantry_armour.png","Upgrade3":"sl_upgrade_vehicle_weapons.png","Upgrade4":"sl_upgrade_vehicle_armour.png"}
 	for id in names:
