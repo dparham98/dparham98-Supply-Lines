@@ -458,6 +458,8 @@ func issue_order(screen, queued := false) -> void:
 		# A damaged vehicle of yours: workers repair it, unless they are bringing cargo to it.
 		elif vehicle and vehicle != unit and unit.can_repair and not (unit.cargo > 0 and vehicle == dropoff): give_order(unit,{kind = "repair", target = vehicle},queued)
 		elif patient and patient != unit and unit.can_heal: give_order(unit,{kind = "heal", target = patient},queued)
+		# A friendly train: foot soldiers and workers with nothing carried board it (docs/ROUND3_TROOP_TRAINS.md).
+		elif is_instance_valid(mobile) and mobile.is_in_group("rail_trains") and mobile.team == unit.team and unit.cargo <= 0 and TroopCars.eligible(unit): give_order(unit,{kind = "board", target = mobile},queued)
 		elif point != null and ground.get_tile_at_position(point) != null and ground.get_terrain(ground.get_tile_at_position(point)) == 3 and unit.can_gather:
 			give_order(unit,{kind = "gather", target = ground.forest_source(ground.get_tile_at_position(point))},queued)
 			forest_ordered = true
@@ -587,6 +589,14 @@ func issue_card_order(screen, queued := false) -> void:
 		pending_unit_command = ""
 		if not depot.request_train(piece): notify("Depot lacks local train funds or queue space.")
 		return
+	# Found Keep (docs/ROUND3_SKY_PAVILION.md): the selected Keep charters a Sky-Pavilion to the clicked site.
+	if pending_unit_command == "found_keep":
+		var keep: Node3D = selected_building
+		var point = ground_at(screen)
+		if not is_instance_valid(keep) or not keep.is_in_group("keeps") or keep.team != "player": pending_unit_command = ""; return
+		if point == null: notify("Click explored land where the new Keep should stand."); return
+		if keep.request_pavilion(point) and not queued: pending_unit_command = ""
+		return
 	# Launch balloon (docs/AIR_BALLOON.md): the selected Keep sends its packed crates to the clicked point.
 	if pending_unit_command == "launch_balloon":
 		var keep: Node3D = selected_building
@@ -676,6 +686,9 @@ func issue_card_order(screen, queued := false) -> void:
 			target = pick_target(screen,"depots",50)
 			var mobile := pick_target(screen,"mobile_supplies",34)
 			if is_instance_valid(mobile) and mobile.get("deployed") == true: target = mobile
+			# A train also stops at a friendly Forward Railhead (docs/ROUND3_TROOP_TRAINS.md).
+			var railhead := pick_target(screen,"railheads",40)
+			if is_instance_valid(railhead) and railhead.team == "player": target = railhead
 			# Unload also lands on a queued build site.
 			var site := pick_target(screen,"construction_plans",50)
 			if pending_unit_command == "unload" and is_instance_valid(site) and not site.finished and site.kind != &"rail": target = site
@@ -710,7 +723,7 @@ func issue_card_order(screen, queued := false) -> void:
 			if unit.team != "player" or not unit.is_selected or not unit.is_cargo_vehicle: continue
 			var point_or_target: Vector3 = target.global_position if is_instance_valid(target) else ground_point
 			if not unit.stop_valid(pending_unit_command,target if is_instance_valid(target) and not (target.is_in_group("supply_crates") and pending_unit_command == "unload") else null,point_or_target):
-				notify("Trains load and unload at friendly Depots." if unit.is_in_group("rail_trains") else "Can't %s there." % pending_unit_command); continue
+				notify("Trains load and unload at friendly Depots, Keeps and Railheads." if unit.is_in_group("rail_trains") else "Can't %s there." % pending_unit_command); continue
 			give_order(unit,{kind = pending_unit_command, target = target if is_instance_valid(target) else null, point = point_or_target},queued)
 			ordered += 1
 		if ordered > 0:

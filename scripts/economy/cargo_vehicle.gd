@@ -260,6 +260,8 @@ func _sync_reserved() -> void:
 func shipment_endpoint(node) -> bool:
 	if not is_instance_valid(node) or node == self or not node.is_inside_tree() or node.is_queued_for_deletion() or node.get("team") != team: return false
 	if node.is_in_group("depots"): return node.health > 0
+	# A train also stops at a Forward Railhead (docs/ROUND3_TROOP_TRAINS.md).
+	if node.is_in_group("railheads"): return is_in_group("rail_trains") and node.health > 0
 	# Trains only use Depots with friendly track nearby; trucks also use deployed trucks.
 	return not is_in_group("rail_trains") and node.is_in_group("mobile_supplies") and node.get("deployed") == true and node.health > 0
 func _crate_stop(node) -> bool:
@@ -382,15 +384,17 @@ func _load_exact(node: Node3D) -> int:
 	return count
 ## Whether a Load at this stop would find anything to take.
 func pickup_possible(node: Node3D, point: Vector3) -> bool:
-	if not shipment_endpoint(node) or manifest.is_empty(): return not pickup_crates(node,point).is_empty()
+	if not shipment_endpoint(node) or manifest.is_empty() or node.get("stockpile") == null: return not pickup_crates(node,point).is_empty()
 	var missing := manifest_missing()
 	for kind in missing:
 		if missing[kind] <= 0: continue
 		if node.stockpile.amount(kind) >= ResourceStockpile.CRATE or CrateYard.count_beside(node,kind) > 0: return true
 	return false
 func load_crates(node: Node3D, point: Vector3) -> int:
-	if shipment_endpoint(node) and not fetch_load.is_empty(): return _load_exact(node)
-	if shipment_endpoint(node) and not manifest.is_empty(): return _load_manifest(node)
+	# A Railhead stores nothing: a train there takes the crates set down round it.
+	var stocked: bool = shipment_endpoint(node) and node.get("stockpile") != null
+	if stocked and not fetch_load.is_empty(): return _load_exact(node)
+	if stocked and not manifest.is_empty(): return _load_manifest(node)
 	var count := 0
 	for crate in pickup_crates(node,point):
 		if crates.size() >= crate_slots() or stockpile.space() < ResourceStockpile.CRATE: break
@@ -421,7 +425,9 @@ func unload_crates(node: Node3D, point: Vector3) -> int:
 			if crate.amount == 0: crates.erase(crate); count += 1
 		_sync_reserved()
 		return count
-	if shipment_endpoint(node):
+	# At a Railhead the crates go down round the platform, as on open ground.
+	if is_instance_valid(node) and node.is_in_group("railheads"): point = node.global_position
+	if shipment_endpoint(node) and node.get("stockpile") != null:
 		var moved := {}
 		for crate in crates.duplicate():
 			var accepted: int = node.stockpile.deposit(crate.kind,crate.amount) if crate.amount > 0 else 0

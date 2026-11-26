@@ -511,7 +511,18 @@ func stop_on(piece: Node3D, depot: Node3D, lane := -1) -> Dictionary:
 	return hit if hit.gap <= depot_reach(depot)+piece.half_width() else {}
 ## A Depot's rail ring: where track connects to it and trains are built, load and unload (docs/RAIL_PLANNING.md).
 func depot_reach(depot: Node3D) -> float:
+	# A Forward Railhead has no range of its own: trains stop within `railhead_stop_reach` of it.
+	if depot.is_in_group("railheads"): return rules.railhead_stop_reach
 	return depot.rules.construction_radius*rules.depot_reach_fraction
+## Whether `team`'s track runs within `railhead_track_reach` of the footprint's edge: where a Railhead may stand.
+func track_beside(start: Vector2i, size: Vector2i, team: String) -> bool:
+	var centre: Vector3 = ground.tile_to_world(start)+Vector3(size.x*0.5-0.5,0,size.y*0.5-0.5)
+	var half: float = maxf(size.x,size.y)*0.5*ground.tile_size
+	for piece in pieces:
+		if not is_instance_valid(piece) or not friendly_piece(piece,team): continue
+		var hit: Dictionary = piece.nearest(centre,-1)
+		if not hit.is_empty() and hit.gap <= half+rules.railhead_track_reach+piece.half_width(): return true
+	return false
 ## Every lane of friendly track in `depot`'s loading area: {piece, lane, distance}.
 func loading_stops(depot: Node3D, team: String) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []

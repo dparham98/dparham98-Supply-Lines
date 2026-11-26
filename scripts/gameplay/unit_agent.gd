@@ -386,6 +386,8 @@ func _process(delta: float) -> void:
 		MedicalWork.refill_tick(self,delta)
 		_autocast_heal(delta)
 	_order_process(delta)
+	# It boarded a train this frame (docs/ROUND3_TROOP_TRAINS.md): out of the scene until it gets off.
+	if not is_inside_tree(): return
 	_animate(delta)
 ## The Visuals model when it carries a character animator (scripts/components/character_animator.gd).
 func _animator() -> Node3D:
@@ -482,7 +484,7 @@ func _order_process(delta: float) -> void:
 			_update_display()
 			return
 	if not _route.is_empty() or _moving_to.x >= 0:
-		if is_instance_valid(order_target) and ((order == "attack" and in_attack_range(order_target) and team_sees(order_target)) or (order == "repair" and global_position.distance_to(order_target.global_position) <= engineering_rules.repair_range) or (order == "heal" and global_position.distance_to(order_target.global_position) <= heal_range)):
+		if is_instance_valid(order_target) and ((order == "attack" and in_attack_range(order_target) and team_sees(order_target)) or (order == "repair" and global_position.distance_to(order_target.global_position) <= engineering_rules.repair_range) or (order == "heal" and global_position.distance_to(order_target.global_position) <= heal_range) or (order == "board" and order_target.is_in_group("rail_trains") and global_position.distance_to(order_target.global_position) <= order_target.rail_network.rules.board_reach)):
 			_stop_route()
 		else:
 			_walk(delta)
@@ -513,6 +515,7 @@ func _order_process(delta: float) -> void:
 		"capture": _capture_order()
 		"construct": _construct(delta)
 		"derail": _derail_order(delta)
+		"board": _board_order()
 		"lay_mine": _lay_mine_order(delta)
 		"mist", "slow", "stimulus": _spell_order()
 		_:
@@ -546,6 +549,7 @@ func run_order(entry: Dictionary) -> void:
 		"capture": command_capture(entry.target)
 		"construct": command_construct(entry.target)
 		"derail": command_derail(entry.target)
+		"board": command_board(entry.target)
 		"lay_mine": command_lay_mine(entry.point)
 		"mist": command_spell("mist",entry.point)
 		"slow": command_spell("slow",entry.point)
@@ -560,7 +564,7 @@ func _start_next_order() -> void:
 	# Skip entries whose target is gone or that the unit refuses, such as an unreachable attack.
 	while order == "idle" and not order_queue.is_empty():
 		var entry: Dictionary = order_queue.pop_front()
-		if entry.kind in ["attack","gather","repair","heal","capture","construct","fetch","load","unload","derail"] and not is_instance_valid(entry.get("target")) and not (entry.kind in ["load","unload"] and entry.get("point") != null): continue
+		if entry.kind in ["attack","gather","repair","heal","capture","construct","fetch","load","unload","derail","board"] and not is_instance_valid(entry.get("target")) and not (entry.kind in ["load","unload"] and entry.get("point") != null): continue
 		run_order(entry)
 func order_point(entry: Dictionary) -> Variant:
 	if entry.kind in ["move","attack_move","deploy"]: return entry.point
@@ -1672,6 +1676,34 @@ func _derail_order(delta: float) -> void:
 	derail_cooldown = rules.derail_cooldown
 	order = "idle"
 	state = "Track destroyed"
+## Troop cars (docs/ROUND3_TROOP_TRAINS.md): walks to a friendly train stopped at a station and rides it. A Farmer
+## boards only once her Farm is lost or dormant.
+func command_board(train: Node3D) -> void:
+	if farmer and is_instance_valid(farm) and farm.health > 0 and not farm.is_queued_for_deletion() and farm.covered():
+		state = "A Farmer stays on its Farm"; return
+	var refusal := TroopCars.refusal(self,train)
+	if not refusal.is_empty():
+		state = refusal
+		if team == "player": game.notify(refusal,team)
+		return
+	_stop_route()
+	source = null
+	order_target = train
+	order = "board"
+	state = "To board %s" % train.name
+func _board_order() -> void:
+	var train := order_target
+	var refusal := TroopCars.refusal(self,train) if is_instance_valid(train) and train.is_inside_tree() else "Train lost"
+	if not refusal.is_empty():
+		_stop_route()
+		order = "idle"; order_target = null; state = refusal
+		return
+	var reach: float = train.rail_network.rules.board_reach
+	if Vector2(global_position.x-train.global_position.x,global_position.z-train.global_position.z).length() > reach:
+		if _retry <= 0 and not _route_near(train,reach-1.0): order = "idle"; order_target = null; state = "Train unreachable"
+		return
+	_stop_route()
+	train.take_passenger(self)
 func mobility_layer() -> int:
 	return unit_stats.mobility.layer if unit_stats != null and unit_stats.mobility != null else MobilityRules.Layer.GROUND
 func selection_point() -> Vector3:

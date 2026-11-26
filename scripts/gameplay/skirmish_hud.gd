@@ -41,9 +41,9 @@ const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 
 	"BurnWood": 4, "BurnCoal": 5, "BurnEither": 6, "MakeCrates": 3, "Worksite": 7,
 	"Mist": 4, "Slow": 5, "Stimulus": 6,
 	"Repair": 8, "Heal": 8, "Derail": 8, "Capture": 9, "LayMine": 9, "BuyMine": 10, "DeployTruck": 10, "Fell": 10, "CancelPlan": 11,
-	"DeployCargo": 2, "Load": 4, "Unload": 5, "Trips": 6,
+	"DeployCargo": 2, "Load": 4, "Unload": 5, "Trips": 6, "Disembark": 9,
 	"PrintTruck": 0, "PrintCargo": 1, "PrintTrain": 2,
-	"TrainForester": 0, "TrainWarhound": 1, "LaunchBalloon": 2, "KeepTrain": 4,
+	"TrainForester": 0, "TrainWarhound": 1, "LaunchBalloon": 2, "FoundKeep": 3, "KeepTrain": 4,
 	"PrintInfantry": 0, "ProduceScout": 1, "ProduceGrenadier": 2, "ProduceTank": 3, "ProduceMotorcycle": 4, "ProduceDrone": 5, "ProduceUbermech": 6,
 	"ProduceRoundTableMarine": 0, "ProduceGrailSentinel": 1, "ProduceQuestingMarine": 2, "ProduceAzureDragon": 3, "ProduceHearthWain": 5,
 	"ToggleGenerator": 0, "FocusAssigned": 1, "StokeBrazier": 8,
@@ -173,6 +173,10 @@ func _ready() -> void:
 			elif not vehicle.deploy_supplies(): game.notify("Cannot deploy supplies here or during another transition."))
 	for mode in ["load","unload"]:
 		card.get_node(mode.capitalize()).pressed.connect(func(): game.pending_unit_command = mode; game.notify("%s: choose a stop on the map or minimap." % mode.capitalize()))
+	# Troop cars (docs/ROUND3_TROOP_TRAINS.md): every selected train at a station sets its riders down.
+	card.get_node("Disembark").pressed.connect(func():
+		for unit in selected_units():
+			if unit.is_in_group("rail_trains") and unit.has_method("disembark"): unit.disembark())
 	pick.get_node("Cancel").pressed.connect(func(): game.cancel_armed(); game.notify("Command cancelled."))
 	card.get_node("Trips").pressed.connect(func():
 		var vehicle = selected_cargo()
@@ -266,12 +270,20 @@ func _ready() -> void:
 		if is_instance_valid(shown) and shown.is_in_group("keeps") and shown.team == "player":
 			if not least_busy().request_forester(): game.notify("Keep lacks Food or queue space."))
 	# Launch balloon (docs/AIR_BALLOON.md): arms a click on the map for the selected Keep's balloon.
+	# It opens the Load tiles as the balloon's manifest of crates from the Keep's stock (docs/ROUND3_SKY_PAVILION.md).
 	card.get_node("LaunchBalloon").pressed.connect(func():
 		if not is_instance_valid(shown) or not shown.is_in_group("keeps") or shown.team != "player": return
-		var refusal: String = shown.balloon_refusal()
+		var refusal: String = shown.balloon_keep_refusal()
 		if not refusal.is_empty(): game.notify(refusal); return
 		game.pending_unit_command = "launch_balloon"
-		game.notify("Launch balloon: click where %s should set its crates down. Esc cancels." % shown.name))
+		game.notify("Launch balloon: add up to %d crates from the Keep's stock, then click explored land. Esc cancels." % KnightHousing.rules().balloon_crates))
+	# Found Keep (docs/ROUND3_SKY_PAVILION.md): arms a click on the map for the selected Keep's Sky-Pavilion.
+	card.get_node("FoundKeep").pressed.connect(func():
+		if not is_instance_valid(shown) or not shown.is_in_group("keeps") or shown.team != "player": return
+		var refusal: String = shown.pavilion_refusal()
+		if not refusal.is_empty(): game.notify(refusal); return
+		game.pending_unit_command = "found_keep"
+		game.notify("Found Keep: click explored land where %s's Sky-Pavilion should found a Keep. Esc cancels." % shown.name))
 	card.get_node("TrainWarhound").pressed.connect(func():
 		if is_instance_valid(shown) and shown.is_in_group("keeps") and shown.team == "player":
 			if not least_busy().request_warhound(): game.notify("Keep lacks Food, Iron or queue space."))
@@ -279,7 +291,7 @@ func _ready() -> void:
 		var btn_id := production_button_id(StringName(id))
 		card.get_node(btn_id).pressed.connect(func():
 			if is_instance_valid(shown) and shown.is_in_group("production_buildings"): least_busy().request_unit(StringName(id)))
-	for pair in [["Depot",&"depot"],["Generator",&"generator"],["HydroDam",&"hydro_dam"],["Barracks",&"barracks"],["TankFactory",&"tank_factory"],["Temple",&"temple_of_science"],["Foundry",&"foundry"],["Mine",&"iron_mine"],["CoalMine",&"coal_mine"],["Rail",&"rail"],["Keep",&"keep"],["Chapterhouse",&"chapterhouse"],["Farm",&"farm"],["House",&"house"],["Forge",&"forge"],["DragonYard",&"dragon_yard"]]:
+	for pair in [["Depot",&"depot"],["Generator",&"generator"],["HydroDam",&"hydro_dam"],["Barracks",&"barracks"],["TankFactory",&"tank_factory"],["Temple",&"temple_of_science"],["Foundry",&"foundry"],["Mine",&"iron_mine"],["CoalMine",&"coal_mine"],["Rail",&"rail"],["Keep",&"keep"],["Chapterhouse",&"chapterhouse"],["Farm",&"farm"],["House",&"house"],["Forge",&"forge"],["DragonYard",&"dragon_yard"],["Railhead",&"railhead"]]:
 		build_menu.get_node("Actions/"+pair[0]).pressed.connect(begin_global_placement.bind(pair[1]))
 	build_menu.get_node("Actions/Pin").pressed.connect(toggle_pin)
 	card.get_node("DeployTruck").pressed.connect(func(): game.pending_unit_command = "deploy"; game.notify("Click a site for the Depot. Only an empty Depot footprint is accepted; Shift queues."))
@@ -341,6 +353,7 @@ func object_name(node: Node3D) -> String:
 	if node.is_in_group("rail_trains"): return "Train"
 	if node.is_in_group("farms"): return "Farm" if node.name == "Farm" else "%s · Farm" % node.name
 	if node.is_in_group("houses"): return "House" if node.name == "House" else "%s · House" % node.name
+	if node.is_in_group("railheads"): return "Railhead" if node.name == "Railhead" else "%s · Railhead" % node.name
 	if node.is_in_group("hearth_wains"): return "Hearth-Wain"
 	if node.is_cargo_vehicle: return "Cargo Vehicle"
 	if node.is_depot_truck: return "Depot Truck"
@@ -393,7 +406,7 @@ func _process(_delta: float) -> void:
 		if pick.get_node("Prompt").text != prompt: pick.get_node("Prompt").text = prompt
 	# Load is a page of tiles. Its instructions and the manifest sit in the Context column. The Depot's
 	# Make crates page uses the same tiles, without Clear or the manifest.
-	var loading: bool = pick.visible and game.pending_unit_command == "load"
+	var loading: bool = pick.visible and (game.pending_unit_command == "load" or balloon_keep() != null)
 	var crating: bool = pick.visible and crate_page_open
 	load_tiles.visible = loading or crating
 	load_tiles.get_node("Clear").visible = loading
@@ -516,7 +529,7 @@ func update_bars(node: Node3D) -> void:
 		cargo_bar.value = carried
 		bars.get_node("CargoValue").text = "%d / %d%s" % [carried,capacity," "+str(node.cargo_kind) if carried > 0 else ""]
 		for id in ["CargoLabel","Cargo","CargoValue"]: bars.get_node(id).visible = true
-const DEPOT_PRODUCTS := {"infantry":"Deforester","truck":"Depot truck","cargo":"Cargo vehicle","train":"Train","forester_maiden":"Forester Maiden","warhound":"Warhound"}
+const DEPOT_PRODUCTS := {"infantry":"Deforester","truck":"Depot truck","cargo":"Cargo vehicle","train":"Train","forester_maiden":"Forester Maiden","warhound":"Warhound","sky_pavilion":"Sky-Pavilion"}
 ## Rendered pictures of the units and buildings (docs/HUD_RENDERS.md), made by scripts/tools/render_hud_images.gd.
 const RENDER_PATH := "res://assets/ui/renders/%s.png"
 const PORTRAIT_PATH := "res://assets/ui/portraits/%s.png"
@@ -566,6 +579,7 @@ func icon_name(node: Node) -> String:
 	if node.is_in_group("depots"): return "depot"
 	if node.is_in_group("farms"): return "farm"
 	if node.is_in_group("houses"): return "house"
+	if node.is_in_group("railheads"): return "railhead"
 	if node.is_in_group("mines"): return "mine" if str(node.scene_file_path).ends_with("site_mine.tscn") else "pithead"
 	if node.is_in_group("research_buildings"):
 		# The Foundry and Forge have their own models (docs/FOUNDRY_MODEL.md, docs/FORGE_MODEL.md).
@@ -1033,10 +1047,13 @@ func update_contents() -> void:
 				show_production("TrainWarhound",hound_stats.display_name,hound_stats.energy_cost,hound_stats.iron_cost,node,hound_stats.food_cost,hound_stats.wood_cost,hound_stats.unit_id)
 				var balloon_button: Button = card.get_node("LaunchBalloon")
 				var aboard: Array[Node3D] = node.balloon_crates()
-				balloon_button.set_meta("detail","%d Wood. Takes up to %d full crates packed beside the Keep (%d ready) to a point you see, sets them down and is gone; inside a Keep's range it unloads into that Keep. 40 health: shot down, it drops nothing." % [KnightHousing.rules().balloon_wood_cost,KnightHousing.rules().balloon_crates,aboard.size()])
+				balloon_button.set_meta("detail","%d Wood. Takes up to %d crates of 25 to land you have explored, sets them down and is gone; inside a Keep's range it unloads into that Keep. Opens a manifest of crates from the Keep's stock (%s); with none set it takes the full crates packed beside the Keep (%d ready). 40 health: shot down, it drops nothing." % [KnightHousing.rules().balloon_wood_cost,KnightHousing.rules().balloon_crates,"%d set" % node.balloon_manifest_total() if node.balloon_manifest_total() > 0 else "none set",aboard.size()])
 				show_button("LaunchBalloon","Launch balloon")
-				var refusal: String = node.balloon_refusal()
+				var refusal: String = node.balloon_keep_refusal()
 				explain(balloon_button,not refusal.is_empty(),refusal)
+				var pavilion: UnitStats = node.unit_stats_for_kind("sky_pavilion")
+				show_production("FoundKeep","Found Keep",pavilion.energy_cost,pavilion.iron_cost,node,pavilion.food_cost,pavilion.wood_cost,pavilion.unit_id)
+				card.get_node("FoundKeep").set_meta("detail","Charters a Sky-Pavilion (%s s prep, %d health, 1 housing) to land you have explored where a Keep could stand. It flies there and unfolds into an empty Keep with a Forester Maiden; if the site is blocked when it lands, it sets down %d Wood and %d Iron and the Maiden instead. Shot down, it drops nothing." % [_seconds(pavilion.build_seconds),pavilion.max_health,pavilion.wood_cost,pavilion.iron_cost])
 				hint_text = "Keep stores Food, Wood and Iron locally and trains Forester Maidens and Warhounds. Found forward Keeps anywhere from 50 Wood and 50 Iron on site (B → K)."
 		else:
 			commands.get_node("Title").text = "DEPOT · PRODUCTION"
@@ -1126,6 +1143,12 @@ the one shown while it can, else another that can."
 		set_stats([["Food a beat","%d / 1.2 s%s" % [node.food_per_beat()," · lakeside" if node.lakeside else ""]],["Farmer","%d / 1" % (1 if tiller != null else 0)]])
 		info.get_node("Details").text = "A field any unit can walk over. Its Farmer tills it and carries the Food to a Keep or pitched Hearth-Wain. While an enemy ground unit stands on it, it yields nothing. With no Keep or pitched Hearth-Wain covering it, it lies dormant. A Grail Sentinel on or beside it while it works refills its reserve, a Food off each payout."
 		hint_text = "Right-click the Farm with one Forester Maiden: she becomes its Farmer for good and no longer builds, fells or fights. A Farm takes one Farmer; she may leave a dormant one for another Farm. The Food goes to the nearest Keep or pitched Hearth-Wain."
+	elif node.is_in_group("railheads"):
+		commands.get_node("Title").text = "RAILHEAD · TRAIN STOP"
+		var here: Array[Node3D] = node.trains_here()
+		state_label.text = "%s · %s" % [team_label(node),"%d train%s stopped here" % [here.size(),"" if here.size() == 1 else "s"] if not here.is_empty() else "no train here"]
+		info.get_node("Details").text = "A train stop beside your track, with no supply range and no store. Riders get on and off trains here, and a train unloading here sets its crates down round the platform."
+		hint_text = "Send a train here with Unload to set its crates down, or to carry riders forward: select the train and Disembark (U). Right-click a stopped train here with foot soldiers to board it."
 	elif node.is_in_group("houses"):
 		commands.get_node("Title").text = "HOUSE · HOUSING"
 		state_label.text = "%s · %s" % [team_label(node),"+%d housing" % KnightHousing.rules().house_room if node.housed() else "outside every Keep's range: no housing"]
@@ -1154,6 +1177,12 @@ the one shown while it can, else another that can."
 		update_bars(node)
 		update_unit_sections(node)
 		commands.get_node("Title").text = "UNIT · ORDERS"
+		# A Sky-Pavilion takes no orders either (docs/ROUND3_SKY_PAVILION.md).
+		if node.is_in_group("sky_pavilions"):
+			info.get_node("Details").text = "Flying to found a Keep\nFlies only where its Keep sent it"
+			commands.get_node("Title").text = "SKY-PAVILION"
+			hint_text = "A Sky-Pavilion flies to where its Keep sent it and unfolds into a Keep with a Forester Maiden; on a blocked site it sets down 50 Wood, 50 Iron and the Maiden. It takes no orders. Shot down, it drops nothing."
+			return
 		# An Air Balloon takes no orders (docs/AIR_BALLOON.md).
 		if node.is_in_group("air_balloons"):
 			info.get_node("Details").text = "Carrying %s
@@ -1178,6 +1207,11 @@ Flies only where its Keep sent it" % node.cargo_text()
 			set_card(card.get_node("Trips"),"trips_"+str(node.trips))
 			if not node.is_in_group("rail_trains") and not wain: show_button("Worksite","Worksite")
 			elif node.has_method("can_mine"): show_mine_tile(node)
+			var riders = node.get("passengers")
+			if riders is Array and not riders.is_empty():
+				show_button("Disembark","Disembark %d rider%s" % [riders.size(),"" if riders.size() == 1 else "s"])
+				card.get_node("Disembark").set_meta("detail","Sets every rider down on open ground round the train. Only while it is stopped at a friendly Depot, Keep or Railhead.")
+				explain(card.get_node("Disembark"),node.station() == null,"Stop at a friendly Depot, Keep or Railhead first.")
 			hint_text = "Worksite places a building and fetches exactly its materials. Right-click a build site to fetch for it. Load sets a manifest of crates, then picks a Depot. Unload at a Depot to unpack, or on open ground to set crates down. Shift queues stops. Trips: %s." % TRIP_LABELS[node.trips]
 			if wain:
 				var r := KnightHousing.rules()
@@ -1479,22 +1513,43 @@ func return_units() -> void:
 			unit.command_return(unit.supply_payer if unit.supply_payer_explicit else nearest_depot(unit))
 			# Only a stockpile the player chose stays the drop-off for later trips.
 			unit.return_explicit = unit.supply_payer_explicit
-# The Load page: a manifest of crates for the selected vehicles (docs/CRATE_MANIFESTS.md).
+## The player's Keep whose balloon manifest the Load page shows while Launch balloon is armed, or null.
+func balloon_keep() -> Node3D:
+	if game.pending_unit_command != "launch_balloon" or not is_instance_valid(shown) or not shown.is_in_group("keeps") or shown.team != "player": return null
+	return shown
+# The Load page: a manifest of crates for the selected vehicles (docs/CRATE_MANIFESTS.md), or for the selected
+# Keep's balloon while Launch balloon is armed.
 func edit_manifest(kind: StringName, fill := false) -> void:
+	var keep := balloon_keep()
+	if keep != null:
+		if not (keep.balloon_manifest_fill(kind) if fill else keep.balloon_manifest_add(kind)): game.notify("A balloon carries %d crates. Take one off to change the mix." % KnightHousing.rules().balloon_crates)
+		return
 	var changed := false
 	for unit in selected_units():
 		if unit.is_cargo_vehicle and (unit.manifest_fill(kind) if fill else unit.manifest_add(kind)): changed = true
 	if not changed: game.notify("The manifest is full. Clear it to change the mix.")
 func lower_manifest(kind: StringName, every := false) -> void:
+	var keep := balloon_keep()
+	if keep != null:
+		if not keep.balloon_manifest_remove(kind,every): game.notify("No %s crates on the balloon's manifest to take off." % kind)
+		return
 	var changed := false
 	for unit in selected_units():
 		if unit.is_cargo_vehicle and unit.manifest_remove(kind,every): changed = true
 	if not changed: game.notify("No %s crates on the manifest to take off." % kind)
 func clear_manifest() -> void:
+	var keep := balloon_keep()
+	if keep != null: keep.balloon_manifest.clear()
 	for unit in selected_units():
 		if unit.is_cargo_vehicle: unit.manifest.clear()
 func update_manifest_panel() -> void:
+	var keep := balloon_keep()
+	if keep != null:
+		_update_balloon_manifest(keep)
+		return
 	var vehicle := selected_cargo()
+	manifest_panel.get_node("Head/Label").text = "Load manifest"
+	manifest_panel.get_node("Hint").text = "Add crates, then left-click a Depot on the map or minimap. Click a crate to pick it up instead. Shift queues."
 	manifest_panel.get_node("Head/Value").text = "%d / %d crates" % [vehicle.manifest_total(),vehicle.crate_slots()]
 	var planned: Array[Dictionary] = []
 	for kind in ResourceStockpile.KINDS:
@@ -1503,8 +1558,28 @@ func update_manifest_panel() -> void:
 	for pair in [["Iron","Iron"],["Energy","Energy"],["Wood","Wood"],["Coal","Coal"],["Food","Food"]]:
 		set_tile(load_tiles.get_node(pair[0]),pair[1]+" crate","Adds one crate to the manifest. Shift fills every free slot.\nRight-click takes one off; Shift+right-click takes them all off.")
 		load_tiles.get_node(pair[0]).disabled = false
-	load_tiles.get_node("Food").visible = has_arthurian_faction()
+		load_tiles.get_node(pair[0]).visible = true
+	# Food rides any train, either side's (docs/ROUND3_TROOP_TRAINS.md); other vehicles carry it for the Knights.
+	load_tiles.get_node("Food").visible = has_arthurian_faction() or vehicle.is_in_group("rail_trains")
 	set_tile(load_tiles.get_node("Clear"),"Clear manifest","Removes every crate from the manifest.")
+## The Load page as the balloon's manifest: up to `balloon_crates` crates of Food, Wood, Iron or Coal from the Keep.
+func _update_balloon_manifest(keep: Node3D) -> void:
+	var slots: int = KnightHousing.rules().balloon_crates
+	var set_up: int = keep.balloon_manifest_total()
+	manifest_panel.get_node("Head/Label").text = "Balloon manifest"
+	manifest_panel.get_node("Hint").text = "Add crates from the Keep's stock, then left-click explored land on the map or minimap. Left empty, it takes the crates packed beside the Keep."
+	manifest_panel.get_node("Head/Value").text = "%d / %d crates" % [set_up,slots] if set_up > 0 else "%d beside the Keep" % keep.balloon_crates().size()
+	var planned: Array[Dictionary] = []
+	for kind in keep.BALLOON_KINDS:
+		for i in range(keep.balloon_manifest.get(kind,0)): planned.append({kind = kind, amount = ResourceStockpile.CRATE})
+	manifest_panel.get_node("Pips").show_crates(planned,slots)
+	for pair in [["Iron",&"iron"],["Wood",&"wood"],["Coal",&"coal"],["Food",&"food"]]:
+		var tile: Button = load_tiles.get_node(pair[0])
+		set_tile(tile,"%s crate" % str(pair[1]).capitalize(),"Puts a crate of 25 %s from %s's stock (%d) on the balloon. Shift fills every free slot.\nRight-click takes one off; Shift+right-click takes them all off." % [str(pair[1]).capitalize(),keep.name,keep.stockpile.amount(pair[1])])
+		tile.disabled = false
+		tile.visible = true
+	load_tiles.get_node("Energy").visible = false
+	set_tile(load_tiles.get_node("Clear"),"Clear manifest","Empties the balloon's manifest: it then takes the full crates packed beside the Keep.")
 func show_fuel_tile(id: String, label: String, mode: String, current: String) -> void:
 	show_button(id,label)
 	var button: Button = card.get_node(id)
@@ -1582,6 +1657,8 @@ func refresh_global_menu() -> void:
 	build_menu.get_node("Actions/House").visible = arthurian
 	build_menu.get_node("Actions/Forge").visible = arthurian
 	build_menu.get_node("Actions/DragonYard").visible = arthurian
+	# Either side's Forward Railhead (docs/ROUND3_TROOP_TRAINS.md).
+	build_menu.get_node("Actions/Railhead").visible = not worksite_open
 	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"foundry","Foundry"]]:
 		build_menu.get_node("Actions/"+pair[1]).visible = build_kind_offered(pair[0])
 	# The Hydro Dam is offered only on a map with dam channels, and trucks cannot unload on water.
@@ -1602,7 +1679,7 @@ func refresh_global_menu() -> void:
 	build_menu.get_node("Bank").tooltip_text = "One covering Depot or deployed Cargo truck pays each plan's energy as Deforesters build it. Iron must be delivered to the footprint first. Rails pay fully from Depots. No pooled resources."
 	set_card(build_menu.get_node("Actions/Pin"),"unpin_payer" if global_pinned else "pin_payer")
 	set_tile(build_menu.get_node("Actions/Pin"),"Unpin payer (back to Auto)" if global_pinned else "Pin payer","New plans pay from the nearest covering stockpile that can pay." if global_pinned else "Pick one Depot or deployed Cargo truck on the map or minimap; new plans pay only from it.")
-	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"hydro_dam","HydroDam"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"foundry","Foundry"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"],[&"rail","Rail"],[&"keep","Keep"],[&"chapterhouse","Chapterhouse"],[&"farm","Farm"],[&"house","House"],[&"forge","Forge"],[&"dragon_yard","DragonYard"]]:
+	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"hydro_dam","HydroDam"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"foundry","Foundry"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"],[&"rail","Rail"],[&"keep","Keep"],[&"chapterhouse","Chapterhouse"],[&"farm","Farm"],[&"house","House"],[&"forge","Forge"],[&"dragon_yard","DragonYard"],[&"railhead","Railhead"]]:
 		var spec: Dictionary = network.plan_spec(pair[0])
 		var button: Button = build_menu.get_node("Actions/"+pair[1])
 		button.disabled = false
@@ -1621,6 +1698,8 @@ func refresh_global_menu() -> void:
 			set_tile(button,spec.title,"%d W · %d I · inside a Keep's range, from its stock · raises Azure Dragons and Hearth-Wains, builds coal trains and lets your Keeps lay track" % [spec.wood,spec.iron])
 		elif pair[0] == &"house":
 			set_tile(button,spec.title,"%d W · +%d housing while inside a Keep's range" % [spec.wood,KnightHousing.rules().house_room])
+		elif pair[0] == &"railhead":
+			set_tile(button,spec.title,"%d I · beside your track, anywhere · a train stop where riders get on and off and crates are set down; no supply range, stores nothing" % spec.iron)
 		elif pair[0] == &"hydro_dam":
 			var dam: HydroDamStats = network.HYDRO_DAM_STATS
 			set_tile(button,spec.title,"%d I · across a dam channel between lakes · iron delivered to the site · banks %d E every %s s into the Depot whose range covers it" % [spec.iron,dam.energy_per_beat,str(dam.beat_seconds)])
@@ -1646,6 +1725,8 @@ func pick_prompt() -> String:
 	match game.pending_unit_command:
 		"load":
 			if selected_cargo() != null: return "LOAD · CHOOSE A STOP"
+		"launch_balloon":
+			if balloon_keep() != null: return "LAUNCH BALLOON · CHOOSE A POINT"
 		"unload":
 			if selected_cargo() != null: return "UNLOAD · CHOOSE A STOP\nLeft-click a Depot on the map or minimap to unpack there, a build site to deliver its materials, or open ground to set crates down. Shift queues. Right-click or Esc cancels."
 		"pin":
@@ -1653,9 +1734,12 @@ func pick_prompt() -> String:
 	return ""
 func pick_stops() -> Array[Node3D]:
 	var stops: Array[Node3D] = []
-	if pick_prompt().is_empty() or crate_page_open: return stops
+	# The balloon's manifest page waits for a point, not a stop.
+	if pick_prompt().is_empty() or crate_page_open or balloon_keep() != null: return stops
 	var vehicle := selected_cargo()
-	for group in ["depots","mobile_supplies"]:
+	# Railheads are stops for trains only (docs/ROUND3_TROOP_TRAINS.md); shipment_endpoint refuses them to trucks.
+	for group in ["depots","mobile_supplies","railheads"]:
+		if group == "railheads" and game.pending_unit_command == "pin": continue
 		for node in get_tree().get_nodes_in_group(group):
 			if (SupplySource.available(node,"player") if game.pending_unit_command == "pin" else vehicle.shipment_endpoint(node)): stops.append(node)
 	if game.pending_unit_command == "unload":
@@ -1665,7 +1749,7 @@ func pick_stops() -> Array[Node3D]:
 func pick_stop(stop: Node3D, queued := false) -> void:
 	var mode: String = game.pending_unit_command
 	if not pick_stops().has(stop):
-		game.notify("Pick a friendly Depot%s." % (" or deployed Cargo truck" if mode == "pin" or not selected_cargo().is_in_group("rail_trains") else ""))
+		game.notify("Pick a friendly Depot%s." % (" or deployed Cargo truck" if mode == "pin" or not selected_cargo().is_in_group("rail_trains") else ", Keep or Railhead"))
 		return
 	if mode == "pin":
 		global_payer = stop; global_pinned = true

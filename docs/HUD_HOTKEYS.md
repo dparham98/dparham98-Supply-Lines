@@ -15,22 +15,22 @@ The current keys, as set on 2026-11-15. `scripts/tools/setup_command_actions.gd`
 
 | Card or page | Keys |
 | --- | --- |
-| Infantry and combat units | M Move · S Stop · A Attack · G Gather · F Fell (`docs/FELL.md`) · V Deliver · X Drop materials · R Repair · C Capture · R Derail · E Lay mine · Q Buy mine (Derailer, `docs/DERAILER.md`, `docs/MINES.md`; changed 2026-11-25) · Q Mist, W Slow (Grail Sentinel, `docs/MIST_AND_SLOW.md`) · T Auto-refuel (vehicles) |
-| Cargo truck / Train | M Move · S Stop · T Auto-refuel · D Deploy/Pack supplies · E Load · V Unload · C Trips · W Worksite (not Trains) |
+| Infantry and combat units | M Move · S Stop · A Attack · G Gather · F Fell (`docs/FELL.md`) · V Deliver · X Drop materials · R Repair · C Capture · R Derail · E Lay mine · Q Buy mine (Derailer, `docs/DERAILER.md`, `docs/MINES.md`; changed 2026-11-25) · Q Mist, W Slow (Grail Sentinel, `docs/MIST_AND_SLOW.md`) · T Auto-refuel (vehicles) · right-click a friendly train at a station to board it (foot units, `docs/ROUND3_TROOP_TRAINS.md`) |
+| Cargo truck / Train | M Move · S Stop · T Auto-refuel · D Deploy/Pack supplies · E Load · V Unload · C Trips · W Worksite (not Trains) · U Disembark (Trains with riders, `docs/ROUND3_TROOP_TRAINS.md`) |
 | Depot truck | M Move · S Stop · T Auto-refuel · D Deploy |
 | Depot | D Depot truck · V Cargo vehicle · T Train · C Make crates · X Cancel production (the Generator settings are sliders on the Depot panel, docs/DEPOT_PANELS.md) |
-| Keep | F Forester Maiden · W Warhound · L Launch balloon (docs/AIR_BALLOON.md) · C Make crates · X Cancel production |
+| Keep | F Forester Maiden · W Warhound · L Launch balloon, which opens its manifest (docs/AIR_BALLOON.md) · P Found Keep (Sky-Pavilion, `docs/ROUND3_SKY_PAVILION.md`) · C Make crates · X Cancel production |
 | Production building | F Infantry · S Scout · G Grenadier · T Tank · C Derailer · D Drone · Q Übermech |
 | Temple of Science | R Mining Trains · N Minelaying (`docs/MINES.md`) · X Cancel research |
 | Generator | R Pause/Resume · W Burn wood · C Burn coal · E Burn either · F Focus Depot |
 | Foundry / Forge (`docs/UPGRADES.md`) | Q, W, E, R: the next level of each upgrade line (Foundry: Infantry Weapons, Infantry Armour, Vehicle Weapons, Vehicle Armour; Forge: Arms, Mail) · X Cancel research |
 | Construction plan | X Cancel plan |
-| Build page (B) and Worksite page | D Depot · G Generator · H Hydro Dam (Build page only, on maps with dam channels; `docs/ROUND3_CYBORG_ECONOMY.md`) · B Barracks · T Tank Factory · S Temple · O Foundry (docs/UPGRADES.md) · A Iron Mine · C Coal Mine · R Rail · P Pin payer (Build page only) · Esc Back. Knights: K Keep · H Chapterhouse · F Farm · U House (docs/KNIGHTS_ECONOMY.md) · Y Dragon Yard, then R Rail (docs/KNIGHTS_RAIL.md) · O Forge (docs/UPGRADES.md) |
+| Build page (B) and Worksite page | D Depot · G Generator · H Hydro Dam (Build page only, on maps with dam channels; `docs/ROUND3_CYBORG_ECONOMY.md`) · B Barracks · T Tank Factory · S Temple · O Foundry (docs/UPGRADES.md) · A Iron Mine · C Coal Mine · R Rail · L Railhead (both sides, Build page only; `docs/ROUND3_TROOP_TRAINS.md`) · P Pin payer (Build page only) · Esc Back. Knights: K Keep · H Chapterhouse · F Farm · U House (docs/KNIGHTS_ECONOMY.md) · Y Dragon Yard, then R Rail (docs/KNIGHTS_RAIL.md) · O Forge (docs/UPGRADES.md) |
 | Dragon Yard | D Azure Dragon · H Hearth-Wain (`docs/ROUND3_HEARTH_WAIN.md`) · T Train (docs/KNIGHTS_RAIL.md) |
 | Hearth-Wain | the Cargo truck's keys, with D Pitch Hearth / Pack up the Hearth and no Worksite (`docs/ROUND3_HEARTH_WAIN.md`) |
 | Chapterhouse, Dragon Yard, Forge | Z Stoke Brazier (`docs/ROUND3_KNIGHTS_COAL.md`) |
 | Laying rail (`docs/RAIL_PLANNING.md`) | click two buildings to connect · the suggested track follows the cursor · click or Enter lays it · Backspace takes back the last pick · Esc stop |
-| Load page | A Iron · E Energy · W Wood · C Coal · X Clear · Esc Cancel. Shift fills free slots |
+| Load page | A Iron · E Energy · W Wood · C Coal · F Food (Knights, and any train) · X Clear · Esc Cancel. Shift fills free slots. As the Keep's balloon manifest it has no Energy |
 | Make crates page | A Iron · E Energy · W Wood · C Coal · Esc Cancel. Shift makes five |
 
 Right-click the Fell card to switch autocast Fell (`docs/FELL.md`). With a building selected and no units, right-click sets its rally point (`docs/RALLY_POINTS.md`).

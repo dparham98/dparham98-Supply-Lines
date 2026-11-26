@@ -15,7 +15,7 @@ static func crates_near(tree: SceneTree, point: Vector3, radius: float, team := 
 	result.sort_custom(func(a,b): return a.global_position.distance_squared_to(point) < b.global_position.distance_squared_to(point))
 	return result
 static func beside_radius(node: Node3D) -> float:
-	return BESIDE_RADIUS if node.is_in_group("depots") else VEHICLE_BESIDE_RADIUS
+	return BESIDE_RADIUS if node.is_in_group("depots") or node.is_in_group("railheads") else VEHICLE_BESIDE_RADIUS
 static func beside(node: Node3D) -> Array[Node3D]:
 	return crates_near(node.get_tree(),node.global_position,beside_radius(node),node.team)
 static func count_beside(node: Node3D, kind: StringName) -> int:

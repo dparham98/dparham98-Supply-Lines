@@ -49,7 +49,7 @@ extends Resource
 ## Housing each standing Keep gives.
 @export_range(0,100) var keep_room := 10
 ## Housing each unit takes, by unit id; units not listed take none. There is no upper limit on housing.
-@export var housing := {&"forester_maiden": 1, &"warhound": 1, &"round_table_marine": 2, &"grail_sentinel": 2, &"questing_marine": 2, &"azure_dragon": 4, &"hearth_wain": 1}
+@export var housing := {&"forester_maiden": 1, &"warhound": 1, &"round_table_marine": 2, &"grail_sentinel": 2, &"questing_marine": 2, &"azure_dragon": 4, &"hearth_wain": 1, &"sky_pavilion": 1}
 @export_group("Rail")
 ## Knights rail (docs/KNIGHTS_RAIL.md): a standing Dragon Yard (assets/buildings/dragon_yard.tres) lets the side lay
 ## maglev track from a Keep's iron, at the same price per metre as the Cyborgs, and builds the train, which leaves
@@ -69,3 +69,6 @@ extends Resource
 @export_range(0.0,20.0,0.5) var balloon_dock_height := 6.0
 ## How fast it climbs off the dock and comes down to land, in metres a second.
 @export_range(0.5,20.0,0.5) var balloon_climb_rate := 2.5
+## The chartered Sky-Pavilion (docs/ROUND3_SKY_PAVILION.md) cruises this high; it lifts off the balloon's dock and
+## climbs at the balloon's rate. Its price, prep time, health, speed and sight are in assets/units/sky_pavilion.tres.
+@export_range(1.0,40.0,0.5) var pavilion_cruise_height := 11.0

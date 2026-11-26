@@ -15,7 +15,7 @@ same day it was moved onto its own branch from main and merged onto main's newer
 
 | Building | What it does |
 | --- | --- |
-| Keep | The faction's base. It stores Food, Wood and Iron; trains Forester Maidens (F) and Warhounds (W); packs Food, Wood and Iron crates (C); and launches an Air Balloon (L) that flies up to four of those crates to a point (`docs/AIR_BALLOON.md`). It is a kind of Depot (`scripts/gameplay/keep.gd` extends `depot.gd`). |
+| Keep | The faction's base. It stores Food, Wood and Iron; trains Forester Maidens (F) and Warhounds (W); packs Food, Wood and Iron crates (C); launches an Air Balloon (L) that flies up to four crates, from its stock or packed beside it, to explored land (`docs/AIR_BALLOON.md`); and charters a Sky-Pavilion (P) that founds a new Keep on explored land (`docs/ROUND3_SKY_PAVILION.md`). It is a kind of Depot (`scripts/gameplay/keep.gd` extends `depot.gd`). |
 | Chapterhouse | Trains Round Table Marines (R), Grail Sentinels (G) and Questing Marines (Q). Costs 40 Food, 30 Wood and 40 Iron. Azure Dragons come from the Dragon Yard since 2026-11-25 (docs/KNIGHTS_RAIL.md). |
 
 **Founding a Keep:** Build (B) → Keep (K) plans a Keep anywhere on valid land.
@@ -24,6 +24,8 @@ same day it was moved onto its own branch from main and merged onto main's newer
 - It keeps the Depot spacing.
 - It has no Depot Truck strip.
 - A Forester Maiden builds it.
+
+**Or by air (Round 3):** a Keep's Found Keep (P) sends a Sky-Pavilion that unfolds into a new Keep and a Forester Maiden on land the side has explored (`docs/ROUND3_SKY_PAVILION.md`).
 
 ## Units
 

@@ -8,7 +8,7 @@ func _initialize() -> void:
 		"produce_scout": KEY_S, "produce_grenadier": KEY_G, "produce_tank": KEY_T, "produce_motorcycle": KEY_C, "produce_drone": KEY_D, "produce_ubermech": KEY_Q, "produce_hearth_wain": KEY_H,
 		"control_group_1": KEY_1, "control_group_2": KEY_2, "control_group_3": KEY_3, "control_group_4": KEY_4, "control_group_5": KEY_5, "control_group_6": KEY_6, "control_group_7": KEY_7, "control_group_8": KEY_8, "control_group_9": KEY_9,
 		"playtest_tools": KEY_F10, "map_show_all": KEY_ALT,
-		"command_load": KEY_E, "command_unload": KEY_V, "command_trips": KEY_C,
+		"command_load": KEY_E, "command_unload": KEY_V, "command_disembark": KEY_U, "command_found_keep": KEY_P, "command_trips": KEY_C,
 		# The Load and Make crates pages, and the Generator card's fuel tiles.
 		"resource_iron": KEY_A, "resource_energy": KEY_E, "resource_wood": KEY_W, "resource_coal": KEY_C,
 		# The Temple of Science's research and the train's Mine iron order (docs/TEMPLE_OF_SCIENCE.md).
@@ -19,7 +19,7 @@ func _initialize() -> void:
 		"upgrade_1": KEY_Q, "upgrade_2": KEY_W, "upgrade_3": KEY_E, "upgrade_4": KEY_R, "upgrade_5": KEY_T,
 		"command_make_crates": KEY_C, "command_worksite": KEY_W, "command_burn_either": KEY_E,
 		# Build page tiles (the card is hidden there, so letters can repeat) and header actions.
-		"build_depot": KEY_D, "build_generator": KEY_G, "build_hydro_dam": KEY_H, "build_barracks": KEY_B, "build_tank_factory": KEY_T, "build_mine": KEY_A, "build_coal_mine": KEY_C, "build_rail": KEY_R, "build_temple": KEY_S, "build_dragon_yard": KEY_Y, "produce_keep_train": KEY_T, "build_foundry": KEY_O, "build_forge": KEY_O, "build_pin": KEY_P, "build_back": KEY_ESCAPE,
+		"build_depot": KEY_D, "build_generator": KEY_G, "build_hydro_dam": KEY_H, "build_barracks": KEY_B, "build_tank_factory": KEY_T, "build_mine": KEY_A, "build_coal_mine": KEY_C, "build_rail": KEY_R, "build_temple": KEY_S, "build_dragon_yard": KEY_Y, "build_railhead": KEY_L, "produce_keep_train": KEY_T, "build_foundry": KEY_O, "build_forge": KEY_O, "build_pin": KEY_P, "build_back": KEY_ESCAPE,
 		# B opens the build page; the header button is disabled there, so B then picks Barracks.
 		"command_global_build": KEY_B}
 	for action in keys:

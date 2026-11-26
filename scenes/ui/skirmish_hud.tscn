@@ -1,4 +1,6 @@
 [gd_scene format=3]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_produce_sky_pavilion.png" id="card_produce_sky_pavilion"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_railhead.png" id="card_build_railhead"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_produce_hearth_wain.png" id="card_produce_hearth_wain"]
 [ext_resource type="Script" path="res://scripts/gameplay/skirmish_hud.gd" id="hud"]
 [ext_resource type="Script" path="res://scripts/ui/tactical_minimap.gd" id="map_script"]
@@ -303,6 +305,14 @@ events = [SubResource("key_command_worksite")]
 action = &"command_unload"
 [sub_resource type="Shortcut" id="shortcut_command_unload"]
 events = [SubResource("key_command_unload")]
+[sub_resource type="InputEventAction" id="key_command_disembark"]
+action = &"command_disembark"
+[sub_resource type="Shortcut" id="shortcut_command_disembark"]
+events = [SubResource("key_command_disembark")]
+[sub_resource type="InputEventAction" id="key_command_found_keep"]
+action = &"command_found_keep"
+[sub_resource type="Shortcut" id="shortcut_command_found_keep"]
+events = [SubResource("key_command_found_keep")]
 [sub_resource type="InputEventAction" id="key_command_trips"]
 action = &"command_trips"
 [sub_resource type="Shortcut" id="shortcut_command_trips"]
@@ -578,6 +588,10 @@ events = [SubResource("key_build_farm")]
 action = &"build_house"
 [sub_resource type="Shortcut" id="shortcut_build_house"]
 events = [SubResource("key_build_house")]
+[sub_resource type="InputEventAction" id="key_build_railhead"]
+action = &"build_railhead"
+[sub_resource type="Shortcut" id="shortcut_build_railhead"]
+events = [SubResource("key_build_railhead")]
 [sub_resource type="InputEventAction" id="key_command_heal"]
 action = &"command_heal"
 [sub_resource type="Shortcut" id="shortcut_command_heal"]
@@ -3642,6 +3656,30 @@ horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
+[node name="FoundKeep" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_command_found_keep")
+layout_mode = 0
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_produce_sky_pavilion")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/FoundKeep"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="ProduceRoundTableMarine" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
 shortcut = SubResource("shortcut_produce_round_table_marine")
@@ -4473,6 +4511,32 @@ horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
 theme_override_font_sizes/font_size = 11
 text = "?"
+[node name="Disembark" type="Button" parent="Bottom/Body/Row/Commands/Main"]
+theme_type_variation = &"CommandCard"
+tooltip_text = "Sets every rider down round the train, at a friendly Depot, Keep or Railhead."
+shortcut = SubResource("shortcut_command_disembark")
+layout_mode = 0
+visible = false
+custom_minimum_size = Vector2(46,46)
+text = ""
+icon = ExtResource("card_drop")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Disembark"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -22.0
+offset_top = 2.0
+offset_right = -5.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
 [node name="Trips" type="Button" parent="Bottom/Body/Row/Commands/Main"]
 theme_type_variation = &"CommandCard"
 tooltip_text = "Once: one pickup and delivery. All available: return until the pickup has no crates. Repeat: loop forever."
@@ -5152,6 +5216,31 @@ icon = ExtResource("card_build_dragon_yard")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/DragonYard"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -34.0
+offset_top = 1.0
+offset_right = -4.0
+offset_bottom = 15.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="Railhead" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
+visible = false
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_build_railhead")
+layout_mode = 2
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("card_build_railhead")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/Railhead"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0

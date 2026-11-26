@@ -38,6 +38,8 @@ var mined_delivered := 0
 ## The Knights' train (docs/KNIGHTS_RAIL.md) burns coal from its own tank by the metre, `fuel_rules`, instead of
 ## drawing a connected Depot's energy. It refuels, stopped, from a covering Keep's or Depot's coal.
 @export var coal_fuelled := false
+## Riders aboard (docs/ROUND3_TROOP_TRAINS.md): units taken out of the scene while they ride. Each takes a crate slot.
+var passengers: Array[Node3D] = []
 @onready var rail_network = get_tree().get_first_node_in_group("rail_network")
 func _ready() -> void:
 	super._ready()
@@ -193,7 +195,7 @@ func _plan(goal: Vector2i) -> bool:
 ## A train loads and unloads anywhere on track touching a Depot's rail ring (docs/RAIL_PLANNING.md), which is
 ## wider than the ground loading area.
 func stop_reach(target: Node3D) -> float:
-	if target.is_in_group("depots") and target.get("rules") != null:
+	if (target.is_in_group("depots") and target.get("rules") != null) or target.is_in_group("railheads"):
 		return rail_network.depot_reach(target)+rail_network.probe("straight").half_width()+0.1
 	return target.dropoff_range
 func _route_to_interaction(target: Node3D, radius: float) -> bool:
@@ -241,6 +243,10 @@ func derail() -> void:
 	_place_consist()
 	_stop_route()
 	_route.clear()
+	# Riders are thrown out (docs/ROUND3_TROOP_TRAINS.md).
+	if not passengers.is_empty():
+		var thrown := _set_down_riders(true)
+		game.notify("%s derailed: %d rider%s thrown out." % [name,thrown,"" if thrown == 1 else "s"],team)
 	if route_active and not route_paused: pause_supply_route()
 	stop_mining()
 	state = "Derailed"
@@ -412,7 +418,87 @@ func _pay_for_power(source: Node3D, distance: float) -> void:
 	source.energy -= mini(whole,source.energy)
 func _update_display() -> void:
 	super._update_display()
-	$Status.text = "TRAIN · %d/%d · %s" % [health,max_health,state]
+	$Status.text = "TRAIN · %d/%d · %s" % [health,max_health,state]+(" · %d aboard" % passengers.size() if not passengers.is_empty() else "")
+
+# ---- troop cars (docs/ROUND3_TROOP_TRAINS.md)
+## Stopped on the track: not running a line and not derailed.
+func stopped() -> bool:
+	return _line.is_empty() and not derailed and is_instance_valid(piece)
+## The friendly Depot, Keep or Forward Railhead whose stop the train stands at, or null.
+func station() -> Node3D:
+	if not stopped(): return null
+	for node in get_tree().get_nodes_in_group("depots"):
+		if at_depot(node): return node
+	for node in get_tree().get_nodes_in_group("railheads"):
+		if node.team == team and node.health > 0 and global_position.distance_to(node.global_position) <= stop_reach(node): return node
+	return null
+## Crate slots left for riders: those its crates and riders don't fill, as far as its cargo space allows.
+func free_slots() -> int:
+	return mini(crate_slots()-crates.size()-passengers.size(),stockpile.space()/ResourceStockpile.CRATE)
+func _sync_reserved() -> void:
+	stockpile.reserved = (crates.size()+passengers.size())*ResourceStockpile.CRATE
+func _has_crate_slot() -> bool:
+	return crates.size()+passengers.size() < crate_slots() and stockpile.space() >= ResourceStockpile.CRATE
+## Why a unit can't board now, or "".
+func board_refusal() -> String:
+	if derailed: return "This train is derailed."
+	if station() == null: return "A train takes riders only while stopped at a friendly Depot, Keep or Railhead."
+	if free_slots() <= 0: return "%s is full: each rider takes a crate slot." % name
+	return ""
+## Takes `unit` aboard: out of the scene, its cells freed, until it gets off. False, doing nothing, when it can't.
+func take_passenger(unit: Node3D) -> bool:
+	if not TroopCars.refusal(unit,self).is_empty(): return false
+	unit._stop_route()
+	unit.order = "idle"; unit.order_target = null; unit.order_queue.clear()
+	unit.set_selected(false)
+	unit.state = "Riding %s" % name
+	unit.get_parent().remove_child(unit)
+	passengers.append(unit)
+	_sync_reserved()
+	_update_display()
+	return true
+## Disembark: every rider gets off onto free cells round the train, at a station only. Returns how many got off.
+func disembark() -> int:
+	if passengers.is_empty(): return 0
+	if station() == null:
+		game.notify("Riders get off only at a friendly Depot, Keep or Railhead.",team)
+		return 0
+	var count := _set_down_riders(false)
+	game.notify("%d rider%s got off %s." % [count,"" if count == 1 else "s",name],team)
+	return count
+## Puts every rider back on the ground round the train. Thrown out (`crash`), each loses a share of its full health,
+## never below 1 HP, and is slowed for a moment.
+func _set_down_riders(crash: bool) -> int:
+	var count := 0
+	var rules: RailRules = rail_network.rules
+	for unit in passengers.duplicate():
+		passengers.erase(unit)
+		if not is_instance_valid(unit): continue
+		game.get_node("Entities/Units").add_child(unit)
+		unit._units_changed()
+		var ground = game.ground
+		unit.grid_position = ground.nearest_actor_cell(ground.get_tile_at_position(global_position),unit.mobility_layer(),unit._owner_key())
+		unit.global_position = ground.tile_to_world(unit.grid_position)
+		unit._claim(unit.grid_position)
+		unit.order = "idle"; unit.order_target = null
+		unit.state = "Thrown from %s" % name if crash else "Got off %s" % name
+		if crash:
+			unit.health = maxi(1,unit.health-roundi(unit.max_health*rules.derail_passenger_damage))
+			unit.apply_slow(rules.derail_slow_seconds,rules.derail_slow_factor)
+		unit._update_display()
+		count += 1
+	_sync_reserved()
+	_update_display()
+	return count
+## Destroyed with riders aboard, the train throws them out as a derailment does.
+func take_damage(amount: int) -> void:
+	super.take_damage(amount)
+	if _dead and not passengers.is_empty(): _set_down_riders(true)
+func _notification(what: int) -> void:
+	# Riders still aboard when the train is freed (the match closing) go with it.
+	if what == NOTIFICATION_PREDELETE:
+		for unit in passengers:
+			if is_instance_valid(unit) and not unit.is_inside_tree(): unit.free()
 func _exit_tree() -> void:
 	if is_instance_valid(rail_network) and rail_network.changed.is_connected(_rail_changed): rail_network.changed.disconnect(_rail_changed)
 	super._exit_tree()
