@@ -189,7 +189,10 @@ func request_pavilion(point: Vector3) -> bool:
 	if not refusal.is_empty():
 		game.notify(refusal,team)
 		return false
-	if not _request_keep_unit("sky_pavilion"): return false
+	if not _request_keep_unit("sky_pavilion"):
+		# No housing is told already; otherwise it is the price or the queue.
+		if KnightHousing.room(get_tree(),team,&"sky_pavilion"): game.notify("%s lacks the Sky-Pavilion's price or queue space." % name,team)
+		return false
 	pavilion_sites.append(point)
 	return true
 func _launch_pavilion() -> void:

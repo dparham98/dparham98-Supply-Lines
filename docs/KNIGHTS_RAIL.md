@@ -38,7 +38,9 @@ When a Keep has several lines, the player clicks the line to start on, as at a D
 - **Refuelling:** stopped, it refuels at 5 coal a second from a covering Keep's or Depot's coal, a deployed Cargo truck's coal, or a coal crate beside it, as other vehicles do (`docs/FUEL_BATCH.md`).
 - **Maps without vehicle fuel:** it burns nothing.
 
-**Cargo:** it carries and runs routes like the Cyborg train, between friendly Keeps or Depots: Energy, Iron, Wood and Coal.
+**Cargo:** it carries and runs routes like the Cyborg train, between friendly Keeps, Depots or Forward Railheads: Energy, Iron, Wood, Coal and Food.
+
+**Riders** (Round 3, `docs/ROUND3_TROOP_TRAINS.md`): foot soldiers and workers board it at a station, each taking a crate slot of its 300. They get off with Disembark (U), and a derailment throws them out.
 
 ## Decided here
 
@@ -50,7 +52,6 @@ When a Keep has several lines, the player clicks the line to start on, as at a D
 
 ## Not done
 
-- **Food:** a train can't carry Food. The route and Load page know Energy, Iron, Wood and Coal only. Food still moves by balloon and crates.
 - **AI:** the Knights AI builds a Dragon Yard once it has a second Keep, joins its Keeps with track, runs trains hauling iron home, and builds a Coal Mine for their fuel (`docs/KNIGHTS_AI.md`, Rail; `tests/ai_knights_rail_test.gd`).
 
 ## Check

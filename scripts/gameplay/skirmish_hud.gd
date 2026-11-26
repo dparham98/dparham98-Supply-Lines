@@ -1558,7 +1558,8 @@ func update_manifest_panel() -> void:
 		set_tile(load_tiles.get_node(pair[0]),pair[1]+" crate","Adds one crate to the manifest. Shift fills every free slot.\nRight-click takes one off; Shift+right-click takes them all off.")
 		load_tiles.get_node(pair[0]).disabled = false
 		load_tiles.get_node(pair[0]).visible = true
-	load_tiles.get_node("Food").visible = has_arthurian_faction()
+	# Food rides any train, either side's (docs/ROUND3_TROOP_TRAINS.md); other vehicles carry it for the Knights.
+	load_tiles.get_node("Food").visible = has_arthurian_faction() or vehicle.is_in_group("rail_trains")
 	set_tile(load_tiles.get_node("Clear"),"Clear manifest","Removes every crate from the manifest.")
 ## The Load page as the balloon's manifest: up to `balloon_crates` crates of Food, Wood, Iron or Coal from the Keep.
 func _update_balloon_manifest(keep: Node3D) -> void:
@@ -1735,7 +1736,9 @@ func pick_stops() -> Array[Node3D]:
 	# The balloon's manifest page waits for a point, not a stop.
 	if pick_prompt().is_empty() or crate_page_open or balloon_keep() != null: return stops
 	var vehicle := selected_cargo()
-	for group in ["depots","mobile_supplies"]:
+	# Railheads are stops for trains only (docs/ROUND3_TROOP_TRAINS.md); shipment_endpoint refuses them to trucks.
+	for group in ["depots","mobile_supplies","railheads"]:
+		if group == "railheads" and game.pending_unit_command == "pin": continue
 		for node in get_tree().get_nodes_in_group(group):
 			if (SupplySource.available(node,"player") if game.pending_unit_command == "pin" else vehicle.shipment_endpoint(node)): stops.append(node)
 	if game.pending_unit_command == "unload":
@@ -1745,7 +1748,7 @@ func pick_stops() -> Array[Node3D]:
 func pick_stop(stop: Node3D, queued := false) -> void:
 	var mode: String = game.pending_unit_command
 	if not pick_stops().has(stop):
-		game.notify("Pick a friendly Depot%s." % (" or deployed Cargo truck" if mode == "pin" or not selected_cargo().is_in_group("rail_trains") else ""))
+		game.notify("Pick a friendly Depot%s." % (" or deployed Cargo truck" if mode == "pin" or not selected_cargo().is_in_group("rail_trains") else ", Keep or Railhead"))
 		return
 	if mode == "pin":
 		global_payer = stop; global_pinned = true

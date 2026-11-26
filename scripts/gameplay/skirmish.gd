@@ -686,6 +686,9 @@ func issue_card_order(screen, queued := false) -> void:
 			target = pick_target(screen,"depots",50)
 			var mobile := pick_target(screen,"mobile_supplies",34)
 			if is_instance_valid(mobile) and mobile.get("deployed") == true: target = mobile
+			# A train also stops at a friendly Forward Railhead (docs/ROUND3_TROOP_TRAINS.md).
+			var railhead := pick_target(screen,"railheads",40)
+			if is_instance_valid(railhead) and railhead.team == "player": target = railhead
 			# Unload also lands on a queued build site.
 			var site := pick_target(screen,"construction_plans",50)
 			if pending_unit_command == "unload" and is_instance_valid(site) and not site.finished and site.kind != &"rail": target = site
@@ -720,7 +723,7 @@ func issue_card_order(screen, queued := false) -> void:
 			if unit.team != "player" or not unit.is_selected or not unit.is_cargo_vehicle: continue
 			var point_or_target: Vector3 = target.global_position if is_instance_valid(target) else ground_point
 			if not unit.stop_valid(pending_unit_command,target if is_instance_valid(target) and not (target.is_in_group("supply_crates") and pending_unit_command == "unload") else null,point_or_target):
-				notify("Trains load and unload at friendly Depots." if unit.is_in_group("rail_trains") else "Can't %s there." % pending_unit_command); continue
+				notify("Trains load and unload at friendly Depots, Keeps and Railheads." if unit.is_in_group("rail_trains") else "Can't %s there." % pending_unit_command); continue
 			give_order(unit,{kind = pending_unit_command, target = target if is_instance_valid(target) else null, point = point_or_target},queued)
 			ordered += 1
 		if ordered > 0:

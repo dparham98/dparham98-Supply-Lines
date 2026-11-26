@@ -183,6 +183,14 @@ func railhead() -> bool:
 	plan.queue_free()
 	if not check(is_instance_valid(head) and head.is_in_group("railheads") and game.get_node("Interface").object_name(head) == "Railhead","It stands as a Railhead"): return false
 	head.set_process(false)
+	# The HUD offers it to a train as a Load/Unload stop.
+	var hud = game.get_node("Interface")
+	game.selected_building = null
+	for u in get_nodes_in_group("units"): u.set_selected(u == train)
+	game.pending_unit_command = "unload"
+	if not check(hud.pick_stops().has(head) and hud.pick_stops().has(keep),"Unload should offer a train the Railhead and the Keep as stops"): return false
+	game.cancel_armed()
+	train.set_selected(false)
 	# Food and six Marines aboard at the Keep: the whole 300.
 	train.manifest = {&"food": 6}
 	train.load_crates(keep,keep.global_position)
@@ -269,6 +277,11 @@ func pavilion() -> bool:
 	# Cancelled, it pays back and forgets its site.
 	keep._drop_current()
 	if not check(keep.stockpile.amount(&"wood") == wood and keep.pavilion_sites.is_empty(),"Cancelled, it pays back and drops its site"): return false
+	# Short of Iron: refused, and told.
+	var spare: int = keep.stockpile.amount(&"iron")
+	keep.stockpile.withdraw(&"iron",spare)
+	if not check(not keep.request_pavilion(site) and game.message.contains("price"),"Short of Iron it should be refused and told: '%s'" % game.message): return false
+	keep.stockpile.deposit(&"iron",spare)
 	keep.request_pavilion(site)
 	for i in range(149): keep._process(0.1)
 	if not check(get_nodes_in_group("sky_pavilions").is_empty(),"It shouldn't lift off before its 15 s"): return false
