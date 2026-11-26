@@ -48,6 +48,9 @@ var fuel_source: Node3D
 var fuel_source_explicit := false
 var refuel_from: Node3D
 var out_of_fuel := false
+## A flyer that ran out of coal is on the ground where it stopped (FuelRules.coal_per_second_airborne).
+var fuel_landed := false
+var _flight_height := -1.0
 var _refuel_credit := 0.0
 @export var unit_stats: UnitStats
 ## Explicit compatibility policy while historical combat notation is unresolved.
@@ -343,6 +346,7 @@ func _process(delta: float) -> void:
 	if _dead: return
 	if derail_cooldown > 0.0: derail_cooldown = maxf(0.0,derail_cooldown-delta)
 	fuel_tick(delta)
+	_ease_flight(delta)
 	if can_heal:
 		MedicalWork.refill_tick(self,delta)
 		_autocast_heal(delta)
@@ -468,7 +472,7 @@ func _order_process(delta: float) -> void:
 		"derail": _derail_order(delta)
 		_:
 			var unreachable := state == "Trees unreachable"
-			state = "Idle"
+			state = "Out of fuel · landed" if fuel_landed else "Idle"
 			# Hold ground and defend even when deselected; working units keep working.
 			var enemy = _acquire()
 			if enemy: _shoot(enemy)
@@ -1429,6 +1433,7 @@ func choose_fuel_source() -> Node3D:
 func fuel_tick(delta: float) -> void:
 	refuel_from = null
 	if not fuel_active(): return
+	_airborne_burn(delta)
 	# Depot power moves a vehicle whose tank is empty.
 	if out_of_fuel and _depot_power() != null: out_of_fuel = false
 	if not auto_refuel or not is_stopped() or fuel_target()-fuel < 1:
@@ -1450,12 +1455,33 @@ func fuel_tick(delta: float) -> void:
 		_refuel_credit = 0
 		out_of_fuel = false
 	elif out_of_fuel: state = "Refuelling from %s · order paused" % from.name
+## A flyer burns coal by the second while in the air; empty, it lands where it is. Refuelled (as any vehicle is, from a
+## covering Depot, a deployed Cargo truck or a coal crate beside it), it takes off again.
+func _airborne_burn(delta: float) -> void:
+	if fuel_rules.coal_per_second_airborne <= 0: return
+	if fuel_landed:
+		if fuel > 0 and not out_of_fuel: fuel_landed = false
+		return
+	fuel -= fuel_rules.coal_per_second_airborne*delta
+	if fuel <= 0.0001:
+		fuel = 0
+		_mark_out_of_fuel()
+		fuel_landed = true
+		_stop_route()
+		state = "Out of fuel · landed"
+## The Visuals' flying height eases down to the ground when landed and back up after refuelling.
+func _ease_flight(delta: float) -> void:
+	if fuel_rules == null or fuel_rules.coal_per_second_airborne <= 0: return
+	if _flight_height < 0: _flight_height = $Visuals.position.y
+	var goal := 0.4 if fuel_landed else _flight_height
+	$Visuals.position.y = move_toward($Visuals.position.y,goal,4.0*delta)
 func fuel_summary() -> String:
 	if fuel_rules == null: return ""
 	if not fuel_active(): return "Fuel reserve %.0f / %.0f · not required here" % [fuel,fuel_rules.reserve_capacity]
 	var text := "Fuel %.1f / %.0f coal" % [fuel,fuel_rules.reserve_capacity]
 	if is_instance_valid(powered_by) and _depot_power() == powered_by: text += " · running on %s power" % powered_by.name
-	if out_of_fuel: text += " · OUT OF FUEL"
+	if fuel_landed: text += " · OUT OF FUEL · landed"
+	elif out_of_fuel: text += " · OUT OF FUEL"
 	elif fuel_low(): text += " · LOW FUEL"
 	var from := "nearest in range"
 	if is_instance_valid(refuel_from): from = str(refuel_from.name)
