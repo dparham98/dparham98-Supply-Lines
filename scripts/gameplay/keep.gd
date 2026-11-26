@@ -5,7 +5,7 @@ extends "res://scripts/gameplay/depot.gd"
 @export var forester_scene: PackedScene = preload("res://scenes/gameplay/forester_maiden.tscn")
 @export var warhound_scene: PackedScene = preload("res://scenes/gameplay/warhound.tscn")
 @export var balloon_scene: PackedScene = preload("res://scenes/gameplay/air_balloon.tscn")
-## The Knights' coal train (docs/KNIGHTS_RAIL.md), built here once the side has a Wainwright.
+## The Knights' coal train (docs/KNIGHTS_RAIL.md): ordered at a Dragon Yard, built here and leaving on this Keep's track.
 @export var knights_train_scene: PackedScene = preload("res://scenes/gameplay/knights_train.tscn")
 
 var _unit_stats_cache := {}
@@ -63,7 +63,7 @@ func _request_keep_unit(kind: String) -> bool:
 ## Knights rail (docs/KNIGHTS_RAIL.md): why this Keep can't build a train now, or "".
 func train_refusal() -> String:
 	if health <= 0 or not SupplySource.plays(team): return "This Keep can't build a train."
-	if not KnightRail.has_wainwright(self,team): return "Build a Wainwright first: it lets your Keeps lay track and build trains."
+	if not KnightRail.has_dragon_yard(self,team): return "Build a Dragon Yard first: it builds trains and lets your Keeps lay track."
 	if game.get_node("RailNetwork").loading_pieces(self,team).is_empty(): return "Lay friendly track into this Keep's loading area first."
 	return ""
 ## `line`: a piece of the line the train starts on, when the Keep has more than one.

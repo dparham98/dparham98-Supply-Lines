@@ -1,7 +1,8 @@
 extends SceneTree
-# Headless (item 13 of docs/BALANCE_IMPLEMENTATION_HANDOFF.md, docs/KNIGHTS_RAIL.md): before a Wainwright stands, a
-# Keep can't pay for track or build a train. A Wainwright (60 W / 60 I, inside a Keep's range) changes both: the Keep
-# lays maglev track at 2 iron a metre, and with track in its loading area builds a train for 60 F / 40 W / 30 I.
+# Headless (item 13 of docs/BALANCE_IMPLEMENTATION_HANDOFF.md, docs/KNIGHTS_RAIL.md): before a Dragon Yard stands, a
+# Keep can't pay for track or build a train. A Dragon Yard (60 W / 60 I, 6 x 6, inside a Keep's range) changes both:
+# the Keep lays maglev track at 2 iron a metre, and the yard's Train tile builds a train for 60 F / 40 W / 30 I at a
+# covering Keep with track in its loading area. The yard raises Azure Dragons, which the Chapterhouse no longer does.
 # The train runs at 12 m/s and burns coal by the metre from its own tank, refuelling from the Keep's coal.
 var game: Node3D
 func _initialize() -> void: call_deferred("run")
@@ -34,25 +35,31 @@ func run() -> void:
 	keep.stockpile.deposit(&"iron",400)
 	keep.stockpile.deposit(&"food",300)
 	keep.stockpile.deposit(&"coal",50)
-	# No Wainwright: no track from a Keep and no train.
-	if not check(not KnightRail.has_wainwright(keep,"player") and lay_from(rails,keep) == null,"A Keep should not lay track before a Wainwright"): return
-	if not check(keep.train_refusal().contains("Wainwright") and not keep.request_train(),"A Keep should refuse a train before a Wainwright"): return
-	# The Wainwright.
-	var spec: Dictionary = network.plan_spec(&"wainwright")
-	if not check(spec.get("title") == "Wainwright" and spec.get("wood") == 60 and spec.get("iron") == 60 and spec.get("size") == Vector2i(4,4) and spec.get("in_keep_range") == true and spec.get("keep_stock") == true,"Wainwright plan spec should be 4 x 4, 60 W / 60 I, in a Keep's range: %s" % spec): return
+	# The Chapterhouse no longer raises Dragons.
+	var hall_stats: ProductionBuildingStats = load("res://assets/buildings/chapterhouse.tres")
+	if not check(not hall_stats.unit_scenes.any(func(scene): return scene.resource_path.ends_with("azure_dragon.tscn")),"The Chapterhouse should not raise Azure Dragons"): return
+	# No Dragon Yard: no track from a Keep and no train.
+	if not check(not KnightRail.has_dragon_yard(keep,"player") and lay_from(rails,keep) == null,"A Keep should not lay track before a Dragon Yard"): return
+	if not check(keep.train_refusal().contains("Dragon Yard") and not keep.request_train(),"A Keep should refuse a train before a Dragon Yard"): return
+	# The Dragon Yard.
+	var spec: Dictionary = network.plan_spec(&"dragon_yard")
+	if not check(spec.get("title") == "Dragon Yard" and spec.get("wood") == 60 and spec.get("iron") == 60 and spec.get("size") == Vector2i(6,6) and spec.get("in_keep_range") == true and spec.get("keep_stock") == true,"Dragon Yard plan spec should be 6 x 6, 60 W / 60 I, in a Keep's range: %s" % spec): return
 	var plan = null
-	for offset in [Vector3(-14,0,8),Vector3(14,0,-12),Vector3(-12,0,-14),Vector3(10,0,14),Vector3(0,0,-18),Vector3(18,0,0)]:
-		plan = network.queue_plan(keep.global_position+offset,&"wainwright",keep,true,false)
+	for offset in [Vector3(-14,0,8),Vector3(14,0,-12),Vector3(-12,0,-14),Vector3(10,0,14),Vector3(0,0,-18),Vector3(18,0,0),Vector3(-16,0,0),Vector3(0,0,16)]:
+		plan = network.queue_plan(keep.global_position+offset,&"dragon_yard",keep,true,false)
 		if is_instance_valid(plan): break
-	if not check(is_instance_valid(plan),"A Wainwright plan could not be queued: "+game.message): return
-	var wainwright = plan.complete_from_stock()
-	if not check(is_instance_valid(wainwright) and wainwright.stats.building_id == &"wainwright","The plan should finish as a Wainwright"): return
+	if not check(is_instance_valid(plan),"A Dragon Yard plan could not be queued: "+game.message): return
+	var yard = plan.complete_from_stock()
+	if not check(is_instance_valid(yard) and yard.stats.building_id == &"dragon_yard","The plan should finish as a Dragon Yard"): return
 	await process_frame
-	if not check(KnightRail.has_wainwright(keep,"player"),"The side should now have a Wainwright"): return
+	if not check(KnightRail.has_dragon_yard(keep,"player"),"The side should now have a Dragon Yard"): return
+	if not check(yard.stats.unit_scenes.size() == 1 and yard.unit_stats_for(yard.stats.unit_scenes[0]).unit_id == &"azure_dragon","The Dragon Yard raises Azure Dragons"): return
+	if not check(KnightRail.train_keep(yard) == null and not KnightRail.yard_train_refusal(yard).is_empty(),"With no track at a Keep, the yard can't build a train yet"): return
 	# Track from the Keep at 2 iron a metre.
 	var iron: int = keep.iron
 	var piece := lay_from(rails,keep)
-	if not check(piece != null,"With a Wainwright the Keep should lay track: "+game.message): return
+	if not check(piece != null,"With a Dragon Yard the Keep should lay track: "+game.message): return
+	if not check(KnightRail.train_keep(yard) == keep and KnightRail.yard_train_refusal(yard).is_empty(),"With track at the Keep, the yard builds its train there: %s" % KnightRail.yard_train_refusal(yard)): return
 	if not check(keep.iron == iron-rails.cost("straight") and rails.cost("straight") == ceili(rails.piece_length("straight")*2),"Track should cost 2 iron a metre from the Keep (%d -> %d)" % [iron,keep.iron]): return
 	if not check(rails.powered(piece,"player"),"A line joined to a Keep should show as live"): return
 	# The train.
@@ -80,14 +87,20 @@ func run() -> void:
 	var coal: int = keep.stockpile.amount(&"coal")
 	for i in range(30): train.fuel_tick(0.1)
 	if not check(train.fuel >= 10.0 and keep.stockpile.amount(&"coal") <= coal-10,"A stopped train should refuel from the Keep's coal (fuel %.1f)" % train.fuel): return
-	# The HUD: the Keep's train tile and the Build page's Wainwright and Rail tiles.
+	# The HUD: the Dragon Yard's Dragon and Train tiles, none on the Keep, and the Build page's Dragon Yard and Rail.
 	var hud = game.get_node("Interface")
 	game.selected_building = keep
 	hud._process(0)
-	if not check(hud.desired_buttons.has("KeepTrain"),"The Keep card should show the train tile: %s" % [hud.desired_buttons]): return
+	if not check(not hud.desired_buttons.has("KeepTrain"),"The Keep card no longer shows a train tile: %s" % [hud.desired_buttons]): return
+	game.selected_building = yard
+	hud._process(0)
+	if not check(hud.desired_buttons.has("KeepTrain") and hud.desired_buttons.has("ProduceAzureDragon"),"The Dragon Yard card should show the Dragon and train tiles: %s" % [hud.desired_buttons]): return
+	var queued_before: int = keep.queue
+	hud.queue_train()
+	if not check(keep.queue == queued_before+1,"The yard's Train tile should queue a train at the Keep"): return
 	game.selected_building = null
 	hud.refresh_global_menu()
-	if not check(hud.build_menu.get_node("Actions/Wainwright").visible and hud.build_menu.get_node("Actions/Rail").visible,"The Knights Build page should show the Wainwright and, with one standing, Rail"): return
+	if not check(hud.build_menu.get_node("Actions/DragonYard").visible and hud.build_menu.get_node("Actions/Rail").visible,"The Knights Build page should show the Dragon Yard and, with one standing, Rail"): return
 	game.queue_free()
 	await process_frame
 	print("KNIGHTS_RAIL_TEST_PASSED")

@@ -1201,7 +1201,7 @@ func plan_blocker(pinned = null) -> String:
 	# Track from one line to another needs no target of its own.
 	var links_track: bool = route_from is RailAnchor and route_to is RailAnchor
 	if targets.size() < 2 and not links_track: return "Planned track must connect two targets (Depots, mines or build sites); it connects %d." % targets.size()
-	if plan_payer(pinned) == null: return "No Depot has the %d iron for this track%s." % [plan_cost()," (a Keep pays only once you have a Wainwright)" if get_tree().get_nodes_in_group("keeps").any(func(k): return k.team == "player") else ""]
+	if plan_payer(pinned) == null: return "No Depot has the %d iron for this track%s." % [plan_cost()," (a Keep pays only once you have a Dragon Yard)" if get_tree().get_nodes_in_group("keeps").any(func(k): return k.team == "player") else ""]
 	return ""
 ## Lays every planned piece at once, charging one Depot. Returns the pieces laid.
 func commit_plan(pinned = null) -> Array[Node3D]:

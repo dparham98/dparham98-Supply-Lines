@@ -250,8 +250,10 @@ func run() -> void:
 
 	game.selected_building = chapterhouse
 	hud._process(0)
-	for btn in ["ProduceRoundTableMarine", "ProduceGrailSentinel", "ProduceQuestingMarine", "ProduceAzureDragon"]:
+	for btn in ["ProduceRoundTableMarine", "ProduceGrailSentinel", "ProduceQuestingMarine"]:
 		if not check(hud.card.get_node(btn).visible, "Chapterhouse missing button %s" % btn): return
+	# Azure Dragons come from the Dragon Yard since 2026-11-25 (docs/KNIGHTS_RAIL.md).
+	if not check(not hud.card.get_node("ProduceAzureDragon").visible, "The Chapterhouse should not raise Azure Dragons"): return
 
 	game.selected_building = null
 	sentinel.set_selected(true)

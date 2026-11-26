@@ -82,7 +82,7 @@ func has_arthurian_faction() -> bool:
 	return false
 ## Build-page buildings only the Cyborgs see; Keep and Chapterhouse are the Knights'. Mines are for both.
 const CYBORG_BUILDINGS := [&"depot",&"generator",&"barracks",&"tank_factory",&"temple_of_science",&"rail"]
-const KNIGHT_BUILDINGS := [&"keep",&"chapterhouse",&"farm",&"house",&"wainwright"]
+const KNIGHT_BUILDINGS := [&"keep",&"chapterhouse",&"farm",&"house",&"dragon_yard"]
 ## True when the player builds as the Cyborgs: the match setup's faction, or, in a scene run straight from the
 ## editor or a test, any Depot of the player's that is not a Keep, or no Knights presence at all.
 func has_cyborg_faction() -> bool:
@@ -240,7 +240,7 @@ func _ready() -> void:
 		var btn_id := production_button_id(StringName(id))
 		card.get_node(btn_id).pressed.connect(func():
 			if is_instance_valid(shown) and shown.is_in_group("production_buildings"): least_busy().request_unit(StringName(id)))
-	for pair in [["Depot",&"depot"],["Generator",&"generator"],["Barracks",&"barracks"],["TankFactory",&"tank_factory"],["Temple",&"temple_of_science"],["Mine",&"iron_mine"],["CoalMine",&"coal_mine"],["Rail",&"rail"],["Keep",&"keep"],["Chapterhouse",&"chapterhouse"],["Farm",&"farm"],["House",&"house"],["Wainwright",&"wainwright"]]:
+	for pair in [["Depot",&"depot"],["Generator",&"generator"],["Barracks",&"barracks"],["TankFactory",&"tank_factory"],["Temple",&"temple_of_science"],["Mine",&"iron_mine"],["CoalMine",&"coal_mine"],["Rail",&"rail"],["Keep",&"keep"],["Chapterhouse",&"chapterhouse"],["Farm",&"farm"],["House",&"house"],["DragonYard",&"dragon_yard"]]:
 		build_menu.get_node("Actions/"+pair[0]).pressed.connect(begin_global_placement.bind(pair[1]))
 	build_menu.get_node("Actions/Pin").pressed.connect(toggle_pin)
 	card.get_node("DeployTruck").pressed.connect(func(): game.pending_unit_command = "deploy"; game.notify("Click a site for the Depot. Only an empty Depot footprint is accepted; Shift queues."))
@@ -812,8 +812,13 @@ var train_line_depot: Node3D
 ## Queues a train at the selected Depot. With more than one line of track reaching it, the player first clicks
 ## the line the train starts on.
 func queue_train() -> void:
-	if not network.owned_selected(): return
-	var depot: Node3D = network.selected
+	var depot: Node3D
+	# A Dragon Yard's train is built at the covering Keep with track (docs/KNIGHTS_RAIL.md).
+	if is_instance_valid(shown) and shown.is_in_group("production_buildings") and shown.stats.building_id == &"dragon_yard":
+		depot = KnightRail.train_keep(shown)
+		if depot == null: game.notify(KnightRail.yard_train_refusal(shown)); return
+	elif network.owned_selected(): depot = network.selected
+	else: return
 	var reaching: Array = game.get_node("RailNetwork").depot_lines(depot)
 	if reaching.size() > 1:
 		train_line_depot = depot
@@ -956,12 +961,6 @@ func update_contents() -> void:
 				show_button("LaunchBalloon","Launch balloon")
 				var refusal: String = node.balloon_refusal()
 				explain(balloon_button,not refusal.is_empty(),refusal)
-				# Knights rail (docs/KNIGHTS_RAIL.md): shown once the side has a Wainwright.
-				if KnightRail.has_wainwright(node,node.team):
-					var r := KnightHousing.rules()
-					show_production("KeepTrain","Train (%s s, burns coal)" % _seconds(r.train_build_seconds),0,r.train_iron_cost,node,r.train_food_cost,r.train_wood_cost)
-					var train_refusal: String = node.train_refusal()
-					if not train_refusal.is_empty(): explain(card.get_node("KeepTrain"),true,train_refusal)
 				hint_text = "Keep stores Food, Wood and Iron locally and trains Forester Maidens and Warhounds. Found forward Keeps anywhere from 50 Wood and 50 Iron on site (B → K)."
 		else:
 			commands.get_node("Title").text = "DEPOT · PRODUCTION"
@@ -1007,6 +1006,14 @@ the one shown while it can, else another that can."
 				# The tile names the Depot that would pay: the current one, or another covering one that can.
 				var pays = node.payer_for(stats.energy_cost,stats.iron_cost,stats.food_cost,stats.wood_cost)
 				show_production(production_button_id(stats.unit_id),stats.display_name,stats.energy_cost,stats.iron_cost,pays if pays != null else node.assigned_depot,stats.food_cost,stats.wood_cost,stats.unit_id)
+		# The Dragon Yard's train (docs/KNIGHTS_RAIL.md): paid by and leaving from a covering Keep with track.
+		if node.stats.building_id == &"dragon_yard" and node.team == "player":
+			var r := KnightHousing.rules()
+			var train_at = KnightRail.train_keep(node)
+			show_production("KeepTrain","Train (%s s, burns coal)" % _seconds(r.train_build_seconds),0,r.train_iron_cost,train_at if train_at != null else node.assigned_depot,r.train_food_cost,r.train_wood_cost)
+			var train_refusal: String = KnightRail.yard_train_refusal(node)
+			if not train_refusal.is_empty(): explain(card.get_node("KeepTrain"),true,train_refusal)
+			else: card.get_node("KeepTrain").tooltip_text += "\nBuilt at %s and leaves on its track." % train_at.name
 		hint_text = "Production pays from a friendly Depot (or Keep) whose range covers this building, picked for you: the one it has while that one can pay, otherwise the nearest covering one that can. Drone attacks and tentative abilities remain unspecified."
 	elif node.is_in_group("energy_generators"):
 		commands.get_node("Title").text = "GENERATOR · LOCAL POWER"
@@ -1366,14 +1373,14 @@ func begin_global_placement(kind: StringName) -> void:
 	game.notify("Click valid terrain to place an unpaid %s plan. Esc cancels placement; existing plans remain." % network.plan_spec(kind).title)
 func refresh_global_menu() -> void:
 	build_menu.get_node("Actions/Pin").visible = not worksite_open
-	# The Knights lay track once they have a Wainwright (docs/KNIGHTS_RAIL.md).
-	build_menu.get_node("Actions/Rail").visible = not worksite_open and (build_kind_offered(&"rail") or (knights_build() and KnightRail.has_wainwright(game,"player")))
+	# The Knights lay track once they have a Dragon Yard (docs/KNIGHTS_RAIL.md).
+	build_menu.get_node("Actions/Rail").visible = not worksite_open and (build_kind_offered(&"rail") or (knights_build() and KnightRail.has_dragon_yard(game,"player")))
 	var arthurian := knights_build() and not worksite_open
 	build_menu.get_node("Actions/Keep").visible = arthurian
 	build_menu.get_node("Actions/Chapterhouse").visible = arthurian
 	build_menu.get_node("Actions/Farm").visible = arthurian
 	build_menu.get_node("Actions/House").visible = arthurian
-	build_menu.get_node("Actions/Wainwright").visible = arthurian
+	build_menu.get_node("Actions/DragonYard").visible = arthurian
 	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"]]:
 		build_menu.get_node("Actions/"+pair[1]).visible = build_kind_offered(pair[0])
 	if worksite_open:
@@ -1392,7 +1399,7 @@ func refresh_global_menu() -> void:
 	build_menu.get_node("Bank").tooltip_text = "One covering Depot or deployed Cargo truck pays each plan's energy as Deforesters build it. Iron must be delivered to the footprint first. Rails pay fully from Depots. No pooled resources."
 	set_card(build_menu.get_node("Actions/Pin"),"unpin_payer" if global_pinned else "pin_payer")
 	set_tile(build_menu.get_node("Actions/Pin"),"Unpin payer (back to Auto)" if global_pinned else "Pin payer","New plans pay from the nearest covering stockpile that can pay." if global_pinned else "Pick one Depot or deployed Cargo truck on the map or minimap; new plans pay only from it.")
-	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"],[&"rail","Rail"],[&"keep","Keep"],[&"chapterhouse","Chapterhouse"],[&"farm","Farm"],[&"house","House"],[&"wainwright","Wainwright"]]:
+	for pair in [[&"depot","Depot"],[&"generator","Generator"],[&"barracks","Barracks"],[&"tank_factory","TankFactory"],[&"temple_of_science","Temple"],[&"iron_mine","Mine"],[&"coal_mine","CoalMine"],[&"rail","Rail"],[&"keep","Keep"],[&"chapterhouse","Chapterhouse"],[&"farm","Farm"],[&"house","House"],[&"dragon_yard","DragonYard"]]:
 		var spec: Dictionary = network.plan_spec(pair[0])
 		var button: Button = build_menu.get_node("Actions/"+pair[1])
 		button.disabled = false
@@ -1405,8 +1412,8 @@ func refresh_global_menu() -> void:
 			set_tile(button,spec.title,"%d F · %d W · %d I · from a covering Keep's stock, else Wood & Iron on site" % [spec.food,spec.wood,spec.iron])
 		elif pair[0] == &"farm":
 			set_tile(button,spec.title,"%d W · inside a Keep's range, from its stock · one Forester tills it for Food" % spec.wood)
-		elif pair[0] == &"wainwright":
-			set_tile(button,spec.title,"%d W · %d I · inside a Keep's range, from its stock · lets your Keeps lay track and build coal trains" % [spec.wood,spec.iron])
+		elif pair[0] == &"dragon_yard":
+			set_tile(button,spec.title,"%d W · %d I · inside a Keep's range, from its stock · raises Azure Dragons, builds coal trains and lets your Keeps lay track" % [spec.wood,spec.iron])
 		elif pair[0] == &"house":
 			set_tile(button,spec.title,"%d W · +%d housing while inside a Keep's range" % [spec.wood,KnightHousing.rules().house_room])
 		else: set_tile(button,spec.title,"%d E · %d I · iron delivered to the site, energy as built" % [spec.energy,spec.iron])

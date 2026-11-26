@@ -15,8 +15,9 @@ const TEMPLE_SCENE_PATH := "res://scenes/gameplay/temple_of_science.tscn"
 @export var chapterhouse_scene: PackedScene
 const KEEP_SCENE_PATH := "res://scenes/gameplay/keep.tscn"
 const CHAPTERHOUSE_SCENE_PATH := "res://scenes/gameplay/chapterhouse.tscn"
-## The Knights' Wainwright (docs/KNIGHTS_RAIL.md): lets the side lay track from Keeps and build trains.
-const WAINWRIGHT_SCENE_PATH := "res://scenes/gameplay/wainwright.tscn"
+## The Knights' Dragon Yard (docs/KNIGHTS_RAIL.md): raises Azure Dragons, builds trains, and lets the side lay track
+## from Keeps.
+const DRAGON_YARD_SCENE_PATH := "res://scenes/gameplay/dragon_yard.tscn"
 func _keep_scene() -> PackedScene: return keep_scene if keep_scene != null else load(KEEP_SCENE_PATH)
 @export var supply_rules: SupplyRules
 @export var mine_scene: PackedScene
@@ -402,7 +403,7 @@ func production_scene(kind: StringName) -> PackedScene:
 	if kind == &"tank_factory": return tank_factory_scene
 	if kind == &"temple_of_science": return temple_scene if temple_scene != null else load(TEMPLE_SCENE_PATH)
 	if kind == &"chapterhouse": return chapterhouse_scene if chapterhouse_scene != null else load(CHAPTERHOUSE_SCENE_PATH)
-	if kind == &"wainwright": return load(WAINWRIGHT_SCENE_PATH)
+	if kind == &"dragon_yard": return load(DRAGON_YARD_SCENE_PATH)
 	return null
 func construct_production(point: Vector3, kind: StringName) -> bool:
 	if kind == &"iron_mine": return construct_mine(point)
@@ -474,8 +475,8 @@ func plan_spec(kind: StringName) -> Dictionary:
 	var visuals = preview.get_node_or_null("Visuals")
 	var model: PackedScene = visuals.model_scene if visuals != null and "model_scene" in visuals else null
 	preview.free()
-	# The Wainwright stands inside a Keep's range, as a Farm does.
-	return {"title":stats.display_name,"size":stats.footprint,"energy":stats.energy_cost,"food":stats.food_cost,"wood":stats.wood_cost,"iron":stats.iron_cost,"scene":scene,"model":model,"keep_stock":stats.food_cost > 0 or stats.wood_cost > 0,"in_keep_range":kind == &"wainwright"}
+	# The Dragon Yard stands inside a Keep's range, as a Farm does.
+	return {"title":stats.display_name,"size":stats.footprint,"energy":stats.energy_cost,"food":stats.food_cost,"wood":stats.wood_cost,"iron":stats.iron_cost,"scene":scene,"model":model,"keep_stock":stats.food_cost > 0 or stats.wood_cost > 0,"in_keep_range":kind == &"dragon_yard"}
 var _model_scenes := {}
 ## The model a building scene shows in its Visuals slot, so its construction site can stand it up.
 func _model_scene(scene: PackedScene) -> PackedScene:

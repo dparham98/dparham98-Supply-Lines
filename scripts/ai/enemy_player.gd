@@ -630,6 +630,9 @@ func run_trains(depot: Node3D) -> void:
 	if trains.any(func(train): return _idle(train) and not train.route_active and not train.is_mining() and not train.derailed): return
 	var line: Node3D = _line_piece(depot,jobs[0])
 	if line == null: return
+	_buy_train(depot,line)
+## Buys a train at home to start on `line`, saving for it first (held_back).
+func _buy_train(depot: Node3D, line: Node3D) -> void:
 	wants.train = true
 	if depot.energy >= rails.rules.cargo_energy_cost and depot.iron-_iron_held() >= rails.rules.cargo_iron_cost: depot.request_train(line)
 ## Whether home holds `haul_iron_cap` iron or has less room than `haul_room`: then trains stop bringing iron.
