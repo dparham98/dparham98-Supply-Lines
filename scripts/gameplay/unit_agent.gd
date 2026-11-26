@@ -1304,6 +1304,8 @@ func _spell_order() -> void:
 		return
 	_stop_route()
 	med_reserve -= spell_cost(kind)
+	var animator := _animator()
+	if animator != null and animator.has_method("play_cast"): animator.play_cast(StringName(kind))
 	var parent: Node = game.get_node("Entities")
 	if kind == "mist":
 		var mist = mist_scene.instantiate()
@@ -1316,6 +1318,7 @@ func _spell_order() -> void:
 	else:
 		var field = slow_scene.instantiate()
 		field.seconds = spell_rules.slow_seconds
+		field.radius = spell_rules.slow_radius
 		parent.add_child(field)
 		field.global_position = _cast_point
 		for unit in get_tree().get_nodes_in_group("units"):

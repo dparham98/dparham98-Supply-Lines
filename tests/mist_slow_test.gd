@@ -54,6 +54,12 @@ func run() -> void:
 	if not check(mists.size() == 1 and mists[0].global_position.distance_to(spot) < 0.1,"One Mist should stand on the point"): return
 	var mist = mists[0]
 	mist.set_process(false)
+	# The art: the Sentinel raises its arm with a burst of light, and the cloud's look follows its seconds.
+	var model = sentinel.get_node("Visuals/Model")
+	if not check(model.acting() and model.current_clip() == &"spells/Cast","The Sentinel should play its Cast clip (%s)" % model.current_clip()): return
+	if not check(model.find_children("*","Node3D",false,false).any(func(n): return n.name.begins_with("SentinelCastMist")),"The Mist cast burst should show on the Sentinel"): return
+	var look = mist.get_node("Visuals")
+	if not check(look.progress().x < 0.2 and look.scale.x < mist.radius,"The Mist should start billowing in"): return
 	if not check(not watcher.team_sees(marine),"In the Mist the Marine is hidden from an enemy 14 m off"): return
 	if fog != null:
 		fog.update_now()
@@ -72,6 +78,8 @@ func run() -> void:
 	place(near,spot+Vector3(3,0,0))
 	place(far,spot+Vector3(8,0,0))
 	if not check(cast(sentinel,"slow",spot) and sentinel.med_reserve == 135,"Slow should cost 25 reserve points (%d left)" % sentinel.med_reserve): return
+	var fields := root.find_children("*","Node3D",true,false).filter(func(n): return n.name.begins_with("SlowField"))
+	if not check(fields.size() == 1 and is_equal_approx(fields[0].radius,5.0),"One Slow sigil of 5 m should mark the point"): return
 	if not check(is_equal_approx(near.speed_scale(),0.6) and is_equal_approx(far.speed_scale(),1.0) and is_equal_approx(marine.speed_scale(),1.0),"Only enemy units within 5 m are slowed to 60%"): return
 	near._process(5.1)
 	if not check(is_equal_approx(near.speed_scale(),1.0),"The Slow wears off after 5 s"): return
@@ -84,6 +92,9 @@ func run() -> void:
 	for node in get_nodes_in_group("units"): node.set_selected(node == sentinel)
 	hud._process(0)
 	if not check(hud.desired_buttons.has("Mist") and hud.desired_buttons.has("Slow"),"The Sentinel card should show Mist and Slow: %s" % [hud.desired_buttons]): return
+	for id in {"Mist":"sl_mist.png","Slow":"sl_slow.png"}.keys():
+		var icon: Texture2D = hud.card.get_node(id).icon
+		if not check(icon != null and icon.resource_path.get_file() == "sl_%s.png" % id.to_lower(),"The %s tile should show its own card" % id): return
 	game.queue_free()
 	await process_frame
 	print("MIST_SLOW_TEST_PASSED")

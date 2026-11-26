@@ -125,6 +125,8 @@ func run() -> void:
 	var forge_hud = game.get_node("Interface")
 	if not check(str(forge_hud.card.get_node("Upgrade1").icon.resource_path).get_file() == "sl_upgrade_arms.png" and str(forge_hud.card.get_node("Upgrade2").icon.resource_path).get_file() == "sl_upgrade_mail.png","The Forge's tiles should show the Arms and Mail cards"): return
 	if not check(forge_hud.icon_name(forge) == "forge","The Forge should use its own icon"): return
+	var slow_icon: Texture2D = game.get_node("Interface").card.get_node("Upgrade3").icon
+	if not check(slow_icon != null and slow_icon.resource_path.get_file() == "sl_research_slow.png","The Slow research tile should show its own card"): return
 	game.selected_building = null
 	var marine := spawn("round_table_marine","player",keep.global_position+Vector3(6,0,6))
 	if not check(Upgrades.with_attack(marine,30) == 33,"Arms I: a Marine's 30 becomes 33"): return

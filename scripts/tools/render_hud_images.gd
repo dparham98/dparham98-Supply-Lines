@@ -52,6 +52,10 @@ const ART_CARDS := ["upgrade_infantry_weapons","upgrade_infantry_armour","upgrad
 const ART_CARD_PATH := "res://Blender/UI/UpgradeCards/renders/%s.png"
 ## More cards made from an entry's render (docs/TEMPLE_OF_SCIENCE.md): the Temple's Mining Trains research shows the
 ## train, and the train's Mine iron order the portal mine.
+## Cards drawn in Blender (Blender/UI/SpellCards/render_spell_cards.py) and only framed here: the Grail Sentinel's
+## Mist and Slow and the Forge's Slow research (docs/MIST_AND_SLOW.md). Asked for with the id "spell_cards".
+const SPELL_CARDS := ["mist","slow","research_slow"]
+const SPELL_CARD_PATH := "res://Blender/UI/SpellCards/renders/%s.png"
 const EXTRA_CARDS := {"train": ["research_mining_trains"], "mine": ["mine_iron"]}
 ## The card whose frame a new card copies before its first render.
 const CARD_TEMPLATE := "res://assets/ui/command_cards/sl_build_barracks.png"
@@ -102,6 +106,12 @@ func run() -> void:
 			art.convert(Image.FORMAT_RGBA8)
 			card_image("res://assets/ui/command_cards/sl_%s.png" % card,trimmed(art,ICON_SIZE))
 			print("framed ",card)
+	if only.is_empty() or only.has("spell_cards"):
+		for spell_card in SPELL_CARDS:
+			var art := Image.load_from_file(ProjectSettings.globalize_path(SPELL_CARD_PATH % spell_card))
+			art.convert(Image.FORMAT_RGBA8)
+			card_image("res://assets/ui/command_cards/sl_%s.png" % spell_card,trimmed(art,ICON_SIZE))
+			print("framed ",spell_card)
 	print("HUD_RENDERS_DONE")
 	quit()
 ## The entry's Visuals, cut from its gameplay scene so the gameplay script never runs.
