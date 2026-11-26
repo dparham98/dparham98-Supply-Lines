@@ -16,6 +16,7 @@ size = Vector2(3.8, 15.8)
 
 [node name="DepotTruck" type="Node3D"]
 script = ExtResource("agent")
+armoured = true
 fuel_rules = ExtResource("fuel")
 is_depot_truck = true
 deployment_rules = ExtResource("stats")

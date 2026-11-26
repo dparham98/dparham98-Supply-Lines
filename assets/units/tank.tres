@@ -20,6 +20,7 @@ turn_rate = 90.0
 combat_notation = "12/1.5"
 damage = 12
 attack_interval = 1.5
+armoured = true
 abilities = Array[StringName]([])
 fire_while_moving = true
 splash_radius = 2.0

@@ -19,11 +19,23 @@ extends Resource
 ## Combat abilities. Splash radius is provisional balance, measured in map units.
 @export var fire_while_moving := false
 @export_range(0, 100, 0.1) var splash_radius: float = 0.0
-## -1 uses the base attack. Heavy targets are Tanks and selectable buildings.
+## -1 uses the base attack. Heavy targets are armoured units and buildings (CombatResolver.is_heavy).
 @export var heavy_target_damage: int = -1
 @export var heavy_target_interval: float = -1.0
 ## Share of the damage that units caught in the splash take, other than the one aimed at (docs/SEE_TO_SHOOT.md).
 @export_range(0, 1, 0.05) var splash_share: float = 1.0
+## Armour class (item 8 of the balance handoff): every unit is light or armoured; buildings are their own class.
+## Armoured: Tank, Ubermech, Azure Dragon, and trains and trucks (set on their scenes, which have no UnitStats).
+@export var armoured := false
+## What the main weapon fires at (CombatResolver target classes). All four by default.
+@export_flags("Light", "Armoured", "Flyer", "Building") var targets: int = 15
+## A second weapon (the Ubermech's missile pods), fired at the targets it suits instead of the main weapon, between
+## its minimum range and its range. -1 damage is none. It shares the main weapon's reload.
+@export var second_damage: int = -1
+@export var second_interval: float = -1.0
+@export_range(0, 1000, 0.1) var second_range: float = 0.0
+@export_range(0, 1000, 0.1) var second_min_range: float = 0.0
+@export_flags("Light", "Armoured", "Flyer", "Building") var second_targets: int = 0
 ## The arc, centred on the hull's heading, inside which a unit on the move may fire; 360 lets it fire any way.
 ## Held in reserve against kiting (docs/SEE_TO_SHOOT.md); every unit has it at 360 for now.
 @export_range(0, 360, 5) var moving_fire_arc: float = 360.0
@@ -54,6 +66,7 @@ func validation_errors() -> PackedStringArray:
 	if splash_radius < 0: errors.append("Splash radius cannot be negative")
 	if min_attack_range < 0 or (min_attack_range > 0 and min_attack_range >= attack_range): errors.append("Minimum range must be below the range")
 	if (heavy_target_damage == -1) != (heavy_target_interval == -1): errors.append("Resolve heavy damage and interval together")
+	if second_damage >= 0 and (second_interval <= 0 or second_range <= 0 or second_min_range >= second_range or second_targets == 0): errors.append("Invalid second weapon")
 	if heavy_target_damage < -1 or (heavy_target_interval <= 0 and heavy_target_interval != -1): errors.append("Invalid heavy attack")
 	if mobility != null and mobility.clears_forest and mobility.layer != MobilityRules.Layer.FOREST: errors.append("Forest clearing requires forest mobility")
 	return errors
