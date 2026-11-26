@@ -1,10 +1,10 @@
-"""Exports the Wainwright's game files from Wainwright.blend. Nothing is saved back to the .blend.
+"""Exports the Dragon Yard's game files from DragonYard.blend. Nothing is saved back to the .blend.
 
-  blender Wainwright.blend --background --python export_wainwright.py
+  blender DragonYard.blend --background --python export_dragon_yard.py
 
 glTF Binary, +Y up, modifiers applied, animations as NLA tracks, no cameras or lights:
-  wainwright          -> assets/models/buildings/wainwright.glb (Idle, Build, Die)
-  wainwright_death_fx -> assets/models/effects/wainwright_death_fx.glb (Death)
+  dragon_yard          -> assets/models/buildings/dragon_yard.glb (Idle, Work, Build, Die)
+  dragon_yard_death_fx -> assets/models/effects/dragon_yard_death_fx.glb (Death)
 """
 import bpy, os
 
@@ -32,5 +32,5 @@ def export(collection, path):
     print("EXPORTED", path, len(objects), "objects", os.path.getsize(target), "bytes")
 
 
-export("wainwright", os.path.join("buildings", "wainwright.glb"))
-export("wainwright_death_fx", os.path.join("effects", "wainwright_death_fx.glb"))
+export("dragon_yard", os.path.join("buildings", "dragon_yard.glb"))
+export("dragon_yard_death_fx", os.path.join("effects", "dragon_yard_death_fx.glb"))

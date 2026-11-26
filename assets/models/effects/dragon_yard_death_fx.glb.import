@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://b5s3wfwfnljo7"
-path="res://.godot/imported/wainwright_death_fx.glb-1e8784c01452d9f37da3613c72f126ce.scn"
+uid="uid://b713aopbbx2xx"
+path="res://.godot/imported/dragon_yard_death_fx.glb-39748bdefe9bcd0475b6849061a35486.scn"
 
 [deps]
 
-source_file="res://assets/models/effects/wainwright_death_fx.glb"
-dest_files=["res://.godot/imported/wainwright_death_fx.glb-1e8784c01452d9f37da3613c72f126ce.scn"]
+source_file="res://assets/models/effects/dragon_yard_death_fx.glb"
+dest_files=["res://.godot/imported/dragon_yard_death_fx.glb-39748bdefe9bcd0475b6849061a35486.scn"]
 
 [params]
 

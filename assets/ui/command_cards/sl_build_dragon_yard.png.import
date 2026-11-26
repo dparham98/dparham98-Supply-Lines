@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c61e7c6m1hqow"
-path="res://.godot/imported/sl_build_wainwright.png-09e75156001ca7e67208e2f15df9ca9a.ctex"
+uid="uid://dejcdljche2t3"
+path="res://.godot/imported/sl_build_dragon_yard.png-1409d3584f15fcaa3e60aebb81754de3.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/command_cards/sl_build_wainwright.png"
-dest_files=["res://.godot/imported/sl_build_wainwright.png-09e75156001ca7e67208e2f15df9ca9a.ctex"]
+source_file="res://assets/ui/command_cards/sl_build_dragon_yard.png"
+dest_files=["res://.godot/imported/sl_build_dragon_yard.png-1409d3584f15fcaa3e60aebb81754de3.ctex"]
 
 [params]
 

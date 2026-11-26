@@ -11,7 +11,7 @@ Asked for on 2026-11-25: the Wainwright is gone, and the Knights' vehicles and d
 - **What it allows:** while one stands, the side may lay track from its Keeps.
 
   If every Dragon Yard falls, laid track and trains keep working, but no new track or trains can be bought.
-- **Model:** for now the Wainwright's model (docs/WAINWRIGHT_MODEL.md) stands in. The art session is making a Dragon Yard model.
+- **Model:** a dragon pen with a roost tower and a rail and wagon works (docs/DRAGON_YARD_MODEL.md).
 
 ## Track
 
@@ -46,7 +46,7 @@ When a Keep has several lines, the player clicks the line to start on, as at a D
 - **Coal per metre:** 0.05 a metre (a third of the Cyborg vehicles' 0.15), with a 60 tank. The handoff gave no number.
 - **Build time:** 30 s. The handoff gave no number.
 - **Keeps only:** the Dragon Yard enables track and trains at Keeps only. A Cyborg Depot captured by the Knights works as it always has.
-- **Art:** the Knights train has its own model (docs/KNIGHTS_TRAIN_MODEL.md) and card (`sl_produce_knights_train.png`). The Dragon Yard borrows the Wainwright's model and card until its own are made.
+- **Art:** the Dragon Yard (docs/DRAGON_YARD_MODEL.md) and the Knights train (docs/KNIGHTS_TRAIN_MODEL.md) have their own models, icons, portraits and cards (`sl_build_dragon_yard.png`, `sl_produce_knights_train.png`).
 
 ## Not done
 
