@@ -6,8 +6,8 @@
 script = ExtResource("stats")
 unit_id = &"ubermech"
 display_name = "Ubermech"
-energy_cost = 250
-iron_cost = 60
+energy_cost = 240
+iron_cost = 100
 build_seconds = 40.0
 max_health = 360
 movement_speed = 4.0

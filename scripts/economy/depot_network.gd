@@ -453,6 +453,20 @@ func depot_rules() -> DepotRules:
 const PLAN_SCENE = preload("res://scenes/gameplay/construction_plan.tscn")
 const FARM_SCENE = preload("res://scenes/gameplay/farm.tscn")
 const HOUSE_SCENE = preload("res://scenes/gameplay/house.tscn")
+const HYDRO_DAM_SCENE = preload("res://scenes/gameplay/hydro_dam.tscn")
+const HYDRO_DAM_STATS: HydroDamStats = preload("res://assets/buildings/hydro_dam.tres")
+## How many cells off a dam channel the cursor may be and still snap a Hydro Dam plan onto it.
+const DAM_SNAP := 4
+const DAM_NOTICE := "A Hydro Dam stands across a dam channel: the narrow water between two lakes, with nothing built on it."
+## Where a Hydro Dam planned at `point` stands: across the dam channel under or beside the point, centred on its
+## width and kept inside its length (TerrainGrid.dam_channels). Off every channel, the usual footprint.
+func dam_start(point: Vector3, size: Vector2i) -> Vector2i:
+	var start := footprint_start(point,size)
+	var cell = game.ground.get_tile_at_position(point)
+	if cell == null or not game.ground.has_method("dam_channel_at"): return start
+	var channel: Rect2i = game.ground.dam_channel_at(cell,DAM_SNAP)
+	if channel.size == Vector2i.ZERO: return start
+	return Vector2i(channel.position.x+(channel.size.x-size.x)/2,clampi(cell.y-size.y/2,channel.position.y,channel.end.y-size.y))
 func plan_spec(kind: StringName) -> Dictionary:
 	if kind == &"depot":
 		var preview = depot_scene.instantiate()
@@ -466,6 +480,7 @@ func plan_spec(kind: StringName) -> Dictionary:
 		return {"title":"Keep","size":size,"energy":0,"food":0,"wood":50,"iron":50,"scene":_keep_scene(),"model":_model_scene(_keep_scene()),"keep_stock":true}
 	if kind == &"farm": return {"title":"Farm","size":KnightHousing.rules().farm_footprint,"energy":0,"food":0,"wood":KnightHousing.rules().farm_wood_cost,"iron":0,"scene":FARM_SCENE,"model":_model_scene(FARM_SCENE),"keep_stock":true,"in_keep_range":true}
 	if kind == &"house": return {"title":"House","size":KnightHousing.rules().house_footprint,"energy":0,"food":0,"wood":KnightHousing.rules().house_wood_cost,"iron":0,"scene":HOUSE_SCENE,"model":_model_scene(HOUSE_SCENE),"keep_stock":true}
+	if kind == &"hydro_dam": return {"title":HYDRO_DAM_STATS.display_name,"size":HYDRO_DAM_STATS.footprint,"energy":HYDRO_DAM_STATS.energy_cost,"iron":HYDRO_DAM_STATS.iron_cost,"scene":HYDRO_DAM_SCENE,"model":_model_scene(HYDRO_DAM_SCENE)}
 	if kind == &"generator": return {"title":"Generator","size":supply_rules.generator_footprint,"energy":supply_rules.generator_energy_cost,"iron":supply_rules.generator_iron_cost,"scene":generator_scene,"model":_model_scene(generator_scene)}
 	if kind == &"coal_mine": return {"title":"Coal Mine","size":engineering_rules.mine_footprint,"energy":engineering_rules.mine_energy_cost,"iron":engineering_rules.mine_iron_cost,"scene":mine_scene,"model":_model_scene(mine_scene)}
 	if kind == &"iron_mine": return {"title":"Iron Mine","size":engineering_rules.mine_footprint,"energy":engineering_rules.mine_energy_cost,"iron":engineering_rules.mine_iron_cost,"scene":mine_scene,"model":_model_scene(mine_scene)}
@@ -498,6 +513,7 @@ static func is_mine_kind(kind: StringName) -> bool:
 ## A Depot plan also needs the strip it will keep clear to be free (strip_clear). A Farm's field is walkable, so units
 ## crossing its plan do not hold it up.
 func plan_terrain_valid(start: Vector2i, size: Vector2i, kind: StringName, ignore: Node = null) -> bool:
+	if kind == &"hydro_dam": return game.ground.has_method("dam_site_valid") and game.ground.dam_site_valid(start,size)
 	if is_mine_kind(kind):
 		var on_coal: bool = game.ground.is_tile_in_bounds(start) and game.ground.get_terrain(start) == game.ground.Terrain.COAL
 		return game.ground.ore_footprint_valid(start,size) and on_coal == (kind == &"coal_mine")
@@ -528,6 +544,7 @@ func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_paye
 	if spec.is_empty(): return null
 	if kind == &"rail": game.notify("Maglev track is laid piece by piece from the Build page, not planned.",team); return null
 	var start := footprint_start(point,spec.size)
+	if kind == &"hydro_dam": start = dam_start(point,spec.size)
 	if is_mine_kind(kind):
 		# A mine planned on a mine site takes the whole site.
 		var spot := mine_spot(point)
@@ -536,6 +553,7 @@ func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_paye
 		spec.scene = mine_scene_for(spot); spec.model = _model_scene(spec.scene)
 	if not plan_terrain_valid(start,spec.size,kind) or plan_overlaps(start,spec.size):
 		var strip := strip_notice(point,spec.size,kind)
+		if kind == &"hydro_dam": strip = DAM_NOTICE
 		game.notify(strip if not strip.is_empty() else "A Coal Mine needs a coal seam under it with no mine yet, and cannot overlap another plan." if kind == &"coal_mine" else "Plan needs valid empty terrain and cannot overlap another plan. Iron Mines need a mine site or iron deposit.",team)
 		return null
 	if spec.get("in_keep_range",false) and not keep_covers(start,spec.size,team):
@@ -564,6 +582,7 @@ func keep_covers(start: Vector2i, size: Vector2i, team := "player") -> bool:
 func plan_source_valid(plan: Node3D, source) -> bool:
 	if not SupplySource.available(source,plan.team): return false
 	if source.energy < plan.spec.energy or source.iron < plan.spec.iron or source.stockpile.amount(&"food") < plan.spec.get("food",0) or source.stockpile.amount(&"wood") < plan.spec.get("wood",0): return false
+	if plan.kind == &"hydro_dam": return range_covers_footprint(source,plan.start,plan.spec.size)
 	return can_place_mine(plan.global_position,source) if is_mine_kind(plan.kind) else can_place_size(plan.global_position,source,plan.spec.size)
 func plan_payer(plan: Node3D) -> Node3D:
 	if plan.pinned: return plan.payer if plan_source_valid(plan,plan.payer) else null
@@ -598,6 +617,7 @@ func update_global_preview(point: Vector3) -> bool:
 	var spec := plan_spec(game.global_plan_kind)
 	var ghost = game.get_node("ConstructionPreview")
 	var start := footprint_start(point,spec.size)
+	if game.global_plan_kind == &"hydro_dam": start = dam_start(point,spec.size)
 	if is_mine_kind(game.global_plan_kind):
 		var spot := mine_spot(point)
 		spec = spec.duplicate()
@@ -643,6 +663,7 @@ func update_global_preview(point: Vector3) -> bool:
 	if not spaced: site_line = " · "+spacing_reason()
 	elif not in_keep_range: site_line = " · must stand inside one of your Keeps' range"
 	elif not seen: site_line = " · out of sight: plans need vision of the whole site"
+	elif not valid and game.global_plan_kind == &"hydro_dam": site_line = " · only across a dam channel between lakes"
 	elif not valid and not strip_notice(point,spec.size,game.global_plan_kind).is_empty(): site_line = " · keep the Depot Truck strip clear"
 	elif valid and labor_cost > 0 and sources.is_empty(): site_line += " · no Keep range covers it: nothing pays its food yet" if labor_kind == &"food" else " · no Depot range covers it: nothing pays its energy yet"
 	elif valid and not labor_ok: site_line += " · no %s in range has %d %s" % ["pinned payer" if pinned != null else "stockpile",labor_cost,"F" if labor_kind == &"food" else "E"]

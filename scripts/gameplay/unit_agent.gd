@@ -946,6 +946,10 @@ func _return_cargo() -> void:
 			state = "Delivering to "+str(depot.name)
 			if not _route_to_interaction(depot,depot.dropoff_range): state = "Supply stockpile unreachable"
 		return
+	# Iron and Wood wait while the stockpile is at its raw-material ceiling (docs/ROUND3_CYBORG_ECONOMY.md).
+	if cargo > 0 and cargo_kind in [&"iron",&"wood"] and depot.has_method("raw_ceiling_reached") and depot.raw_ceiling_reached():
+		state = "%s at its %d raw-material ceiling · holding %s" % [depot.name,depot.rules.raw_material_ceiling,cargo_kind]
+		return
 	if cargo > 0:
 		var accepted: int = depot.stockpile.deposit(cargo_kind,cargo)
 		if accepted > 0 and game.has_method("delivered"): game.delivered(depot,cargo_kind,accepted)

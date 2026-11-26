@@ -8,7 +8,8 @@
 script = ExtResource("stats")
 building_id = &"tank_factory"
 display_name = "Tank Factory"
-energy_cost = 200
-iron_cost = 65
+energy_cost = 150
+iron_cost = 100
+max_power = 3.0
 footprint = Vector2i(8,8)
 unit_scenes = Array[PackedScene]([ExtResource("tank"),ExtResource("motorcycle"),ExtResource("drone"),ExtResource("ubermech")])

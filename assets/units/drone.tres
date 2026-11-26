@@ -8,8 +8,8 @@
 script = ExtResource("stats")
 unit_id = &"drone"
 display_name = "Drone"
-energy_cost = 60
-iron_cost = 5
+energy_cost = 50
+iron_cost = 15
 build_seconds = 16.0
 max_health = 40
 movement_speed = 12.0

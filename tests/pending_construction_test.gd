@@ -94,7 +94,7 @@ func run() -> void:
 	var split_point := site(&"tank_factory",new_depot.global_position)
 	var split = network.queue_plan(split_point,&"tank_factory")
 	split.set_process(false)
-	depot.energy = 199; new_depot.energy = 199
+	depot.energy = 149; new_depot.energy = 149
 	if not check(split.complete_from_stock() == null,"Construction pooled insufficient stockpiles"): return
 	split.cancel()
 	# Creation validity for every menu kind and no reservation or payment on cancellation.

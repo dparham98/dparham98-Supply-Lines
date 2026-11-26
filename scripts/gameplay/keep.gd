@@ -213,3 +213,6 @@ func _train_tick(delta: float, model: Node) -> void:
 	progress = 0.0
 	if model != null and model.has_method("unit_left"): model.unit_left()
 	game.notify("Train ready at %s." % name,team)
+## A Keep's ceiling counts Iron and Wood only, leaving room for Food and Coal (docs/ROUND3_CYBORG_ECONOMY.md).
+func raw_material_total() -> int:
+	return iron+wood

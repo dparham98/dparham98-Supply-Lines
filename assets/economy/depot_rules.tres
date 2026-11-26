@@ -4,3 +4,4 @@
 script = ExtResource("rules")
 testing_starting_iron = 500
 construction_radius = 26.25
+raw_material_ceiling = 1400

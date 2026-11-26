@@ -11,8 +11,9 @@ extends Resource
 @export var max_health := 1000
 @export var queue_limit := 5
 ## Production power (docs/PRODUCTION_POWER.md): the player sets each building between 1x and max_power. At
-## power p a unit prints in its build_seconds / p and costs p times its energy: the base at queueing, the
-## rest drawn from the assigned Depot while it prints.
+## power p a unit prints in its build_seconds / p. It costs its base energy at queueing, and the assigned Depot
+## pays (p - 1) x extra_power_energy_scale x the base on top while it prints (Round 3: +35% at 2x, +70% at 3x).
 @export_range(1.0, 10.0, 0.5) var max_power := 4.0
+@export_range(0.0, 2.0, 0.05) var extra_power_energy_scale := 0.35
 @export_range(0.1, 2.0, 0.1) var power_step := 0.5
 @export var unit_scenes: Array[PackedScene] = []

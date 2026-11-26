@@ -45,7 +45,7 @@ These are measured from where each start's Depot stands. On West and East that i
 - **Into the Crossing from the West start:** the mouth is 114 m away (0:57 on foot, 0:38 by truck). Trees to fell before reaching the gate mine 22, the coal inside the mouth 23, the Crag's mines 27, the mother seam 45, and right through to the other side 54.
 - **From a corner start** the mouth is about 193 m (1:36).
 - **The pass mines** are about 150 m from the nearest start on their own side and 163 m from the other side's, with nothing to fell. The coal between them is 7 trees in from the yard, to a mine footprint.
-- **Totals:** 20 mine sites (6 home, 6 expansion, 4 pass, 2 gate, 2 Crag), each holding 7,500 iron; 11 coal fields holding 20,100 (lake 6,000, pass 4,200, mouth 4,000, mother seam 5,900); 11 places for a dam.
+- **Totals:** 20 mine sites (6 home, 6 expansion, 4 pass, 2 gate, 2 Crag). Since Round 3 their iron is tiered by each mine's `site_reserve`: home 2,250, expansion 3,500, pass and gate 5,000, Crag 8,000 (`docs/ROUND3_CYBORG_ECONOMY.md`; the terrain still holds 7,500 a site, and the mine sets its tier when the map loads); 11 coal fields holding 20,100 (lake 6,000, pass 4,200, mouth 4,000, mother seam 5,900); 11 places for a dam.
 - **Ground:** grass 39%, forest 20%, desert 16%, mountain 16%, water 9%.
 
 ## Files
@@ -81,7 +81,7 @@ The map's `terrain_data.png` and `ground_blend.png` must stay uncompressed (`det
 
 ## Not settled
 
-- **Dams have no rules yet.** Each place for one is drawn as a channel 7 m wide between a lake and a small bay. Their number and positions are placeholders.
+- **Dams:** each place for one is drawn as a channel 8 cells wide between a lake and a small bay. Since Round 3 the Cyborgs build a Hydro Dam across one (`docs/ROUND3_CYBORG_ECONOMY.md`); the eleven channels are `dam_channels` on the TerrainGrid in `scenes/maps/lakes_terrain.tscn`. Forest walls most of them: only the two outer north channels and the two inner north ones have open ground for a Depot within range, so the rest need felling first.
 - **The middle may not be worth enough in a two-player game,** where each side has three starts' worth of safe mines, coal and dam places on its own half. Making the Crag's sites richer than ordinary ones would be a rule change, not a map change.
 - **The Crossing may be too easy to hold:** two mouths of 58 m against a Tank's 30 m range. Only play will tell.
 - **Mines that face east or west** (the pass and gate mines) are partly hidden by their mountain from the game's camera. Each stands at the south end of its face, where the rock in front is lowest.

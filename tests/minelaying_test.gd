@@ -1,5 +1,5 @@
 extends SceneTree
-# Headless (item 9 of docs/BALANCE_IMPLEMENTATION_HANDOFF.md, docs/MINES.md): the Derailer costs 70 E / 15 I. Before
+# Headless (item 9 of docs/BALANCE_IMPLEMENTATION_HANDOFF.md, docs/MINES.md): the Derailer costs 60 E / 25 I (Round 3). Before
 # Minelaying is researched it cannot buy mines; after, inside a friendly Depot's range, Buy mine (Q) buys one for
 # 10 iron a click, up to two, and nothing loads by itself. Lay mine is E and Derail R. It lays one at a point in 2 s; the mine arms after 3 s and is then hidden from the other side,
 # shown to it only near one of its detectors (a Drone within 20 m, a Warhound within 10 m, a Depot at its range).
@@ -20,7 +20,7 @@ func step(unit: Node3D, seconds: float) -> void:
 	for i in range(ceili(seconds*30)): unit._process(1.0/30)
 func run() -> void:
 	var stats: UnitStats = load("res://assets/units/motorcycle.tres")
-	if not check(stats.energy_cost == 70 and stats.iron_cost == 15,"The Derailer costs 70 E / 15 I"): return
+	if not check(stats.energy_cost == 60 and stats.iron_cost == 25,"The Derailer costs 60 E / 25 I"): return
 	var temple = load("res://scenes/gameplay/temple_of_science.tscn").instantiate()
 	var temple_research: Array = temple.research
 	temple.free()

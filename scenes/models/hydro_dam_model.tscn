@@ -1,0 +1,55 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="concrete"]
+albedo_color = Color(0.62, 0.62, 0.6, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="paint"]
+resource_name = "team_color"
+albedo_color = Color(0.12, 0.55, 0.65, 1)
+metallic = 0.4
+roughness = 0.5
+
+[sub_resource type="StandardMaterial3D" id="spill"]
+transparency = 1
+albedo_color = Color(0.7, 0.88, 1, 0.75)
+emission_enabled = true
+emission = Color(0.35, 0.6, 0.8, 1)
+emission_energy_multiplier = 0.4
+
+[sub_resource type="BoxMesh" id="wall"]
+material = SubResource("concrete")
+size = Vector3(8, 2.4, 1.6)
+
+[sub_resource type="BoxMesh" id="house"]
+material = SubResource("paint")
+size = Vector3(2.6, 1.6, 2.2)
+
+[sub_resource type="CylinderMesh" id="pipe"]
+material = SubResource("paint")
+top_radius = 0.35
+bottom_radius = 0.35
+height = 1.4
+
+[sub_resource type="BoxMesh" id="sluice"]
+material = SubResource("spill")
+size = Vector3(5.2, 0.08, 1.2)
+
+[node name="HydroDamPlaceholder" type="Node3D"]
+editor_description = "Placeholder Hydro Dam (docs/ROUND3_CYBORG_ECONOMY.md): a concrete wall across the channel, a turbine house and a spillway. Replace it with a modelled dam in the Visuals slot."
+
+[node name="Wall" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+mesh = SubResource("wall")
+
+[node name="TurbineHouse" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.2, 2.6, 0)
+mesh = SubResource("house")
+
+[node name="Pipe" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 1.2, 1.4, 1.1)
+mesh = SubResource("pipe")
+
+[node name="Spillway" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1.2, 1.2)
+mesh = SubResource("sluice")

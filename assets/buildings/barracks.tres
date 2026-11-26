@@ -7,7 +7,8 @@
 script = ExtResource("stats")
 building_id = &"barracks"
 display_name = "Barracks"
-energy_cost = 100
-iron_cost = 45
+energy_cost = 80
+iron_cost = 60
+max_power = 3.0
 footprint = Vector2i(6,6)
 unit_scenes = Array[PackedScene]([ExtResource("infantry"),ExtResource("scout"),ExtResource("grenadier")])

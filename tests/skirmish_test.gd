@@ -55,8 +55,8 @@ func run() -> void:
 		step(1.0/60)
 		assert(game.ground.get_terrain(worker.grid_position) in [0,2])
 		if worker.cargo > 0: assert(game.ore_delivered+worker.cargo == ore.amount-ore.remaining)
-		if game.ore >= 65: break
-	assert(game.ore >= 65, "Gathering did not deliver sufficient Ore")
+		if game.ore >= 85: break
+	assert(game.ore >= 85, "Gathering did not deliver sufficient Ore")
 	assert(game.ore == game.ore_delivered)
 	var delivered: int = game.ore_delivered
 	game.get_node("DepotNetwork").select_depot(game.depot)
@@ -64,7 +64,7 @@ func run() -> void:
 	barracks = get_nodes_in_group("production_buildings")[0]
 	barracks.set_process(false)
 	assert(barracks.request_unit(&"infantry"))
-	assert(game.ore == delivered-65)
+	assert(game.ore == delivered-85)
 	assert(not barracks.request_unit(&"infantry"))
 	for i in range(660): step(1.0/60)
 	assert(game.units_printed == 1 and barracks.queue == 0)
@@ -96,7 +96,7 @@ func run() -> void:
 	await process_frame
 	await screenshot("skirmish_victory")
 	# Paid queues are capped, and a blocked exit must wait without losing payment.
-	game.ore = 100
+	game.ore = 125
 	game.depot.energy = 500
 	for i in range(5): assert(barracks.request_unit(&"infantry"))
 	assert(game.ore == 0 and not barracks.request_unit(&"infantry") and game.ore == 0)

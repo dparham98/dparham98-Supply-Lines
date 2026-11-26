@@ -5,6 +5,9 @@ extends Resource
 @export_range(8,30) var capture_radius := 12.0
 @export_range(1,60) var capture_seconds := 8.0
 @export_range(1,100000) var storage_capacity := 2000
+## Round 3 (docs/ROUND3_CYBORG_ECONOMY.md): workers stop dropping Iron and Wood into a Depot once its Iron, Wood
+## and Coal together reach this, and into a Keep once its Iron and Wood do, so Energy and Food keep room.
+@export_range(0,100000) var raw_material_ceiling := 1400
 @export var initial_energy := 500
 ## Testing grant applied once at spawn to every Depot. -1 restores normal inventories.
 @export var testing_starting_iron := -1

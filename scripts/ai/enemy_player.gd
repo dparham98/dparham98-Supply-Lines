@@ -68,6 +68,12 @@ extends Node
 ## A Drone is unarmed and outruns the army, so it is kept over the centre of the ground units it goes with,
 ## moved back whenever it strays further than this (metres).
 @export_range(1,30) var drone_escort_radius := 6.0
+## With Tanks in the group, a Drone keeps behind the frontmost one (the furthest along toward where the group is
+## going), never ahead of it nor more than this far behind it (metres; Round 3, docs/ROUND3_CYBORG_ECONOMY.md).
+@export_range(2,30) var drone_behind_front := 10.0
+## Hydro Dams (docs/ROUND3_CYBORG_ECONOMY.md): once this many `build_order` steps are done, a dam is planned across
+## each dam channel one of its Depots' range covers, ahead of the rest of the order.
+@export_range(0,20) var dam_after_step := 2
 ## Units queued at once in each building.
 @export_range(1,5) var queue_depth := 3
 ## No wave goes before this many seconds of play, nor with fewer units than `first_wave_size`. Each later wave
@@ -272,20 +278,25 @@ func build(depot: Node3D) -> void:
 		if depot.iron < spec.iron or depot.energy < spec.energy: return
 		# Buildings go up at home; a Generator with no room left there goes up at an expansion.
 		var payer := depot
-		var point = coal_site(depot) if kind == &"coal_mine" else building_site(depot,spec.size)
+		var dam: bool = kind == &"hydro_dam"
+		var point = coal_site(depot) if kind == &"coal_mine" else (dam_site() if dam else building_site(depot,spec.size))
 		if point == null and kind == &"generator":
 			for outpost in expansions():
 				if outpost.global_position.distance_to(depot.global_position) > expand_reach: continue
 				point = building_site(outpost,spec.size)
 				if point != null: payer = outpost; break
-		if point == null: build_step += 1; return
+		if point == null:
+			if not dam: build_step += 1
+			return
 		var mine: bool = network.is_mine_kind(kind)
 		# A site it cannot see yet is planned as the player plans a Cargo truck's Worksite, which needs no sight:
 		# the truck drives out to it with the iron (docs/HUD_POLISH.md, Plans need sight).
 		var size: Vector2i = spec.size
 		var seen: bool = network.in_sight(network.footprint_start(point,size),size,team)
 		plan = network.queue_plan(point,kind,null if mine else payer,not mine,seen,team)
-		if plan == null: build_step += 1; return
+		if plan == null:
+			if not dam: build_step += 1
+			return
 		plan.tree_exiting.connect(_plan_gone.bind(plan))
 	# Track laid across the site after it was planned (the other side's, say) would leave it waiting for good: it is
 	# given up and planned again elsewhere. Iron already on the site stays there as piles (docs/ENEMY_AI.md).
@@ -302,7 +313,8 @@ func build(depot: Node3D) -> void:
 	# Builders go once the iron is on site; a mine out in the woods gets one early, to fell its way in.
 	var home_workers := _workers_at(depot)
 	var builders := home_workers.filter(func(unit): return unit.order == "construct" and unit.order_target == plan).size()
-	var room := 2 if plan.materials_covered() else (1 if network.is_mine_kind(plan.kind) else 0)
+	# A dam's channel is walled by forest: one builder goes early to fell a way to it, as for a mine.
+	var room := 2 if plan.materials_covered() else (1 if network.is_mine_kind(plan.kind) or plan.kind == &"hydro_dam" else 0)
 	for unit in home_workers:
 		if builders >= room: break
 		if unit.order in ["construct","repair"]: continue
@@ -316,6 +328,7 @@ func _replace_truck(depot: Node3D) -> void:
 	wants["cargo"] = true
 ## What it builds next: the next step of `build_order`, then more Generators while iron piles up; &"" for none.
 func next_building() -> StringName:
+	if build_step >= dam_after_step and dam_site() != null: return &"hydro_dam"
 	if build_step < build_order.size(): return build_order[build_step]
 	var depot := home()
 	if depot == null or depot.iron < iron_plenty: return &""
@@ -331,7 +344,7 @@ func _park_truck(depot: Node3D) -> void:
 ## A finished plan moves on to the next step; one that is lost (cancelled, destroyed) is tried again.
 var _given_up: Node3D
 func _plan_gone(gone: Node3D) -> void:
-	if gone.finished and gone != _given_up: build_step += 1
+	if gone.finished and gone != _given_up and gone.kind != &"hydro_dam": build_step += 1
 	if plan == gone: plan = null
 ## Whether any track lies on the plan's footprint.
 func track_on(site: Node3D) -> bool:
@@ -360,6 +373,26 @@ func building_site(depot: Node3D, size: Vector2i) -> Variant:
 			if mine != null and _off_way(point,centre,mine.global_position) < maxf(size.x,size.y)*0.5+4.0: continue
 			return ground.tile_to_world(start+size/2)
 	return null
+## Where to plan a Hydro Dam: the middle of a dam channel that one of its Depots' range covers, with no dam across it
+## and no plan on it yet. Null when there is none (docs/ROUND3_CYBORG_ECONOMY.md).
+func dam_site() -> Variant:
+	var channels = ground.get("dam_channels")
+	if channels == null or channels.is_empty(): return null
+	var size: Vector2i = network.HYDRO_DAM_STATS.footprint
+	var depots := get_tree().get_nodes_in_group("depots").filter(func(depot): return _own_depot(depot) and not depot.is_in_group("keeps"))
+	for channel: Rect2i in channels:
+		if _dammed(channel): continue
+		var start := Vector2i(channel.position.x+(channel.size.x-size.x)/2,channel.position.y+(channel.size.y-size.y)/2)
+		if not ground.dam_site_valid(start,size) or network.plan_overlaps(start,size): continue
+		for depot in depots:
+			if network.range_covers_footprint(depot,start,size): return ground.tile_to_world(start+size/2)
+	return null
+## Whether a Hydro Dam, anyone's, already stands across `channel`.
+func _dammed(channel: Rect2i) -> bool:
+	for node in get_tree().get_nodes_in_group("hydro_dams"):
+		var cell = ground.get_tile_at_position(node.global_position)
+		if cell != null and channel.has_point(cell): return true
+	return false
 ## How far `point` is from the way between two places.
 func _off_way(point: Vector3, from: Vector3, to: Vector3) -> float:
 	var a := Vector2(from.x,from.z); var b := Vector2(to.x,to.z); var p := Vector2(point.x,point.z)
@@ -404,6 +437,9 @@ func gather(depot: Node3D) -> void:
 	var iron := _nearest_mine(depot.global_position,&"iron")
 	var wanted := {&"coal":0,&"wood":0}
 	var short: bool = depot.iron < _iron_needed()
+	# At the raw-material ceiling a worker's Iron or Wood waits at the Depot (docs/ROUND3_CYBORG_ECONOMY.md): nobody new
+	# goes to either. Coal still drops off, so free workers go to it while it is wanted; the rest hold what they carry.
+	var capped: bool = depot.has_method("raw_ceiling_reached") and depot.raw_ceiling_reached()
 	if coal != null and depot.coal < coal_wanted and (free.size() > 1 or not short): wanted[&"coal"] = 1
 	if depot.wood < wood_wanted and (free.size() > wanted[&"coal"]+1 or not short): wanted[&"wood"] = 1
 	# With iron to spare the Generators are what hold production back: the rest cut wood.
@@ -412,6 +448,10 @@ func gather(depot: Node3D) -> void:
 	if (depot.iron >= iron_plenty and depot.wood < wood_wanted) or (depot.iron >= haul_iron_cap and depot.wood < wood_wanted*2): wanted[&"wood"] = maxi(0,free.size()-wanted[&"coal"]-keep)
 	if iron == null: wanted[&"wood"] = free.size()-wanted[&"coal"]
 	wanted[&"iron"] = free.size()-wanted[&"coal"]-wanted[&"wood"]
+	if capped:
+		wanted[&"coal"] = free.size() if coal != null and depot.coal < coal_wanted else 0
+		wanted[&"wood"] = 0
+		wanted[&"iron"] = 0
 	var on := {&"coal":0,&"wood":0,&"iron":0}
 	var spare: Array[Node3D] = []
 	for unit in free:
@@ -423,7 +463,7 @@ func gather(depot: Node3D) -> void:
 		var source: Node3D
 		if on[&"coal"] < wanted[&"coal"]: source = coal; on[&"coal"] += 1
 		elif on[&"wood"] < wanted[&"wood"]: source = forest_near(depot); on[&"wood"] += 1
-		if source == null: source = iron
+		if source == null and not capped: source = iron
 		if source != null and _working(unit) != source.resource_kind: unit.command_gather(source)
 ## Iron kept back from production: what the site being built still lacks, less what the truck carries to it, or
 ## the next building's.
@@ -829,7 +869,7 @@ func fight(depot: Node3D) -> void:
 			if unit.order == "attack": continue
 			if unit.order == "attack_move" and unit.move_goal.distance_to(threat.global_position) < 15.0: continue
 			unit.command_attack_move(threat.global_position)
-		_escort_drones(depot)
+		_escort_drones(depot,threat)
 		return
 	# A wave presses on to the next target it knows of; one with nothing left to find, or down to its last unit,
 	# comes home and joins the next.
@@ -852,12 +892,16 @@ func fight(depot: Node3D) -> void:
 		last_wave = wave.size(); waves_sent += 1
 		for unit in wave: unit.command_attack_move(target)
 	_escort_drones(depot)
-## Keeps each Drone over the centre of the ground units it goes with: the wave's if it is in the wave, else the
-## rest of the army's. A Drone with no ground units to go with is left alone. One low on coal (it burns coal by the
+## Keeps each Drone behind the front Tank of the ground units it goes with (the wave's if it is in the wave, else
+## the rest of the army's), within `drone_behind_front` of it; with no Tank or nowhere to go, over their centre.
+## A Drone with no ground units to go with is left alone. One low on coal (it burns coal by the
 ## second in the air) leaves the wave and flies home to the rally point, inside the Depot's range, to refuel.
-func _escort_drones(depot: Node3D = null) -> void:
+func _escort_drones(depot: Node3D = null, threat: Node3D = null) -> void:
 	var home := is_instance_valid(depot)
 	var rally := rally_point(depot) if home else Vector3.ZERO
+	# Where each group is going: the wave to its target, the rest to a threat at home.
+	var wave_goal: Variant = wave_target(_centre(wave)) if not wave.is_empty() else null
+	var home_goal: Variant = threat.global_position if is_instance_valid(threat) else null
 	for drone in army:
 		if not _is_drone(drone): continue
 		if home and drone.has_method("fuel_low") and (drone.fuel_low() or drone.get("fuel_landed") == true):
@@ -866,8 +910,35 @@ func _escort_drones(depot: Node3D = null) -> void:
 			continue
 		var group: Array[Node3D] = (wave if wave.has(drone) else army.filter(func(unit): return not wave.has(unit))).filter(func(unit): return not _is_drone(unit))
 		if group.is_empty(): continue
+		var goal: Variant = wave_goal if wave.has(drone) else home_goal
+		var front := tank_front(group,goal)
+		if front != null:
+			# A quarter of drone_behind_front back from the front Tank, sent there again once where it is going
+			# strays a quarter from it: a Tank at 5 m/s moves 5 m between thoughts, so the Drone stays within
+			# drone_behind_front.
+			var spot: Vector3 = front.global_position-escort_heading(group,goal)*drone_behind_front*0.25
+			var bound: Vector3 = drone.move_goal if drone.order == "move" else drone.global_position
+			if _flat_distance(bound,spot) > drone_behind_front*0.25: drone.command_move(spot)
+			continue
 		var centre := _centre(group)
 		if drone.global_position.distance_to(centre) > drone_escort_radius: drone.command_move(centre)
+## The way a group is going: from its centre toward `goal`, flat. Zero with no goal.
+func escort_heading(group: Array[Node3D], goal: Variant) -> Vector3:
+	if goal == null: return Vector3.ZERO
+	var centre := _centre(group)
+	var heading := Vector3(goal.x-centre.x,0,goal.z-centre.z)
+	return heading.normalized() if heading.length() > 1.0 else Vector3.ZERO
+## The group's Tank furthest along toward `goal`, or null with no Tank or nowhere to go.
+func tank_front(group: Array[Node3D], goal: Variant) -> Node3D:
+	var heading := escort_heading(group,goal)
+	if heading == Vector3.ZERO: return null
+	var front: Node3D = null
+	for unit in group:
+		if unit.get("unit_stats") == null or unit.unit_stats.unit_id != &"tank": continue
+		if front == null or unit.global_position.dot(heading) > front.global_position.dot(heading): front = unit
+	return front
+static func _flat_distance(a: Vector3, b: Vector3) -> float:
+	return Vector2(a.x-b.x,a.z-b.z).length()
 func _is_drone(unit: Node3D) -> bool:
 	return unit.get("unit_stats") != null and unit.unit_stats.unit_id == &"drone"
 ## How many units the next wave needs.

@@ -54,7 +54,8 @@ func run() -> void:
 	setup.configured = false
 	setup.factions = {"player": &"cyborgs", "enemy": &"cyborgs"}
 	if not check(configured == ["Mine","CoalMine","Keep","Chapterhouse"],"A configured Knights match should show the Knights' page: %s" % [configured]): return
-	# 3. The Cyborg AI keeps a Drone over its wave's centre while the wave moves.
+	# 3. The Cyborg AI keeps a Drone behind its wave's front Tank while the wave moves (Round 3,
+	# docs/ROUND3_CYBORG_ECONOMY.md): within `drone_behind_front` of it and never ahead of it.
 	await load_map("res://scenes/maps/lakes_skirmish.tscn")
 	var ai = game.enemy_player()
 	ai.set_process(false)
@@ -82,8 +83,11 @@ func run() -> void:
 	ai.army = everyone.duplicate()
 	ai.wave = everyone.duplicate()
 	var goal: Vector3 = start+Vector3(-120,0,0)
+	# The wave's target, as a sighting would set it: the AI heads its escort the way the wave is sent.
+	ai.known = {"test": goal}
 	for unit in everyone: unit.command_attack_move(goal)
 	var worst := 0.0
+	var ahead := 0.0
 	var moved := 0.0
 	var from: Vector3 = ai._centre(ground)
 	for second in range(20):
@@ -91,9 +95,15 @@ func run() -> void:
 			for unit in everyone: unit._process(1.0/60)
 		ai._escort_drones()
 		var centre: Vector3 = ai._centre(ground)
-		if second >= 2: worst = maxf(worst,Vector2(drone.global_position.x-centre.x,drone.global_position.z-centre.z).length())
+		var front: Node3D = ai.tank_front(ground,goal)
+		if not check(front != null,"The wave should have a front Tank"): return
+		if second >= 2:
+			worst = maxf(worst,Vector2(drone.global_position.x-front.global_position.x,drone.global_position.z-front.global_position.z).length())
+			# Ahead means further west than the front Tank, the way the wave goes.
+			ahead = maxf(ahead,front.global_position.x-drone.global_position.x)
 		moved = from.distance_to(centre)
 	if not check(moved > 20.0,"The wave should have moved: %.1f m" % moved): return
-	if not check(worst <= 15.0,"The Drone should stay within 15 m of its wave's centre: %.1f m" % worst): return
+	if not check(worst <= ai.drone_behind_front+1.0,"The Drone should stay within %.0f m of the front Tank: %.1f m" % [ai.drone_behind_front,worst]): return
+	if not check(ahead <= 1.0,"The Drone should not fly ahead of the front Tank: %.1f m" % ahead): return
 	print("KNIGHTS_TIDY_TEST_PASSED")
 	quit(0)

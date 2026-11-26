@@ -58,6 +58,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_stimulus.png" id="card_stimulus"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_depot.png" id="card_build_depot"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_generator.png" id="card_build_generator"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_hydro_dam.png" id="card_build_hydro_dam"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_barracks.png" id="card_build_barracks"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_factory.png" id="card_build_factory"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_mine.png" id="card_build_mine"]
@@ -312,6 +313,10 @@ events = [SubResource("key_build_depot")]
 action = &"build_generator"
 [sub_resource type="Shortcut" id="shortcut_build_generator"]
 events = [SubResource("key_build_generator")]
+[sub_resource type="InputEventAction" id="key_build_hydro_dam"]
+action = &"build_hydro_dam"
+[sub_resource type="Shortcut" id="shortcut_build_hydro_dam"]
+events = [SubResource("key_build_hydro_dam")]
 [sub_resource type="InputEventAction" id="key_build_barracks"]
 action = &"build_barracks"
 [sub_resource type="Shortcut" id="shortcut_build_barracks"]
@@ -4771,6 +4776,30 @@ icon = ExtResource("card_build_generator")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/Generator"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -34.0
+offset_top = 1.0
+offset_right = -4.0
+offset_bottom = 15.0
+grow_horizontal = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.96,0.94,0.83,1)
+theme_override_font_sizes/font_size = 11
+text = "?"
+[node name="HydroDam" type="Button" parent="Bottom/Body/Row/Commands/BuildMenu/Actions"]
+theme_type_variation = &"CommandCard"
+shortcut = SubResource("shortcut_build_hydro_dam")
+layout_mode = 2
+text = ""
+custom_minimum_size = Vector2(46,46)
+icon = ExtResource("card_build_hydro_dam")
+expand_icon = true
+icon_alignment = 1
+[node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/HydroDam"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0

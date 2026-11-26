@@ -70,7 +70,7 @@ func run() -> void:
 	if not check(get_nodes_in_group("production_buildings").size() == 1,"Barracks world placement failed"): return
 	var barracks = get_nodes_in_group("production_buildings")[0]
 	barracks.set_process(false)
-	if not check(first.energy == 1900 and first.iron == 1955 and barracks.assigned_depot == first,"Barracks construction must pay exactly 100/45 locally"): return
+	if not check(first.energy == 1920 and first.iron == 1940 and barracks.assigned_depot == first,"Barracks construction must pay exactly 80/60 locally"): return
 	point = placement(Vector2i(8,8),first)
 	await click(hud.build_menu.get_node("Actions/TankFactory"))
 	if not check(game.global_plan_kind == &"tank_factory","Tank Factory GUI plan command failed"): return
@@ -79,7 +79,7 @@ func run() -> void:
 	if not check(get_nodes_in_group("production_buildings").size() == 2,"Factory world placement failed"): return
 	var factory = get_nodes_in_group("production_buildings")[1]
 	factory.set_process(false)
-	if not check(first.energy == 1700 and first.iron == 1890,"Factory construction must pay exactly 200/65 locally"): return
+	if not check(first.energy == 1770 and first.iron == 1840,"Factory construction must pay exactly 150/100 locally"): return
 	hud.close_build()
 	network.select_depot(null)
 	game.selected_building = barracks
@@ -88,7 +88,7 @@ func run() -> void:
 	await click(hud.card.get_node("ProduceScout"))
 	await click(hud.card.get_node("ProduceGrenadier"))
 	await click(hud.card.get_node("PrintInfantry"))
-	if not check(barracks.queue == 3 and first.energy == 1480 and first.iron == 1850,"Barracks roster GUI costs mismatch"): return
+	if not check(barracks.queue == 3 and first.energy == 1570 and first.iron == 1785,"Barracks roster GUI costs mismatch"): return
 	if not check(not barracks.request_unit(&"tank") and barracks.queue == 3,"Barracks accepted invalid/over-cap production"): return
 	for i in range(3): barracks._process(12.1)
 	var ids: Array[StringName] = []
@@ -185,7 +185,7 @@ func run() -> void:
 	if not check(not barracks.request_unit(&"scout") and deployed.energy == 1000 and deployed.iron == rich_iron,"Production silently borrowed from a neighbouring Depot"): return
 	# Paid production is a recovery path even when the Depot cannot afford another infantry.
 	first.energy = 35
-	first.iron = 5
+	first.iron = 10
 	if not check(barracks.request_unit(&"scout"),"Recovery fixture could not queue scout"): return
 	for unit in get_nodes_in_group("units"):
 		if unit.team == "player": unit.team = "test_inactive"
