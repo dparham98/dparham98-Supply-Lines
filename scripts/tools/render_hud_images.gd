@@ -39,6 +39,8 @@ const ENTRIES := {
 	"derailer_mines": ["res://scenes/gameplay/motorcycle.tscn","","research_minelaying",235.0,1.0],
 	"foundry": ["res://scenes/gameplay/foundry.tscn","","build_foundry",215.0,1.0], # docs/FOUNDRY_MODEL.md; door +Z
 	"forge": ["res://scenes/gameplay/forge.tscn","","build_forge",215.0,1.0], # docs/FORGE_MODEL.md; open front +Z
+	"wainwright": ["res://scenes/gameplay/wainwright.tscn","","build_wainwright",215.0,1.0], # docs/WAINWRIGHT_MODEL.md; yard +Z
+	"knights_train": ["res://scenes/gameplay/knights_train.tscn","produce_knights_train","",220.0,1.0], # docs/KNIGHTS_TRAIN_MODEL.md
 }
 ## Entries shot only for their cards: no selection icon or portrait is written for them.
 const CARD_ONLY := ["land_mine","derailer_mines"]

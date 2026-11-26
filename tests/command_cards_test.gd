@@ -37,7 +37,7 @@ func run() -> void:
 	# 77 with the Wainwright and Keep train tiles (docs/KNIGHTS_RAIL.md) and the Sentinel's Mist and Slow (docs/MIST_AND_SLOW.md).
 	if not check(tiles == 77,"Expected 77 card tiles, found %d" % tiles): return
 	# Commands with their own art.
-	var names := {"Return":"sl_deliver.png","DropMaterials":"sl_drop.png","DeployTruck":"sl_deploy_depot.png","ProduceUbermech":"sl_produce_ubermech.png","PrintTruck":"sl_produce_truck.png","Derail":"sl_derail.png","Research":"sl_research_mining_trains.png","MineIron":"sl_mine_iron.png","LayMine":"sl_lay_mine.png","ResearchMines":"sl_research_minelaying.png","Upgrade1":"sl_upgrade_infantry_weapons.png","Upgrade2":"sl_upgrade_infantry_armour.png","Upgrade3":"sl_upgrade_vehicle_weapons.png","Upgrade4":"sl_upgrade_vehicle_armour.png"}
+	var names := {"Return":"sl_deliver.png","DropMaterials":"sl_drop.png","DeployTruck":"sl_deploy_depot.png","ProduceUbermech":"sl_produce_ubermech.png","PrintTruck":"sl_produce_truck.png","Derail":"sl_derail.png","Research":"sl_research_mining_trains.png","MineIron":"sl_mine_iron.png","LayMine":"sl_lay_mine.png","ResearchMines":"sl_research_minelaying.png","Upgrade1":"sl_upgrade_infantry_weapons.png","Upgrade2":"sl_upgrade_infantry_armour.png","Upgrade3":"sl_upgrade_vehicle_weapons.png","Upgrade4":"sl_upgrade_vehicle_armour.png","KeepTrain":"sl_produce_knights_train.png"}
 	for id in names:
 		if not check(art(hud.card.get_node(id)) == names[id],"%s has the wrong card" % id): return
 	# Cargo: supplies, refuelling and trips each show the art for their state.

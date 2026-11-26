@@ -546,9 +546,11 @@ func icon_name(node: Node) -> String:
 		# The Foundry and Forge have their own models (docs/FOUNDRY_MODEL.md, docs/FORGE_MODEL.md).
 		var building_id := str(node.stats.building_id) if node.get("stats") != null else ""
 		return building_id if building_id in ["foundry","forge"] else "temple"
-	if node.is_in_group("production_buildings"): return "barracks" if str(node.scene_file_path).ends_with("barracks.tscn") else "tank_factory"
+	if node.is_in_group("production_buildings"):
+		if str(node.scene_file_path).ends_with("wainwright.tscn"): return "wainwright"
+		return "barracks" if str(node.scene_file_path).ends_with("barracks.tscn") else "tank_factory"
 	if node.is_in_group("energy_generators"): return "generator"
-	if node.is_in_group("rail_trains"): return "train"
+	if node.is_in_group("rail_trains"): return "knights_train" if node.get("coal_fuelled") == true else "train"
 	if node.get("is_cargo_vehicle"): return "cargo"
 	if node.get("is_depot_truck"): return "truck"
 	return str(node.unit_stats.unit_id) if node.get("unit_stats") != null else "infantry"
