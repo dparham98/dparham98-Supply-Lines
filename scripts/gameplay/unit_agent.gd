@@ -333,7 +333,7 @@ func command_attack(node: Node3D, forced := false) -> void:
 ## Attack-move: travel to a point, stopping to fire at anything that comes into range.
 func command_attack_move(point: Vector3) -> void:
 	if _farmer_refuses(): return
-	if is_depot_truck or is_cargo_vehicle or not _attack_enabled: command_move(point); return
+	if is_depot_truck or is_cargo_vehicle or (not _attack_enabled and not can_heal): command_move(point); return
 	command_move(point)
 	order = "attack_move"
 	state = "Attack-moving"
@@ -396,6 +396,7 @@ func _animate(delta: float = 1.0/60) -> void:
 	var kind: StringName = &"idle"
 	var value := 0.0
 	if _animated_from != Vector3.INF and here != _animated_from: kind = &"run"; value = move_speed
+	elif order == "heal" and med_reserve > 0 and is_instance_valid(order_target) and here.distance_to(order_target.global_position) <= heal_range: kind = &"heal"
 	elif _aimed_frame == Engine.get_process_frames(): kind = &"aim"
 	elif state in ["Gathering","Felling","Farming"] or state.begins_with("Constructing"): kind = &"work"; value = harvest_interval
 	elif state.begins_with("Repairing"): kind = &"work"; value = engineering_rules.repair_interval if engineering_rules else 0.0
@@ -987,6 +988,7 @@ var _scan_wait := 0.0
 var _sighted: Node3D
 var _had_sight := false
 func _acquire() -> Node3D:
+	if not _attack_enabled: return null
 	if _had_sight and is_instance_valid(_sighted) and in_attack_range(_sighted) and CombatResolver.can_hit(self,_sighted) and team_sees(_sighted):
 		# A building in its sights gives way to a unit that comes into range (docs/COMBAT_BATCH.md, Buildings as targets).
 		if not _sighted.is_in_group("selectable_buildings"): return _sighted
@@ -1302,6 +1304,7 @@ func _spell_order() -> void:
 			if not _route_to_point(_cast_point): order = "idle"; state = "Can't reach the spot"
 		return
 	_stop_route()
+	_face(_cast_point)
 	med_reserve -= spell_cost(kind)
 	var animator := _animator()
 	if animator != null and animator.has_method("play_cast"): animator.play_cast(StringName(kind))
@@ -1363,7 +1366,10 @@ func _heal(delta: float) -> void:
 		return
 	_work_timer = 0.0
 	var note := MedicalWork.tick(self,order_target)
-	if note.is_empty(): state = "Healing %s" % order_target.name
+	if note.is_empty():
+		state = "Healing %s" % order_target.name
+		var model := _animator()
+		if model != null and model.has_method("pulse_heal"): model.pulse_heal(order_target)
 	elif _heal_resume != Vector3.INF: _heal_done(note)
 	else: state = note
 ## Build at a queued site (docs/SITE_CONSTRUCTION.md): carried materials the site needs go onto its

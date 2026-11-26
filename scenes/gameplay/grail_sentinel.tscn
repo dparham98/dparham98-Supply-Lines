@@ -3,7 +3,6 @@
 [ext_resource type="Script" path="res://scripts/gameplay/unit_agent.gd" id="agent"]
 [ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
 [ext_resource type="PackedScene" path="res://scenes/models/grail_sentinel_model.tscn" id="model"]
-[ext_resource type="PackedScene" path="res://scenes/gameplay/infantry_bullet.tscn" id="bullet"]
 [ext_resource type="Resource" path="res://assets/units/grail_sentinel.tres" id="stats"]
 [ext_resource type="Material" path="res://assets/materials/units/team_marker.tres" id="team_marker"]
 
@@ -14,7 +13,7 @@ size = Vector2(1.8, 1.8)
 [node name="GrailSentinel" type="Node3D"]
 script = ExtResource("agent")
 unit_stats = ExtResource("stats")
-projectile_scene = ExtResource("bullet")
+use_prototype_combat_for_unresolved_stats = false
 can_construct = false
 can_repair = false
 can_heal = true

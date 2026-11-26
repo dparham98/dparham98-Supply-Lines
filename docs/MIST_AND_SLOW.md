@@ -73,10 +73,9 @@ Both spells go on the Grail Sentinel's card:
 
 Added on 2026-11-25. Gameplay scripts only set numbers; the looks are authored scenes that read them.
 
-- **The cast** (`scenes/models/grail_sentinel_model.tscn`, `scripts/components/spell_animator.gd`, which extends `character_animator.gd`). `unit_agent._spell_order` calls `play_cast(kind)` on the model when it casts.
-  - The Sentinel sweeps its right arm up overhead in 0.22 s, holds to 0.52 s and settles by 0.9 s. The clip is `Cast` in `assets/models/units/grail_sentinel_cast.tres`, added to the rig's player as `spells/Cast`. The rig has no Blender source, so `scripts/tools/build_sentinel_cast.gd` keys the clip from the bones' rests. Change the poses there and re-run it.
-  - A burst of light rides on the right hand: a flash as the arm reaches the top, a shaft of light, a spreading halo, falling motes and a light. Mist's burst (`scenes/models/sentinel_cast_mist_fx.tscn`) is pale gold; Slow's (`sentinel_cast_slow_fx.tscn`) is blue. Both run `burst_effect.gd` once and free themselves.
-  - The spell itself lands on the first frame, as before; the gesture is only the look.
+- **Grail Sentinel.** The gold grail follows the right hand. The pivoting blue hourglass sits on the original shield. The editable rig and actions are in `Blender/Characters/GrailSentinel/GrailSentinel.blend`.
+- **Heal.** The Sentinel offers the cup while tending a patient. Each successful heal sends a gold pulse from its lip to the patient.
+- **Mist and Slow.** Mist sweeps the cup out and pours from its rim. Slow drops into a shield brace and turns the glass in its mount. Both spells resolve at cast time, with their original costs and area effects.
 - **Mist** (`mist_cloud.tscn`). Three stacked discs at 0.3, 0.9 and 1.6 m draw a low rolling cloud with `assets/shaders/holy_mist.gdshader`: pale grey-white noise that swirls slowly about the centre, a frayed rim and faint gold motes. It is at most about a third opaque per layer, so the ground and the units in it still show from the RTS camera.
 - **Slow** (`slow_field.tscn`). One disc at 0.12 m draws a ground sigil with `assets/shaders/slow_sigil.gdshader`: a gold double ring with runes, a turning blue eight-pointed star, and a faint blue wash. It pulses gently. The field now has a `radius` (set from `slow_radius`) as well as `seconds`.
 - **Timing** (`scripts/components/spell_look.gd`, on each scene's Visuals). It reads the spell's `seconds` and `radius` each frame:

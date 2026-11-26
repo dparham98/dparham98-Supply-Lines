@@ -655,6 +655,7 @@ func update_unit_sections(node: Node3D, inspect := false) -> void:
 		if roof != null:
 			# The stat grid is full on a Tank, so the roof gun goes on the abilities line.
 			abilities.insert(0,"Roof gun %d / %.2fs at units within %.0f" % [roof.damage,roof.shot_interval,roof.attack_range])
+	elif node.can_heal: abilities.append("Unarmed support")
 	else: abilities.append("Unarmed worker" if node.can_gather else "Attack unavailable · unresolved stats")
 	if node.get("armoured") == true: abilities.append("Armoured")
 	if node.can_heal: abilities.append("Vitality Stimulus · %d HP/s at %.0f m, by itself (%d/%d HP reserve)" % [roundi(node.heal_hp/node.heal_interval),node.heal_range,node.med_reserve,node.med_reserve_capacity])

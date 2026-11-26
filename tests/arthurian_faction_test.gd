@@ -52,7 +52,7 @@ func run() -> void:
 		"forester_maiden_model": ["Walk", "Chop", "Gather", "Carry", "Build", "Till"],
 		"warhound_model": ["Rest", "Run", "Attack", "Die"],
 		"round_table_marine_model": ["Run", "Shoot"],
-		"grail_sentinel_model": ["Run"],
+		"grail_sentinel_model": ["Run","Rest","Heal","Mist","Slow"],
 		"questing_marine_model": ["Run"],
 		"azure_dragon_model": ["Rest", "Walk", "FireBreath"],
 	}
