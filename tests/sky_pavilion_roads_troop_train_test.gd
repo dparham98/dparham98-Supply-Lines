@@ -5,6 +5,9 @@ extends SceneTree
 #   derailment throws them out with a quarter of their health gone and slowed.
 # - Forward Railhead: 30 iron, 4 x 4, only beside friendly track. A Knights train carries the 6 Food crates and
 #   6 Marines out to one beyond the Keep's range, sets the crates down round it and lets the Marines off there.
+# - Sky-Pavilion (docs/ROUND3_SKY_PAVILION.md): Found Keep (P) charters one for 50 W / 50 I / 45 F and 1 housing. It
+#   flies only to land the side has explored, unfolds there into an empty Keep with a Forester Maiden, and on a site
+#   blocked by the time it lands sets down 2 Wood and 2 Iron crates and the Maiden instead.
 var game: Node3D
 var network: Node
 var rails: Node
@@ -14,7 +17,7 @@ func _initialize() -> void: call_deferred("run")
 func check(value: bool, message: String) -> bool:
 	if value: return true
 	push_error(message); quit(1); return false
-func open(path: String) -> void:
+func open(path: String, keep_fog := false) -> void:
 	if is_instance_valid(game): game.free()
 	game = load(path).instantiate()
 	root.add_child(game)
@@ -28,7 +31,9 @@ func open(path: String) -> void:
 		if ai != null: ai.set_process(false)
 	for group in ["units","depots","production_buildings","farms","houses","energy_generators","mines"]:
 		for node in get_nodes_in_group(group): node.set_process(false)
-	for fog in get_nodes_in_group("fog_of_war"): fog.free()
+	for fog in get_nodes_in_group("fog_of_war"):
+		if keep_fog: fog.set_process(false)
+		else: fog.free()
 func place(node: Node3D, point: Vector3) -> void:
 	for cell in node._claimed.duplicate(): node._release(cell)
 	node._stop_route()
@@ -99,6 +104,7 @@ func extend(piece: Node3D, keep: Node3D, count: int) -> Node3D:
 func run() -> void:
 	if not await troop_train(): return
 	if not await railhead(): return
+	if not await pavilion(): return
 	game.free()
 	print("SKY_PAVILION_ROADS_TROOP_TRAIN_TEST_PASSED")
 	quit(0)
@@ -196,3 +202,118 @@ func railhead() -> bool:
 	train.manifest = {}
 	if not check(train.load_crates(head,head.global_position) == 6 and train.crate_units(&"food") == 150,"A train at the Railhead picks its crates up: %d" % train.crate_units(&"food")): return false
 	return true
+func maidens(team: String) -> Array:
+	return get_nodes_in_group("units").filter(func(u): return u.team == team and u.get("unit_stats") != null and u.unit_stats.unit_id == &"forester_maiden")
+## Flies `pavilion` until it has landed and gone.
+func fly(pavilion: Node3D) -> bool:
+	var id := pavilion.get_instance_id()
+	for i in range(160):
+		step([pavilion],0.5)
+		await process_frame
+		if not is_instance_id_valid(id) or instance_from_id(id).is_queued_for_deletion(): break
+	await process_frame
+	return not is_instance_id_valid(id) or instance_from_id(id).is_queued_for_deletion()
+func pavilion() -> bool:
+	# Two Lakes with the Knights at home, for its fog of war.
+	var setup = root.get_node("MatchSetup")
+	setup.configured = true
+	setup.mode = "ai"
+	setup.map_id = "two_lakes"
+	setup.factions = {"player": &"arthurian_knights", "enemy": &"cyborgs"}
+	await open(setup.map_path(),true)
+	setup.configured = false
+	var keep := keep_of("player")
+	var fog: Node = game.fog_of_war()
+	if not check(keep != null and fog != null,"Two Lakes should give the Knights a Keep and keep its fog"): return false
+	var stats: UnitStats = keep.unit_stats_for_kind("sky_pavilion")
+	if not check(stats.unit_id == &"sky_pavilion" and stats.wood_cost == 50 and stats.iron_cost == 50 and stats.food_cost == 45 and is_equal_approx(stats.build_seconds,15.0),"A Sky-Pavilion costs 50 W / 50 I / 45 F and takes 15 s"): return false
+	if not check(stats.max_health == 80 and KnightHousing.cost(&"sky_pavilion") == 1,"It has 80 health and takes 1 housing"): return false
+	# A Keep site well beyond the Keep's range that the side hasn't seen.
+	var site = null
+	for d in [110.0,130.0,90.0,150.0]:
+		for angle in range(0,360,20):
+			var point: Vector3 = keep.global_position+Vector3.FORWARD.rotated(Vector3.UP,deg_to_rad(angle))*d
+			if network.keep_site_refusal(point,"player").is_empty() and not fog.explored_by("player",point): site = point; break
+		if site != null: break
+	if not check(site != null,"There should be unexplored open land for a Keep within 150 m"): return false
+	for kind in [&"food",&"wood",&"iron"]: keep.stockpile.deposit(kind,200)
+	var food: int = keep.stockpile.amount(&"food"); var wood: int = keep.stockpile.amount(&"wood"); var iron: int = keep.stockpile.amount(&"iron")
+	if not check(keep.pavilion_refusal(site).contains("explored") and not keep.request_pavilion(site),"Unexplored land should be refused: %s" % keep.pavilion_refusal(site)): return false
+	# The HUD's Found Keep tile shows and arms the map click.
+	var hud = game.get_node("Interface")
+	game.selected_building = keep
+	hud._process(0.0)
+	var tile: Button = hud.card.get_node("FoundKeep")
+	if not check(hud.desired_buttons.has("FoundKeep") and not tile.disabled,"The Keep's card should show an enabled Found Keep tile"): return false
+	if not check(str(tile.get_meta("detail","")).contains("Sky-Pavilion"),"The tile should explain the Sky-Pavilion"): return false
+	tile.pressed.emit()
+	if not check(game.pending_unit_command == "found_keep" and game.armed(),"Found Keep should arm a click on the map"): return false
+	game.cancel_armed()
+	# A scout looks at the site and leaves: explored, though out of sight now.
+	var scout := spawn("res://scenes/gameplay/forester_maiden.tscn","player",site)
+	fog.update_now()
+	scout.free()
+	fog.update_now()
+	if not check(fog.explored_by("player",site) and not fog.visible_to("player",site),"The site should be explored and out of sight"): return false
+	if not check(keep.pavilion_refusal(site).is_empty(),"Explored open land should take a Sky-Pavilion: %s" % keep.pavilion_refusal(site)): return false
+	var housed := KnightHousing.used(self,"player")
+	var keeps := get_nodes_in_group("keeps").size()
+	var before := maidens("player").size()
+	if not check(keep.request_pavilion(site),"The Keep should charter a Sky-Pavilion"): return false
+	if not check(keep.stockpile.amount(&"food") == food-45 and keep.stockpile.amount(&"wood") == wood-50 and keep.stockpile.amount(&"iron") == iron-50,"It costs 45 F, 50 W and 50 I from the Keep"): return false
+	if not check(KnightHousing.used(self,"player") == housed+1,"It takes 1 housing while queued"): return false
+	# Cancelled, it pays back and forgets its site.
+	keep._drop_current()
+	if not check(keep.stockpile.amount(&"wood") == wood and keep.pavilion_sites.is_empty(),"Cancelled, it pays back and drops its site"): return false
+	keep.request_pavilion(site)
+	for i in range(149): keep._process(0.1)
+	if not check(get_nodes_in_group("sky_pavilions").is_empty(),"It shouldn't lift off before its 15 s"): return false
+	for i in range(3): keep._process(0.1)
+	var flying: Array = get_nodes_in_group("sky_pavilions")
+	if not check(flying.size() == 1 and keep.pending.is_empty() and keep.pavilion_sites.is_empty(),"After 15 s it lifts off"): return false
+	var pavilion: Node3D = flying[0]
+	pavilion.set_process(false)
+	if not check(KnightHousing.used(self,"player") == housed+1,"Flying, it still takes 1 housing"): return false
+	if not check(is_equal_approx(pavilion.height,KnightHousing.rules().balloon_dock_height) and is_equal_approx(pavilion.cruise_height(),KnightHousing.rules().pavilion_cruise_height),"It lifts off the Keep's dock and cruises at its own height"): return false
+	pavilion.command_move(keep.global_position)
+	if not check(pavilion.move_goal.distance_to(Vector3(site.x,0,site.z)) < 0.01,"It takes no orders"): return false
+	if not check(await fly(pavilion),"It should land and be gone"): return false
+	var founded: Node3D = null
+	for node in get_nodes_in_group("keeps"):
+		if node.team == "player" and node != keep and Vector2(node.global_position.x-site.x,node.global_position.z-site.z).length() < 6.0: founded = node
+	if not check(founded != null and get_nodes_in_group("keeps").size() == keeps+1,"It unfolds into a Keep at the site"): return false
+	if not check(founded.stockpile.amount(&"food") == 0 and founded.stockpile.amount(&"wood") == 0 and founded.stockpile.amount(&"iron") == 0,"The new Keep starts empty"): return false
+	var now := maidens("player")
+	if not check(now.size() == before+1 and now.any(func(m): return m.global_position.distance_to(founded.global_position) < 14.0),"A Forester Maiden stands at its gate"): return false
+	if not check(KnightHousing.used(self,"player") == housed+1,"Its housing passes to the Maiden"): return false
+	# The next one finds its site taken by the time it lands: 2 Wood and 2 Iron crates and the Maiden instead.
+	var second = null
+	for d in [60.0,80.0,100.0,120.0]:
+		for angle in range(0,360,20):
+			var point: Vector3 = founded.global_position+Vector3.FORWARD.rotated(Vector3.UP,deg_to_rad(angle))*d
+			if network.keep_site_refusal(point,"player").is_empty() and point.distance_to(keep.global_position) > 60.0: second = point; break
+		if second != null: break
+	if not check(second != null,"There should be a second Keep site"): return false
+	fog._stamp("player",second,24.0)
+	if not check(keep.request_pavilion(second),"A second Sky-Pavilion should be chartered: %s" % keep.pavilion_refusal(second)): return false
+	for i in range(152): keep._process(0.1)
+	flying = get_nodes_in_group("sky_pavilions")
+	if not check(flying.size() == 1,"The second one lifts off"): return false
+	pavilion = flying[0]
+	pavilion.set_process(false)
+	var blocker: Node3D = network.found_keep(second,"player")
+	if not check(blocker != null,"A Keep should stand on the second site first"): return false
+	await process_frame
+	keeps = get_nodes_in_group("keeps").size()
+	before = maidens("player").size()
+	if not check(await fly(pavilion),"The second one should land and be gone"): return false
+	if not check(get_nodes_in_group("keeps").size() == keeps,"A blocked site gets no Keep"): return false
+	var dropped := {}
+	for crate in get_nodes_in_group("supply_crates"):
+		if crate.team == "player" and flat(crate.global_position,second) < 16.0 and crate.amount == 25: dropped[crate.resource_kind] = dropped.get(crate.resource_kind,0)+1
+	if not check(dropped.get(&"wood",0) == 2 and dropped.get(&"iron",0) == 2,"A blocked site gets 2 Wood and 2 Iron crates: %s" % dropped): return false
+	if not check(maidens("player").size() == before+1,"And a Forester Maiden"): return false
+	return true
+## Distance on the ground, ignoring height.
+func flat(a: Vector3, b: Vector3) -> float:
+	return Vector2(a.x-b.x,a.z-b.z).length()

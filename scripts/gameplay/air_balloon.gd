@@ -15,7 +15,10 @@ var height := 0.0
 func _ready() -> void:
 	super._ready()
 	add_to_group("air_balloons")
-	_set_height(RULES.balloon_cruise_height)
+	_set_height(cruise_height())
+## How high it flies (the Sky-Pavilion flies higher).
+func cruise_height() -> float:
+	return RULES.balloon_cruise_height
 ## Lifts off from `dock_height` metres up and makes for `point` with `cargo`.
 func launch(point: Vector3, cargo: Array[Dictionary], dock_height: float) -> void:
 	crates = cargo
@@ -53,7 +56,7 @@ func _process(delta: float) -> void:
 	var there := _arrived()
 	# Stopped short (the HUD's Stop, or a blocked step): carry on to the drop point.
 	if not there and order != "move": _fly()
-	var target_height: float = 0.0 if there else RULES.balloon_cruise_height
+	var target_height: float = 0.0 if there else cruise_height()
 	_set_height(move_toward(height,target_height,RULES.balloon_climb_rate*delta))
 	if there:
 		state = "Landing"

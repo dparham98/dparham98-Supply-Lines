@@ -585,6 +585,25 @@ func queue_plan(point: Vector3, kind: StringName, payer: Node3D = null, pin_paye
 	elif spec.get("wood",0) > 0 or spec.get("food",0) > 0: game.notify("%s plan placed. Deliver materials to its footprint, then order a worker to construct; a covering stockpile pays as they build." % spec.title,team)
 	else: game.notify("%s plan placed. Deliver %d iron to its footprint, then order Deforesters to construct; a covering stockpile pays the energy as they build." % [spec.title,spec.iron],team)
 	return plan
+## Why `team` can't stand a Keep at `point` now (the Sky-Pavilion, docs/ROUND3_SKY_PAVILION.md), or "": its 10 x 10
+## must be open land clear of plans, and it must keep the spacing from the side's Keeps and Depots.
+func keep_site_refusal(point: Vector3, team: String) -> String:
+	var spec := plan_spec(&"keep")
+	var start := footprint_start(point,spec.size)
+	if not plan_terrain_valid(start,spec.size,&"keep") or plan_overlaps(start,spec.size): return "A Keep needs %d x %d of open land clear of plans there." % [spec.size.x,spec.size.y]
+	if not depot_spacing_ok(point,team): return spacing_notice(point,team)
+	return ""
+## Stands an empty Keep of `team` at `point` at once, or returns null when the site is no good.
+func found_keep(point: Vector3, team: String) -> Node3D:
+	if not keep_site_refusal(point,team).is_empty(): return null
+	var spec := plan_spec(&"keep")
+	var start := footprint_start(point,spec.size)
+	var keep = spec.scene.instantiate()
+	keep.team = team
+	keep.initial_energy = 0; keep.initial_iron = 0; keep.initial_wood = 0; keep.initial_food = 0
+	keep.position = game.ground.tile_to_world(start+spec.size/2)
+	game.get_node("Entities/Buildings").add_child(keep,true)
+	return keep
 ## Depots and deployed Cargo trucks pay plans in their range; rails need a Depot.
 ## Whether one of `team`'s Keeps has the whole footprint in its range; with `or_hearth`, a pitched Hearth-Wain will do
 ## too (a Forward Farm, docs/ROUND3_HEARTH_WAIN.md).

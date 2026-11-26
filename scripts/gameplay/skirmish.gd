@@ -589,6 +589,14 @@ func issue_card_order(screen, queued := false) -> void:
 		pending_unit_command = ""
 		if not depot.request_train(piece): notify("Depot lacks local train funds or queue space.")
 		return
+	# Found Keep (docs/ROUND3_SKY_PAVILION.md): the selected Keep charters a Sky-Pavilion to the clicked site.
+	if pending_unit_command == "found_keep":
+		var keep: Node3D = selected_building
+		var point = ground_at(screen)
+		if not is_instance_valid(keep) or not keep.is_in_group("keeps") or keep.team != "player": pending_unit_command = ""; return
+		if point == null: notify("Click explored land where the new Keep should stand."); return
+		if keep.request_pavilion(point) and not queued: pending_unit_command = ""
+		return
 	# Launch balloon (docs/AIR_BALLOON.md): the selected Keep sends its packed crates to the clicked point.
 	if pending_unit_command == "launch_balloon":
 		var keep: Node3D = selected_building

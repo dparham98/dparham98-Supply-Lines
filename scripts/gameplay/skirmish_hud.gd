@@ -43,7 +43,7 @@ const SLOTS := {"Move": 0, "Stop": 1, "Attack": 2, "ToggleRefuel": 3, "Gather": 
 	"Repair": 8, "Heal": 8, "Derail": 8, "Capture": 9, "LayMine": 9, "BuyMine": 10, "DeployTruck": 10, "Fell": 10, "CancelPlan": 11,
 	"DeployCargo": 2, "Load": 4, "Unload": 5, "Trips": 6, "Disembark": 9,
 	"PrintTruck": 0, "PrintCargo": 1, "PrintTrain": 2,
-	"TrainForester": 0, "TrainWarhound": 1, "LaunchBalloon": 2, "KeepTrain": 4,
+	"TrainForester": 0, "TrainWarhound": 1, "LaunchBalloon": 2, "FoundKeep": 3, "KeepTrain": 4,
 	"PrintInfantry": 0, "ProduceScout": 1, "ProduceGrenadier": 2, "ProduceTank": 3, "ProduceMotorcycle": 4, "ProduceDrone": 5, "ProduceUbermech": 6,
 	"ProduceRoundTableMarine": 0, "ProduceGrailSentinel": 1, "ProduceQuestingMarine": 2, "ProduceAzureDragon": 3, "ProduceHearthWain": 5,
 	"ToggleGenerator": 0, "FocusAssigned": 1, "StokeBrazier": 8,
@@ -276,6 +276,13 @@ func _ready() -> void:
 		if not refusal.is_empty(): game.notify(refusal); return
 		game.pending_unit_command = "launch_balloon"
 		game.notify("Launch balloon: click where %s should set its crates down. Esc cancels." % shown.name))
+	# Found Keep (docs/ROUND3_SKY_PAVILION.md): arms a click on the map for the selected Keep's Sky-Pavilion.
+	card.get_node("FoundKeep").pressed.connect(func():
+		if not is_instance_valid(shown) or not shown.is_in_group("keeps") or shown.team != "player": return
+		var refusal: String = shown.pavilion_refusal()
+		if not refusal.is_empty(): game.notify(refusal); return
+		game.pending_unit_command = "found_keep"
+		game.notify("Found Keep: click explored land where %s's Sky-Pavilion should found a Keep. Esc cancels." % shown.name))
 	card.get_node("TrainWarhound").pressed.connect(func():
 		if is_instance_valid(shown) and shown.is_in_group("keeps") and shown.team == "player":
 			if not least_busy().request_warhound(): game.notify("Keep lacks Food, Iron or queue space."))
@@ -521,7 +528,7 @@ func update_bars(node: Node3D) -> void:
 		cargo_bar.value = carried
 		bars.get_node("CargoValue").text = "%d / %d%s" % [carried,capacity," "+str(node.cargo_kind) if carried > 0 else ""]
 		for id in ["CargoLabel","Cargo","CargoValue"]: bars.get_node(id).visible = true
-const DEPOT_PRODUCTS := {"infantry":"Deforester","truck":"Depot truck","cargo":"Cargo vehicle","train":"Train","forester_maiden":"Forester Maiden","warhound":"Warhound"}
+const DEPOT_PRODUCTS := {"infantry":"Deforester","truck":"Depot truck","cargo":"Cargo vehicle","train":"Train","forester_maiden":"Forester Maiden","warhound":"Warhound","sky_pavilion":"Sky-Pavilion"}
 ## Rendered pictures of the units and buildings (docs/HUD_RENDERS.md), made by scripts/tools/render_hud_images.gd.
 const RENDER_PATH := "res://assets/ui/renders/%s.png"
 const PORTRAIT_PATH := "res://assets/ui/portraits/%s.png"
@@ -1043,6 +1050,9 @@ func update_contents() -> void:
 				show_button("LaunchBalloon","Launch balloon")
 				var refusal: String = node.balloon_refusal()
 				explain(balloon_button,not refusal.is_empty(),refusal)
+				var pavilion: UnitStats = node.unit_stats_for_kind("sky_pavilion")
+				show_production("FoundKeep","Found Keep",pavilion.energy_cost,pavilion.iron_cost,node,pavilion.food_cost,pavilion.wood_cost,pavilion.unit_id)
+				card.get_node("FoundKeep").set_meta("detail","Charters a Sky-Pavilion (%s s prep, %d health, 1 housing) to land you have explored where a Keep could stand. It flies there and unfolds into an empty Keep with a Forester Maiden; if the site is blocked when it lands, it sets down %d Wood and %d Iron and the Maiden instead. Shot down, it drops nothing." % [_seconds(pavilion.build_seconds),pavilion.max_health,pavilion.wood_cost,pavilion.iron_cost])
 				hint_text = "Keep stores Food, Wood and Iron locally and trains Forester Maidens and Warhounds. Found forward Keeps anywhere from 50 Wood and 50 Iron on site (B → K)."
 		else:
 			commands.get_node("Title").text = "DEPOT · PRODUCTION"
@@ -1166,6 +1176,12 @@ the one shown while it can, else another that can."
 		update_bars(node)
 		update_unit_sections(node)
 		commands.get_node("Title").text = "UNIT · ORDERS"
+		# A Sky-Pavilion takes no orders either (docs/ROUND3_SKY_PAVILION.md).
+		if node.is_in_group("sky_pavilions"):
+			info.get_node("Details").text = "Flying to found a Keep\nFlies only where its Keep sent it"
+			commands.get_node("Title").text = "SKY-PAVILION"
+			hint_text = "A Sky-Pavilion flies to where its Keep sent it and unfolds into a Keep with a Forester Maiden; on a blocked site it sets down 50 Wood, 50 Iron and the Maiden. It takes no orders. Shot down, it drops nothing."
+			return
 		# An Air Balloon takes no orders (docs/AIR_BALLOON.md).
 		if node.is_in_group("air_balloons"):
 			info.get_node("Details").text = "Carrying %s
