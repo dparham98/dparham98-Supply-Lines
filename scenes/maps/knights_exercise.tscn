@@ -1,0 +1,309 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/gameplay/skirmish.gd" id="game"]
+[ext_resource type="Script" path="res://scripts/ai/enemy_player.gd" id="enemy_ai"]
+[ext_resource type="PackedScene" path="res://scenes/maps/lakes_terrain.tscn" id="terrain"]
+[ext_resource type="PackedScene" path="res://scenes/maps/lighting.tscn" id="lights"]
+[ext_resource type="PackedScene" path="res://scenes/camera/rts_camera.tscn" id="camera"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/depot.tscn" id="depot"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/infantry.tscn" id="infantry"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/cargo_vehicle.tscn" id="cargo_start"]
+[ext_resource type="PackedScene" path="res://assets/models/rails/maglev_track_straight.glb" id="ghost_straight"]
+[ext_resource type="PackedScene" path="res://assets/models/rails/maglev_track_curve.glb" id="ghost_curve"]
+[ext_resource type="PackedScene" path="res://assets/models/rails/maglev_track_fork_left.glb" id="ghost_fork_left"]
+[ext_resource type="PackedScene" path="res://assets/models/rails/maglev_track_fork_right.glb" id="ghost_fork_right"]
+[ext_resource type="PackedScene" path="res://scenes/ui/skirmish_hud.tscn" id="hud"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/tracer.tscn" id="tracer"]
+[ext_resource type="Script" path="res://scripts/economy/depot_network.gd" id="network"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/depot_truck.tscn" id="truck"]
+[ext_resource type="Resource" path="res://assets/economy/supply_rules.tres" id="supply"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/energy_generator.tscn" id="generator"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/cargo_vehicle.tscn" id="cargo"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/construction_preview.tscn" id="preview"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/barracks.tscn" id="barracks"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/tank_factory.tscn" id="factory"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/iron_mine.tscn" id="mine"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/site_mine.tscn" id="site_mine"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/rail_network.tscn" id="rails"]
+[ext_resource type="Resource" path="res://assets/economy/engineering_rules.tres" id="engineering"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/material_pile.tscn" id="pile"]
+[ext_resource type="Texture2D" path="res://assets/maps/lakes/layout.png" id="layout"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/fog_of_war.tscn" id="fog"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/keep.tscn" id="x_keep"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/chapterhouse.tscn" id="x_chapterhouse"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/forge.tscn" id="x_forge"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/dragon_yard.tscn" id="x_dragon_yard"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/house.tscn" id="x_house"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/land_mine.tscn" id="x_land_mine"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/grail_sentinel.tscn" id="x_sentinel"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/round_table_marine.tscn" id="x_round_table"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/questing_marine.tscn" id="x_questing"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/warhound.tscn" id="x_warhound"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/forester_maiden.tscn" id="x_forester"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/infantry.tscn" id="x_infantry"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/grenadier.tscn" id="x_grenadier"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/track_straight.tscn" id="x_track_straight"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/track_curve.tscn" id="x_track_curve"]
+[node name="KnightsExercise" type="Node3D" groups=["skirmish"]]
+editor_description = "Built by scripts/tools/build_playtest_exercises.gd (docs/PLAYTEST_EXERCISES.md) from Two Lakes: the Knights hold the West start with their Stage 2 and 3 buildings, track laid to a second Keep, and an enemy guard and two enemy mines to the east."
+script = ExtResource("game")
+tracer_scene = ExtResource("tracer")
+pile_scene = ExtResource("pile")
+vehicle_fuel_required = true
+testing_coal_amount = 0
+playtest_tools = true
+testing_iron_grant = false
+testing_full_tanks = false
+message = "Knights exercise: Keep, Chapterhouse, Forge, Dragon Yard and Houses at home; track runs to Keep B. Enemy guard and two hidden enemy mines to the east."
+[node name="DepotNetwork" type="Node" parent="."]
+script = ExtResource("network")
+depot_scene = ExtResource("depot")
+truck_scene = ExtResource("truck")
+generator_scene = ExtResource("generator")
+cargo_scene = ExtResource("cargo")
+barracks_scene = ExtResource("barracks")
+tank_factory_scene = ExtResource("factory")
+supply_rules = ExtResource("supply")
+mine_scene = ExtResource("mine")
+site_mine_scene = ExtResource("site_mine")
+engineering_rules = ExtResource("engineering")
+[node name="ConstructionPreview" parent="." instance=ExtResource("preview")]
+[node name="Terrain" parent="." instance=ExtResource("terrain")]
+[node name="RailNetwork" parent="." instance=ExtResource("rails")]
+[node name="Lighting" parent="." instance=ExtResource("lights")]
+[node name="FogOfWar" parent="." instance=ExtResource("fog")]
+[node name="EnemyPlayer" type="Node" parent="."]
+editor_description = "The enemy player (docs/ENEMY_AI.md): plays the East start by the same rules and fog as the player."
+script = ExtResource("enemy_ai")
+[node name="PlayerAI" type="Node" parent="."]
+process_mode = 4
+editor_description = "The same AI for the West start, switched off. A spectated match from the main menu switches it on (docs/MAIN_MENU.md)."
+script = ExtResource("enemy_ai")
+team = "player"
+opponent = "enemy"
+[node name="CameraRig" parent="." instance=ExtResource("camera")]
+process_mode = 3
+position = Vector3(-184,0,0)
+default_zoom = 72.0
+preview_zoom = 72.0
+[node name="Sites" type="Node3D" parent="."]
+editor_description = "Where each side is meant to settle. Markers: the map test measures from them, and the enemy player scouts the ones it has not seen."
+[node name="PlayerStart" type="Marker3D" parent="Sites"]
+editor_description = "Start A. The player's Depot stands here, 8 m north of the yard's centre so the home mine is about 19 m away (playtest of 2026-11-17)."
+position = Vector3(-184,0,-8)
+gizmo_extents = 6.0
+[node name="EnemyStart" type="Marker3D" parent="Sites"]
+editor_description = "Start B: start A mirrored left to right. The enemy player starts here (EnemyDepot)."
+position = Vector3(184,0,-8)
+gizmo_extents = 6.0
+[node name="StartNorthWest" type="Marker3D" parent="Sites"]
+position = Vector3(-153.5,0,-155.5)
+gizmo_extents = 6.0
+[node name="StartNorthEast" type="Marker3D" parent="Sites"]
+position = Vector3(153.5,0,-155.5)
+gizmo_extents = 6.0
+[node name="StartSouthWest" type="Marker3D" parent="Sites"]
+position = Vector3(-149.5,0,162.5)
+gizmo_extents = 6.0
+[node name="StartSouthEast" type="Marker3D" parent="Sites"]
+position = Vector3(149.5,0,162.5)
+gizmo_extents = 6.0
+[node name="Entities" type="Node3D" parent="."]
+[node name="Buildings" type="Node3D" parent="Entities"]
+[node name="EnemyDepot" parent="Entities/Buildings" instance=ExtResource("depot")]
+editor_description = "The enemy player's Depot (docs/ENEMY_AI.md): the player's mirrored to the East start, with the same stock."
+position = Vector3(184,0,-8)
+team = "enemy"
+initial_energy = 200
+initial_iron = 60
+initial_wood = 40
+initial_coal = 60
+[node name="IronMine" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+editor_description = "Starter mine on start A's iron field, so the first iron can be gathered before any can be spent."
+position = Vector3(-180.5,0,-26.5)
+[node name="IronMineB" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+editor_description = "Starter mine on start B's iron field, mirroring start A's."
+position = Vector3(180.5,0,-26.5)
+[node name="Mine01" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-83.5,0,-217.5)
+[node name="Mine02" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(82.5,0,-217.5)
+[node name="Mine03" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-150.5,0,-182.5)
+[node name="Mine04" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(149.5,0,-182.5)
+[node name="Mine05" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-18.5,0,-154.5)
+[node name="Mine06" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(18.5,0,-154.5)
+[node name="Mine07" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-130.5,0,-71.5)
+[node name="Mine08" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(129.5,0,-71.5)
+[node name="Mine09" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-46.5,0,-24.5)
+[node name="Mine10" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(46.5,0,-24.5)
+[node name="Mine11" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-10.5,0,-23.5)
+[node name="Mine12" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(9.5,0,-23.5)
+[node name="Mine13" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-109.5,0,99.5)
+[node name="Mine14" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(108.5,0,99.5)
+[node name="Mine15" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-146.5,0,135.5)
+[node name="Mine16" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(145.5,0,135.5)
+[node name="Mine17" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(-18.5,0,173.5)
+[node name="Mine18" parent="Entities/Buildings" instance=ExtResource("site_mine")]
+position = Vector3(18.5,0,173.5)
+[node name="Resources" type="Node3D" parent="Entities"]
+[node name="Units" type="Node3D" parent="Entities"]
+[node name="EnemyInfantry" parent="Entities/Units" instance=ExtResource("infantry")]
+editor_description = "The enemy player's Infantry: the player's mirrored to the East start."
+team = "enemy"
+position = Vector3(181.5,0,1.5)
+[node name="EnemyStarterTruck" parent="Entities/Units" instance=ExtResource("cargo_start")]
+editor_description = "The enemy player's Cargo truck: the player's StarterTruck mirrored to the East start."
+team = "enemy"
+position = Vector3(193.5,0,-6.5)
+[node name="Keep" parent="Entities/Buildings" instance=ExtResource("x_keep")]
+position = Vector3(-184, 0, -8)
+storage_capacity_override = 6000
+initial_food = 1500
+initial_iron = 1200
+initial_wood = 600
+initial_coal = 300
+[node name="KeepB" parent="Entities/Buildings" instance=ExtResource("x_keep")]
+position = Vector3(-219, 0, 75)
+storage_capacity_override = 2000
+initial_food = 300
+initial_iron = 400
+initial_wood = 100
+initial_coal = 120
+[node name="Chapterhouse" parent="Entities/Buildings" instance=ExtResource("x_chapterhouse")]
+position = Vector3(-193, 0, -8)
+assigned_depot_path = NodePath("../Keep")
+[node name="Forge" parent="Entities/Buildings" instance=ExtResource("x_forge")]
+position = Vector3(-175, 0, -8)
+assigned_depot_path = NodePath("../Keep")
+[node name="DragonYard" parent="Entities/Buildings" instance=ExtResource("x_dragon_yard")]
+position = Vector3(-184, 0, 1)
+assigned_depot_path = NodePath("../Keep")
+[node name="House1" parent="Entities/Buildings" instance=ExtResource("x_house")]
+position = Vector3(-190, 0, -16)
+[node name="House2" parent="Entities/Buildings" instance=ExtResource("x_house")]
+position = Vector3(-192, 0, -2)
+[node name="House3" parent="Entities/Buildings" instance=ExtResource("x_house")]
+position = Vector3(-176, 0, -2)
+[node name="Rails" type="Node3D" parent="Entities"]
+[node name="Track0" parent="Entities/Rails" instance=ExtResource("x_track_straight")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -194.4, 0, 0)
+assigned_depot_path = NodePath("../../Buildings/Keep")
+[node name="Track1" parent="Entities/Rails" instance=ExtResource("x_track_straight")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -194.4, 0, 4.8)
+assigned_depot_path = NodePath("../../Buildings/Keep")
+[node name="Track2" parent="Entities/Rails" instance=ExtResource("x_track_straight")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -194.4, 0, 9.6)
+assigned_depot_path = NodePath("../../Buildings/Keep")
+[node name="Track3" parent="Entities/Rails" instance=ExtResource("x_track_straight")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -194.4, 0, 14.4)
+assigned_depot_path = NodePath("../../Buildings/Keep")
+[node name="Track4" parent="Entities/Rails" instance=ExtResource("x_track_straight")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -194.4, 0, 19.2)
+assigned_depot_path = NodePath("../../Buildings/Keep")
+[node name="Track5" parent="Entities/Rails" instance=ExtResource("x_track_straight")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -194.4, 0, 24)
+assigned_depot_path = NodePath("../../Buildings/Keep")
+[node name="Track6" parent="Entities/Rails" instance=ExtResource("x_track_straight")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -194.4, 0, 28.8)
+assigned_depot_path = NodePath("../../Buildings/Keep")
+[node name="Track7" parent="Entities/Rails" instance=ExtResource("x_track_straight")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -194.4, 0, 33.6)
+assigned_depot_path = NodePath("../../Buildings/Keep")
+[node name="Track8" parent="Entities/Rails" instance=ExtResource("x_track_straight")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -194.4, 0, 38.4)
+assigned_depot_path = NodePath("../../Buildings/Keep")
+[node name="Track9" parent="Entities/Rails" instance=ExtResource("x_track_straight")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -194.4, 0, 43.2)
+assigned_depot_path = NodePath("../../Buildings/Keep")
+[node name="Track10" parent="Entities/Rails" instance=ExtResource("x_track_straight")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -194.4, 0, 48)
+assigned_depot_path = NodePath("../../Buildings/Keep")
+[node name="Track11" parent="Entities/Rails" instance=ExtResource("x_track_straight")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -194.4, 0, 52.8)
+assigned_depot_path = NodePath("../../Buildings/Keep")
+[node name="Track12" parent="Entities/Rails" instance=ExtResource("x_track_straight")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -194.4, 0, 57.6)
+assigned_depot_path = NodePath("../../Buildings/Keep")
+[node name="Track13" parent="Entities/Rails" instance=ExtResource("x_track_curve")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -206.4, 0, 74.4)
+assigned_depot_path = NodePath("../../Buildings/Keep")
+[node name="Sentinel1" parent="Entities/Units" instance=ExtResource("x_sentinel")]
+position = Vector3(-190, 0, 14)
+[node name="Sentinel2" parent="Entities/Units" instance=ExtResource("x_sentinel")]
+position = Vector3(-187.5, 0, 14)
+[node name="Sentinel3" parent="Entities/Units" instance=ExtResource("x_sentinel")]
+position = Vector3(-185, 0, 14)
+[node name="RoundTable1" parent="Entities/Units" instance=ExtResource("x_round_table")]
+position = Vector3(-182.5, 0, 14)
+[node name="RoundTable2" parent="Entities/Units" instance=ExtResource("x_round_table")]
+position = Vector3(-180, 0, 14)
+[node name="RoundTable3" parent="Entities/Units" instance=ExtResource("x_round_table")]
+position = Vector3(-177.5, 0, 14)
+[node name="RoundTable4" parent="Entities/Units" instance=ExtResource("x_round_table")]
+position = Vector3(-190, 0, 11.5)
+[node name="Questing1" parent="Entities/Units" instance=ExtResource("x_questing")]
+position = Vector3(-187.5, 0, 11.5)
+[node name="Questing2" parent="Entities/Units" instance=ExtResource("x_questing")]
+position = Vector3(-185, 0, 11.5)
+[node name="Warhound1" parent="Entities/Units" instance=ExtResource("x_warhound")]
+position = Vector3(-182.5, 0, 11.5)
+[node name="Warhound2" parent="Entities/Units" instance=ExtResource("x_warhound")]
+position = Vector3(-180, 0, 11.5)
+[node name="Forester1" parent="Entities/Units" instance=ExtResource("x_forester")]
+position = Vector3(-177.5, 0, 11.5)
+[node name="Forester2" parent="Entities/Units" instance=ExtResource("x_forester")]
+position = Vector3(-190, 0, 16.5)
+[node name="Forester3" parent="Entities/Units" instance=ExtResource("x_forester")]
+position = Vector3(-187.5, 0, 16.5)
+[node name="GuardInfantry1" parent="Entities/Units" instance=ExtResource("x_infantry")]
+position = Vector3(-113, 0, -8)
+team = "enemy"
+[node name="GuardInfantry2" parent="Entities/Units" instance=ExtResource("x_infantry")]
+position = Vector3(-111.5, 0, -8)
+team = "enemy"
+[node name="GuardInfantry3" parent="Entities/Units" instance=ExtResource("x_infantry")]
+position = Vector3(-110, 0, -8)
+team = "enemy"
+[node name="GuardInfantry4" parent="Entities/Units" instance=ExtResource("x_infantry")]
+position = Vector3(-108, 0, -8)
+team = "enemy"
+[node name="GuardGrenadier1" parent="Entities/Units" instance=ExtResource("x_grenadier")]
+position = Vector3(-106.5, 0, -8)
+team = "enemy"
+[node name="GuardGrenadier2" parent="Entities/Units" instance=ExtResource("x_grenadier")]
+position = Vector3(-105, 0, -8)
+team = "enemy"
+[node name="EnemyMine1" parent="Entities" instance=ExtResource("x_land_mine")]
+position = Vector3(-121, 0, -11)
+team = "enemy"
+[node name="EnemyMine2" parent="Entities" instance=ExtResource("x_land_mine")]
+position = Vector3(-121, 0, -5)
+team = "enemy"
+[node name="RailPreview" type="Node3D" parent="."]
+visible = false
+[node name="Straight" parent="RailPreview" instance=ExtResource("ghost_straight")]
+transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
+[node name="Curve" parent="RailPreview" instance=ExtResource("ghost_curve")]
+transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
+[node name="ForkLeft" parent="RailPreview" instance=ExtResource("ghost_fork_left")]
+transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
+[node name="ForkRight" parent="RailPreview" instance=ExtResource("ghost_fork_right")]
+transform = Transform3D(0.6,0,0,0,0.6,0,0,0,0.6,0,0,0)
+[node name="Interface" parent="." instance=ExtResource("hud")]
+[node name="Terrain" parent="Interface/Bottom/Body/Row/MapColumn/Map" index="0"]
+texture = ExtResource("layout")
+[editable path="Interface"]

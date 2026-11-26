@@ -1,0 +1,79 @@
+[gd_scene format=3]
+[ext_resource type="PackedScene" path="res://scenes/maps/lakes_skirmish.tscn" id="base"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/temple_of_science.tscn" id="x_temple"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/foundry.tscn" id="x_foundry"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/tank_factory.tscn" id="x_factory"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/land_mine.tscn" id="x_land_mine"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/infantry.tscn" id="x_infantry"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/grenadier.tscn" id="x_grenadier"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/tank.tscn" id="x_tank"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/motorcycle.tscn" id="x_motorcycle"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/drone.tscn" id="x_drone"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/ubermech.tscn" id="x_ubermech"]
+
+[node name="CyborgExercise" instance=ExtResource("base")]
+editor_description = "Built by scripts/tools/build_playtest_exercises.gd (docs/PLAYTEST_EXERCISES.md): the Cyborgs' Stage 2 and 3 changes on Two Lakes, with an enemy guard and two enemy mines to the east."
+message = "Cyborg exercise: Temple (Minelaying), Foundry (upgrades) and Tank Factory stand by the Depot. Enemy guard and two hidden enemy mines to the east."
+[node name="Depot" parent="Entities/Buildings"]
+storage_capacity_override = 6000
+initial_energy = 2000
+initial_iron = 1200
+initial_wood = 300
+initial_coal = 300
+[node name="TempleOfScience" parent="Entities/Buildings" instance=ExtResource("x_temple")]
+position = Vector3(-185, 0, 1)
+assigned_depot_path = NodePath("../Depot")
+[node name="Foundry" parent="Entities/Buildings" instance=ExtResource("x_foundry")]
+position = Vector3(-193, 0, -10)
+assigned_depot_path = NodePath("../Depot")
+[node name="TankFactory" parent="Entities/Buildings" instance=ExtResource("x_factory")]
+position = Vector3(-193, 0, -3)
+assigned_depot_path = NodePath("../Depot")
+[node name="Motorcycle1" parent="Entities/Units" instance=ExtResource("x_motorcycle")]
+position = Vector3(-191.5, 0, 14)
+[node name="Motorcycle2" parent="Entities/Units" instance=ExtResource("x_motorcycle")]
+position = Vector3(-188.5, 0, 14)
+[node name="Drone1" parent="Entities/Units" instance=ExtResource("x_drone")]
+position = Vector3(-185.5, 0, 14)
+[node name="Ubermech1" parent="Entities/Units" instance=ExtResource("x_ubermech")]
+position = Vector3(-182.5, 0, 14)
+[node name="Tank1" parent="Entities/Units" instance=ExtResource("x_tank")]
+position = Vector3(-179.5, 0, 14)
+[node name="Tank2" parent="Entities/Units" instance=ExtResource("x_tank")]
+position = Vector3(-176.5, 0, 14)
+[node name="Grenadier1" parent="Entities/Units" instance=ExtResource("x_grenadier")]
+position = Vector3(-191.5, 0, 11)
+[node name="Grenadier2" parent="Entities/Units" instance=ExtResource("x_grenadier")]
+position = Vector3(-188.5, 0, 11)
+[node name="Infantry1" parent="Entities/Units" instance=ExtResource("x_infantry")]
+position = Vector3(-185.5, 0, 11)
+[node name="Infantry2" parent="Entities/Units" instance=ExtResource("x_infantry")]
+position = Vector3(-182.5, 0, 11)
+[node name="Infantry3" parent="Entities/Units" instance=ExtResource("x_infantry")]
+position = Vector3(-179.5, 0, 11)
+[node name="Infantry4" parent="Entities/Units" instance=ExtResource("x_infantry")]
+position = Vector3(-176.5, 0, 11)
+[node name="GuardInfantry1" parent="Entities/Units" instance=ExtResource("x_infantry")]
+position = Vector3(-113, 0, -8)
+team = "enemy"
+[node name="GuardInfantry2" parent="Entities/Units" instance=ExtResource("x_infantry")]
+position = Vector3(-111.5, 0, -8)
+team = "enemy"
+[node name="GuardInfantry3" parent="Entities/Units" instance=ExtResource("x_infantry")]
+position = Vector3(-110, 0, -8)
+team = "enemy"
+[node name="GuardInfantry4" parent="Entities/Units" instance=ExtResource("x_infantry")]
+position = Vector3(-108, 0, -8)
+team = "enemy"
+[node name="GuardGrenadier1" parent="Entities/Units" instance=ExtResource("x_grenadier")]
+position = Vector3(-106.5, 0, -8)
+team = "enemy"
+[node name="GuardGrenadier2" parent="Entities/Units" instance=ExtResource("x_grenadier")]
+position = Vector3(-105, 0, -8)
+team = "enemy"
+[node name="EnemyMine1" parent="Entities" instance=ExtResource("x_land_mine")]
+position = Vector3(-121, 0, -11)
+team = "enemy"
+[node name="EnemyMine2" parent="Entities" instance=ExtResource("x_land_mine")]
+position = Vector3(-121, 0, -5)
+team = "enemy"
