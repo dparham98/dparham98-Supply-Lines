@@ -69,6 +69,14 @@
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_generator_fuel_wood.png" id="card_generator_fuel_wood"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_generator_fuel_coal.png" id="card_generator_fuel_coal"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_generator_fuel_either.png" id="card_generator_fuel_either"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_upgrade_infantry_weapons.png" id="card_upgrade_infantry_weapons"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_upgrade_infantry_armour.png" id="card_upgrade_infantry_armour"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_upgrade_vehicle_weapons.png" id="card_upgrade_vehicle_weapons"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_upgrade_vehicle_armour.png" id="card_upgrade_vehicle_armour"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_upgrade_arms.png" id="card_upgrade_arms"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_upgrade_mail.png" id="card_upgrade_mail"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_foundry.png" id="card_build_foundry"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_forge.png" id="card_build_forge"]
 [sub_resource type="StyleBoxFlat" id="pause_panel"]
 content_margin_left = 28.0
 content_margin_top = 22.0
@@ -3772,7 +3780,7 @@ shortcut = SubResource("shortcut_upgrade_1")
 layout_mode = 0
 custom_minimum_size = Vector2(46,46)
 text = ""
-icon = ExtResource("card_attack")
+icon = ExtResource("card_upgrade_infantry_weapons")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Upgrade1"]
@@ -3796,7 +3804,7 @@ shortcut = SubResource("shortcut_upgrade_2")
 layout_mode = 0
 custom_minimum_size = Vector2(46,46)
 text = ""
-icon = ExtResource("card_repair")
+icon = ExtResource("card_upgrade_infantry_armour")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Upgrade2"]
@@ -3820,7 +3828,7 @@ shortcut = SubResource("shortcut_upgrade_3")
 layout_mode = 0
 custom_minimum_size = Vector2(46,46)
 text = ""
-icon = ExtResource("card_attack")
+icon = ExtResource("card_upgrade_vehicle_weapons")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Upgrade3"]
@@ -3844,7 +3852,7 @@ shortcut = SubResource("shortcut_upgrade_4")
 layout_mode = 0
 custom_minimum_size = Vector2(46,46)
 text = ""
-icon = ExtResource("card_repair")
+icon = ExtResource("card_upgrade_vehicle_armour")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Upgrade4"]
@@ -4617,7 +4625,7 @@ shortcut = SubResource("shortcut_build_foundry")
 layout_mode = 2
 text = ""
 custom_minimum_size = Vector2(46,46)
-icon = ExtResource("card_build_temple")
+icon = ExtResource("card_build_foundry")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/Foundry"]
@@ -4814,7 +4822,7 @@ shortcut = SubResource("shortcut_build_forge")
 layout_mode = 2
 text = ""
 custom_minimum_size = Vector2(46,46)
-icon = ExtResource("card_build_barracks")
+icon = ExtResource("card_build_forge")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/BuildMenu/Actions/Forge"]

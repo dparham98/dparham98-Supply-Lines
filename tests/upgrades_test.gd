@@ -59,6 +59,8 @@ func run() -> void:
 	if not check(foundry.cancel_research() and depot.energy == energy and depot.iron == iron,"Cancel should refund the Depot"): return
 	foundry.request_research(&"infantry_weapons_1")
 	foundry._process(59.0)
+	# The model plays its Research loop while an upgrade is under way (docs/FOUNDRY_MODEL.md).
+	if not check(foundry.get_node("Visuals/Model").researching(),"The Foundry model should play Research while researching"): return
 	if not check(Upgrades.level(foundry,"player",Upgrades.INFANTRY_WEAPONS) == 0,"Level 1 takes 60 s"): return
 	foundry._process(1.5)
 	if not check(Upgrades.level(foundry,"player",Upgrades.INFANTRY_WEAPONS) == 1 and foundry.research_blocker(&"infantry_weapons_2").is_empty(),"After 60 s level 1 is done and level 2 opens"): return
@@ -71,6 +73,11 @@ func run() -> void:
 	for n in range(1,5):
 		if not check(hud.desired_buttons.has("Upgrade%d" % n),"The Foundry card should show Upgrade%d: %s" % [n,hud.desired_buttons]): return
 	if not check(hud.card.get_node("Upgrade1").get_meta("research") == &"infantry_weapons_2","The Infantry Weapons tile should offer level 2"): return
+	# Each line shows its own card (docs/FOUNDRY_MODEL.md), and the Foundry its own icon.
+	for n in range(1,5):
+		var card_art := str(hud.card.get_node("Upgrade%d" % n).icon.resource_path).get_file()
+		if not check(card_art == "sl_upgrade_%s.png" % ["infantry_weapons","infantry_armour","vehicle_weapons","vehicle_armour"][n-1],"Upgrade%d has the wrong card: %s" % [n,card_art]): return
+	if not check(hud.icon_name(foundry) == "foundry","The Foundry should use its own icon, not %s" % hud.icon_name(foundry)): return
 	game.selected_building = null
 	# Attack: +10% of base a level, at least 1. Infantry lines leave vehicles alone, and the other way round.
 	var deforester := spawn("infantry","player",depot.global_position+Vector3(6,0,6))
@@ -115,6 +122,9 @@ func run() -> void:
 	game.get_node("Interface")._process(0)
 	var tiles: Array = game.get_node("Interface").desired_buttons
 	if not check(tiles.has("Upgrade1") and tiles.has("Upgrade2") and not tiles.has("Upgrade3"),"The Forge card should show two upgrade tiles: %s" % [tiles]): return
+	var forge_hud = game.get_node("Interface")
+	if not check(str(forge_hud.card.get_node("Upgrade1").icon.resource_path).get_file() == "sl_upgrade_arms.png" and str(forge_hud.card.get_node("Upgrade2").icon.resource_path).get_file() == "sl_upgrade_mail.png","The Forge's tiles should show the Arms and Mail cards"): return
+	if not check(forge_hud.icon_name(forge) == "forge","The Forge should use its own icon"): return
 	game.selected_building = null
 	var marine := spawn("round_table_marine","player",keep.global_position+Vector3(6,0,6))
 	if not check(Upgrades.with_attack(marine,30) == 33,"Arms I: a Marine's 30 becomes 33"): return

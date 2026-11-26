@@ -26,3 +26,6 @@ desktop.ini
 
 # Headless check logs
 /ci-logs/
+
+# Python bytecode from the Blender build scripts
+__pycache__/
