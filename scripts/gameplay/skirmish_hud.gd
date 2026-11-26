@@ -1255,7 +1255,7 @@ func show_upgrade_building(node: Node3D) -> void:
 		var entry := plain[i]
 		var id := "Upgrade%d" % (lines.size()+i+1)
 		var button: Button = card.get_node(id)
-		set_card(button,"research_mining_trains")
+		set_card(button,"research_"+String(entry.research_id))
 		if node.is_done(entry.research_id):
 			desired_buttons.append(id)
 			if button.has_meta("research"): button.remove_meta("research")

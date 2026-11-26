@@ -48,6 +48,8 @@
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_unload_crates.png" id="card_unload_crates"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_trips_once.png" id="card_trips_once"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_cancel_target_pick.png" id="card_cancel_target_pick"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_mist.png" id="card_mist"]
+[ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_slow.png" id="card_slow"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_depot.png" id="card_build_depot"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_generator.png" id="card_build_generator"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_cards/sl_build_barracks.png" id="card_build_barracks"]
@@ -3371,7 +3373,7 @@ shortcut = SubResource("shortcut_command_mist")
 layout_mode = 0
 custom_minimum_size = Vector2(46,46)
 text = ""
-icon = ExtResource("card_cancel_target_pick")
+icon = ExtResource("card_mist")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Mist"]
@@ -3395,7 +3397,7 @@ shortcut = SubResource("shortcut_command_slow")
 layout_mode = 0
 custom_minimum_size = Vector2(46,46)
 text = ""
-icon = ExtResource("card_stop")
+icon = ExtResource("card_slow")
 expand_icon = true
 icon_alignment = 1
 [node name="Key" type="Label" parent="Bottom/Body/Row/Commands/Main/Slow"]

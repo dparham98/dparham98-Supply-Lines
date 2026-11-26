@@ -1,26 +1,42 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/gameplay/mist_cloud.gd" id="mist"]
+[ext_resource type="Script" path="res://scripts/components/spell_look.gd" id="look"]
+[ext_resource type="Shader" path="res://assets/shaders/holy_mist.gdshader" id="shader"]
 
-[sub_resource type="StandardMaterial3D" id="haze"]
-transparency = 1
-shading_mode = 0
-albedo_color = Color(0.82,0.88,0.92,0.42)
-cull_mode = 2
+[sub_resource type="ShaderMaterial" id="haze"]
+render_priority = 1
+shader = ExtResource("shader")
+shader_parameter/density = 0.34
 
-[sub_resource type="SphereMesh" id="cloud"]
+[sub_resource type="PlaneMesh" id="layer"]
 material = SubResource("haze")
-radius = 1.0
-height = 1.0
-radial_segments = 24
-rings = 8
+size = Vector2(2, 2)
 
 [node name="MistCloud" type="Node3D"]
 script = ExtResource("mist")
 
 [node name="Visuals" type="Node3D" parent="."]
+script = ExtResource("look")
+in_seconds = 0.5
+out_seconds = 1.0
+grow_from = 0.55
+grow_height = 0.3
 
-[node name="Cloud" type="MeshInstance3D" parent="Visuals"]
-transform = Transform3D(8,0,0,0,3,0,0,0,8,0,0.8,0)
+[node name="Low" type="MeshInstance3D" parent="Visuals"]
+transform = Transform3D(1.04, 0, 0, 0, 1, 0, 0, 0, 1.04, 0, 0.3, 0)
 cast_shadow = 0
-mesh = SubResource("cloud")
+instance_shader_parameters/layer_seed = 0.0
+mesh = SubResource("layer")
+
+[node name="Middle" type="MeshInstance3D" parent="Visuals"]
+transform = Transform3D(0.94, 0, 0, 0, 1, 0, 0, 0, 0.94, 0, 0.9, 0)
+cast_shadow = 0
+instance_shader_parameters/layer_seed = 0.37
+mesh = SubResource("layer")
+
+[node name="High" type="MeshInstance3D" parent="Visuals"]
+transform = Transform3D(0.8, 0, 0, 0, 1, 0, 0, 0, 0.8, 0, 1.6, 0)
+cast_shadow = 0
+instance_shader_parameters/layer_seed = 0.71
+mesh = SubResource("layer")
