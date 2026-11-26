@@ -38,11 +38,17 @@ const ENTRIES := {
 	"land_mine": ["res://scenes/gameplay/land_mine.tscn","","lay_mine",20.0,1.0],
 	"derailer_mines": ["res://scenes/gameplay/motorcycle.tscn","","research_minelaying",235.0,1.0],
 	"derailer_buy_mine": ["res://scenes/gameplay/motorcycle.tscn","","buy_mine",215.0,1.0],
+	"foundry": ["res://scenes/gameplay/foundry.tscn","","build_foundry",215.0,1.0], # docs/FOUNDRY_MODEL.md; door +Z
+	"forge": ["res://scenes/gameplay/forge.tscn","","build_forge",215.0,1.0], # docs/FORGE_MODEL.md; open front +Z
 }
 ## Entries shot only for their cards: no selection icon or portrait is written for them.
 const CARD_ONLY := ["derailer_mines","derailer_buy_mine"]
 ## Calls made on an entry's model root before it is shot: method name and arguments.
 const POSES := {"land_mine": ["set_age",[1.6,3.0]],"derailer_mines": ["set_mines",[2]],"derailer_buy_mine": ["pose_mine_drop",[1,0.05]]}
+## Cards drawn in Blender (Blender/UI/UpgradeCards/render_upgrade_cards.py) and only framed here: the Foundry's
+## and Forge's upgrade lines (docs/UPGRADES.md). Asked for with the id "upgrade_cards".
+const ART_CARDS := ["upgrade_infantry_weapons","upgrade_infantry_armour","upgrade_vehicle_weapons","upgrade_vehicle_armour","upgrade_arms","upgrade_mail"]
+const ART_CARD_PATH := "res://Blender/UI/UpgradeCards/renders/%s.png"
 ## Entries framed on one part of the model rather than the whole: the node's name and how far to widen the view
 ## around it (a share of its size).
 const FOCUS := {"derailer_buy_mine": ["mine_slot_1",0.2]}
@@ -92,6 +98,12 @@ func run() -> void:
 	for id in ENTRIES:
 		if not only.is_empty() and not only.has(id): continue
 		await render(id,ENTRIES[id])
+	if only.is_empty() or only.has("upgrade_cards"):
+		for card in ART_CARDS:
+			var art := Image.load_from_file(ProjectSettings.globalize_path(ART_CARD_PATH % card))
+			art.convert(Image.FORMAT_RGBA8)
+			card_image("res://assets/ui/command_cards/sl_%s.png" % card,trimmed(art,ICON_SIZE))
+			print("framed ",card)
 	print("HUD_RENDERS_DONE")
 	quit()
 ## The entry's Visuals, cut from its gameplay scene so the gameplay script never runs.

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ResearchStats" format=3]
+[ext_resource type="Script" path="res://scripts/research/research_stats.gd" id="stats"]
+[resource]
+script = ExtResource("stats")
+research_id = &"infantry_weapons_3"
+display_name = "Infantry Weapons III"
+energy_cost = 200
+iron_cost = 350
+seconds = 120.0
+line = &"infantry_weapons"
+level = 3
+summary = "Level 3 of 3: +10% of base weapon damage (at least 1) for infantry, 3 in all. Holds for your whole side. Needs Infantry Weapons II."

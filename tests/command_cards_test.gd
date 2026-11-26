@@ -34,9 +34,10 @@ func run() -> void:
 	# 52 since the Temple of Science (docs/TEMPLE_OF_SCIENCE.md): its Build tile, its Research card and the train's Mine iron.
 	# 62 with the Arthurian Knights (docs/ARTHURIAN_KNIGHTS.md): Keep and Chapterhouse build tiles, the Food crate, Heal,
 	# the Keep's two units and the Chapterhouse's four. 64 with the Farm and House build tiles (docs/KNIGHTS_ECONOMY.md). 65 with the Keep's Launch balloon (docs/AIR_BALLOON.md). 67 with the Derailer's Lay mine and the Temple's Minelaying (docs/MINES.md). 68 with Buy mine.
-	if not check(tiles == 68,"Expected 68 card tiles, found %d" % tiles): return
+	# 74 with the Foundry and Forge build tiles and the four upgrade-line tiles (docs/UPGRADES.md).
+	if not check(tiles == 74,"Expected 74 card tiles, found %d" % tiles): return
 	# Commands with their own art.
-	var names := {"Return":"sl_deliver.png","DropMaterials":"sl_drop.png","DeployTruck":"sl_deploy_depot.png","ProduceUbermech":"sl_produce_ubermech.png","PrintTruck":"sl_produce_truck.png","Derail":"sl_derail.png","Research":"sl_research_mining_trains.png","MineIron":"sl_mine_iron.png","LayMine":"sl_lay_mine.png","BuyMine":"sl_buy_mine.png","ResearchMines":"sl_research_minelaying.png"}
+	var names := {"Return":"sl_deliver.png","DropMaterials":"sl_drop.png","DeployTruck":"sl_deploy_depot.png","ProduceUbermech":"sl_produce_ubermech.png","PrintTruck":"sl_produce_truck.png","Derail":"sl_derail.png","Research":"sl_research_mining_trains.png","MineIron":"sl_mine_iron.png","LayMine":"sl_lay_mine.png","BuyMine":"sl_buy_mine.png","ResearchMines":"sl_research_minelaying.png","Upgrade1":"sl_upgrade_infantry_weapons.png","Upgrade2":"sl_upgrade_infantry_armour.png","Upgrade3":"sl_upgrade_vehicle_weapons.png","Upgrade4":"sl_upgrade_vehicle_armour.png"}
 	for id in names:
 		if not check(art(hud.card.get_node(id)) == names[id],"%s has the wrong card" % id): return
 	# Cargo: supplies, refuelling and trips each show the art for their state.

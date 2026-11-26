@@ -1,0 +1,45 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/buildings/temple_of_science.gd" id="script"]
+[ext_resource type="Resource" path="res://assets/buildings/foundry.tres" id="stats"]
+[ext_resource type="Script" path="res://scripts/research/research_stats.gd" id="research_stats"]
+[ext_resource type="Resource" path="res://assets/research/upgrades/infantry_weapons_1.tres" id="infantry_weapons_1"]
+[ext_resource type="Resource" path="res://assets/research/upgrades/infantry_weapons_2.tres" id="infantry_weapons_2"]
+[ext_resource type="Resource" path="res://assets/research/upgrades/infantry_weapons_3.tres" id="infantry_weapons_3"]
+[ext_resource type="Resource" path="res://assets/research/upgrades/infantry_armour_1.tres" id="infantry_armour_1"]
+[ext_resource type="Resource" path="res://assets/research/upgrades/infantry_armour_2.tres" id="infantry_armour_2"]
+[ext_resource type="Resource" path="res://assets/research/upgrades/infantry_armour_3.tres" id="infantry_armour_3"]
+[ext_resource type="Resource" path="res://assets/research/upgrades/vehicle_weapons_1.tres" id="vehicle_weapons_1"]
+[ext_resource type="Resource" path="res://assets/research/upgrades/vehicle_weapons_2.tres" id="vehicle_weapons_2"]
+[ext_resource type="Resource" path="res://assets/research/upgrades/vehicle_weapons_3.tres" id="vehicle_weapons_3"]
+[ext_resource type="Resource" path="res://assets/research/upgrades/vehicle_armour_1.tres" id="vehicle_armour_1"]
+[ext_resource type="Resource" path="res://assets/research/upgrades/vehicle_armour_2.tres" id="vehicle_armour_2"]
+[ext_resource type="Resource" path="res://assets/research/upgrades/vehicle_armour_3.tres" id="vehicle_armour_3"]
+[ext_resource type="Script" path="res://scripts/components/visual_asset_slot.gd" id="slot"]
+[ext_resource type="PackedScene" path="res://scenes/models/foundry_model.tscn" id="model"]
+[ext_resource type="Material" path="res://assets/materials/units/team_marker.tres" id="team_marker"]
+[sub_resource type="PlaneMesh" id="team_marker_mesh"]
+material = ExtResource("team_marker")
+size = Vector2(8.8, 8.8)
+
+[node name="Foundry" type="Node3D"]
+script = ExtResource("script")
+stats = ExtResource("stats")
+research = Array[ExtResource("research_stats")]([ExtResource("infantry_weapons_1"), ExtResource("infantry_weapons_2"), ExtResource("infantry_weapons_3"), ExtResource("infantry_armour_1"), ExtResource("infantry_armour_2"), ExtResource("infantry_armour_3"), ExtResource("vehicle_weapons_1"), ExtResource("vehicle_weapons_2"), ExtResource("vehicle_weapons_3"), ExtResource("vehicle_armour_1"), ExtResource("vehicle_armour_2"), ExtResource("vehicle_armour_3")])
+[node name="Visuals" type="Node3D" parent="."]
+script = ExtResource("slot")
+model_scene = ExtResource("model")
+[node name="Model" parent="Visuals" instance=ExtResource("model")]
+[node name="TeamMarker" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 0.06, 0)
+visible = false
+cast_shadow = 0
+mesh = SubResource("team_marker_mesh")
+instance_shader_parameters/half_size = Vector2(4.4, 4.4)
+metadata/not_selectable = true
+[node name="Status" type="Label3D" parent="."]
+position = Vector3(0,8,0)
+billboard = 1
+no_depth_test = true
+font_size = 30
+pixel_size = 0.035
+text = "Foundry"
