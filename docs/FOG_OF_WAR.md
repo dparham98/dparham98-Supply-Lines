@@ -7,7 +7,7 @@ Asked for on 2026-11-19, together with an enemy AI player, which is to follow th
 ## Rules
 
 - **Sight.** Each side sees round its own units and buildings.
-  - A unit sees as far as its `vision` (`assets/units/*.tres`): Infantry 30 m, Motorcycle 30 m, Grenadier 32 m, Ubermech 36 m, Scout 50 m, Tank 52 m, Drone 60 m.
+  - A unit sees as far as its `vision` (`assets/units/*.tres`). Since Round 3 (`docs/ROUND3_UNIT_STATS.md`): Grenadier 14 m, Questing Marine 15 m, Tank 18 m, Round Table Marine 19 m, Deforester 20 m, Grail Sentinel 22 m, Ubermech and Forester 24 m, Derailer 26 m, Dragon 28 m, Drone 32 m, Scout 42 m, Warhound 44 m.
   - Units with no vision of their own, such as trucks and trains, see 20 m.
   - A Depot sees 36 m, other buildings 24 m, and a build site 12 m.
   - These are exports on `scenes/gameplay/fog_of_war.tscn`.
@@ -17,7 +17,8 @@ Asked for on 2026-11-19, together with an enemy AI player, which is to follow th
   - Their shots are hidden too, unless they leave or land in your sight.
 - **What each side has seen** stays recorded (`explored_by`). The enemy player sees by these rules ([ENEMY_AI.md](ENEMY_AI.md)).
 - **Updates** run every 0.2 s on cells 2 m across.
-- **Combat is unchanged.** Units still fire at whatever is in range. Every unit sees further than it shoots, so nothing fires from out of sight.
+- **Combat needs sight.** A unit fires only at what its side sees (`docs/SEE_TO_SHOOT.md`). The Grenadier and Questing Marine shoot further than they see, so they need a spotter.
+- **Muzzle flash.** A unit that fires shows to the other side for 1.2 s in a 3 m disc where it stood (`muzzle_reveal_seconds`, `muzzle_reveal_radius`; `reveal_shot`).
 
 ## How it works
 

@@ -20,7 +20,7 @@ func at(unit: Node3D, point: Vector3) -> void:
 	unit.global_position = point
 func run() -> void:
 	var mech_stats: UnitStats = load("res://assets/units/ubermech.tres")
-	if not check(mech_stats.validation_errors().is_empty() and mech_stats.max_health == 360 and mech_stats.movement_speed == 4.0 and mech_stats.vision == 30.0 and mech_stats.armoured,"The Ubermech has 360 health, speed 4, sight 30 and is armoured"): return
+	if not check(mech_stats.validation_errors().is_empty() and mech_stats.max_health == 360 and mech_stats.movement_speed == 4.0 and mech_stats.vision == 24.0 and mech_stats.armoured,"The Ubermech has 360 health, speed 4, sight 24 and is armoured"): return
 	if not check(mech_stats.energy_cost == 250 and mech_stats.iron_cost == 60,"The Ubermech still costs 250 E / 60 I"): return
 	game = load("res://scenes/maps/resource_skirmish.tscn").instantiate()
 	root.add_child(game)
@@ -38,15 +38,15 @@ func run() -> void:
 	await process_frame
 	# Classes.
 	var C := CombatResolver
-	if not check(C.target_class(mech) == C.ARMOURED and C.target_class(tank) == C.ARMOURED and C.target_class(dragon) == C.ARMOURED and C.target_class(truck) == C.ARMOURED,"The Ubermech, Tank, Azure Dragon and trucks are armoured"): return
+	if not check(C.target_class(mech) == C.ARMOURED and C.target_class(tank) == C.ARMOURED and C.target_class(dragon) == C.LIGHT and C.target_class(truck) == C.ARMOURED,"The Ubermech, Tank and trucks are armoured; the Azure Dragon is a light giant (Round 3)"): return
 	if not check(C.target_class(infantry) == C.LIGHT and C.target_class(drone) == C.FLYER and C.target_class(game.depot) == C.BUILDING,"Infantry is light, the Drone a flyer, the Depot a building"): return
 	var train_scene: PackedScene = load("res://scenes/gameplay/train.tscn")
 	var train = train_scene.instantiate()
 	if not check(train.armoured,"Trains are armoured"): return
 	train.free()
-	# Heavy damage by the flag: a Grenadier's 40 now lands on the Ubermech and the Dragon, as on the Tank.
+	# Heavy damage by the flag: a Grenadier's 40 lands on the Ubermech, as on the Tank, but not on the light Dragon.
 	var grenadier := spawn("grenadier","enemy",base+Vector3(0,0,10))
-	if not check(C.damage_for(grenadier,mech) == 40 and C.damage_for(grenadier,dragon) == 40 and C.damage_for(grenadier,infantry) == 20,"Heavy damage should follow the armour flag"): return
+	if not check(C.damage_for(grenadier,mech) == 40 and C.damage_for(grenadier,dragon) == 20 and C.damage_for(grenadier,infantry) == 20,"Heavy damage should follow the armour flag"): return
 	# Weapons by class and range.
 	if not check(mech.weapon_for(infantry) == 0 and C.damage_for(mech,infantry,0) == 40 and is_equal_approx(C.interval_for(mech,infantry,0),1.5),"The laser: 40 every 1.5 s at a light unit within 16 m"): return
 	if not check(mech.weapon_for(drone) == 0 and C.damage_for(mech,drone,0) == 40,"The laser fires at flyers too"): return

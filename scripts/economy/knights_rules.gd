@@ -14,6 +14,8 @@ extends Resource
 @export var farmers_permanent := true
 ## A Farm yields nothing while an enemy ground unit stands on its field. Seconds between checks.
 @export_range(0.05,5.0,0.05) var farm_raid_check_seconds := 0.25
+## While its Farm is raided, a Farmer shelters within this many metres of the Keep covering the Farm (Round 3 handoff).
+@export_range(1.0,30.0,0.5) var farm_raid_shelter_distance := 6.0
 @export_group("House")
 @export_range(0,10000) var house_wood_cost := 40
 @export var house_footprint := Vector2i(4,4)

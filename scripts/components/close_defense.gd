@@ -98,4 +98,6 @@ func _process(delta: float) -> void:
 		_flash.play()
 	var bullet: Node3D = _actor.game.show_shot(origin, end, _actor.team, BULLET)
 	bullet.arm(_actor, victim, damage)
+	var fog := get_tree().get_first_node_in_group("fog_of_war")
+	if fog != null: fog.reveal_shot(_actor)
 	fired.emit(victim, origin, end)

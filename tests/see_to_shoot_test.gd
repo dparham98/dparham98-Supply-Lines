@@ -30,7 +30,7 @@ func spawn(id: String, point: Vector3, team: String) -> Node3D:
 func run() -> void:
 	# The Tank's numbers (docs/BALANCE_IMPLEMENTATION_HANDOFF.md, item 3).
 	var tank_stats: UnitStats = load("res://assets/units/tank.tres")
-	if not check(tank_stats.vision == 20.0 and tank_stats.movement_speed == 5.0 and tank_stats.attack_interval == 1.5 and tank_stats.damage == 12,"Tank sight 20, speed 5, 12 every 1.5 s"): return
+	if not check(tank_stats.vision == 18.0 and tank_stats.movement_speed == 5.0 and tank_stats.attack_interval == 1.5 and tank_stats.damage == 12,"Tank sight 18 (Round 3), speed 5, 12 every 1.5 s"): return
 	if not check(tank_stats.splash_radius == 2.0 and tank_stats.splash_share == 0.5,"Tank splash 2 m at half share"): return
 	if not check(tank_stats.attack_range == 30.0 and tank_stats.min_attack_range == 10.0 and tank_stats.heavy_target_damage == 50 and tank_stats.heavy_target_interval == 3.0 and tank_stats.fire_while_moving,"Tank range, heavy attack and moving fire unchanged"): return
 	if not check(tank_stats.energy_cost == 150 and tank_stats.iron_cost == 35,"Tank price unchanged"): return

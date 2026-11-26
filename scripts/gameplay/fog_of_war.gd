@@ -14,6 +14,10 @@ extends Node3D
 @export_range(0,200,1) var site_vision := 12.0
 ## The side whose view is drawn. Any other name (a spectator, docs/MAIN_MENU.md) sees everything.
 @export var viewer := "player"
+## Muzzle flash (Round 3 handoff): a unit that fires shows the ground it stands on to the other side for
+## `muzzle_reveal_seconds`, `muzzle_reveal_radius` m round it, so a shooter firing from fog gives itself away.
+@export_range(0,10,0.1) var muzzle_reveal_seconds := 1.2
+@export_range(0,20,0.5) var muzzle_reveal_radius := 3.0
 const TEAMS := ["player","enemy"]
 const HIDDEN_GROUPS := ["units","selectable_buildings","supply_crates","construction_plans","rails"]
 var _size := Vector2i.ZERO
@@ -25,6 +29,9 @@ var _texture: ImageTexture
 ## No fog anywhere, for a viewer who is on neither side.
 var _clear: Image
 var _left := 0.0
+## Seconds since the fog started, and the shots still showing: {team (who sees), point, until}.
+var _clock := 0.0
+var _reveals: Array = []
 @onready var ground = get_tree().get_first_node_in_group("terrain_grid")
 @onready var overlay: MeshInstance3D = $Overlay
 func _ready() -> void:
@@ -44,6 +51,7 @@ func _ready() -> void:
 	material.set_shader_parameter("map_rect",Vector4(_origin.x,_origin.y,_size.x*cell_metres,_size.y*cell_metres))
 	update_now()
 func _process(delta: float) -> void:
+	_clock += delta
 	_left -= delta
 	if _left > 0.0: return
 	_left = interval
@@ -57,12 +65,24 @@ func update_now() -> void:
 			if not team in TEAMS or node.is_queued_for_deletion(): continue
 			if node.get("health") != null and node.health <= 0: continue
 			_stamp(team,node.global_position,sight(node))
+	_reveals = _reveals.filter(func(entry): return entry.until > _clock)
+	for entry in _reveals: _stamp(entry.team,entry.point,muzzle_reveal_radius)
 	_texture.update(_shade.get(viewer,_clear))
 	for group in HIDDEN_GROUPS:
 		for node in get_tree().get_nodes_in_group(group):
 			var team = _team_of(node)
 			if team == null or team == viewer or team == "neutral": continue
 			node.visible = visible_to(viewer,node.global_position) and not MistCloud.hides(node,viewer)
+## `shooter` fired: the other side sees its spot from now for `muzzle_reveal_seconds`.
+func reveal_shot(shooter: Node3D) -> void:
+	if muzzle_reveal_seconds <= 0.0 or not is_instance_valid(shooter): return
+	for team in TEAMS:
+		if team == shooter.get("team"): continue
+		_reveals.append({team = team, point = shooter.global_position, until = _clock+muzzle_reveal_seconds})
+		_stamp(team,shooter.global_position,muzzle_reveal_radius)
+## Moves the fog's clock on without drawing, for headless checks that step it by hand.
+func advance(seconds: float) -> void:
+	_clock += seconds
 ## How far `node` sees, in metres.
 func sight(node: Node3D) -> float:
 	if node.is_in_group("construction_plans"): return site_vision

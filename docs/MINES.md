@@ -50,7 +50,7 @@ Detectors (`scripts/combat/detection.gd`):
 | --- | --- |
 | Depot, Keep | its own range (`SupplySource.radius`, 26.25 m) |
 | Drone | 20 m (`detect_range` in `assets/units/drone.tres`) |
-| Warhound | 10 m (`detect_range` in `assets/units/warhound.tres`) |
+| Warhound | 15 m (`detect_range` in `assets/units/warhound.tres`; 10 until Round 3) |
 
 Nothing else detects. Scouts and Sentinels don't (decided in the handoff).
 

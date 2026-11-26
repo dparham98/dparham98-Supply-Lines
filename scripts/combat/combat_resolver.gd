@@ -30,6 +30,12 @@ static func damage_for(attacker: Node3D, target: Node3D, weapon := -1) -> int:
 	var stats: UnitStats = attacker.unit_stats
 	if stats != null and _weapon_of(attacker,weapon) == 1: return stats.second_damage
 	return stats.heavy_target_damage if stats != null and stats.heavy_target_damage >= 0 and is_heavy(target) else attacker.attack_damage
+## What a level of attack upgrades adds to the hit `damage_for` gives: the weapon's own bonus from UnitStats.
+static func upgrade_bonus(attacker: Node3D, target: Node3D, weapon := -1) -> int:
+	var stats: UnitStats = attacker.unit_stats
+	if stats == null: return 1
+	if _weapon_of(attacker,weapon) == 1: return stats.second_upgrade_bonus
+	return stats.heavy_upgrade_bonus if stats.heavy_target_damage >= 0 and is_heavy(target) else stats.attack_upgrade_bonus
 static func interval_for(attacker: Node3D, target: Node3D, weapon := -1) -> float:
 	var stats: UnitStats = attacker.unit_stats
 	if stats != null and _weapon_of(attacker,weapon) == 1: return stats.second_interval
@@ -48,11 +54,13 @@ static func strike(attacker: Node3D, primary: Node3D, forced := false) -> void:
 		for target in targets(attacker):
 			if target != primary and target.global_position.distance_to(primary.global_position) <= radius: victims.append(target)
 	for victim in victims:
-		if can_hit(attacker,victim) or (forced and victim == primary and can_force(attacker,victim)): victim.take_damage(splash_damage(attacker,victim,primary))
+		if can_hit(attacker,victim) or (forced and victim == primary and can_force(attacker,victim)):
+			if victim.has_method("provoked_by"): victim.provoked_by(attacker)
+			victim.take_damage(splash_damage(attacker,victim,primary))
 ## Damage to `victim`: the full hit for the target aimed at, the attacker's splash share of it for other units.
 static func splash_damage(attacker: Node3D, victim: Node3D, primary) -> int:
 	# Attack upgrades add to the weapon's base damage (docs/UPGRADES.md).
-	var damage := Upgrades.with_attack(attacker,damage_for(attacker,victim))
+	var damage := Upgrades.with_attack(attacker,damage_for(attacker,victim),upgrade_bonus(attacker,victim))
 	if victim == primary or not victim.is_in_group("units") or attacker.unit_stats == null: return damage
 	return roundi(damage*attacker.unit_stats.splash_share)
 ## A shell or grenade bursting at `point`: the target it was fired at, when still there (`primary`, may be null),
@@ -65,4 +73,6 @@ static func strike_at(attacker: Node3D, primary, point: Vector3, forced := false
 		for target in targets(attacker):
 			if target != primary and Vector2(target.global_position.x-point.x,target.global_position.z-point.z).length() <= radius: victims.append(target)
 	for victim in victims:
-		if can_hit(attacker,victim) or (forced and victim == primary and can_force(attacker,victim)): victim.take_damage(splash_damage(attacker,victim,primary))
+		if can_hit(attacker,victim) or (forced and victim == primary and can_force(attacker,victim)):
+			if victim.has_method("provoked_by"): victim.provoked_by(attacker)
+			victim.take_damage(splash_damage(attacker,victim,primary))

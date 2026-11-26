@@ -39,5 +39,6 @@ func _resolve_hit() -> void:
 	if hit:
 		if get_parent().has_method("mark_attacked"):
 			get_parent().mark_attacked(target)
+		if shooter != null and target.has_method("provoked_by"): target.provoked_by(shooter)
 		target.take_damage(_damage)
 	resolved.emit(hit)
