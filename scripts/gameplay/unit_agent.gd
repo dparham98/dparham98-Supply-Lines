@@ -397,7 +397,8 @@ func _animate(delta: float = 1.0/60) -> void:
 	var value := 0.0
 	if _animated_from != Vector3.INF and here != _animated_from: kind = &"run"; value = move_speed
 	elif _aimed_frame == Engine.get_process_frames(): kind = &"aim"
-	elif state in ["Gathering","Felling","Farming"] or state.begins_with("Constructing"): kind = &"work"; value = harvest_interval
+	elif order == "gather" and state == "Picking fruit": kind = &"pick"; value = KnightHousing.rules().farm_pick_seconds
+	elif state in ["Gathering","Felling"] or state.begins_with("Constructing"): kind = &"work"; value = harvest_interval
 	elif state.begins_with("Repairing"): kind = &"work"; value = engineering_rules.repair_interval if engineering_rules else 0.0
 	model.set_motion(kind,value)
 	if kind == &"work" and _work_timer == 0.0 and model.has_method("sync_work"): model.sync_work()
@@ -801,23 +802,15 @@ func _gather(delta: float) -> void:
 	if cargo_kind != source.resource_kind or cargo >= carry_capacity:
 		_head_home()
 		return
-	# A Farm is tilled from its near edge or anywhere on the field, so the walk to the Keep stays short.
-	var field: Rect2i = source.field_rect() if source.has_method("field_rect") else Rect2i()
-	if field.has_area():
-		if Approach.distance_to_rect(ground,global_position,field) > Approach.TOUCH:
-			if _retry <= 0:
-				state = "To food"
-				_retry = 0.5
-				var path: Array[Vector2i] = Approach.touch_path(self,field)
-				if path.is_empty(): _retry = 1.0; state = "Food unreachable"
-				else: path.remove_at(0); _route = path
-			return
-	elif global_position.distance_to(source.global_position) > interaction_range:
+	if source.is_in_group("farms"):
+		_pick_fruit(delta)
+		return
+	if global_position.distance_to(source.global_position) > interaction_range:
 		if _retry <= 0:
 			state = "Felling a way to the coal" if is_instance_valid(_dig_source) else "To "+str(source.resource_kind)
 			if not _route_to_interaction(source,interaction_range) and not _cut_way_in(): state = "Coal unreachable" if is_instance_valid(_dig_source) else str(source.resource_kind).capitalize()+" unreachable"
 		return
-	state = "Farming" if source.is_in_group("farms") else "Gathering"
+	state = "Gathering"
 	_face(source.global_position)
 	_work_timer += delta
 	if _work_timer >= harvest_interval:
@@ -825,6 +818,26 @@ func _gather(delta: float) -> void:
 		cargo += source.extract(mini(harvest_amount,carry_capacity-cargo),team)
 		# A cell that runs out hands the worker on to the next one (coal, wood) before it walks home part-loaded.
 		if cargo >= carry_capacity or not _source_left(): _head_home()
+## A pick needs a reachable standing cell beside the fruit. Route normally so the worker
+## occupies real terrain cells, can be blocked, and carries only what she actually picks.
+func _pick_fruit(delta: float) -> void:
+	var cell: Vector2i = source.pick_cell()
+	if ground.get_tile_at_position(global_position) != cell:
+		state = "Walking the vineyard"
+		if _retry <= 0 and (not ground.can_traverse(cell,mobility_layer(),_owner_key()) or not _plan(cell)):
+			source.next_vine()
+			_retry = 0.5
+		return
+	state = "Picking fruit"
+	_face(source.fruit_position())
+	_work_timer += delta
+	if _work_timer < KnightHousing.rules().farm_pick_seconds: return
+	_work_timer = 0.0
+	cargo += source.extract(mini(harvest_amount,carry_capacity-cargo),team)
+	source.next_vine()
+	_retry = 0.0
+	if cargo >= carry_capacity: _head_home()
+
 ## Coal that no open path leads to (docs/BALANCED_MAP.md, docs/COAL_MINES.md): the worker fells the tree in its
 ## way and then goes back to the coal. One tree at a time, so the way is worked out again as the forest changes.
 ## False when there is nothing to cut: the coal is not behind forest, or no way through exists.

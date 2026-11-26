@@ -1,5 +1,5 @@
 extends "res://scripts/gameplay/resource_node.gd"
-## A Knights Farm (docs/KNIGHTS_ECONOMY.md). One Forester Maiden tills it and carries the Food to a Keep, as a
+## A Knights Farm (docs/KNIGHTS_ECONOMY.md). One Forester Maiden harvests grapes and carries the Food to a Keep, as a
 ## worker mines: each work beat gives `farm_food_per_beat` Food, and it never runs out. A second worker is refused.
 ## It is a flat field: any unit walks over it and nothing is built on it. While an enemy ground unit stands on it,
 ## it yields nothing. With `farmers_permanent` its worker is its Farmer for good (unit_agent.gd).
@@ -13,6 +13,33 @@ var cells: Array[Vector2i] = []
 ## The Forester working it, if any.
 var worker: Node3D
 var _work_left := 0.0
+# Tile centres in the aisles of the six-row model in vineyard_rows.py.
+const PICK_AISLES := [1, 3, 6, 8]
+const PICK_STOPS := [1, 2, 3, 4, 6, 7, 8]
+const VINE_X := [-4.05, -2.43, -0.81, 0.81, 2.43, 4.05]
+const VINE_Z := [-4.06, -2.77, -1.48, 0.0, 1.48, 2.77, 4.06]
+var _pick_index := 0
+
+func pick_cell() -> Vector2i:
+	var stop := _pick_index / 2
+	var aisle := stop / PICK_STOPS.size()
+	var along := stop % PICK_STOPS.size()
+	if aisle % 2 == 1: along = PICK_STOPS.size() - 1 - along
+	return _rect.position + Vector2i(PICK_AISLES[aisle], PICK_STOPS[along])
+
+func fruit_position() -> Vector3:
+	# Two bunches per vine, on either side of its trunk. Alternate the row
+	# visited from an aisle on successive stops.
+	var stop := _pick_index / 2
+	var along := stop % PICK_STOPS.size()
+	var aisle := stop / PICK_STOPS.size()
+	var row: int = [0, 1, 3, 4][aisle] + along % 2
+	if aisle % 2 == 1: along = PICK_STOPS.size() - 1 - along
+	var offset := 0.18 if _pick_index % 2 else -0.18
+	return global_position + Vector3(VINE_X[row], 0, VINE_Z[along] + offset)
+
+func next_vine() -> void:
+	_pick_index = (_pick_index + 1) % (PICK_AISLES.size() * PICK_STOPS.size() * 2)
 ## An enemy ground unit stands on the field, so it yields nothing (checked every `farm_raid_check_seconds`).
 var raided := false
 var _raid_wait := 0.0
@@ -54,7 +81,7 @@ func take_worker(unit: Node3D) -> bool:
 	return true
 func can_extract(asking: String) -> bool:
 	return asking == team and health > 0 and not is_queued_for_deletion() and not raided
-## The field's cells; its Farmer tills it from the near edge (unit_agent.gd).
+## The field footprint used for raids and placement.
 func field_rect() -> Rect2i:
 	return _rect
 ## Whether `point` lies on the field.
@@ -74,8 +101,8 @@ func extract(requested: int, asking := "") -> int:
 	return mini(maxi(0,requested),RULES.farm_food_per_beat)
 func update_label() -> void:
 	if not has_node("Label"): return
-	var status := "enemy on the field: no Food" if raided else ("tilled" if worker_busy() else "no worker")
-	$Label.text = "FARM · %s · %d/%d HP" % [status,health,max_health]
+	var status := "enemy on the field: no Food" if raided else ("harvesting" if worker_busy() else "no worker")
+	$Label.text = "FARM Ãƒâ€šÃ‚Â· %s Ãƒâ€šÃ‚Â· %d/%d HP" % [status,health,max_health]
 func _process(delta: float) -> void:
 	_work_left = maxf(0.0,_work_left-delta)
 	_raid_wait -= delta

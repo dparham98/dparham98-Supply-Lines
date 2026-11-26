@@ -6,8 +6,8 @@ Item 4 of `docs/BALANCE_IMPLEMENTATION_HANDOFF.md` (2026-11-23). Before this the
 
 | Piece | Rule |
 | --- | --- |
-| Farm | 30 wood, 10 x 10 cells, 300 HP. It must stand inside one of your Keeps' range. It is a flat field: any unit walks over it, and nothing (no building, no track) can be built on it. One Forester Maiden tills it (right-click) from its near edge and carries the Food to the nearest Keep: 2 Food each 1.2 s work beat, 10 a load. A second worker is refused ("Farm already has a worker"). It never runs out. **While an enemy ground unit stands on the field it yields nothing** (checked every 0.25 s; flyers don't count); its Farmer waits beside it. `scripts/economy/farm.gd`, `scenes/gameplay/farm.tscn`. |
-| Farmer | A Forester sent to a Farm becomes its Farmer for good (`farmers_permanent`). She works only a Farm. She refuses moving, felling, building, repairing and every other order ("A Farmer works only a Farm"), and an idle Farmer goes back to her Farm. If her Farm is lost she may take over an empty Farm and nothing else. She still takes 1 housing. She wears the sun hat, carries the farming tool and plays the Till clip, and the HUD calls her "Farmer". A Farm is therefore 30 wood plus a 45 Food Forester and 1 housing for the rest of the match. `scripts/gameplay/unit_agent.gd` (`farmer`, `farm`), `scripts/components/forester_animator.gd`. |
+| Farm | 30 wood, 10 x 10 cells, 300 HP. It must stand inside one of your Keeps' range. It is a flat field: any unit walks over it, and nothing (no building, no track) can be built on it. Assign one Forester Maiden by right-clicking the vineyard. She walks its aisles, picks grapes beside the vines for 2 Food per pick, and carries a full basket of 10 to the nearest Keep. A second worker is refused ("Farm already has a worker"). It never runs out. **While an enemy ground unit stands on the field it yields nothing** (checked every 0.25 s; flyers don't count); its Farmer waits beside it. `scripts/economy/farm.gd`, `scenes/gameplay/farm.tscn`. |
+| Farmer | A Forester sent to a Farm becomes its Farmer for good (`farmers_permanent`). She works only a Farm. She refuses moving, felling, building, repairing and every other order ("A Farmer works only a Farm"), and an idle Farmer goes back to her Farm. If her Farm is lost she may take over an empty Farm and nothing else. She still takes 1 housing. She wears the sun hat, reaches for fruit with PickFruit and carries a willow basket with CarryFood, and the HUD calls her "Farmer". A Farm is therefore 30 wood plus a 45 Food Forester and 1 housing for the rest of the match. `scripts/gameplay/unit_agent.gd` (`farmer`, `farm`), `scripts/components/forester_animator.gd`. |
 | House | 40 wood, 4 x 4 cells, 300 HP. Adds 8 housing while it stands inside one of its side's Keeps' range; outside, nothing. `scripts/economy/house.gd`, `scenes/gameplay/house.tscn`. |
 | Housing | Side-wide (`scripts/economy/knight_housing.gd`). Each standing Keep gives 10. Forester 1, Warhound 1, Round Table Marine 2, Grail Sentinel 2, Questing Marine 2, Azure Dragon 4; Cyborg units take none. Units alive and units queued in Keeps and Chapterhouses count. No upper limit. When there is no room the Keep or Chapterhouse refuses to queue the unit and says why; the production tile says "needs housing". |
 | Building at home | A Knights plan (Keep, Chapterhouse, Farm, House) inside one of its side's Keeps' range builds from that Keep's stock with nothing carried; a Forester still builds it in. Outside every Keep's range its materials must be on the site, as before. Cyborg plans are unchanged: their iron is always carried onto the site and the Depot pays only the energy. The owner chose this for the Knights only (2026-11-24), as their trade for having no trucks. `ConstructionPlan.stock_keep`. |
@@ -23,14 +23,14 @@ Item 4 of `docs/BALANCE_IMPLEMENTATION_HANDOFF.md` (2026-11-23). Before this the
 
 Yield stays at 2 Food a beat, the handoff's settled figure: size sets how much land Farms take, yield sets the pace.
 
-**How much a Farm yields depends on the walk from its near edge.** The Farmer tills from the edge nearest her, so a 10 x 10 Farm is worked from about 5 m nearer the Keep than its centre. In the headless test a Farm whose centre is 14 m from the Keep's (near edge 9 m) yields 85 Food a minute, the handoff's figure. With its centre at 12 m it yields 100, and at 15 m, 80.
+**Yield includes travel.** A pick takes 0.5 seconds at a vine. The worker resumes her route after each delivery. A vineyard centred 14 m from the Keep delivered 80 Food per minute in the economy check.
 
 ## HUD
 
 - **Build page (Knights):** Farm (**F**) and House (**U**) beside Keep and Chapterhouse (docs/HUD_HOTKEYS.md). The placement preview turns red for a Farm outside your Keeps' range.
 - **Keep panel:** "housing used / cap" on its status line. **Chapterhouse panel:** a Housing row.
-- **Farm panel:** who tills it, Food a beat, Farmer 0 or 1, and "enemy on the field: no Food" while raided. **Farmer panel:** one Gather tile ("Work an empty Farm"); no Fell, Deliver or Drop. **House panel:** whether it is housed, and the side's housing.
-- A Forester tilling shows the state "Farming"; a Farmer waiting out a raid shows "Enemy on the Farm".
+- **Farm panel:** who harvests it, Food per pick, Farmer 0 or 1, and "enemy on the field: no Food" while raided. **Farmer panel:** one Gather tile ("Work an empty Farm"); no Fell, Deliver or Drop. **House panel:** whether it is housed, and the side's housing.
+- A Forester moving between vines shows "Walking the vineyard" and stops to show "Picking fruit"; a Farmer waiting out a raid shows "Enemy on the Farm".
 - **Models (2026-11-24, the owner's art):**
   - **Farm:** a walkable 10 x 10 m vineyard (`scenes/models/farm_model.tscn`, `assets/models/buildings/farm.glb`, Blender source in `Blender/Buildings/Farm/`). Its two irrigation carriages water the rows (Work) while its Farmer works it, it rises through Build while it is built, and it plays Die with an irrigation-rupture effect when destroyed.
   - **House:** a 4 x 4 m timber dwelling (`scenes/models/house_model.tscn`, `assets/models/buildings/house.glb`, `Blender/Buildings/House/`), with Idle, Build and Die. The GLB's front door faces −Z, so `house_model.tscn` turns its `Rig` half round to face +Z, toward the RTS camera, like the Keep and Chapterhouse (2026-11-25; until then the camera saw the plain back). `tests/house_facing_check.gd` (rendered) checks it.
@@ -43,7 +43,7 @@ Yield stays at 2 Food a beat, the handoff's settled figure: size sets how much l
   - no energy on the Keep;
   - a Farm outside every Keep's range refused;
   - a Farm in range built from the Keep's wood with nothing carried;
-  - one Forester yielding 80 to 90 Food a minute (85 measured, centre 14 m from the Keep), and a second one refused;
+  - one Forester yielding 80 to 90 Food a minute (80 measured, centre 14 m from the Keep), and a second one refused;
   - the field 10 x 10, walkable, with no building, House plan or track allowed on it;
   - an enemy Scout on the field stopping the Food while the Farmer waits, and the Food resuming once it leaves;
   - the Farmer refusing move, Fell, build and Fell autocast, and shown as "Farmer";

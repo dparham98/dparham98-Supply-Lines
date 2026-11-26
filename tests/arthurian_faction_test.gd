@@ -49,7 +49,7 @@ func run() -> void:
 	var model_expectations := {
 		"keep_model": ["Idle", "Build", "Train", "LaunchBalloon", "Die"],
 		"chapterhouse_model": ["Idle", "Build", "Print", "Die"],
-		"forester_maiden_model": ["Walk", "Chop", "Gather", "Carry", "Build", "Till"],
+		"forester_maiden_model": ["Walk", "Chop", "Gather", "Carry", "Build", "Till", "PickFruit", "CarryFood"],
 		"warhound_model": ["Rest", "Run", "Attack", "Die"],
 		"round_table_marine_model": ["Run", "Shoot"],
 		"grail_sentinel_model": ["Run"],

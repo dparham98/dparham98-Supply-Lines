@@ -6,8 +6,9 @@ extends Resource
 @export_range(0,10000) var farm_wood_cost := 30
 ## A Farm is a flat field: any unit walks over it and nothing is built on it (round 2 of the balance research).
 @export var farm_footprint := Vector2i(10,10)
-## Food a Forester takes from the Farm each work beat (1.2 s). One Forester only.
+## Food gathered at each vine, and the time spent reaching for the bunch.
 @export_range(1,100) var farm_food_per_beat := 2
+@export_range(0.1,3.0,0.05) var farm_pick_seconds := 0.5
 @export_range(1,100000) var farm_health := 300
 ## A Forester sent to a Farm becomes its Farmer for good: it works only a Farm, and builds, fells and goes nowhere
 ## else. When its Farm is lost it may take over an empty Farm and nothing else.
