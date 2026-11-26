@@ -24,7 +24,10 @@ def material(name, col, met, rough, emis=None, strength=0.0, alpha=1.0):
     if emis:
         b.inputs["Emission Color"].default_value = (*emis, 1)
         b.inputs["Emission Strength"].default_value = strength
-    m.diffuse_color = (*col, 1)
+    if alpha < 1.0:
+        b.inputs["Alpha"].default_value = alpha
+        m.surface_render_method = "BLENDED"
+    m.diffuse_color = (*col, alpha)
     MATS[name] = m
     return m
 

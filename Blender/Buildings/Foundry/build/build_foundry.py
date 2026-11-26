@@ -40,10 +40,10 @@ material("fdy_hazard", (0.62, 0.42, 0.035), 0.05, 0.60)
 material("fdy_interior", (0.030, 0.026, 0.022), 0.30, 0.70)
 material("fdy_redglow", (0.30, 0.02, 0.01), 0.0, 0.5, (1.0, 0.06, 0.02), 2.2)
 material("fdy_amber", (0.45, 0.20, 0.04), 0.0, 0.5, (1.0, 0.45, 0.10), 2.0)
-material("fdy_molten", (0.9, 0.45, 0.08), 0.0, 0.4, (1.0, 0.50, 0.10), 5.0)
+material("fdy_molten", (0.84, 0.17, 0.02), 0.12, 0.55, (1.0, 0.19, 0.015), 1.3)
 material("fdy_ember", (0.6, 0.12, 0.02), 0.0, 0.5, (1.0, 0.25, 0.04), 3.0)
 material("fdy_spark", (1.0, 0.8, 0.4), 0.0, 0.4, (1.0, 0.75, 0.35), 8.0)
-material("fdy_smoke", (0.12, 0.11, 0.10), 0.0, 1.0)
+material("fdy_smoke", (0.24, 0.23, 0.21), 0.0, 1.0, alpha=0.23)
 material("team_color", (0.235, 0.030, 0.020), 0.15, 0.55)
 
 C = bpy.data.collections.new("foundry")
@@ -82,6 +82,14 @@ for k in range(12):                              # hazard stripes at the yard's 
 for sx in (-1, 1):
     for sy in (-1, 1):
         P.box("fdy_steel", (sx * 2.84, sy * 2.84, B0 + 0.03), (0.22, 0.22, 0.06), None, 0.02)
+# Recessed cart rails run from the furnace to its loading edge. Floor grilles
+# flank the line, leaving a clean approach to the lathe.
+for x in (-2.05,-1.15):
+    P.box("fdy_steel",(x,-1.55,B0+.035),(.07,2.54,.055),None,.008)
+for x in (-2.65,2.66):
+    P.box("fdy_black",(x,-.75,B0+.03),(.37,2.75,.035))
+    for j in range(17):
+        P.box("fdy_gunmetal",(x,-2.04+j*.16,B0+.053),(.36,.078,.03),None,.008)
 plinth = fin(P, "plinth", Matrix.Identity(4))
 
 # ================================================================= hall
@@ -112,6 +120,21 @@ for sx in (-1, 1):
     P.box("fdy_gunmetal", (sx * HX, HY1, (B0 + EAVE) / 2 + 0.1), (0.3, 0.3, EAVE - B0 + 0.2), None, 0.03)
 # copper pipes along the left wall into the yard
 P.tube("fdy_copper", [(-HX - 0.06, 2.4, 0.5), (-HX - 0.06, 0.6, 0.5), (-HX - 0.06, 0.35, 0.9), (-2.5, -0.2, 0.9)], 0.05)
+# Deeply recessed wall panels under diagonal ribs, tied to the press-side
+# return duct. Broad shoulders carry the gantry between the two work bays.
+for side in (-1,1):
+    x = side*(HX+.055)
+    for j in range(3):
+        y = .72+j*.83
+        P.box("fdy_black",(x,y,1.50),(.07,.64,.74),None,.025)
+        for k in range(4):
+            P.box("fdy_steel",(x+side*.045,y,1.22+k*.15),(.07,.55,.06),rot_y(radians(side*20)))
+    P.beam("fdy_oxblood",(side*2.48,.11,.32),(side*1.83,.11,2.35),.23,.22,.025)
+# The charging duct wraps down the hall face into the exposed brazier.
+P.tube("fdy_gunmetal",[(-1.82,1.22,3.30),(-1.82,.43,3.30),(-1.82,-.09,2.88),
+                       (-1.82,-.09,1.18),(-1.70,-.42,.78)],.21,14)
+for z in (1.27,1.85,2.43,2.79):
+    P.cyl("fdy_copper",(-1.82,-.09,z),(-1.82,-.09,z+.08),.235,seg=14)
 hall = fin(P, "hall", Matrix.Identity(4))
 P = Part()
 P.box("fdy_oxblood", (0, HY0 - 0.2, 2.42), (0.62, 0.04, 0.62), rot_y(radians(45)), 0.02)
@@ -123,7 +146,7 @@ P.add(mk_loft([[V((-HX, HY0, EAVE)), V((HX, HY0, EAVE)), V((HX, HY1, EAVE)), V((
                [V((-HX + 0.35, HY0 + 0.3, RTOP)), V((HX - 0.35, HY0 + 0.3, RTOP)), V((HX - 0.35, HY1 - 0.2, RTOP)),
                 V((-HX + 0.35, HY1 - 0.2, RTOP))]]), "fdy_plate2", True)
 P.box("fdy_gunmetal", (0, (HY0 + HY1) / 2 + 0.05, RTOP + 0.03), (2 * HX - 0.8, HY1 - HY0 - 0.6, 0.06))
-for x in (-1.9, -1.2, 1.9):
+for x in (-1.55, 0.25, 1.90):
     P.cyl("fdy_gunmetal", (x, 2.05, RTOP), (x, 2.05, RTOP + 0.2), 0.32, seg=14)
 P.cyl("fdy_gunmetal", (0.9, 1.25, RTOP), (0.9, 1.25, RTOP + 0.22), 0.5, seg=20)
 P.cyl("fdy_black", (0.9, 1.25, RTOP + 0.15), (0.9, 1.25, RTOP + 0.23), 0.44, seg=20)
@@ -141,14 +164,36 @@ for k in range(5):
 fin(P, "vent_fan", T(FAN), roof)
 
 # cooling stacks: tall drums with brass bands and blackened mouths
-for k, x in enumerate((-1.9, -1.2, 1.9)):
+for k, x in enumerate((-1.55, 0.25, 1.90)):
     P = Part()
     h = (4.55, 4.15, 4.35)[k]
-    P.cyl("fdy_gunmetal", (x, 2.05, RTOP + 0.2), (x, 2.05, h), 0.24, 0.2, seg=14)
-    for z in (RTOP + 0.55, (RTOP + h) / 2 + 0.2, h - 0.25):
-        P.cyl("brass", (x, 2.05, z), (x, 2.05, z + 0.07), 0.25, seg=14)
-    P.cyl("fdy_black", (x, 2.05, h), (x, 2.05, h + 0.12), 0.23, 0.26, seg=14)
-    P.cyl("fdy_rust", (x, 2.05, h - 0.02), (x, 2.05, h + 0.015), 0.205, seg=14)
+    if k == 0:
+        # A jacketed cupola is the dominant mass. The neck tapers to a dark
+        # open throat and the tuyere band marks the hot zone from above.
+        drum = [(0.0,2.86),(.76,2.86),(.87,3.06),(.87,3.88),(.73,4.33),
+                (.58,4.52),(.58,4.88),(.65,4.98),(.65,5.09),(.48,5.09),
+                (.45,4.86),(.0,4.86)]
+        P.add(mk_lathe(drum,(x,1.90,0),Z,24),"fdy_gunmetal",True)
+        for z, radius in [(3.10,.88),(3.76,.88),(4.45,.63),(4.92,.62)]:
+            P.add(mk_lathe([(radius-.055,z),(radius+.028,z),(radius+.028,z+.085),(radius-.055,z+.085)],
+                           (x,1.90,0),Z,24),"fdy_copper",True)
+        for j in range(12):
+            a = j*pi/6
+            d = V((cos(a),sin(a),0))
+            basis_d = basis(Z.cross(d),Z,d)
+            P.box("fdy_oxblood",V((x,1.90,3.46))+d*.858,(.395,.49,.045),basis_d,.016)
+            P.box("fdy_black",V((x,1.90,3.48))+d*.886,(.24,.18,.024),basis_d,.01)
+            P.box("fdy_amber",V((x,1.90,3.48))+d*.902,(.18,.068,.018),basis_d)
+        P.cyl("fdy_black",(x,1.90,4.87),(x,1.90,4.89),.45,seg=24)
+    else:
+        # Paired ceramic-lined exhausts share a pressure manifold.
+        P.add(mk_lathe([(.31,2.90),(.36,3.01),(.35,3.26),(.22,3.37),
+                        (.22,h-.28),(.32,h-.19),(.32,h),(.22,h),(.21,h-.14)],
+                       (x,2.05,0),Z,16),"fdy_gunmetal",True)
+        for j in range(4):
+            z = 3.39+j*.13
+            P.cyl("fdy_steel",(x,2.05,z),(x,2.05,z+.046),.285,seg=16)
+        P.cyl("fdy_black",(x,2.05,h-.16),(x,2.05,h-.14),.22,seg=16)
     fin(P, "stack_%d" % (k + 1), T((x, 2.05, RTOP + 0.2)))
 
 # ================================================================= crucible over a brazier, pouring into a mould
@@ -178,7 +223,7 @@ fin(P, "furnace_glow", T((CX, CY, B0 + 0.47)), brazier)
 P = Part()                                      # crucible: a riveted bowl on trunnions, spout to -Y
 P.add(mk_lathe([(0.0, TZ - 0.5), (0.3, TZ - 0.5), (0.42, TZ - 0.28), (0.46, TZ + 0.18), (0.5, TZ + 0.2),
                 (0.5, TZ + 0.27), (0.4, TZ + 0.27), (0.36, TZ + 0.05), (0.0, TZ + 0.05)], (CX, CY, 0), Z, 20), "fdy_gunmetal")
-P.cyl("brass", (CX, CY, TZ + 0.2), (CX, CY, TZ + 0.28), 0.52, seg=20)
+P.add(mk_lathe([(.40,TZ+.2),(.52,TZ+.2),(.52,TZ+.28),(.40,TZ+.28)],(CX,CY,0),Z,20),"fdy_copper",True)
 for sx in (-1, 1):
     P.cyl("fdy_steel", (CX + sx * 0.45, CY, TZ), (CX + sx * 0.66, CY, TZ), 0.07, seg=10)
 for k in range(10):
@@ -224,6 +269,25 @@ P.cyl("fdy_gunmetal", (PX, PY, 3.35), (PX, PY, 3.42), 0.24, seg=14)
 P.tube("fdy_copper", [(PX + 0.2, PY, 3.25), (PX + 0.62, PY, 3.25), (PX + 0.62, PY + 0.4, 2.6), (PX + 0.62, PY + 0.6, B0 + 0.3)], 0.04)
 for k in range(5):
     P.box("fdy_hazard" if k % 2 == 0 else "fdy_black", (PX - 0.5 + k * 0.25, PY - 0.51, B0 + 0.5), (0.24, 0.02, 0.12))
+# The travelling-hoist runway straddles the pour and press. Its I-beams
+# have a continuous load path down to the press frame and a braced end bent.
+gantry_y = -.48
+for x in (-2.58,2.12):
+    P.box("fdy_gunmetal",(x,gantry_y,1.59),(.20,.23,2.79),None,.025)
+    P.box("fdy_steel",(x,gantry_y,.37),(.36,.40,.33),None,.025)
+    direction = 1 if x<0 else -1
+    P.beam("fdy_oxblood",(x,gantry_y,2.27),(x+direction*.65,gantry_y,2.94),.16,.14)
+for z in (2.92,3.37):
+    P.box("fdy_gunmetal",(-.23,gantry_y,z),(4.92,.27,.10),None,.018)
+for bay in range(8):
+    x=-2.65+bay*.60
+    P.beam("fdy_oxblood",(x,gantry_y,2.96 if bay%2==0 else 3.33),
+           (x+.60,gantry_y,3.33 if bay%2==0 else 2.96),.10,.12,.012)
+# A compact service hoist sits beside the crucible, clear of its tipped lip.
+P.box("fdy_steel",(-.92,gantry_y,2.86),(.55,.42,.22),None,.032)
+P.cyl("fdy_copper",(-1.10,gantry_y,2.70),(-.74,gantry_y,2.70),.104,seg=12)
+P.tube("fdy_steel",[(-.94,gantry_y,2.70),(-.94,gantry_y,2.26),
+                     (-.86,gantry_y,2.20),(-.80,gantry_y,2.28)],.022,8)
 press = fin(P, "press_frame", Matrix.Identity(4))
 RAM_TOP = 2.47
 P = Part()                                      # ram: piston rod and the top die, pivot at the rod's top
@@ -295,9 +359,9 @@ fin(P, "plate_rack", Matrix.Identity(4))
 # smoke puffs over the stacks (keyed rising in Idle and Research)
 for k in range(9):
     P = Part()
-    P.add(mk_ico((0, 0, 0), 0.3, (1, 1, 0.85), None, 2), "fdy_smoke")
-    x = (-1.9, -1.2, 1.9)[k % 3]
-    fin(P, "smoke_%d" % (k + 1), T((x, 2.05, 4.6)))
+    mouth = [(-1.55,1.90,5.13),(.25,2.05,4.19),(1.90,2.05,4.39)][k % 3]
+    P.add(mk_ico(mouth, .22, (1,1,.85), None,2),"fdy_smoke")
+    fin(P, "smoke_%d" % (k+1), T(mouth))
 
 # ================================================================= death effects (keyed by animate_foundry.py)
 D = bpy.data.collections.new("foundry_death_fx")

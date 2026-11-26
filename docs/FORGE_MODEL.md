@@ -1,20 +1,20 @@
 # Forge model
 
-Asked for on 2026-11-25. This is the Arthurian Knights' upgrade building (docs/UPGRADES.md): an open-sided smithy and armoury that researches the Arms and Mail lines. Its palette is the Keep's and Chapterhouse's: ivory stone, silver, heraldic brass and a team-blue slate roof. It adds timber, leather and amber glass. The materials are named `frg_*`, plus `brass`, `team_color` and `team_color_shadow`.
+Asked for on 2026-11-25. This is the Arthurian Knights' upgrade building (docs/UPGRADES.md): an open-sided smithy and armoury that researches the Arms and Mail lines. Its palette is the Keep's and Chapterhouse's: ivory stone, silver, heraldic brass and a slate roof with a team-painted guild gable. It adds timber, leather and amber glass. The materials are named `frg_*`, plus `brass`, `team_color` and `team_color_shadow`.
 
 ## The model
 
 - **Size.** True scale in metres. The plinth fills 5.96 x 5.96 m of the 6 x 6 footprint. The chimney reaches 5.15 m.
 - **Facing.** The open front faces -Y in Blender, which is +Z in the game, toward the default camera.
-- **Budget.** About 7,000 triangles, with flat PBR materials and no image textures.
-- **Open-sided.** The lean-to roof covers only the back half, so from the game camera you look straight onto the anvil and the yard.
+- **Budget.** About 17,450 triangles, with flat PBR materials and no image textures.
+- **Open-sided.** The gabled roof shelters the rear work bays, so from the game camera you look straight onto the anvil and the yard.
 
 The parts (object names in the GLB):
 
-- `plinth`: stone flags, some of them ivory.
-- `hearth`: the stone hearth with an ivory lintel, a hood and a tall banded chimney (back left), plus a coal heap. `hearth_fire` is the fire in its mouth.
+- `plinth`: staggered flagstones with low stone side walls and coping.
+- `hearth`: the firebrick-lined hearth with a segmented stone arch, a hood and a tall banded chimney (back left), plus a coal heap. `hearth_fire` is the fire in its mouth.
 - `bellows`: the leather bellows on a timber cradle. `bellows_board` hinges at the nozzle end.
-- `frame` and `roof`: timber posts, braces and a low back wall with an amber-glass window. The lean-to roof is team-blue slate with brass trim.
+- `frame` and `roof`: timber posts, braces and a low back wall with an amber-glass window. Overlapping slate courses meet at a brass ridge. An anvil sign sits under the projecting guild gable.
 - `weapon_rack`: six swords and three lances with team pennons, against the back wall.
 - `anvil`, with `anvil_billet` (the hot work) and `anvil_sparks`, on a banded stump.
 - `smith`: the smith in a leather apron, holding the billet with tongs. `smith_arm` (pivot at the shoulder) holds the hammer and is modelled at the moment of the blow.
@@ -39,7 +39,7 @@ Idle and Research loop through `_subresources` in `forge.glb.import`.
 ## In the game
 
 - `scenes/models/forge_model.tscn` instances the GLB as `Rig` and runs `scripts/components/research_rig.gd`, as the Foundry does. `show_research(active)` blends between Idle and Research.
-- Team paint repaints the roof, the banners, the pennons and the tabard.
+- Team paint repaints the gable, the banners, the pennons and the tabard.
 - `scenes/gameplay/forge.tscn` takes the model in its `Visuals` slot. Before this it borrowed the Chapterhouse model.
 - Selection icon: `assets/ui/renders/forge.png`. Portrait: `assets/ui/portraits/forge.png`. Build card: `sl_build_forge.png`. All come from `render_hud_images.gd -- forge`.
 
