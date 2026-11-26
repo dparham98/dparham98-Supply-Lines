@@ -639,9 +639,54 @@ HINGE = V((0.20, 0.02, 0.25))
 P.box("moto_gunmetal", HINGE + V((-0.02, 0, 0.01)), (0.06, 0.07, 0.06), None, 0.01)
 P.cyl("moto_brass", (0.18, 0.22, 0.29), (0.20, 0.06, 0.255), 0.016, seg=8)
 
+# mine trays (Minelaying, docs/MINES.md): a round tray each side over the rear exhausts, braced to the
+# swing-arm and the hopper base. The mines and their clamps are separate parts, built after the frame.
+MINE_C = [V((0.475, 0.95, 0.655)), V((-0.475, 0.95, 0.655))]    # mine_slot_1 (left), mine_slot_2 (right)
+MINE_R = 0.24                                                  # a carried mine, 0.53 of a laid one
+for k, c in enumerate(MINE_C):
+    s = 1 if c.x > 0 else -1
+    P.add(mk_lathe([(0.0, 0.0), (MINE_R + 0.035, 0.0), (MINE_R + 0.035, 0.03), (MINE_R + 0.02, 0.03),
+                    (MINE_R + 0.02, 0.012), (0.0, 0.012)], c - Z * 0.03, Z, 20), "moto_gunmetal")
+    P.add(mk_lathe([(MINE_R + 0.036, 0.004), (MINE_R + 0.04, 0.004), (MINE_R + 0.04, 0.022),
+                    (MINE_R + 0.036, 0.022)], c - Z * 0.03, Z, 20), "moto_oxblood")
+    inner = V((s * 0.235, c.y, c.z - 0.03))
+    for dy in (-0.15, 0.15):
+        P.cyl("moto_charcoal", inner + Y * dy - Z * 0.01, V((s * 0.15, c.y + dy * 0.8, 0.445)), 0.016, seg=6)
+        P.cyl("moto_charcoal", inner + Y * dy, V((s * 0.17, c.y + dy, c.z + 0.2)), 0.013, seg=6)
+    P.cyl("moto_brass", V((s * 0.235, c.y - 0.2, c.z - 0.015)), V((s * 0.235, c.y + 0.2, c.z - 0.015)), 0.018, seg=8)
+    for dy in (-0.15, 0.15):
+        P.rivet(V((c.x + s * (MINE_R + 0.04), c.y + dy, c.z - 0.015)), X * s, 0.011)
+
 frame = finish(P, "frame", Matrix.Identity(4), root)
 fang("faction_fang_L", (0.2045, -0.36, 0.915), X, -Z, 0.22, frame)
 fang("faction_fang_R", (-0.2045, -0.36, 0.915), -X, -Z, 0.22, frame)
+
+# ---------------------------------------------------------------- carried mines and their clamps
+# mine_slot_N sits on its tray; mine_carried_N is the mine (shown for 0, 1 or 2 aboard) and mine_clamp_N the
+# strap over it, hinged on the tray's inboard edge along the bike (local X), turned open by the game.
+for k, c in enumerate(MINE_C):
+    s = 1 if c.x > 0 else -1
+    slot = empty("mine_slot_%d" % (k + 1), T(c), root, 0.1, 'PLAIN_AXES')
+    P = Part()
+    R_ = MINE_R
+    P.add(mk_lathe([(0.0, 0.0), (R_ - 0.016, 0.0), (R_, 0.013), (R_, 0.04), (R_ - 0.032, 0.075),
+                    (0.11, 0.081), (0.0, 0.081)], c, Z, 20), "moto_gunmetal")
+    P.add(mk_lathe([(R_ + 0.003, 0.018), (R_ + 0.004, 0.019), (R_ + 0.004, 0.034), (R_ + 0.003, 0.035)], c, Z, 20),
+          "moto_oxblood")
+    P.add(mk_lathe([(0.0, 0.075), (0.10, 0.075), (0.10, 0.093), (0.0, 0.093)], c, Z, 6), "moto_charcoal")
+    P.add(mk_lathe([(0.0, 0.093), (0.025, 0.093), (0.02, 0.107), (0.0, 0.11)], c, Z, 10), "moto_amber")
+    for j in range(4):
+        a = pi / 4 + j * pi / 2
+        d = V((cos(a), sin(a), 0))
+        P.box("moto_charcoal", c + d * (R_ - 0.002) + Z * 0.028, (0.045, 0.02, 0.026), basis(Z.cross(d), d, Z), 0.004)
+    finish(P, "mine_carried_%d" % (k + 1), T(c), slot)
+    hinge = V((s * (0.235 - 0.012), c.y, c.z + 0.09))
+    P = Part()
+    P.cyl("moto_brass", hinge - Y * 0.07, hinge + Y * 0.07, 0.018, seg=8)
+    P.box("moto_steel", hinge + X * s * (R_ - 0.0) + Z * 0.004, (2 * R_ + 0.02, 0.05, 0.012), None, 0.004)
+    P.box("moto_steel", hinge + X * s * (2 * R_ + 0.02) - Z * 0.03, (0.014, 0.05, 0.07), None, 0.003)
+    P.box("moto_gunmetal", hinge + X * s * (2 * R_ + 0.03) - Z * 0.03, (0.02, 0.07, 0.03), None, 0.005)
+    finish(P, "mine_clamp_%d" % (k + 1), T(hinge) @ basis(Y * s, -X, Z), slot)
 
 # ---------------------------------------------------------------- steering assembly
 steer_w = T(HEAD) @ RAKE_M

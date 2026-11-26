@@ -19,15 +19,27 @@ func _ready() -> void:
 	max_health = rules.health
 	var fog := get_tree().get_first_node_in_group("fog_of_war")
 	if fog != null: _viewer = fog.viewer
+	preload("res://scripts/components/team_paint.gd").apply(_model(),team)
+	_show_model()
 func _process(delta: float) -> void:
 	if _gone: return
 	_age += delta
 	if not armed and _age >= rules.arm_seconds: armed = true
+	var model := _model()
+	if model != null and model.has_method("set_age"): model.set_age(_age,rules.arm_seconds)
 	_look -= delta
 	if _look > 0.0: return
 	_look = 0.1
-	visible = shown_to(_viewer)
+	_show_model()
 	if armed: _check_trigger()
+## The model in the Visuals slot (scenes/models/land_mine_model.tscn).
+func _model() -> Node3D:
+	return get_node_or_null("Visuals/Model")
+## Drawn or hidden for the viewer; an armed enemy mine its detectors cover gets the "spotted" ring.
+func _show_model() -> void:
+	visible = shown_to(_viewer)
+	var model := _model()
+	if model != null and model.has_method("set_detected"): model.set_detected(_viewer != team and armed and visible and detected_by(_viewer))
 ## Whether `viewer` may see it: its own side always; the other side before it arms (where its fog allows) and,
 ## once armed, only while one of its detectors covers it.
 func shown_to(viewer: String) -> bool:

@@ -24,7 +24,12 @@ bike_root            on the ground under the bike's centre
         muzzle       holds the steam effect in the model scene
   rider_torso
     rider_head, rider_arm_L, rider_arm_R, rider_leg_L, rider_leg_R
+  mine_slot_1, mine_slot_2   on the left and right mine trays
+    mine_carried_N           a carried mine, 0.48 m across
+    mine_clamp_N             the strap over it; local X along the bike is its hinge
 ```
+
+The two round mine trays over the rear exhausts are part of `frame`. They make the bike 1.52 m wide.
 
 The gun is on the centre line behind the rider, raised so the barrel clears the helmet by about 8 cm all the way round.
 
@@ -39,6 +44,23 @@ The gun is on the centre line behind the rider, raised so the barrel clears the 
 - **Rumble and sway.** The frame shakes a few millimetres and the rider sways slowly, so a parked bike is not frozen.
 - **Gun.** `gun_swivel` tracks the target through `turret_aim.gd` at 540 deg/s. The unit takes a target and fires on it in the same frame, so the rig's `aim_at` swings the gun straight onto a newly taken target; the spike then leaves along the barrel. `rider_head` turns with the gun up to 70 degrees.
 - **Firing.** `fire()` slams `gun_barrel` back 12 cm, hops the rear of the bike and plays the steam effect. The bike never turns its body to aim.
+
+## Mines
+
+Minelaying (docs/MINES.md). `unit_agent.gd` calls two rig hooks:
+
+- `set_mines(count)` every frame. The trays show 0, 1 or 2 mines (slot 1 first). A mine that appears drops in from 40 cm over 0.6 s and its clamp swings shut, so loading at one a second reads as a clamp-in per mine.
+- `set_laying(progress, point)` each frame while it lays, with `progress` through `mine_rules.lay_seconds` (2 s) and the lay point. It lapses after a frame without a call, which snaps the mine, clamp and rider back (an order cancelled mid-lay).
+  - 0–12%: the clamp opens and the rider turns 50 degrees toward the tray, looking back.
+  - 12–35%: the arm reaches back and the mine lifts 35 cm.
+  - 35–72%: it swings out over the point and down onto it, unfolding to its laid size.
+  - 72–88%: it is twisted a quarter turn to arm.
+  - 88–100%: the rider turns back.
+  The mine is moved in world space and ends exactly on `point`, where `unit_agent.gd` then spawns the real mine, turned as the bike was. The bike stops with the point just behind it, so the mine goes down behind the rear wheel.
+
+The carried mine is about half the laid mine's size. It grows as it is lowered, which reads as unfolding.
+
+The Derail ability still has no animation of its own.
 
 ## The shot
 

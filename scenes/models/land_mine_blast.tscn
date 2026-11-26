@@ -1,0 +1,36 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/burst_effect.gd" id="burst"]
+[ext_resource type="PackedScene" path="res://assets/models/effects/land_mine_blast.glb" id="model"]
+
+[sub_resource type="StandardMaterial3D" id="flash_hot"]
+shading_mode = 0
+albedo_color = Color(1, 0.9, 0.6, 1)
+
+[sub_resource type="StandardMaterial3D" id="fire_hot"]
+shading_mode = 0
+albedo_color = Color(1, 0.55, 0.15, 1)
+
+[node name="LandMineBlast" type="Node3D"]
+script = ExtResource("burst")
+clip = &"Impact"
+flash_path = NodePath("Model/Impact_Flash")
+light_path = NodePath("Light")
+light_energy = 3.5
+
+[node name="Model" parent="." instance=ExtResource("model")]
+
+[node name="Impact_Flash" parent="Model"]
+material_override = SubResource("flash_hot")
+
+[node name="blast_fire" parent="Model"]
+material_override = SubResource("fire_hot")
+
+[node name="Light" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+visible = false
+light_color = Color(1, 0.62, 0.32, 1)
+omni_range = 8.0
+omni_attenuation = 1.0
+
+[editable path="Model"]
